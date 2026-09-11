@@ -6,7 +6,7 @@ This repository is run as **AI-SDD / AI-DLC**: agents implement from markdown sp
 
 ## Current state
 
-This repo is the **Vite + React + TypeScript + Tailwind SPA**. It will consume a REST JSON API (`specs/001-office-supplies-mvp/contracts/api.md`). The API’s language, framework, and database are **not chosen** and are not implemented here.
+This repo is the **Vite + React + TypeScript + Tailwind SPA**. It consumes a REST JSON API **owned by the backend team**. This repo does not define routes or payloads. Link the published contract in `specs/001-office-supplies-mvp/contracts/README.md` when it exists.
 
 Follow `specs/001-office-supplies-mvp/tasks.md`.
 
@@ -38,8 +38,8 @@ Set `VITE_API_ORIGIN` when an API host exists (see `quickstart.md`).
 ## Stack
 
 - **This repo:** React 19 + TypeScript + Vite + Tailwind CSS 4
-- **Integration:** REST JSON under `/api`
-- **API runtime / datastore:** TBD
+- **Integration:** REST JSON (backend-owned contract)
+- **API runtime / datastore / HTTP contract:** backend team
 - **QA (planned):** Playwright · HTTP contract tests · GitHub Actions
 
 ## Roles

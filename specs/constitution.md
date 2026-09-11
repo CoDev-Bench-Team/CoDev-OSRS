@@ -2,7 +2,7 @@
 
 Canonical copy of the project constitution for version tracking. The binding text also lives in `AGENTS.md` under `## Constitution`. If the two drift, `AGENTS.md` wins until they are reconciled in the same change.
 
-**Version**: 1.1.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-11
+**Version**: 1.2.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-11
 
 ### I. Spec-Driven Development
 
@@ -30,7 +30,7 @@ Each user story MUST be demonstrable without unfinished sibling stories once its
 
 ### VII. Typed Contracts
 
-The SPA MUST be TypeScript. REST request/response shapes MUST match `specs/001-office-supplies-mvp/contracts/api.md`. The client MUST NOT invent fields the API does not expose. Changes that affect both inventory quantity and request status MUST be atomic on the API (no partial deduct without a matching request, and the reverse on reject).
+The SPA MUST be TypeScript. REST request/response shapes MUST match the **backend team’s published API contract**, not a contract invented in this repository. The client MUST NOT invent fields, routes, or error codes the API does not expose. Changes that affect both inventory quantity and request status MUST be atomic on the API (no partial deduct without a matching request, and the reverse on reject).
 
 ### VIII. MVP Restraint
 

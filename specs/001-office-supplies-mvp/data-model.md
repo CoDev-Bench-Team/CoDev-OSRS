@@ -1,6 +1,6 @@
 # Data Model: Office Supplies Request System MVP
 
-Logical model for the REST resources. **Not a database schema.** Field names below are conceptual; JSON names follow `contracts/api.md` (camelCase).
+Logical **product** model (roles, statuses, inventory rules). **Not a database schema and not an HTTP contract.** JSON field names, paths, and types come from the backend team’s published API contract when it exists.
 
 ## Entities
 

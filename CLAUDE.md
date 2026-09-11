@@ -23,7 +23,7 @@ Do not implement from chat alone. Spec → plan → tasks → code.
 
 1. **Specify** — update `specs/<nnn>-<slug>/spec.md` (WHAT, not HOW)
 2. **Clarify** — resolve ambiguities into the spec before planning
-3. **Plan** — `plan.md`, `data-model.md`, `contracts/`, `research.md`
+3. **Plan** — `plan.md`, `data-model.md`, `research.md` (do not author a REST `api.md`)
 4. **Tasks** — dependency-ordered `tasks.md` with file paths
 5. **Implement** — one task (or parallel `[P]` group) at a time; mark `[x]`
 6. **Verify** — typecheck, lint, HTTP contract tests, Playwright against acceptance criteria
@@ -42,16 +42,16 @@ npm run build        # tsc -b && vite build
 npm run lint         # oxlint
 ```
 
-This repo is the SPA. It consumes a **REST JSON API** documented in `specs/001-office-supplies-mvp/contracts/api.md`. Backend language, framework, and datastore are **not chosen** — do not add a server or database to this repo unless a later ADR says so.
+This repo is the SPA. It consumes a **REST JSON API owned by the backend team**. Do not invent routes, payloads, or error codes in this repo. Do not add a server or database here unless a later ADR says so. When the backend contract is published, link it from `specs/001-office-supplies-mvp/contracts/README.md`.
 
 ## Stack (locked for this repo)
 
 - Frontend: React 19 + TypeScript + Vite + Tailwind CSS 4
-- Integration: REST JSON under `/api` (see the API contract)
+- Integration: REST JSON (backend-owned contract; see `specs/001-office-supplies-mvp/contracts/README.md`)
 - QA (planned): Playwright against the SPA; HTTP tests against the published REST contract
 - CI (planned): GitHub Actions for the SPA (lint, typecheck, build)
 
-Do not introduce a new frontend framework or UI kit without an ADR in `docs/adr/`. Do not invent a backend stack in code or docs.
+Do not introduce a new frontend framework or UI kit without an ADR in `docs/adr/`. Do not invent a backend stack or a REST contract in this repo.
 
 ## Hard Rules
 
@@ -62,7 +62,7 @@ Do not introduce a new frontend framework or UI kit without an ADR in `docs/adr/
 - Email notification on every defined transition. Missing a notification is a bug (API responsibility; SPA surfaces status).
 - SPA TypeScript is strict. No `any` without justification.
 - Secrets stay in `.env` (gitignored). Never commit credentials.
-- The SPA MUST NOT invent fields the API contract does not expose.
+- The SPA MUST NOT invent fields, routes, or error codes the backend contract does not expose.
 
 ## Code Style
 

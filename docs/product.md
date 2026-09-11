@@ -38,7 +38,7 @@ The process diagram splits the old combined “Admin” into **Approver** and **
 | 3 | Integration & QA |
 | 4 | Regression & demo |
 
-Stack (this repo): React + TypeScript + Vite + Tailwind. The SPA consumes a REST JSON API (contract in `specs/001-office-supplies-mvp/contracts/api.md`). API runtime and datastore are not chosen. QA: Playwright + HTTP contract tests; CI: GitHub Actions.
+Stack (this repo): React + TypeScript + Vite + Tailwind. The SPA consumes a REST JSON API **published by the backend team** (this repo does not author the HTTP contract). QA: Playwright; CI: GitHub Actions.
 
 ## Expected Impact
 

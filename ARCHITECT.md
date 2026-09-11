@@ -17,7 +17,8 @@ This repository is the **browser SPA**. All durable state, authorization, invent
 │  Browser    │      HTTPS       │  Vite React SPA  │
 │  Employee / │◀────────────────▶│  (this repo)     │
 │  Approver / │                  └────────┬─────────┘
-│  Supply Adm │                           │ REST JSON (/api)
+│  Supply Adm │                           │ REST JSON
+                                  │                           │ (backend contract)
 └─────────────┘                           ▼
                                  ┌──────────────────┐
                                  │  REST API        │
@@ -38,9 +39,9 @@ This repository is the **browser SPA**. All durable state, authorization, invent
 | Layer | Choice | Rationale |
 |-------|--------|-----------|
 | SPA | React 19, TypeScript, Vite 8, Tailwind CSS 4 | Already scaffolded in this repo |
-| API | REST JSON, contract in `contracts/api.md` | Frontend consumes HTTP; implementation TBD |
-| Persistence | TBD (API concern) | Not chosen; domain model is logical only |
-| Auth | Credential login over REST (`POST /api/auth/login`) | Mechanism behind the contract is the API’s choice |
+| API | REST JSON published by the backend team | This repo consumes HTTP; it does not specify the contract |
+| Persistence | TBD (backend) | Not chosen here |
+| Auth | As defined by the backend contract | SPA stores whatever session the API returns |
 | Email | Emitted by the API on each defined transition | SPA does not send mail |
 | E2E | Playwright against the SPA | QA automation requirement |
 | API tests | HTTP against the published contract | Stack-agnostic |
@@ -120,7 +121,7 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 | Request rejected | Rejected | Increment by requested qty |
 | Approved / For Release / Released / Completed | those statuses | No change (already deducted) |
 
-Concurrent submits for the last units MUST serialize so on-hand never goes negative (one caller succeeds, others get `INVENTORY_INSUFFICIENT` / `CONFLICT`). How the API implements that lock is its choice.
+Concurrent submits for the last units MUST serialize so on-hand never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract’s choice.
 
 ## 7. AuthZ Matrix (MVP)
 
@@ -141,22 +142,13 @@ Approvers may review any pending request (small internal team). Supply Admins ma
 
 ## 8. API Shape
 
-REST under `/api`. JSON only. Auth required except `POST /api/auth/login`.
+The **backend team** publishes the REST contract (base path, routes, JSON, auth, errors). This repository does not define it.
 
-Resource outline (full contracts in `specs/001-office-supplies-mvp/contracts/api.md`):
-
-- `POST /api/auth/login` `GET /api/auth/me` `POST /api/auth/logout`
-- `GET /api/inventory` `POST /api/inventory` `PATCH /api/inventory/:id`
-- `GET /api/requests` `POST /api/requests` `GET /api/requests/:id`
-- `POST /api/requests/:id/approve` `.../reject` `.../prepare` `.../release` `.../confirm`
-
-Errors: `{ "error": { "code": "INVENTORY_INSUFFICIENT", "message": "..." } }` with 4xx/5xx.
+Until that document is linked from `specs/001-office-supplies-mvp/contracts/README.md`, do not hard-code invented endpoints. Domain capabilities the UI must support are in `spec.md` (login by role, catalog, submit, approve/reject, prepare/release, confirm, history, notification visibility).
 
 ## 9. Data
 
-Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md`.
-
-Resources: users, inventory items, requests, request lines, notification log. Storage mapping is an API implementation detail.
+Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (product language). JSON field names and resource URLs come from the backend contract when it exists.
 
 ## 10. Non-Functional (MVP)
 
@@ -180,13 +172,13 @@ Resources: users, inventory items, requests, request lines, notification log. St
 
 ## 12. Testing Architecture
 
-- **Contract**: each REST route vs `contracts/api.md` (against whatever hosts the API).
-- **E2E (Playwright)**: encoded stock → employee request → approver reject (stock restored) → new request → approve → prepare → release → confirm; assert notification log via the API.
+- **Contract**: HTTP against the **backend-published** REST contract (not a file invented in this repo).
+- **E2E (Playwright)**: encoded stock → employee request → approver reject (stock restored) → new request → approve → prepare → release → confirm; assert notifications as the backend contract exposes them.
 
 ## 13. Decisions
 
 | ADR | Decision |
 |-----|----------|
-| [0001](docs/adr/0001-spa-rest-api.md) | SPA in this repo; REST API contract; backend stack deferred |
+| [0001](docs/adr/0001-spa-rest-api.md) | SPA in this repo; REST API owned by backend team |
 | [0002](docs/adr/0002-deduct-inventory-on-submit.md) | Deduct stock on submit, not on approve |
 | [0003](docs/adr/0003-three-role-model.md) | Approver and Supply Admin are separate roles |

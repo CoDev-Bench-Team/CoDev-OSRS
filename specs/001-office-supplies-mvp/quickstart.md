@@ -1,11 +1,11 @@
 # Quickstart — OSRS MVP demo
 
-This repo runs the **SPA**. A REST API that implements `contracts/api.md` must be reachable separately (stack TBD).
+This repo runs the **SPA**. A REST API **from the backend team** must be reachable separately. Point the SPA at it; do not invent routes here.
 
 ## Prerequisites
 
 - Node.js 22+ (for the Vite app)
-- A contract-compliant API origin (real or mock)
+- Backend API origin and the backend team’s published contract
 
 ## Environment
 
@@ -15,17 +15,17 @@ Create `.env` (never commit secrets):
 VITE_API_ORIGIN=http://localhost:8080
 ```
 
-Point this at whatever hosts `/api`. Optionally proxy `/api` through Vite (`vite.config.ts`) so the browser stays same-origin.
+Use the origin the backend team documents. Optionally proxy through Vite (`vite.config.ts`) so the browser stays same-origin.
 
-## Demo users (API seed)
+## Demo users
 
-The API SHOULD provide:
+Suggested cast for walkthroughs (actual emails/passwords are whatever the backend seeds):
 
-| Email | Role | Password (dev) |
-|-------|------|----------------|
-| employee@codev.local | employee | password123 |
-| approver@codev.local | approver | password123 |
-| supply@codev.local | supply_admin | password123 |
+| Suggested email | Role |
+|-----------------|------|
+| employee@codev.local | employee |
+| approver@codev.local | approver |
+| supply@codev.local | supply_admin |
 
 ## Run the SPA
 
@@ -48,7 +48,7 @@ Playwright MUST cover:
 
 1. Happy path to `Completed` with stock decremented once
 2. Reject path with stock restored and a new request
-3. Notification log entries for all five types across those runs
+3. Notifications as the backend contract exposes them
 4. Role cannot perform another role’s transition
 
 ## Demo script (human)

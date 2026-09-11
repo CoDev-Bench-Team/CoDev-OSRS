@@ -11,5 +11,6 @@ Read `CLAUDE.md` and `AGENTS.md` before changing product behavior.
 - Architecture: `ARCHITECT.md`. Domain flow: `docs/process-flow.md`.
 - Three roles only: Employee, Approver, Supply Admin. No combined Admin.
 - Inventory: decrement on submit, restore on reject, never negative.
+- Do not invent REST routes, payloads, or error codes; consume the backend team’s contract.
 - Do not implement features that are not in the active spec.
 - TypeScript; no secrets in git; mark `tasks.md` items `[x]` only when done.

@@ -20,8 +20,8 @@ The product started as a Vite scaffold with no domain specs. These markdown file
 | Feature WHAT | `specs/001-office-supplies-mvp/spec.md` | Stories, FRs, success criteria |
 | Feature HOW | `specs/001-office-supplies-mvp/plan.md` | Stack, structure, compliance |
 | Research | `specs/001-office-supplies-mvp/research.md` | Resolved choices |
-| Data | `specs/001-office-supplies-mvp/data-model.md` | Entities and rules |
-| Contracts | `specs/001-office-supplies-mvp/contracts/api.md` | HTTP API |
+| Data | `specs/001-office-supplies-mvp/data-model.md` | Domain entities (not HTTP) |
+| API contract | Backend team (link in `contracts/README.md`) | REST JSON — not authored here |
 | Tasks | `specs/001-office-supplies-mvp/tasks.md` | Ordered, path-specific work |
 | QA bootstrap | `specs/001-office-supplies-mvp/quickstart.md` | Run the demo locally |
 | Spec quality | `specs/001-office-supplies-mvp/checklists/requirements.md` | Requirements quality checklist |
@@ -40,7 +40,7 @@ Aligned skills: `/specify` or `/create-spec` → `/clarify` → `/plan-feature` 
 1. **Constitution beats improvisation.** If a change violates a MUST, stop and amend the constitution or drop the change.
 2. **Spec beats chat.** If a prompt conflicts with `spec.md`, update the spec first.
 3. **One active feature folder.** Current work is `specs/001-office-supplies-mvp/`. Future features get `002-…` (do not overwrite 001).
-4. **ADRs for irreversible HOW.** REST-for-the-SPA, inventory timing, and role model are recorded. Backend runtime/datastore stay deferred until a new ADR.
+4. **ADRs for irreversible HOW.** REST-for-the-SPA and role/inventory rules are recorded. HTTP paths and backend stack are the backend team’s.
 5. **Mark tasks `[x]` only when done and verified** at the task’s own level.
 
 ## What “done” means for the MVP
