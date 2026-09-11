@@ -11,6 +11,13 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
+
+# Agent local pointers (not shared)
+specs/ACTIVE_WORKFLOW.md
+CLAUDE.local.md
 
 # Editor directories and files
 .vscode/*

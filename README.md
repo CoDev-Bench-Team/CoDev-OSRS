@@ -1,32 +1,47 @@
-# React + TypeScript + Vite
+# CoDev-OSRS — Office Supplies Request System
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Internal Codev MVP that replaces chat/email supply requests with a four-stage pipeline: **Check Inventory & Create Request → Review & Approve → Prepare & Release → Complete**.
 
-Currently, two official plugins are available:
+This repository is run as **AI-SDD / AI-DLC**: agents implement from markdown specs, not from chat memory.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Current state
 
-## React Compiler
+This repo is the **Vite + React + TypeScript + Tailwind SPA**. It will consume a REST JSON API (`specs/001-office-supplies-mvp/contracts/api.md`). The API’s language, framework, and database are **not chosen** and are not implemented here.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Follow `specs/001-office-supplies-mvp/tasks.md`.
 
-## Expanding the Oxlint configuration
+## Start here (humans and agents)
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+| Doc | Purpose |
+|-----|---------|
+| [CLAUDE.md](CLAUDE.md) | Agent entry: commands, hard rules, pointers |
+| [AGENTS.md](AGENTS.md) | Constitution (binding) |
+| [ARCHITECT.md](ARCHITECT.md) | System design (SPA + REST) |
+| [docs/ai-sdd.md](docs/ai-sdd.md) | Lifecycle and artifact map |
+| [docs/product.md](docs/product.md) | Problem, users, non-goals |
+| [docs/process-flow.md](docs/process-flow.md) | Status, inventory, emails |
+| [specs/001-office-supplies-mvp/spec.md](specs/001-office-supplies-mvp/spec.md) | Feature WHAT |
+| [specs/001-office-supplies-mvp/plan.md](specs/001-office-supplies-mvp/plan.md) | Feature HOW |
+| [specs/001-office-supplies-mvp/tasks.md](specs/001-office-supplies-mvp/tasks.md) | Implementation backlog |
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## SPA
+
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run build
+npm run lint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Set `VITE_API_ORIGIN` when an API host exists (see `quickstart.md`).
+
+## Stack
+
+- **This repo:** React 19 + TypeScript + Vite + Tailwind CSS 4
+- **Integration:** REST JSON under `/api`
+- **API runtime / datastore:** TBD
+- **QA (planned):** Playwright · HTTP contract tests · GitHub Actions
+
+## Roles
+
+**Employee** requests and confirms receipt · **Approver** accepts or rejects · **Supply Admin** encodes stock and fulfills · **System** (API) mutates inventory and sends email
