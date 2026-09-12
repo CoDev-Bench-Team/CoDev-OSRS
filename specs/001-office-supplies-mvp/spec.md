@@ -159,4 +159,19 @@ Resolved from the Linear brief and process diagram with MVP defaults (no blockin
 - Q: When does inventory move? → A: Decrement on submit; increment on reject; unchanged thereafter.
 - Q: Resubmit after reject? → A: New request, not reopen.
 - Q: Who can approve? → A: Any user with Approver role (small internal team).
-- Q: Auth for MVP? → A: Username/password (email + password) with seeded demo users; SSO later.
+- Q: Auth for MVP? → A: ~~Username/password (email + password) with seeded demo users; SSO later.~~ **Superseded 2026-09-12 — see Session 2026-09-12 below.**
+
+### Session 2026-09-12 — Amendment
+
+Raised by `specs/003-app-shell-routing/spec.md` (D4). Constitution I requires an instruction that contradicts a resolved clarification to be recorded as an amendment rather than applied silently.
+
+- Q: The design file's login screen offers Google sign-in only, with no credential fields. Does the MVP build email + password as previously clarified, or the screen as designed? → A: **The screen as designed.** Sign-in presents the Google control; the SPA delegates to a session boundary and implements no authentication mechanism of its own.
+
+**Scope of the amendment.** This changes what the *SPA* renders and nothing else:
+
+- The SPA implements no authentication mechanism. It renders the designed control and calls the session boundary for identity and role.
+- Whether the backend authenticates against Google, against seeded demo users, or against something else is a **backend decision**, settled when the REST contract publishes. Seeded demo users remain permitted behind that boundary under constitution IX.
+- `docs/product.md`'s "SSO / SAML / MFA" non-goal **still stands**, because this repository ships no SSO. If the backend later authenticates against Google for real, that non-goal must be revisited then, with an ADR.
+- FR-001 is unchanged: the system still authenticates users and exposes exactly one role per user.
+
+No constitution version bump is required — no principle changes.
