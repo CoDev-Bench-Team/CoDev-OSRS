@@ -6,6 +6,7 @@ const steps = [
   ['lint', 'npm', ['run', 'lint']],
   ['utilities + adherence', 'node', ['scripts/check-utilities.mjs']],
   ['fidelity (FR-005a)', 'node', ['scripts/compare-fidelity.mjs']],
+  ['pixels (FR-005a)', 'node', ['scripts/compare-pixels.mjs']],
   ['a11y + responsive', 'node', ['scripts/check-a11y-responsive.mjs']],
   ['build', 'npm', ['run', 'build']],
 ];

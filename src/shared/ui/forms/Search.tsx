@@ -11,14 +11,23 @@ export function Search({
     <div
       className={`flex h-control-height-lg items-center gap-10 overflow-hidden rounded-10 bg-surface-card px-16 ring-default text-ink-secondary transition-osrs focus-within:ring-brand ${className ?? ''}`}
     >
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true" className="shrink-0">
-        <circle cx="8.25" cy="8.25" r="6" stroke="currentColor" strokeWidth="1" />
-        <path d="M 12.5 12.5 L 15.75 15.75" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-      </svg>
+      {/* The source's exact path, not a redrawn magnifier: a 13.5x13.5 glyph
+          inset 2.25px inside an 18x18 box. A hand-drawn circle-and-handle
+          looks close at a glance and differs on every pixel. */}
+      <span className="relative block h-18 w-18 shrink-0" aria-hidden="true">
+        <svg
+          viewBox="0 0 13.5 13.5"
+          fill="none"
+          className="absolute"
+          style={{ left: 2.25, top: 2.25, width: 13.5, height: 13.5 }}
+        >
+          <path d="M 13.147 13.854 C 13.342 14.049 13.658 14.049 13.854 13.854 C 14.049 13.658 14.049 13.342 13.854 13.147 L 13.5 13.5 L 13.147 13.854 Z M 10.599 9.892 C 10.403 9.696 10.087 9.696 9.892 9.892 C 9.696 10.087 9.696 10.403 9.892 10.599 L 10.245 10.245 L 10.599 9.892 Z M 13.5 13.5 L 13.854 13.147 L 10.599 9.892 L 10.245 10.245 L 9.892 10.599 L 13.147 13.854 L 13.5 13.5 Z M 12 6 L 11.5 6 C 11.5 9.038 9.038 11.5 6 11.5 L 6 12 L 6 12.5 C 9.59 12.5 12.5 9.59 12.5 6 L 12 6 Z M 6 12 L 6 11.5 C 2.962 11.5 0.5 9.038 0.5 6 L 0 6 L -0.5 6 C -0.5 9.59 2.41 12.5 6 12.5 L 6 12 Z M 0 6 L 0.5 6 C 0.5 2.962 2.962 0.5 6 0.5 L 6 0 L 6 -0.5 C 2.41 -0.5 -0.5 2.41 -0.5 6 L 0 6 Z M 6 0 L 6 0.5 C 9.038 0.5 11.5 2.962 11.5 6 L 12 6 L 12.5 6 C 12.5 2.41 9.59 -0.5 6 -0.5 L 6 0 Z" fill="currentColor" fillRule="nonzero" />
+        </svg>
+      </span>
       <input
         type="search"
         placeholder={placeholder}
-        className="min-w-0 flex-1 border-none bg-transparent font-sans text-14 leading-tight text-ink-primary outline-none placeholder:text-ink-secondary"
+        className="min-w-0 flex-1 appearance-none border-none bg-transparent font-sans text-14 leading-tight text-ink-primary outline-none placeholder:text-ink-secondary [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
         {...rest}
       />
     </div>

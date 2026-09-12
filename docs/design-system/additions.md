@@ -52,6 +52,17 @@ Measured across 15 key pairings; 13 pass.
 
 Both are unchanged in the code.
 
+### 4.1b Search placeholder colour
+
+The source's `Search` leaves the placeholder unstyled, so it renders Chrome's
+user-agent default — `oklab(0 0 0 / 0.5)`, a translucent black that changes with
+the browser. That is a browser default, not a design decision.
+
+The port uses the design system's own `--text-secondary`. **This is a deviation
+from the source's rendering**, kept because a tokenised grey is deliberate where
+a UA default is not, and because the semantic alias exists for exactly this.
+Worth confirming with the designer, or specifying a placeholder colour in Figma.
+
 ### 4.2 The Google mark renders monochrome
 
 `GoogleIcon` carries four paths — the real mark is four-colour — but the source
@@ -67,8 +78,9 @@ Ported faithfully; **should be corrected at source**.
 2. Publish the eight promoted components as real Figma components.
 3. Fix the two contrast pairings in §4.1, or accept them explicitly.
 4. Restore the Google mark's four colours in §4.2.
-5. Adopt the token names in [token-map.md](token-map.md) as Figma Variables — the
+5. Confirm the search placeholder colour in §4.1b, or specify one in Figma.
+6. Adopt the token names in [token-map.md](token-map.md) as Figma Variables — the
    source defines only two, so the whole palette and type scale are currently
    raw values in frames.
-6. Design the gaps that block later work: the Supply Admin's prepare/release
+7. Design the gaps that block later work: the Supply Admin's prepare/release
    screen, the five notification emails, and loading / empty / error states.

@@ -44,8 +44,12 @@ export function SupplyCard({
       <img src={image ?? itemLaptop} alt="" className="h-[180px] w-full shrink-0 object-cover" />
       <div className="flex w-full flex-col items-start gap-12 p-18">
         <span className="line-clamp-1 type-eyebrow uppercase text-ink-secondary">{category}</span>
-        <div className="flex w-full items-start gap-12">
-          <span className="line-clamp-2 min-w-0 flex-1 type-card-title text-ink-primary">{name}</span>
+        {/* The pill sits immediately after the name, as the source draws it —
+            not pushed to the far edge. `flex-1` on the name would do that, so
+            the name only gets `min-w-0`, which lets it shrink and clamp when
+            long while the pill stays adjacent. */}
+        <div className="flex w-full items-center gap-12">
+          <span className="line-clamp-2 min-w-0 type-card-title text-ink-primary">{name}</span>
           <span className="shrink-0">
             <StatusPill availability={availability} />
           </span>
@@ -70,7 +74,9 @@ export function SupplyCard({
           <button
             type="button"
             onClick={onAction}
-            className="flex h-control-height-md flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-10 border-none bg-brand-primary px-18 type-ui-bold whitespace-nowrap text-brand-on-primary ring-brand transition-osrs hover:bg-osrs-red-550"
+            /* 304px is the source's width. Capped rather than fixed so the
+               button still shrinks below the design width (spec 002 D2). */
+            className="flex h-control-height-md w-full max-w-[304px] flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-10 border-none bg-brand-primary px-18 type-ui-bold whitespace-nowrap text-brand-on-primary ring-brand transition-osrs hover:bg-osrs-red-550"
           >
             {actionLabel}
           </button>

@@ -26,6 +26,7 @@ Chrome is driven over the DevTools Protocol through Node's built-in WebSocket
 | No raw hex | FR-003 | 0. 18 arbitrary values remain, all fixed geometry the source states but never tokenises |
 | Type safety | FR-007, SC-004 | `tsc -b` with `strict`; `RequestStatus` admits only the six legal states |
 | **Computed-style fidelity** | **FR-005a, SC-003** | **12 pairs, 168 properties, 0 differences** against the vendored source |
+| **Pixel fidelity** | **FR-005a, SC-003** | **12 pairs rendered and diffed, 0 failures.** Catches what computed styles cannot: a background image that failed to load, wrong icon path data, glyphs a pixel off |
 | Composite type roles | FR-001, FR-002 | all 13 render at their declared family, size and weight |
 | Self-hosted fonts | FR-004, SC-002 | 49 requests, all same-origin; all four faces resolve |
 | Keyboard + focus | FR-011, SC-006 | 38 elements reached by Tab, every one shows an indicator |
@@ -51,10 +52,41 @@ Worth recording, because each was invisible to review and to the build.
 | `#compare` did nothing on an already-open page. | Changing the hash fires `hashchange` without reloading; nothing listened, so React never re-rendered. |
 | The fidelity script reported PASS while comparing nothing. | It found 0 pairs and exited 0. It now fails unless it finds all 12. |
 
+## How the pixel gate decides
+
+A percentage on its own cannot tell antialiasing from a defect, so the gate
+classifies the differences instead of thresholding them. For every differing
+pixel it checks whether its neighbours also differ:
+
+- **Scattered** (few clustered neighbours) — edge antialiasing. Tolerated.
+- **Clustered into a solid region** — something actually renders differently.
+  Reported with the region's size and position, and the images are written to
+  `/tmp/osrs-pixels/` for inspection.
+
+Three pairs carry a **named, justified exception** in `compare-pixels.mjs`, so
+each is auditable rather than hidden behind a looser global threshold:
+
+| Pair | Diff | Why it is allowed |
+|------|------|-------------------|
+| Search | 9.8% | Placeholder colour. The source leaves it unstyled, so it renders Chrome's UA default `oklab(0 0 0 / .5)`; the port uses `--text-secondary`. A deliberate deviation, recorded in [additions.md](additions.md) §4.1b. |
+| SupplyCard | 2.0% | Image resampling. The source paints the photo as a CSS background, the port as an `<img>` — same file, same box, different scaler. |
+| ButtonWithIcon | 2.5% | Icon rasterisation. Path geometry matches to **0.02px**, measured; the two rasterise on different grids because the SVG viewports differ. |
+
+An unexplained difference still fails.
+
+## Bugs the pixel gate caught that computed styles missed
+
+| Bug | Why computed styles missed it |
+|-----|-------------------------------|
+| **The availability pill sat at the far right of the SupplyCard instead of beside the name.** Introduced while fixing the overflow clamps: `flex-1` on the title pushed the pill to the edge. | Every compared property matched — the pill's own styles were correct. Only its position in the row was wrong, and that is not a property of the pill. |
+| The "Add to Request List" button was 21px wider than the source's 304px. | Width was `flex-1`, so it was *computed* correctly for its own rules. |
+| The search icon was a hand-drawn circle-and-handle, not the source's 13.5×13.5 path. | An icon's path data is not a CSS property. |
+| The search input clipped its placeholder early — `type="search"` makes Chrome reserve room for a cancel decoration. | Font, size, weight and box all matched. |
+| The source components rendered broken-image icons, so two comparisons were meaningless. | The source builds asset paths relative to a bundle file that does not exist under the dev server; `vite.config.ts` now serves them in dev. |
+
 ## Still done by eye
 
-The gates cover measurable properties. They do not judge whether a component
-*looks* right — background images, icon path rendering, and optical alignment
-are not compared. Open the gallery beside
+Optical judgement — whether spacing *feels* right, whether a component reads
+correctly in a real composition — is not automated. Open the gallery beside
 `design-system/ui_kits/osrs-web/index.html` and the `guidelines/*.card.html`
 specimens at 1440px for that pass.
