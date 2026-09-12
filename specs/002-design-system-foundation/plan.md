@@ -257,6 +257,7 @@ Deleted: `src/App.css`, `src/index.css`, `src/assets/{hero.png,react.svg,vite.sv
 
 | Requirement | How it is checked |
 |-------------|-------------------|
+| FR-002 | The source's semantic aliases survive the port as first-class utilities: brand, surface, border and status keep their names under `--color-*`; the seven text colours keep their meaning under `--color-ink-*`. Screens reference intent (`bg-surface-card`) rather than palette entries (`bg-osrs-white`). |
 | FR-003 / SC-001 | Structural — cleared Tailwind namespaces make non-source values unexpressible. Backed by oxlint rules ported from the source's `_adherence.oxlintrc.json` (raw hex, raw `px`, non-DS font-family), scoped to `src/shared/ui/` and future feature code, excluding `src/styles/`. |
 | FR-005a / SC-003 | **Computed-style comparison, not screenshot comparison.** The vendored source's original `.jsx` components render alongside the ported `.tsx` in a gallery compare mode; a small harness reads `getComputedStyle` from both and reports any difference in `font-family`, `font-size`, `font-weight`, `line-height`, `color`, `background-color`, `padding`, `border-radius` and `box-shadow`. This catches the half-step weight and 11.5px errors a visual check misses. Results land in `docs/design-system/fidelity-checklist.md`. Needs no new dependency — both component sets already render in the app. Visual side-by-side at 1440px remains as a second pass for anything computed styles cannot express (background images, icon paths). |
 | FR-004 / SC-002 | Load the app with the network blocked to third-party hosts; confirm no request leaves the origin and that no fallback face renders. |
@@ -266,6 +267,8 @@ Deleted: `src/App.css`, `src/index.css`, `src/assets/{hero.png,react.svg,vite.sv
 | FR-016a | Gallery renders every affected component twice — realistic data and deliberately overlong data — and the designed height or width must be identical in both. |
 | FR-009 | Both `StatusPill` geometries appear side by side in the gallery's status section and are compared against the source's `status-vocabulary.card.html`. |
 | FR-011 / SC-006 | Keyboard walk of the gallery: every interactive element reachable with a visible focus indicator. |
+| FR-018 / SC-007 | One document, `docs/design-system/additions.md`, carries every addition — motion tokens, the seven renames, four interaction states, breakpoints, eight promotions, two redesigns, overflow rules, and the two AA contrast failures. Reviewed as a single list, not scattered across files. |
+| SC-008 | Exit criterion rather than a check: spec 001's UI tasks can begin when the gallery renders all 25 components and `additions.md` is complete, because every visual question is then either answered by a token or listed for the designer. |
 
 ### Contrast results (FR-011a), already measured
 

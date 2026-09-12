@@ -1,0 +1,85 @@
+/* OSRS custom utilities.
+
+   Two families of source token have no Tailwind namespace that fits:
+
+   1. The 13 composite type roles are CSS `font:` shorthands. Tailwind models
+      font-size, weight, line-height and family separately, so the source's
+      named roles would be lost. Each becomes a single class instead, keeping
+      `type-page-title` as one decision rather than four.
+
+   2. The 3 rings are inset box-shadows, not Tailwind rings. Keeping them as
+      shadows preserves the source's rule: shadow on structural containers,
+      ring on interactive inputs, border on data rows — and never a shadow and
+      a ring on the same element, except the primary button. */
+
+@utility type-body {
+  font: var(--type-body);
+}
+
+@utility type-caption {
+  font: var(--type-caption);
+}
+
+@utility type-card-title {
+  font: var(--type-card-title);
+}
+
+@utility type-display-hero {
+  font: var(--type-display-hero);
+}
+
+@utility type-eyebrow {
+  font: var(--type-eyebrow);
+}
+
+@utility type-meta {
+  font: var(--type-meta);
+}
+
+@utility type-metric {
+  font: var(--type-metric);
+}
+
+@utility type-page-title {
+  font: var(--type-page-title);
+}
+
+@utility type-pill {
+  font: var(--type-pill);
+}
+
+@utility type-section-title {
+  font: var(--type-section-title);
+}
+
+@utility type-subhead {
+  font: var(--type-subhead);
+}
+
+@utility type-ui {
+  font: var(--type-ui);
+}
+
+@utility type-ui-bold {
+  font: var(--type-ui-bold);
+}
+
+@utility ring-brand {
+  box-shadow: inset 0 0 0 1px var(--color-osrs-red-600);
+}
+
+@utility ring-default {
+  box-shadow: inset 0 0 0 1px var(--color-osrs-border);
+}
+
+@utility ring-ink {
+  box-shadow: inset 0 0 0 1px var(--color-osrs-black);
+}
+
+/* Motion. The source records durations and an easing curve but designs no
+   interaction, so these are applied by the state rules in index.css. */
+@utility transition-osrs {
+  transition-property: color, background-color, border-color, box-shadow, opacity;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--ease-osrs);
+}

@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+@import './fonts.css';
+@import './theme.css';
+@import './utilities.css';
+
+/* Interaction states. The design file records none — it is a static export —
+   so these follow the one hover variance it does contain: ink lightens, nothing
+   scales, nothing bounces (spec 002 FR-010, listed in additions.md).
+
+   The focus indicator is an addition too, and a required one: the source has no
+   focus state at all, which would leave the product unusable by keyboard. */
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-surface-page);
+    color: var(--color-ink-primary);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+
+  [disabled],
+  [aria-disabled='true'] {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}
