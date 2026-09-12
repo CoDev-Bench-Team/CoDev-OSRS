@@ -43,6 +43,7 @@ This repository is the **browser SPA**. All durable state, authorization, invent
 | Persistence | TBD (backend) | Not chosen here |
 | Auth | As defined by the backend contract | SPA stores whatever session the API returns |
 | Email | Emitted by the API on each defined transition | SPA does not send mail |
+| Routing | React Router v7 (declarative, client-only) | Durable addresses, guards, e2e targets ([ADR-0004](docs/adr/0004-client-routing.md)) |
 | E2E | Playwright against the SPA | QA automation requirement |
 | API tests | HTTP against the published contract | Stack-agnostic |
 | CI | GitHub Actions for the SPA | lint, typecheck, build |
@@ -56,13 +57,17 @@ CoDev-OSRS/
 ├── AGENTS.md
 ├── ARCHITECT.md
 ├── docs/
+│   └── design-system/         # token map, additions, content conventions
+├── design-system/             # vendored design-system source (read-only reference)
 ├── specs/
 ├── src/                       # React SPA
+│   ├── assets/                # fonts, brand, photography
 │   ├── features/
 │   │   ├── auth/
 │   │   ├── inventory/
 │   │   └── requests/
-│   └── shared/                # API client, types
+│   ├── styles/                # Tailwind @theme token layer
+│   └── shared/                # API client, types, ui/ component library
 ├── e2e/                       # Playwright (to be added)
 └── .github/workflows/
 ```
@@ -182,3 +187,4 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 | [0001](docs/adr/0001-spa-rest-api.md) | SPA in this repo; REST API owned by backend team |
 | [0002](docs/adr/0002-deduct-inventory-on-submit.md) | Deduct stock on submit, not on approve |
 | [0003](docs/adr/0003-three-role-model.md) | Approver and Supply Admin are separate roles |
+| [0004](docs/adr/0004-client-routing.md) | Client-side routing via React Router v7 |
