@@ -12,6 +12,7 @@ The product started as a Vite scaffold with no domain specs. These markdown file
 |-------|------|-----|
 | Agent entry | `CLAUDE.md` | Short, always-loaded rules and pointers |
 | Agent + law | `AGENTS.md` | Tool-agnostic instructions + constitution |
+| Agent skills | `.agents/skills/` | On-demand AI-SDD (and other) skills, any agent |
 | Architecture | `ARCHITECT.md` | System HOW: modules, state machine, NFRs |
 | Product | `docs/product.md` | Problem, users, MVP outcome, non-goals |
 | Domain flow | `docs/process-flow.md` | Status, inventory, emails |
@@ -29,11 +30,10 @@ The product started as a Vite scaffold with no domain specs. These markdown file
 ## Lifecycle (this repo)
 
 ```
-Specify  →  Clarify  →  Plan  →  Tasks  →  Implement  →  Verify  →  Review
-  spec.md     spec.md    plan.md  tasks.md    code         tests      PR
+create-spec → create-plan → create-tasks → execute → create-pr → code-review / code-reviewer
 ```
 
-Aligned skills: `/specify` or `/create-spec` → `/clarify` → `/plan-feature` or `/create-plan` → `/generate-tasks` or `/create-tasks` → `/implement` or `/execute` → `/run-checks` → `/review-changes`.
+Skills live in `.agents/skills/`. Supporting: `analyze` (inside execute), `run-checks` (after implement). Do not invent a REST contract; backend team owns HTTP.
 
 ## Rules of engagement
 

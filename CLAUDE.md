@@ -9,6 +9,7 @@ This file is the always-loaded entry point. Keep it short. Load the pointed file
 | File | When |
 |------|------|
 | @AGENTS.md | Every change — constitution is binding |
+| `.agents/skills/` | On-demand AI-SDD skills (any agent; not Claude-only) |
 | @ARCHITECT.md | Any feature, API, schema, or folder change |
 | @docs/product.md | Scope, roles, success criteria |
 | @docs/process-flow.md | Status machine, inventory rules, notifications |
@@ -21,13 +22,14 @@ Do not implement from chat alone. Spec → plan → tasks → code.
 
 ## AI-SDD Lifecycle
 
-1. **Specify** — update `specs/<nnn>-<slug>/spec.md` (WHAT, not HOW)
-2. **Clarify** — resolve ambiguities into the spec before planning
-3. **Plan** — `plan.md`, `data-model.md`, `research.md` (do not author a REST `api.md`)
-4. **Tasks** — dependency-ordered `tasks.md` with file paths
-5. **Implement** — one task (or parallel `[P]` group) at a time; mark `[x]`
-6. **Verify** — typecheck, lint, HTTP contract tests, Playwright against acceptance criteria
-7. **Review** — diff against spec + constitution, not preference
+1. **Specify** — `create-spec` → `specs/spec.md` (WHAT, not HOW)
+2. **Plan** — `create-plan` → `plan.md` (do not author a REST `api.md`)
+3. **Tasks** — `create-tasks` → `tasks.md`
+4. **Execute** — `execute` (organize `specs/<slug>/`, implement, `run-checks`)
+5. **PR** — `create-pr` (base `main`)
+6. **Review** — `code-review` and/or `code-reviewer`
+
+Skill files: `.agents/skills/`. See that folder’s README for the full pipeline.
 
 New work that is not in the active spec is out of scope until the spec is amended.
 
