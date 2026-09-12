@@ -43,10 +43,12 @@ export function SupplyCard({
     >
       <img src={image ?? itemLaptop} alt="" className="h-[180px] w-full shrink-0 object-cover" />
       <div className="flex w-full flex-col items-start gap-12 p-18">
-        <span className="type-eyebrow uppercase text-ink-secondary">{category}</span>
-        <div className="flex flex-wrap items-center gap-12">
-          <span className="type-card-title text-ink-primary line-clamp-2">{name}</span>
-          <StatusPill availability={availability} />
+        <span className="line-clamp-1 type-eyebrow uppercase text-ink-secondary">{category}</span>
+        <div className="flex w-full items-start gap-12">
+          <span className="line-clamp-2 min-w-0 flex-1 type-card-title text-ink-primary">{name}</span>
+          <span className="shrink-0">
+            <StatusPill availability={availability} />
+          </span>
         </div>
         <span className="font-sans text-11-5 font-bold leading-display text-ink-primary">{modelLabel}</span>
         <div className="flex h-control-height-lg w-full items-center justify-between overflow-hidden rounded-10 bg-surface-card px-16 ring-default">

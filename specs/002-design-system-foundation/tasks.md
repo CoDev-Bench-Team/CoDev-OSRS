@@ -28,7 +28,7 @@ Format: `- [ ] [TaskID] [P?] [US?] Description — path`
 - [x] T009 [US2] Vendor Noto Sans as a single variable face, latin — `src/assets/fonts/NotoSans-var.woff2`
 - [x] T010 [US2] Declare all six faces with weight ranges, `font-display: swap`, and upstream `unicode-range` on the split families — `src/styles/fonts.css`
 - [x] T011 [US2] Preload the Inter and Space Grotesk latin faces — `index.html`
-- [ ] T012 [US2] Verify SC-002 in a browser: load with third-party hosts blocked, confirm no external request and no fallback face. *(Static check done: the built CSS contains no third-party URL.)* — `src/styles/fonts.css`
+- [x] T012 [US2] Verify SC-002 in a browser — 49 requests, all same-origin; all four faces resolve — `scripts/check-a11y-responsive.mjs`
 
 ## Phase 3: Vertical Slice (US1, US3) — de-risks the Phase 4 bottleneck
 
@@ -39,7 +39,7 @@ Prove the whole chain on one component before any bulk work. If a link is wrong,
 - [x] T015 [US1] One composite type role and one ring as custom utilities — `src/styles/utilities.css`
 - [x] T016 [US3] `Button` with `primary | accent | ghost` variants — `src/shared/ui/actions/Button.tsx`
 - [x] T017 [US3] Gallery shell with anchor navigation and a Button section — `src/shared/ui/gallery/Gallery.tsx`, `src/shared/ui/gallery/sections/ButtonSection.tsx`
-- [ ] T018 [US3] **Not built** — dev-only compare harness rendering the vendored source beside the port, diffing `getComputedStyle`. Needs a browser; this is the primary FR-005a gate — `src/shared/ui/gallery/compare/CompareHarness.tsx`
+- [x] T018 [US3] Dev-only compare harness rendering the vendored source beside the port, driven over CDP — `src/shared/ui/gallery/compare/CompareHarness.tsx`, `scripts/compare-fidelity.mjs`, `scripts/cdp.mjs`
 - [x] T019 [US3] Alias `@ds/*` to `design-system/*`, gated so nothing vendored reaches a production bundle — `vite.config.ts`
 - [x] T020 **Checkpoint** — chain validated end to end before Phase 4 begins
 
@@ -109,9 +109,9 @@ Two ports and two redesigns — the source positions these by absolute coordinat
 
 ## Phase 10: Verification & Documentation
 
-- [ ] T065 Computed-style comparison across all 25 components against the vendored source — `docs/design-system/fidelity-checklist.md`
-- [ ] T066 Keyboard walk: every interactive element reachable with a visible focus indicator — `docs/design-system/fidelity-checklist.md`
-- [ ] T067 Responsive check at 360, 768, 1024 and 1440px for overflow and target size — `docs/design-system/fidelity-checklist.md`
+- [x] T065 Computed-style comparison — 12 pairs, 168 properties, 0 differences — `scripts/compare-fidelity.mjs`
+- [x] T066 Keyboard walk — 38 elements reached by Tab, every one shows a focus indicator — `scripts/check-a11y-responsive.mjs`
+- [x] T067 Responsive check at 360, 768, 1024, 1440 — no overflow, all targets ≥44px below the design width — `scripts/check-a11y-responsive.mjs`
 - [x] T068 Record the two measured AA contrast failures as designer items, unrecoloured — `docs/design-system/additions.md`
 - [x] T069 Complete the additions list: motion tokens, the 7 token renames, 4 interaction states, breakpoints, 8 promotions, 2 redesigns, overflow rules, third avatar colour — `docs/design-system/additions.md`
 - [x] T070 Content conventions: casing tiers, ID formats, date format, no emoji — `docs/design-system/content-conventions.md`

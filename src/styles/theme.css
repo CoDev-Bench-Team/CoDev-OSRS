@@ -203,22 +203,27 @@
 
 :root {
   /* Durations and composite type roles keep their source names.
+     Their VALUES, however, must use the SPA's token names, not the source's.
+     A dangling var() makes the whole `font:` shorthand invalid and the element
+     silently falls back to the inherited family — which is exactly what
+     happened when these still referenced `--weight-medium` instead of
+     `--font-weight-medium`: every display heading rendered in Inter.
      Tailwind models neither a duration namespace we need nor a `font:`
      shorthand, so these stay as custom properties and are consumed by the
      custom utilities in utilities.css. */
   --motion-fast: 120ms;
   --motion-base: 180ms;
-  --type-body: var(--weight-regular) var(--text-14)/1.5 var(--font-sans);
-  --type-caption: var(--weight-regular) var(--text-11)/100% var(--font-sans);
-  --type-card-title: var(--weight-bold) var(--text-17)/100% var(--font-sans);
-  --type-display-hero: var(--weight-bold) var(--text-128)/1.3 var(--font-display);
-  --type-eyebrow: var(--weight-bold) var(--text-11)/100% var(--font-sans);
-  --type-meta: var(--weight-regular) var(--text-12)/100% var(--font-sans);
-  --type-metric: var(--weight-medium) var(--text-28)/1.3 var(--font-display);
-  --type-page-title: var(--weight-medium) var(--text-32)/1.3 var(--font-display);
-  --type-pill: var(--weight-bold) var(--text-12)/100% var(--font-sans);
-  --type-section-title: var(--weight-medium) var(--text-19)/1.3 var(--font-display);
-  --type-subhead: var(--weight-bold) var(--text-15)/100% var(--font-sans);
-  --type-ui: var(--weight-regular) var(--text-13)/100% var(--font-sans);
-  --type-ui-bold: var(--weight-bold) var(--text-13)/100% var(--font-sans);
+  --type-body: var(--font-weight-regular) var(--text-14)/1.5 var(--font-sans);
+  --type-caption: var(--font-weight-regular) var(--text-11)/100% var(--font-sans);
+  --type-card-title: var(--font-weight-bold) var(--text-17)/100% var(--font-sans);
+  --type-display-hero: var(--font-weight-bold) var(--text-128)/1.3 var(--font-display);
+  --type-eyebrow: var(--font-weight-bold) var(--text-11)/100% var(--font-sans);
+  --type-meta: var(--font-weight-regular) var(--text-12)/100% var(--font-sans);
+  --type-metric: var(--font-weight-medium) var(--text-28)/1.3 var(--font-display);
+  --type-page-title: var(--font-weight-medium) var(--text-32)/1.3 var(--font-display);
+  --type-pill: var(--font-weight-bold) var(--text-12)/100% var(--font-sans);
+  --type-section-title: var(--font-weight-medium) var(--text-19)/1.3 var(--font-display);
+  --type-subhead: var(--font-weight-bold) var(--text-15)/100% var(--font-sans);
+  --type-ui: var(--font-weight-regular) var(--text-13)/100% var(--font-sans);
+  --type-ui-bold: var(--font-weight-bold) var(--text-13)/100% var(--font-sans);
 }

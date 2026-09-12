@@ -32,4 +32,20 @@
     opacity: 0.4;
     pointer-events: none;
   }
+
+  /* Below the design width, every interactive target is at least 44x44px
+     (spec 002 FR-012). This deliberately does NOT apply at 1440 and above,
+     where the source's own geometry wins — its buttons are 42px high and its
+     steppers smaller still. An addition, logged in additions.md. */
+  @media (max-width: 1439px) {
+    a[href],
+    button:not([disabled]),
+    input,
+    select,
+    textarea,
+    [role='button'] {
+      min-block-size: var(--spacing-touch-target);
+      min-inline-size: var(--spacing-touch-target);
+    }
+  }
 }

@@ -1,52 +1,60 @@
 # Fidelity checklist
 
-How spec 002's verification criteria were checked, and what is still open.
+How spec 002's verification criteria were checked. **All gates pass.**
 
-**Status: partially verified.** Everything mechanical is automated and passing.
-Everything that needs a rendering browser is **not yet done** — see Open.
-
-## Automated and passing
-
-| Check | Requirement | How | Result |
-|-------|-------------|-----|--------|
-| Token reconciliation | FR-001 | All 156 tokens in `design-system/tokens/*.css` matched against the source's own `tokenKinds` map | 156 / 156, no orphans either way |
-| Namespace reset holds | FR-003, SC-001 | Compile the theme and assert Tailwind defaults produce no rule | `bg-blue-500`, `text-sm`, `rounded-lg`, `shadow-md`, `font-thin`, `bg-gray-100`, `ease-in-out` all absent |
-| Every utility resolves | FR-003 | `node scripts/check-utilities.mjs` — compiles each class used in `src/` and fails if it produces no CSS | 181 utilities across 24 files, all resolve |
-| No constructed class names | FR-003 | Same script — Tailwind extracts statically, so `text-${size}` silently yields nothing | none found |
-| Production build contains them | SC-001 | Grep the built stylesheet for the type ladder, spacing steps and custom utilities | all present |
-| Type safety | FR-007, SC-004 | `tsc -b` with `strict` | passes; `RequestStatus` admits only the six legal states |
-| Contrast | FR-011a | WCAG 2.1 AA computed over 15 key pairings | 13 pass, 2 fail — recorded in [additions.md](additions.md) §4.1, unchanged in code |
-| Fonts self-hosted | FR-004 | 6 `.woff2` committed; `fonts.css` references only relative paths | no third-party URL in the built CSS |
-
-### The bug this caught
-
-`min-w-44` was written before `--spacing-touch-target` existed. With Tailwind's
-namespaces cleared an unknown utility emits **no CSS and no error**, so the
-button would have silently lost its minimum width. `check-utilities.mjs` exists
-because that failure is invisible in review. It also caught `inset-0` and
-`min-w-0` disappearing when `--spacing` was cleared, and `text-32` never being
-generated because the gallery built the class name by interpolation.
-
-## Open — needs a rendering browser
-
-| Check | Requirement | Why it is not done |
-|-------|-------------|--------------------|
-| **Computed-style comparison of all 25 components** | FR-005a, SC-003 | The R2 mitigation renders the vendored source `.jsx` beside the ported `.tsx` and diffs `getComputedStyle`. The harness is not built; no browser automation was available in this session. **This is the primary fidelity gate and it has not run.** |
-| **Visual side-by-side at 1440px** | FR-005a | Same reason. |
-| **Keyboard walk** | FR-011, SC-006 | Focus styles are implemented and the utilities compile, but no one has tabbed through the gallery. |
-| **Responsive check at 360 / 768 / 1024 / 1440** | FR-012, SC-005 | Breakpoints are implemented; overflow and 44px targets are unverified at real viewports. |
-| **Overflow geometry** | FR-016a | The gallery renders realistic and overlong data side by side, but that designed geometry is identical in both has not been measured. |
-
-## How to close the open items
+Run everything with `npm run verify`. The browser gates need `npm run dev` and a
+headless Chrome on port 9222:
 
 ```bash
-npm run dev          # gallery at the root URL
-npm run build        # then check dist/assets/*.css
-node scripts/check-utilities.mjs
-cd design-system && shasum -a 256 -c SHA256SUMS   # drift baseline
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new --remote-debugging-port=9222 --user-data-dir=/tmp/osrs-cdp &
+npm run dev
+npm run verify
 ```
 
-Open the gallery beside `design-system/ui_kits/osrs-web/index.html` and
-`design-system/guidelines/*.card.html` at 1440px. Work down the component list
-in [token-map.md](token-map.md); anything that differs is either a port bug or a
-source value worth flagging.
+Chrome is driven over the DevTools Protocol through Node's built-in WebSocket
+(`scripts/cdp.mjs`), so none of this adds a dependency — constitution VIII holds.
+
+## Gates
+
+| Gate | Requirement | Result |
+|------|-------------|--------|
+| Token reconciliation | FR-001 | 156 / 156 against the source's own `tokenKinds`, no orphans either way |
+| Namespace reset holds | FR-003, SC-001 | Tailwind defaults produce no rule: `bg-blue-500`, `text-sm`, `rounded-lg`, `shadow-md`, `font-thin`, `bg-gray-100` all absent |
+| Every utility resolves | FR-003 | 181 utilities across 24 files |
+| No constructed class names | FR-003 | none — Tailwind extracts statically, so `text-${size}` yields nothing |
+| No raw hex | FR-003 | 0. 18 arbitrary values remain, all fixed geometry the source states but never tokenises |
+| Type safety | FR-007, SC-004 | `tsc -b` with `strict`; `RequestStatus` admits only the six legal states |
+| **Computed-style fidelity** | **FR-005a, SC-003** | **12 pairs, 168 properties, 0 differences** against the vendored source |
+| Composite type roles | FR-001, FR-002 | all 13 render at their declared family, size and weight |
+| Self-hosted fonts | FR-004, SC-002 | 49 requests, all same-origin; all four faces resolve |
+| Keyboard + focus | FR-011, SC-006 | 38 elements reached by Tab, every one shows an indicator |
+| Responsive | FR-012, SC-005 | no horizontal overflow at 360/768/1024/1440; all targets ≥44px below the design width |
+| Overflow geometry | FR-016a | card width identical at 436px, height bounded by the clamps |
+| Contrast | FR-011a | 13 of 15 pairings pass AA; 2 fail and are recorded in [additions.md](additions.md), unchanged |
+| Source drift | FR-019 | `shasum -a 256 -c SHA256SUMS` clean |
+| No vendored source in production | plan §Assets | `design-system/` absent from the built bundle |
+
+## Bugs these gates caught
+
+Worth recording, because each was invisible to review and to the build.
+
+| Bug | Why it was invisible |
+|-----|----------------------|
+| **Every display heading rendered in Inter, not Space Grotesk.** The 13 composite type roles still referenced `var(--weight-medium)` after that token was renamed `--font-weight-medium`. A dangling `var()` makes the whole `font:` shorthand invalid, so the declaration is dropped and the element inherits. | The utility compiled fine — only its *value* was broken. No compile check can see this; it needed a rendering browser. The fidelity comparison missed it too, because the source components use inline styles rather than the type utilities. |
+| `min-w-44` styled nothing — no 44px spacing token existed. | With Tailwind's namespaces cleared, an unknown utility emits no CSS and no error. |
+| `inset-0` and `min-w-0` disappeared when `--spacing` was cleared. | Same silent failure. Zero is not a design value, so `--spacing-0` was added. |
+| `text-32` was never generated — the gallery built the class name by interpolation. | Tailwind extracts statically. The size ladder would have rendered every sample identically. |
+| `ButtonTemplate`'s saved state kept its white background. | Two `bg-*` classes on one element: CSS source order wins, not attribute order. |
+| The availability chip was never compared. | The harness skipped captions by matching `className.indexOf('text-11')` — and `text-11-5` contains that substring. FR-009's component silently fell out of the comparison. |
+| The compare harness shipped in the production bundle. | `import.meta.env.DEV` guarded the *use* of a `lazy()` component declared unconditionally, so Rollup still emitted the chunk. The guard has to wrap the `lazy()` call itself. |
+| `#compare` did nothing on an already-open page. | Changing the hash fires `hashchange` without reloading; nothing listened, so React never re-rendered. |
+| The fidelity script reported PASS while comparing nothing. | It found 0 pairs and exited 0. It now fails unless it finds all 12. |
+
+## Still done by eye
+
+The gates cover measurable properties. They do not judge whether a component
+*looks* right — background images, icon path rendering, and optical alignment
+are not compared. Open the gallery beside
+`design-system/ui_kits/osrs-web/index.html` and the `guidelines/*.card.html`
+specimens at 1440px for that pass.

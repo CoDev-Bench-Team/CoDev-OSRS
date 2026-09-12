@@ -25,7 +25,7 @@ export function ButtonTemplate({
     <button
       type="button"
       disabled={saved}
-      className={`inline-flex w-fit cursor-pointer items-center justify-center gap-8 overflow-hidden rounded-8 border-none bg-white px-24 py-12 transition-osrs ${saved ? 'bg-osrs-template-surface opacity-40' : ''} ${className ?? ''}`}
+      className={`inline-flex w-fit cursor-pointer items-center justify-center gap-8 overflow-hidden rounded-8 border-none px-24 py-12 transition-osrs ${saved ? 'bg-osrs-template-surface opacity-40' : 'bg-white'} ${className ?? ''}`}
       style={{ boxShadow: 'inset 0 0 0 1px var(--color-osrs-template-purple)' }}
     >
       <span className="flex w-22 shrink-0 items-center text-osrs-template-purple">
