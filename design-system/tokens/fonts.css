@@ -1,0 +1,5 @@
+/* OSRS webfonts. The .fig ships no font binaries, so both families load from
+   Google Fonts at the exact weights the source uses (Inter 400/500/600/700/800,
+   Space Grotesk 400/500/700). Roboto + Noto Sans are used only by the imported
+   Google Sign-in / template-button families. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&family=Roboto:wght@400;500&family=Noto+Sans:wght@500;700&display=swap');

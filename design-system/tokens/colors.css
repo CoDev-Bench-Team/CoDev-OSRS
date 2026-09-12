@@ -1,0 +1,33 @@
+:root{
+/* Brand red — the single accent the whole product is built on */
+--osrs-red-700:rgb(200,30,30);--osrs-red-600:rgb(198,40,40);--osrs-red-550:rgb(210,58,58);--osrs-red-500:rgb(204,47,74);--osrs-red-50:rgb(255,241,240);
+/* Ink + neutrals */
+--osrs-black:rgb(0,0,0);--osrs-ink-900:rgb(23,32,51);--osrs-ink-800:rgb(27,29,41);--osrs-ink-700:rgb(75,80,99);--osrs-gray-500:rgb(102,112,133);--osrs-gray-400:rgb(138,143,156);--osrs-stone-900:rgb(26,25,25);--osrs-stone-600:rgb(107,106,102);--osrs-white:rgb(255,255,255);
+/* Surfaces + lines */
+--osrs-canvas:rgb(250,250,249);--osrs-surface-table-header:rgb(240,242,245);--osrs-surface-subtle:rgb(246,247,249);--osrs-border:rgb(227,230,236);--osrs-border-warm:rgb(231,230,226);
+/* Semantic — green */
+--osrs-green-700:rgb(22,121,74);--osrs-green-600:rgb(46,126,71);--osrs-green-800:rgb(22,101,0);--osrs-green-avatar:rgb(21,101,53);--osrs-green-50:rgb(234,248,240);--osrs-green-tint:rgba(46,126,71,0.1);
+/* Semantic — amber */
+--osrs-amber-700:rgb(161,92,0);--osrs-amber-50:rgb(255,245,222);
+/* Semantic — blue */
+--osrs-blue-700:rgb(35,94,167);--osrs-blue-600:rgb(45,95,163);--osrs-blue-50:rgb(237,245,255);--osrs-blue-tint:rgba(45,95,163,0.1);
+/* Danger tint used by unavailable pills */
+--osrs-red-tint:rgba(200,30,30,0.1);
+/* Avatar fills seen in the mockups */
+--osrs-avatar-orange:rgb(244,129,13);--osrs-avatar-green:rgb(21,101,53);
+/* Imported third-party families (Google sign-in, template button) */
+--osrs-google-blue:rgb(66,133,244);--osrs-google-red:rgb(234,67,53);--osrs-google-gray:rgb(128,134,139);--osrs-template-purple:rgb(105,77,117);--osrs-template-ink:rgb(73,76,80);--osrs-template-muted:rgb(111,121,133);--osrs-template-surface:rgb(250,252,254);
+
+/* ── Semantic aliases ── */
+--brand-primary:var(--osrs-red-600);--brand-primary-alt:var(--osrs-red-500);--brand-on-primary:var(--osrs-white);
+--text-primary:var(--osrs-black);--text-heading:var(--osrs-black);--text-strong:var(--osrs-ink-900);--text-body:var(--osrs-ink-700);--text-secondary:var(--osrs-gray-500);--text-muted:var(--osrs-gray-400);--text-link:var(--osrs-red-600);
+--surface-page:var(--osrs-canvas);--surface-card:var(--osrs-white);--surface-bar:var(--osrs-white);--surface-table-header:var(--osrs-surface-table-header);--surface-stepper:var(--osrs-canvas);
+--border-default:var(--osrs-border);--border-strong:var(--osrs-black);
+--backdrop-fill:rgba(0,0,0,0.5);
+--status-pending-bg:var(--osrs-amber-50);--status-pending-fg:var(--osrs-amber-700);
+--status-ready-bg:var(--osrs-green-50);--status-ready-fg:var(--osrs-green-700);
+--status-available-bg:var(--osrs-green-tint);--status-available-fg:var(--osrs-green-600);
+--status-unavailable-bg:var(--osrs-red-tint);--status-unavailable-fg:var(--osrs-red-700);
+--status-rejected-bg:var(--osrs-red-50);--status-rejected-fg:var(--osrs-red-600);
+--status-info-bg:var(--osrs-blue-tint);--status-info-fg:var(--osrs-blue-600);
+}
