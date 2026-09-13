@@ -2,7 +2,7 @@
 
 Internal **Office Supplies Request System** for Codev. Dev and QA are delivering a 4-week MVP: a centralized request pipeline with live inventory, role-based review, and email notifications.
 
-Agents MUST follow the constitution below. Product intent lives in `docs/product.md`. System shape lives in `ARCHITECT.md`. The active feature spec lives in `specs/001-office-supplies-mvp/`.
+Agents MUST follow the constitution below. Product intent lives in `docs/product.md`. System shape lives in `ARCHITECT.md`. The active feature spec lives in `specs/001-office-supplies-mvp/`. On-demand skills (AI-SDD and others) live in `.agents/skills/` so any coding agent can load them.
 
 ## Constitution
 

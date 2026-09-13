@@ -8,6 +8,7 @@ alwaysApply: true
 Read `CLAUDE.md` and `AGENTS.md` before changing product behavior.
 
 - Source of truth: `specs/001-office-supplies-mvp/` (spec → plan → tasks).
+- On-demand skills: `.agents/skills/` (tool-agnostic; not `.claude/skills/`).
 - Architecture: `ARCHITECT.md`. Domain flow: `docs/process-flow.md`.
 - Three roles only: Employee, Approver, Supply Admin. No combined Admin.
 - Inventory: decrement on submit, restore on reject, never negative.
