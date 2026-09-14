@@ -24,7 +24,7 @@ const ALLOWED = {
   },
   SupplyCard: {
     max: 3,
-    why: 'image resampling: the source paints the photo as a CSS background, the port as an <img>. Same file, same box, different scaler. Plus the fixed three-digit quantity slot: the stepper is 94px wide instead of the source\'s 74 drawn around a lone "1", so the primary button is 294px instead of 304. Logged in additions.md.',
+    why: 'image resampling: the source paints the photo as a CSS background, the port as an <img>. Same file, same box, different scaler. Plus the stepper rework: a fixed three-digit quantity slot, 22px square sign buttons with the glyph optically centred, U+2212 for the decrement and a 4px gap — 82x26 against the source\'s 74x26 drawn around a lone "1". The primary button keeps its 304px. Logged in additions.md.',
   },
   ButtonWithIcon: {
     max: 3,

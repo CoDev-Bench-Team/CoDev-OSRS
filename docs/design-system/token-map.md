@@ -44,13 +44,17 @@ source name could not survive the port intact.
 
 ## Additions
 
-Two tokens exist that the source does not define. Both are recorded in
+Six tokens exist that the source does not define. All are recorded in
 `additions.md`.
 
 | Token | Value | Why |
 |-------|-------|-----|
 | `--spacing-0` | `0px` | Not a design value. `inset-0`, `min-w-0` and every zero-length utility derive from the spacing scale, and clearing Tailwind's default removed them. |
 | `--spacing-touch-target` | `44px` | The minimum touch target below the design width (spec 002 FR-012). The source has no mobile frames. |
+| `--color-osrs-pink-500` | `rgb(239,93,168)` | The "For Delivery" ink. No pink exists anywhere in the source palette; specified by the project owner, 2026-09-14 (additions.md §2b). |
+| `--color-osrs-pink-tint` | `rgba(239,93,168,0.1)` | Its 10% fill, following the `--osrs-*-tint` convention the source already uses for green and red. |
+| `--color-status-delivery-bg` / `-fg` | the pink pair | Semantic alias for the delivery handover label. |
+| `--color-status-pickup-bg` / `-fg` | `var(--color-osrs-blue-50)` / `var(--color-osrs-blue-700)` | Semantic alias only — **both values are source primitives**, unchanged. The source defines the blues but no component uses this pairing. |
 
 ## Every token
 

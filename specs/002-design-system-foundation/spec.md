@@ -237,6 +237,7 @@ Constitution I requires an instruction that contradicts a resolved clarification
 - `RequestStatus` is still the six legal states of constitution IV. "For Delivery" is not a state, is not reachable by any transition, and cannot be stored.
 - The two labels are selected by a `handover` prop (`'pickup' | 'delivery'`) on a `Released` pill, replacing the earlier boolean `pickupLabel`. Omitting it renders `Released`.
 - FR-008 is unchanged: a presentational label MAY differ from the state name but MUST NOT introduce a state the machine cannot produce.
+- Each label carries its own colour pair rather than the green "ready" tone: pickup `#235EA7` on `#EDF5FF` (both existing source primitives), delivery `#EF5DA8` on that pink at 10% (new tokens). Specified by the project owner, 2026-09-14. This is the first colour outside the amber / green / red status vocabulary, and the delivery pair measures 2.77 against a 4.5 threshold — both are recorded for designer ratification in `docs/design-system/additions.md` §2b, per FR-011a.
 - `docs/process-flow.md` is unchanged — no delivery transition or notification is defined. If delivery ever becomes a real fulfillment mode, that is a spec-001 change with its own status and email.
 
 No constitution version bump is required — no principle changes.

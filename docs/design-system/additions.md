@@ -21,18 +21,56 @@ Grouped by how much judgement each required.
 | Addition | What was decided | Basis |
 |----------|------------------|-------|
 | **Hover** | Ink or fill lightens one step, 120ms, eased. No scale, no bounce, no shadow growth. | The one hover variance the file records: `ButtonWithIcon` lightens ink from `rgb(73,76,80)` to `rgb(111,121,133)`. |
+| **Disabled** | Two states, deliberately distinct. **Hard** (asked for explicitly): 40% opacity, out of the tab order. **Soft** (nothing to choose between): equally inert and out of the tab order, but the value keeps full contrast and only the affordance is muted. | Hard follows the source's one precedent — `ButtonTemplate`'s "saved" state at 40% opacity. Soft exists because a select with one option is still *showing* the user something: fading it to 40% would hide the very thing the control exists to display. Measured at 21:1 for the value against 4.5:1 required. |
 | **Focus-visible** | 2px brand-red outline at 2px offset, never suppressed. | Nothing in the source. Without it the product is unusable by keyboard. |
 | **Disabled** | 40% opacity, pointer events off. | The source's one precedent: `ButtonTemplate`'s "saved" state sits at 40% opacity. |
 | **Motion tokens** | `--motion-fast` 120ms, `--motion-base` 180ms, `--ease-osrs`. | Shipped in the design system's own token files as a flagged addition. |
 | **Text overflow** | Identifiers and status never clamp. Names clamp to 1 line, card titles to 2, rejection reason and purpose to 3. Designed geometry always wins. | No source designs a long string. Rejection reason stays readable because constitution IV makes it mandatory. |
-| **Fixed quantity slot** (`SupplyCard` stepper) | The number sits in a slot fixed at three tabular digits (`min-w-[3ch] tabular-nums`), so 1 → 10 → 100 moves nothing; it grows only past 999. At 1440 the stepper is therefore 94px wide, not the source's 74, and the primary button gives up 10px (294, not 304). | Requested by the project owner, 2026-09-14: the source draws only "1" at natural width, so the stepper widened and the button shrank with every added digit. Stock bounds a request, so three digits cover the range. Recorded as a named exception in `compare-pixels.mjs`. |
+| **Fixed quantity slot** (`SupplyCard` stepper) | The number sits in a slot fixed at three tabular digits (`min-w-[3ch] tabular-nums`), so 1 → 10 → 100 moves nothing; it grows only past 999. | Requested by the project owner, 2026-09-14: the source draws only "1" at natural width, so the stepper widened and the button shrank with every added digit. Stock bounds a request, so three digits cover the range. Recorded as a named exception in `compare-pixels.mjs`. |
+| **Stepper signs centred and paired** (`SupplyCard`) | The `-` / `+` buttons are 22px squares, not the source's glyph-plus-padding boxes (22.5 and 25.4 wide). Two pixels of bottom padding lift the sign to the optical centre: Inter puts the baseline at 16.06px in a 22px box and the signs' ink centres 4.04px above it, so an unpadded centred line box paints them 1px low. The decrement is the minus sign U+2212, which matches `+` in width (9.42px) and axis; the source's hyphen is a 6.5px dash on the x-height axis. Gap between sign and number is 4px, not 8, because the three-digit slot already supplies slack. Net: stepper 82×26 at 1440 against the source's 74×26; the primary button keeps its 304px. | Requested by the project owner, 2026-09-14: the signs read as off-centre and the number as over-spaced. Every figure above was measured with canvas `measureText`, not judged by eye. Recorded as a named text exception in `compare-fidelity.mjs` and in the `SupplyCard` pixel allowance. |
+
+## 2b. The two handover labels on `Released`
+
+A `Released` pill can read "Ready for Pickup" or "For Delivery" instead of
+`Released`. Both are presentational only — the request is `Released` either way,
+and `RequestStatus` still admits nothing but the six legal states (spec 002 D5,
+amended 2026-09-14). Each label carries its own colour pair rather than the
+green "ready" tone, so the handover mode is readable at a glance.
+
+| Label | Ink | Fill | Provenance |
+|-------|-----|------|------------|
+| Ready for Pickup | `#235EA7` — `--osrs-blue-700` | `#EDF5FF` — `--osrs-blue-50` | **Both are source primitives**, used unchanged. The source defines them but pairs them in no component. |
+| For Delivery | `#EF5DA8` — new `--osrs-pink-500` | the same pink at 10% — new `--osrs-pink-tint` | **Not in the source.** The palette has no pink at all. Specified by the project owner, 2026-09-14. |
+
+**This is the first colour outside the amber / green / red status vocabulary.**
+That vocabulary is stated in the gallery as fixed: amber waits on a human, green
+is moving or done, red is stopped. The handover labels step outside it on
+purpose — they describe *how items reach the employee*, not where the request
+sits — but the rule now has an exception and the designer should ratify both the
+exception and the pink.
+
+### Contrast
+
+Measured the same way as §4.1, at the pill's own 12px bold, on the surfaces the
+pill actually sits on. 12px bold is not "large text" under WCAG 2.1, so the
+threshold is 4.5.
+
+| Pairing | Ratio | Needs | Note |
+|---------|-------|-------|------|
+| `#235EA7` on `#EDF5FF` | **5.91** | 4.5 | Passes. |
+| `#EF5DA8` on its own 10% tint over white | **2.77** | 4.5 | **Fails.** On plain white it is 3.09 — still short. |
+
+Reported, not changed, per FR-011a. The ratio is a property of the specified
+pink itself: no fill makes it pass at 12px, so clearing 4.5 needs a darker ink
+(around `#B02A6E` at this fill). Flagged for the designer alongside the two
+source failures in §4.1.
 
 ## 3. Invented layout — the largest judgement calls
 
 | Addition | What was decided |
 |----------|------------------|
 | **Responsive breakpoints** | Exact source geometry at ≥1440. Fluid 768–1439. Single column below 768. The source has only the 1440 frame, so every breakpoint here is invented. |
-| **44px minimum touch target** | Below the design width. `--spacing-touch-target`. Applied as a minimum box size on links, buttons and fields. The one control the source draws smaller than 44px — the stepper's 22px `-` / `+` — is exempt from the box rule and meets the minimum with an invisible, centred 44px pseudo-element instead (`hit-area` in `utilities.css`), so the stepper keeps its 73×26 geometry at every width. |
+| **44px minimum touch target** | Below the design width. `--spacing-touch-target`. Applied as a minimum box size on links, buttons and fields. The one control the source draws smaller than 44px — the stepper's 22px `-` / `+` — is exempt from the box rule and meets the minimum with an invisible, centred 44px pseudo-element instead (`hit-area` in `utilities.css`), so the stepper keeps its 1440 geometry at every width. |
 | **`TopBar` redesign** | The source positions it absolutely — logo (32,22), nav x=618, account right:64. Converted to flow layout with a centred nav that wraps below `md`. Preserved exactly: 87px height, white surface, hairline ring, 32px gutter, brand red on the current item, 31px divider. |
 | **`PageHeader` redesign** | Source places it at (32,121) absolutely. Now a flow block with the same 32/1.3 title, 8px gap and 14/1.5 subtitle. |
 | **8 promotions** | `TopBar`, `Avatar`, `PageHeader`, `SummaryCard`, `Button`, `TableCard`, `TableHead`, `SectionTitle` were drawn as frames inside the UI kit, not published as components. They are first-class components here. **Worth publishing in Figma** so future exports stay in sync. |

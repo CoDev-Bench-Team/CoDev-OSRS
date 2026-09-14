@@ -174,6 +174,50 @@ else if (geo[0].w !== geo[1].w) fail(`card width changes with content: ${geo[0].
 else if (Math.abs(geo[0].h - geo[1].h) > TITLE_LINE) fail(`card height grew ${Math.abs(geo[0].h - geo[1].h)}px with overlong content — more than the one extra title line the clamps allow`);
 else pass(`width identical (${geo[0].w}px) and height bounded by the clamps (${geo[0].h} vs ${geo[1].h})`);
 
+// ---- Select: two kinds of unavailable ----
+// The point of the soft state is that the value stays readable while the
+// affordance does not. If it ever collapses into the hard state, the single
+// option — the only thing the control exists to show — becomes unreadable.
+console.log('\nSelect disabled states: soft stays legible, hard does not (FR-010)');
+await cdp.setViewport(1440, 1000);
+await cdp.goto('http://localhost:5173/');
+await cdp.evaluate(() => document.querySelector('#forms').scrollIntoView({ block: 'start' }));
+await new Promise((r) => setTimeout(r, 300));
+const selects = await cdp.evaluate(() => {
+  const lum = (c) => {
+    const [r, g, b] = c.match(/\d+/g).map(Number).map((v) => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => {
+    const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+    return (x + 0.05) / (y + 0.05);
+  };
+  return [...document.querySelectorAll('#forms [role=combobox]')].map((t) => ({
+    mode: t.dataset.disabled ?? 'none',
+    disabled: t.disabled,
+    opacity: Number(getComputedStyle(t).opacity),
+    valueContrast: ratio(getComputedStyle(t.querySelector('span')).color, getComputedStyle(t).backgroundColor),
+    chevron: getComputedStyle(t.querySelector('svg')).color,
+  }));
+});
+const byMode = Object.fromEntries(selects.map((s) => [s.mode, s]));
+if (!byMode.none || !byMode.soft || !byMode.hard)
+  fail(`expected all three select states in the gallery, found: ${selects.map((s) => s.mode).join(', ')}`);
+else {
+  byMode.none.disabled ? fail('the enabled select reports disabled') : pass('enabled: interactive and in the tab order');
+  if (!byMode.soft.disabled) fail('soft-disabled select is still interactive');
+  else if (byMode.soft.opacity !== 1) fail(`soft-disabled select is faded (opacity ${byMode.soft.opacity})`);
+  else if (byMode.soft.valueContrast < 4.5) fail(`soft-disabled value fails AA (${byMode.soft.valueContrast.toFixed(2)}:1)`);
+  else if (byMode.soft.chevron === byMode.none.chevron) fail('soft-disabled chevron is not muted — it matches the enabled one');
+  else pass(`soft: inert, value at ${byMode.soft.valueContrast.toFixed(0)}:1, chevron muted to ${byMode.soft.chevron}`);
+  if (!byMode.hard.disabled) fail('explicitly disabled select is still interactive');
+  else if (byMode.hard.opacity > 0.5) fail(`explicitly disabled select is not faded (opacity ${byMode.hard.opacity})`);
+  else pass(`hard: inert and faded to ${byMode.hard.opacity}`);
+}
+
 // ---- Overlay layering ----
 // A popover must sit above a dialog so a select inside one is usable, which
 // means ordering alone cannot keep a popover left open elsewhere off a new

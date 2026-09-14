@@ -41,12 +41,21 @@ export function SupplyCard({
   className?: string;
 }) {
   const step = (d: number) => onQuantityChange?.(Math.max(1, quantity + d));
-  /* `hit-area`: the source draws these as 22px squares. Below the design width
-     the global 44px touch-target rule would grow the box and the stepper with
-     it (73x26 became 113x48), so the 44px is supplied by an invisible
-     pseudo-element instead and the drawn geometry holds at every width. */
+  /* The source pads the glyph (4px 8px), which makes the button as wide as
+     its character: 22.5px around "-" and 25.4px around "+". Both are fixed
+     22px squares here so the pair reads as symmetric.
+
+     `pb-2`: Inter's ascender/descender split puts the baseline at 16.06px in
+     a 22px box, and the sign glyphs' ink centres 4.04px above the baseline,
+     so a centred line box paints them 1px low. Two pixels of bottom padding
+     lift the line box by one. Measured, not eyeballed.
+
+     `hit-area`: below the design width the global 44px touch-target rule
+     would grow the box and the stepper with it (73x26 became 113x48), so the
+     44px is supplied by an invisible pseudo-element instead and the drawn
+     geometry holds at every width. */
   const stepBtn =
-    'hit-area cursor-pointer rounded-4 border-none bg-transparent px-8 py-4 font-sans text-14 font-semibold leading-tight text-osrs-stone-600 transition-osrs hover:text-osrs-stone-900';
+    'hit-area flex size-22 cursor-pointer items-center justify-center rounded-4 border-none bg-transparent p-0 pb-2 font-sans text-14 font-semibold leading-tight text-osrs-stone-600 transition-osrs hover:text-osrs-stone-900';
 
   return (
     <div
@@ -77,9 +86,15 @@ export function SupplyCard({
           onChange={(m) => onModelChange?.(m)}
         />
         <div className="flex w-full flex-wrap items-center justify-between gap-12">
-          <div className="flex items-center gap-8 rounded-4 bg-surface-stepper p-2">
+          {/* gap-4, not the source's 8: with a three-digit slot the number
+              already has slack either side, and 8 on top of it read as a hole. */}
+          <div className="flex items-center gap-4 rounded-4 bg-surface-stepper p-2">
+            {/* U+2212 minus, not the hyphen the source types. The hyphen is a
+                6.5px dash sitting on the x-height axis; the minus is 9.42px on
+                the math axis, exactly matching "+" in width and height, so the
+                two signs are the same size and sit on the same line. */}
             <button type="button" className={stepBtn} onClick={() => step(-1)} aria-label="Decrease quantity">
-              -
+              −
             </button>
             {/* The source draws "1" at its natural width, which would let the
                 stepper widen and the primary button shrink as digits are added.

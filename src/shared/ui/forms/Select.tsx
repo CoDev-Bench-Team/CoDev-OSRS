@@ -22,6 +22,7 @@ export function Select({
   onChange,
   label,
   placeholder = 'Select',
+  disabled,
   className,
 }: {
   value?: string;
@@ -29,8 +30,26 @@ export function Select({
   onChange?: (value: string) => void;
   label?: string;
   placeholder?: string;
+  /** `true` disables the control outright — the full 40% treatment.
+   *
+   *  Left undefined, a control with fewer than two options becomes *softly*
+   *  disabled: equally inert, but the value keeps its normal contrast and only
+   *  the chevron is muted. The distinction matters because the single-option
+   *  case is still showing the user something worth reading.
+   *
+   *  `false` forces the control interactive regardless. */
+  disabled?: boolean;
   className?: string;
 }) {
+  // Two kinds of unavailable, deliberately distinct:
+  //   'hard' — asked for explicitly; the full 40% treatment
+  //   'soft' — nothing to choose between; inert, but still legible
+  // Both use the real `disabled` attribute rather than only `aria-disabled`, so
+  // neither sits in the tab order — which is what a native <select disabled>
+  // does and what a keyboard user expects of a control with nothing to operate.
+  const mode: 'none' | 'soft' | 'hard' =
+    disabled === true ? 'hard' : disabled === false ? 'none' : options.length <= 1 ? 'soft' : 'none';
+  const isDisabled = mode !== 'none';
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(() => Math.max(0, options.indexOf(value ?? '')));
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -132,6 +151,7 @@ export function Select({
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (isDisabled) return;
     if (!open) {
       if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
         e.preventDefault();
@@ -187,25 +207,38 @@ export function Select({
         ref={triggerRef}
         type="button"
         role="combobox"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={`${id}-list`}
+        aria-haspopup={isDisabled ? undefined : 'listbox'}
+        aria-expanded={isDisabled ? undefined : open}
+        aria-controls={isDisabled ? undefined : `${id}-list`}
         aria-label={label}
         aria-activedescendant={open ? `${id}-opt-${active}` : undefined}
+        disabled={isDisabled}
+        aria-disabled={isDisabled || undefined}
+        data-disabled={mode === 'none' ? undefined : mode}
         onClick={() => {
+          if (isDisabled) return;
           setActive(Math.max(0, options.indexOf(value ?? '')));
           setOpen((o) => !o);
         }}
         onKeyDown={onKeyDown}
-        className="flex h-control-height-lg w-full cursor-pointer items-center justify-between gap-8 rounded-10 border-none bg-surface-card px-16 text-left ring-default transition-osrs hover:text-ink-secondary"
+        className={`flex h-control-height-lg w-full items-center justify-between gap-8 rounded-10 border-none bg-surface-card px-16 text-left ring-default transition-osrs ${
+          isDisabled ? 'cursor-default' : 'cursor-pointer hover:text-ink-secondary'
+        }`}
       >
         <span className={`truncate font-sans text-14 leading-tight ${value ? 'text-ink-primary' : 'text-ink-secondary'}`}>
           {value ?? placeholder}
         </span>
-        <MdiChevronDown className={`shrink-0 text-ink-secondary transition-osrs ${open ? 'rotate-180' : ''}`} />
+        {/* In the soft state the chevron carries the whole signal, so it drops
+            to the muted ink while the value stays at full contrast. */}
+        <MdiChevronDown
+          className={`shrink-0 transition-osrs ${mode === 'soft' ? 'text-ink-muted' : 'text-ink-secondary'} ${
+            open ? 'rotate-180' : ''
+          }`}
+        />
       </button>
 
       {open &&
+        !isDisabled &&
         rect &&
         createPortal(
           <ul

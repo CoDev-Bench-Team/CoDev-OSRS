@@ -229,10 +229,29 @@ export function Gallery() {
           </Row>
         </Section>
 
-        <Section id="forms" title="Forms">
+        <Section
+          id="forms"
+          title="Forms"
+          note="Unavailable comes in two kinds. Explicitly disabled takes the source's one precedent — ButtonTemplate's saved state at 40% opacity. Softly disabled, when there is nothing to choose between, stays legible: the value keeps full contrast and only the chevron is muted."
+        >
           <div className="max-w-[420px]">
             <Search />
           </div>
+          <Row label="Select — several options">
+            <div className="w-[420px] max-w-full">
+              <Select label="Model" value={model} options={LAPTOP_MODELS} onChange={setModel} />
+            </div>
+          </Row>
+          <Row label="Select — one option, soft disabled (value stays readable)">
+            <div className="w-[420px] max-w-full">
+              <Select label="Model" value="Dell Latitude 5440" options={['Dell Latitude 5440']} />
+            </div>
+          </Row>
+          <Row label="Select — explicitly disabled (40% opacity)">
+            <div className="w-[420px] max-w-full">
+              <Select label="Model" value={model} options={LAPTOP_MODELS} disabled />
+            </div>
+          </Row>
         </Section>
 
         <Section id="data" title="Data display">

@@ -78,10 +78,14 @@ export function CompareHarness() {
         port={<StatusPill availability="unavailable" />}
       />
       <Pair name="Search" source={<SourceSearch />} port={<Search />} />
+      {/* The port is given several models on purpose. With one option the select
+          disables itself and drops to 40% opacity, which the source's static div
+          never does — comparing those two would measure the disabled state, not
+          fidelity. The disabled state is demonstrated in the gallery instead. */}
       <Pair
         name="SupplyCard"
         source={<SourceSupplyCard />}
-        port={<SupplyCard />}
+        port={<SupplyCard models={['Dell Latitude', 'Lenovo ThinkPad T14']} />}
       />
       <Pair name="ButtonTemplate" source={<SourceButtonTemplate />} port={<ButtonTemplate />} />
       <Pair name="ButtonTemplate / saved" source={<SourceButtonTemplate state="saved" />} port={<ButtonTemplate state="saved" />} />

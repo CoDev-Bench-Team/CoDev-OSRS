@@ -12,6 +12,7 @@ const BOX = ['backgroundColor', 'borderRadius', 'boxShadow', 'padding', 'height'
 const ALLOWED_MISSING_TEXT = {
   SupplyCard: {
     '⌄': "the source draws the dropdown affordance as the text character U+2304, whose ink (15px) overflows its 12px line box, making its size and vertical position depend on line-box rounding. Replaced with MDI chevron-down at 20px, optically centred — the register the design system's readme prescribes for an icon the file does not define. Logged in additions.md.",
+    '-': 'the source types a hyphen (U+002D) for the decrement: 6.5px wide on the x-height axis, so it is smaller than and lower than the "+". The port uses the minus sign (U+2212), which matches "+" in width (9.42px) and axis exactly. Same font, weight and size. Logged in additions.md.',
   },
 };
 const TEXT = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'textTransform'];
