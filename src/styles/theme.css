@@ -1,0 +1,252 @@
+/* OSRS design tokens — Tailwind CSS 4 @theme layer.
+   Every value is transcribed from design-system/tokens/*.css at its exact
+   source value. Nothing is rounded; the irregular sizes (11.5px, 13px) and
+   spacing steps (7, 9, 18, 22) are deliberate (spec 002 FR-001).
+
+   Tailwind's own namespaces are cleared to `initial` first, so the only
+   colours, type sizes, radii, shadows and spacing steps that compile are the
+   ones the designer recorded. That makes FR-003 a build guarantee rather than
+   a review convention: `bg-blue-500` and `p-3` simply do not exist.
+
+   Traceability for every token, including renames, is in
+   docs/design-system/token-map.md (FR-019).
+
+   ⚠ NUMERIC UTILITY NAMES DO NOT MEAN WHAT TAILWIND USUALLY MEANS.
+   The source's spacing steps are raw pixels, so `--spacing-4` is 4px, not
+   Tailwind's 1rem. `p-4` therefore pads 4px and `p-16` pads 16px — the number
+   is the pixel value. `leading-<number>` derives from the same scale, so
+   `leading-6` is 6px, not 1.5rem; use the named roles (`leading-body`,
+   `leading-tight`) for line height. No Tailwind default survives the reset;
+   these names resolve through OSRS tokens. */
+
+@theme {
+  /* ── Clear Tailwind's defaults ── */
+  --color-*: initial;
+  --text-*: initial;
+  --font-*: initial;
+  --font-weight-*: initial;
+  --leading-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --ease-*: initial;
+  --spacing: initial;
+  --spacing-*: initial;
+
+  /* Colour — palette and semantic aliases — 75 */
+  --color-backdrop: rgba(0,0,0,0.5);
+  --color-black: var(--color-osrs-black);
+  --color-brand-on-primary: var(--color-osrs-white);
+  --color-brand-primary: var(--color-osrs-red-600);
+  --color-brand-primary-alt: var(--color-osrs-red-500);
+  --color-components-backdrop-fill: rgba(0,0,0,0.5);
+  --color-ink-body: var(--color-osrs-ink-700);
+  --color-ink-heading: var(--color-osrs-black);
+  --color-ink-link: var(--color-osrs-red-600);
+  --color-ink-muted: var(--color-osrs-gray-400);
+  --color-ink-primary: var(--color-osrs-black);
+  --color-ink-secondary: var(--color-osrs-gray-500);
+  --color-ink-strong: var(--color-osrs-ink-900);
+  --color-line-default: var(--color-osrs-border);
+  --color-line-strong: var(--color-osrs-black);
+  --color-osrs-amber-50: rgb(255,245,222);
+  --color-osrs-amber-700: rgb(161,92,0);
+  --color-osrs-avatar-green: rgb(21,101,53);
+  --color-osrs-avatar-orange: rgb(244,129,13);
+  --color-osrs-black: rgb(0,0,0);
+  --color-osrs-blue-50: rgb(237,245,255);
+  --color-osrs-blue-600: rgb(45,95,163);
+  --color-osrs-blue-700: rgb(35,94,167);
+  --color-osrs-blue-tint: rgba(45,95,163,0.1);
+  --color-osrs-border: rgb(227,230,236);
+  --color-osrs-border-warm: rgb(231,230,226);
+  --color-osrs-canvas: rgb(250,250,249);
+  --color-osrs-google-blue: rgb(66,133,244);
+  --color-osrs-google-gray: rgb(128,134,139);
+  --color-osrs-google-red: rgb(234,67,53);
+  --color-osrs-gray-400: rgb(138,143,156);
+  --color-osrs-gray-500: rgb(102,112,133);
+  --color-osrs-green-50: rgb(234,248,240);
+  --color-osrs-green-600: rgb(46,126,71);
+  --color-osrs-green-700: rgb(22,121,74);
+  --color-osrs-green-800: rgb(22,101,0);
+  --color-osrs-green-avatar: rgb(21,101,53);
+  --color-osrs-green-tint: rgba(46,126,71,0.1);
+  --color-osrs-ink-700: rgb(75,80,99);
+  --color-osrs-ink-800: rgb(27,29,41);
+  --color-osrs-ink-900: rgb(23,32,51);
+  --color-osrs-pink-500: rgb(239,93,168);
+  --color-osrs-pink-tint: rgba(239,93,168,0.1);
+  --color-osrs-red-50: rgb(255,241,240);
+  --color-osrs-red-500: rgb(204,47,74);
+  --color-osrs-red-550: rgb(210,58,58);
+  --color-osrs-red-600: rgb(198,40,40);
+  --color-osrs-red-700: rgb(200,30,30);
+  --color-osrs-red-tint: rgba(200,30,30,0.1);
+  --color-osrs-stone-600: rgb(107,106,102);
+  --color-osrs-stone-900: rgb(26,25,25);
+  --color-osrs-surface-subtle: rgb(246,247,249);
+  --color-osrs-surface-table-header: rgb(240,242,245);
+  --color-osrs-template-ink: rgb(73,76,80);
+  --color-osrs-template-muted: rgb(111,121,133);
+  --color-osrs-template-purple: rgb(105,77,117);
+  --color-osrs-template-surface: rgb(250,252,254);
+  --color-osrs-white: rgb(255,255,255);
+  --color-red-error: rgb(198,40,40);
+  --color-status-available-bg: var(--color-osrs-green-tint);
+  --color-status-available-fg: var(--color-osrs-green-600);
+  --color-status-delivery-bg: var(--color-osrs-pink-tint);
+  --color-status-delivery-fg: var(--color-osrs-pink-500);
+  --color-status-info-bg: var(--color-osrs-blue-tint);
+  --color-status-info-fg: var(--color-osrs-blue-600);
+  --color-status-pending-bg: var(--color-osrs-amber-50);
+  --color-status-pending-fg: var(--color-osrs-amber-700);
+  --color-status-pickup-bg: var(--color-osrs-blue-50);
+  --color-status-pickup-fg: var(--color-osrs-blue-700);
+  --color-status-ready-bg: var(--color-osrs-green-50);
+  --color-status-ready-fg: var(--color-osrs-green-700);
+  --color-status-rejected-bg: var(--color-osrs-red-50);
+  --color-status-rejected-fg: var(--color-osrs-red-600);
+  --color-status-unavailable-bg: var(--color-osrs-red-tint);
+  --color-status-unavailable-fg: var(--color-osrs-red-700);
+  --color-surface-bar: var(--color-osrs-white);
+  --color-surface-card: var(--color-osrs-white);
+  --color-surface-page: var(--color-osrs-canvas);
+  --color-surface-stepper: var(--color-osrs-canvas);
+  --color-surface-table-header: var(--color-osrs-surface-table-header);
+  --color-white: var(--color-osrs-white);
+
+  /* Type — families — 4 */
+  --font-display: "Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-google: Roboto,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  --font-noto: "Noto Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  --font-sans: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+
+  /* Type — sizes — 15 */
+  --text-11: 11px;
+  --text-11-5: 11.5px;
+  --text-12: 12px;
+  --text-13: 13px;
+  --text-14: 14px;
+  --text-15: 15px;
+  --text-16: 16px;
+  --text-17: 17px;
+  --text-18: 18px;
+  --text-19: 19px;
+  --text-20: 20px;
+  --text-24: 24px;
+  --text-28: 28px;
+  --text-32: 32px;
+  --text-128: 128px;
+
+  /* Type — weights — 5 */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Type — line heights — 3 */
+  --leading-body: 1.5;
+  --leading-display: 1.3;
+  --leading-tight: 100%;
+
+  /* Spacing — 27 from the source, plus 2 additions marked below */
+
+  /* Not design values, but required structurally: `inset-0`, `min-w-0` and
+     every other zero-length utility derive from the spacing scale, and
+     clearing Tailwind's default removed them. 0 is not a design decision. */
+  --spacing-0: 0px;
+
+  /* An addition (spec 002 FR-018): the 44px minimum touch target below the
+     design width. The source has no mobile frames and no such value. */
+  --spacing-touch-target: 44px;
+
+  --spacing-1: 1px;
+  --spacing-10: 10px;
+  --spacing-12: 12px;
+  --spacing-14: 14px;
+  --spacing-16: 16px;
+  --spacing-18: 18px;
+  --spacing-2: 2px;
+  --spacing-20: 20px;
+  --spacing-22: 22px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  --spacing-32: 32px;
+  --spacing-4: 4px;
+  --spacing-5: 5px;
+  --spacing-6: 6px;
+  --spacing-7: 7px;
+  --spacing-8: 8px;
+  --spacing-9: 9px;
+  --spacing-control-height-lg: 46px;
+  --spacing-control-height-md: 42px;
+  --spacing-control-height-sm: 30px;
+  --spacing-layout-content-width: 1344px;
+  --spacing-layout-gutter: 32px;
+  --spacing-layout-page-width: 1440px;
+  --spacing-layout-topbar-height: 87px;
+  --spacing-row-height-inventory: 68px;
+  --spacing-row-height-request: 78px;
+
+  /* Radii — 9 */
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-24: 24px;
+  --radius-32: 32px;
+  --radius-circle: 200px;
+  --radius-pill: 999px;
+
+  /* Elevation — 1 */
+  --shadow-card: 0px 5px 18px 0px rgba(23,32,51,0.0706);
+
+  /* Layering — an addition (spec 002 FR-018).
+
+     The source is a static file: it draws one scrim and nothing that overlaps
+     anything else, so it defines no stacking order. Without one, a portalled
+     dropdown and a modal scrim both land in the same layer and whichever
+     declares a z-index wins by accident — which is exactly how the dropdown
+     came to float above the tint.
+
+     A popover sits ABOVE a dialog on purpose: a select inside a dialog must be
+     usable. A stale popover outside the dialog is closed when the scrim mounts
+     rather than being pushed underneath it. */
+  --z-index-sticky: 10;
+  --z-index-backdrop: 40;
+  --z-index-dialog: 50;
+  --z-index-popover: 60;
+  --z-index-toast: 70;
+
+  /* Motion — 1 */
+  --ease-osrs: cubic-bezier(.2,0,.2,1);
+}
+
+:root {
+  /* Durations and composite type roles keep their source names.
+     Their VALUES, however, must use the SPA's token names, not the source's.
+     A dangling var() makes the whole `font:` shorthand invalid and the element
+     silently falls back to the inherited family — which is exactly what
+     happened when these still referenced `--weight-medium` instead of
+     `--font-weight-medium`: every display heading rendered in Inter.
+     Tailwind models neither a duration namespace we need nor a `font:`
+     shorthand, so these stay as custom properties and are consumed by the
+     custom utilities in utilities.css. */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --type-body: var(--font-weight-regular) var(--text-14)/1.5 var(--font-sans);
+  --type-caption: var(--font-weight-regular) var(--text-11)/100% var(--font-sans);
+  --type-card-title: var(--font-weight-bold) var(--text-17)/100% var(--font-sans);
+  --type-display-hero: var(--font-weight-bold) var(--text-128)/1.3 var(--font-display);
+  --type-eyebrow: var(--font-weight-bold) var(--text-11)/100% var(--font-sans);
+  --type-meta: var(--font-weight-regular) var(--text-12)/100% var(--font-sans);
+  --type-metric: var(--font-weight-medium) var(--text-28)/1.3 var(--font-display);
+  --type-page-title: var(--font-weight-medium) var(--text-32)/1.3 var(--font-display);
+  --type-pill: var(--font-weight-bold) var(--text-12)/100% var(--font-sans);
+  --type-section-title: var(--font-weight-medium) var(--text-19)/1.3 var(--font-display);
+  --type-subhead: var(--font-weight-bold) var(--text-15)/100% var(--font-sans);
+  --type-ui: var(--font-weight-regular) var(--text-13)/100% var(--font-sans);
+  --type-ui-bold: var(--font-weight-bold) var(--text-13)/100% var(--font-sans);
+}

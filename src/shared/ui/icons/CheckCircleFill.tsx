@@ -1,0 +1,23 @@
+import type { SVGProps } from 'react';
+
+/** CheckCircleFill — ported verbatim from design-system/components/icons/CheckCircleFill.jsx
+ *  (figma node 30:3086 check-circle-fill). Paints with `currentColor`, so colour it from the
+ *  parent rather than passing a fill (spec 002 FR-014). */
+export function CheckCircleFill({ size = 30, className, ...rest }: SVGProps<SVGSVGElement> & { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 30 30"
+      fill="none"
+      role="presentation"
+      aria-hidden="true"
+      className={className}
+      {...rest}
+    >
+      <g transform="translate(2.812 2.813) scale(1.0 1.0)">
+        <path d="M 12.188 0 C 9.777 0 7.421 0.715 5.416 2.054 C 3.412 3.393 1.85 5.297 0.928 7.524 C 0.005 9.751 -0.236 12.201 0.234 14.565 C 0.704 16.929 1.865 19.101 3.57 20.805 C 5.274 22.51 7.446 23.671 9.81 24.141 C 12.174 24.611 14.624 24.37 16.851 23.447 C 19.078 22.525 20.982 20.963 22.321 18.959 C 23.66 16.954 24.375 14.598 24.375 12.188 C 24.372 8.956 23.086 5.858 20.802 3.573 C 18.517 1.289 15.419 0.003 12.188 0 Z M 17.538 10.038 L 10.976 16.601 C 10.889 16.688 10.785 16.757 10.672 16.804 C 10.558 16.851 10.436 16.876 10.313 16.876 C 10.189 16.876 10.067 16.851 9.953 16.804 C 9.84 16.757 9.736 16.688 9.649 16.601 L 6.837 13.788 C 6.661 13.612 6.562 13.374 6.562 13.125 C 6.562 12.876 6.661 12.638 6.837 12.462 C 7.013 12.286 7.251 12.187 7.5 12.187 C 7.749 12.187 7.987 12.286 8.163 12.462 L 10.313 14.612 L 16.212 8.712 C 16.299 8.625 16.402 8.556 16.516 8.508 C 16.63 8.461 16.752 8.437 16.875 8.437 C 16.998 8.437 17.12 8.461 17.234 8.508 C 17.348 8.556 17.451 8.625 17.538 8.712 C 17.625 8.799 17.694 8.902 17.742 9.016 C 17.789 9.13 17.813 9.252 17.813 9.375 C 17.813 9.498 17.789 9.62 17.742 9.734 C 17.694 9.848 17.625 9.951 17.538 10.038 Z" fill="currentColor" fillRule="evenodd" />
+      </g>
+    </svg>
+  );
+}

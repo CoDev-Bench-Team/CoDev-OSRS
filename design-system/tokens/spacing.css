@@ -1,0 +1,8 @@
+:root{
+/* Spacing values actually present in the source auto-layouts */
+--space-1:1px;--space-2:2px;--space-4:4px;--space-5:5px;--space-6:6px;--space-7:7px;--space-8:8px;--space-9:9px;--space-10:10px;--space-12:12px;--space-14:14px;--space-16:16px;--space-18:18px;--space-20:20px;--space-22:22px;--space-24:24px;--space-28:28px;--space-32:32px;
+/* Frame geometry */
+--layout-page-width:1440px;--layout-gutter:32px;--layout-content-width:1344px;--layout-topbar-height:87px;
+/* Control heights */
+--control-height-sm:30px;--control-height-md:42px;--control-height-lg:46px;--row-height-request:78px;--row-height-inventory:68px;
+}

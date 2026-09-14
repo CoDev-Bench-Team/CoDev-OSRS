@@ -1,0 +1,527 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/actions/**",
+              "components/brand/**",
+              "components/data-display/**",
+              "components/forms/**",
+              "components/icons/**",
+              "components/overlay/**",
+              "ui_kits/osrs-web/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Inter|Space Grotesk|Roboto|Noto Sans))/i]",
+        "message": "Font not provided by the design system. Available: Inter, Space Grotesk, Roboto, Noto Sans."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ArrowCircleDownFill'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|color|key|ref|className|style|children)$/]",
+        "message": "<ArrowCircleDownFill> doesn't accept that prop. Declared props: size, color."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ArrowCounterClockwise'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|color|key|ref|className|style|children)$/]",
+        "message": "<ArrowCounterClockwise> doesn't accept that prop. Declared props: size, color."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Backdrop'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|key|ref|className|style|children)$/]",
+        "message": "<Backdrop> doesn't accept that prop. Declared props: children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ButtonTemplate'] > JSXAttribute > JSXIdentifier[name!=/^(?:state|label|icon|style|key|ref|className|style|children)$/]",
+        "message": "<ButtonTemplate> doesn't accept that prop. Declared props: state, label, icon, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ButtonTemplate'] > JSXAttribute[name.name='state'] > Literal[value!=/^(?:default|saved)$/]",
+        "message": "<ButtonTemplate> state must be one of 'default' | 'saved'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ButtonWithIcon'] > JSXAttribute > JSXIdentifier[name!=/^(?:property1|label|icon|style|key|ref|className|style|children)$/]",
+        "message": "<ButtonWithIcon> doesn't accept that prop. Declared props: property1, label, icon, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ButtonWithIcon'] > JSXAttribute[name.name='property1'] > Literal[value!=/^(?:default|hover)$/]",
+        "message": "<ButtonWithIcon> property1 must be one of 'default' | 'hover'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CaretRight'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|color|key|ref|className|style|children)$/]",
+        "message": "<CaretRight> doesn't accept that prop. Declared props: size, color."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CheckCircleFill'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|color|key|ref|className|style|children)$/]",
+        "message": "<CheckCircleFill> doesn't accept that prop. Declared props: size, color."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CoDevRedMasterLogo'] > JSXAttribute > JSXIdentifier[name!=/^(?:height|src|key|ref|className|style|children)$/]",
+        "message": "<CoDevRedMasterLogo> doesn't accept that prop. Declared props: height, src."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CoDevSupplyRequestsLogo'] > JSXAttribute > JSXIdentifier[name!=/^(?:productName|markHeight|key|ref|className|style|children)$/]",
+        "message": "<CoDevSupplyRequestsLogo> doesn't accept that prop. Declared props: productName, markHeight."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CoDevWhiteMasterLogo'] > JSXAttribute > JSXIdentifier[name!=/^(?:height|src|key|ref|className|style|children)$/]",
+        "message": "<CoDevWhiteMasterLogo> doesn't accept that prop. Declared props: height, src."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='GoogleIcon'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|key|ref|className|style|children)$/]",
+        "message": "<GoogleIcon> doesn't accept that prop. Declared props: size."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='GoogleIcon'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:32x32|40x40|48x48)$/]",
+        "message": "<GoogleIcon> size must be one of '32x32' | '40x40' | '48x48'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MdiClipboardTextOutline'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|color|key|ref|className|style|children)$/]",
+        "message": "<MdiClipboardTextOutline> doesn't accept that prop. Declared props: size, color."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MdiLightClipboardText'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|color|key|ref|className|style|children)$/]",
+        "message": "<MdiLightClipboardText> doesn't accept that prop. Declared props: size, color."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Search'] > JSXAttribute > JSXIdentifier[name!=/^(?:placeholder|value|onChange|key|ref|className|style|children)$/]",
+        "message": "<Search> doesn't accept that prop. Declared props: placeholder, value, onChange."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SignInButton'] > JSXAttribute > JSXIdentifier[name!=/^(?:darkmode|mobile|cta|iconPadding|labelPadding|style|key|ref|className|style|children)$/]",
+        "message": "<SignInButton> doesn't accept that prop. Declared props: darkmode, mobile, cta, iconPadding, labelPadding, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatusPills'] > JSXAttribute > JSXIdentifier[name!=/^(?:shape|status|availability|label|key|ref|className|style|children)$/]",
+        "message": "<StatusPills> doesn't accept that prop. Declared props: shape, status, availability, label."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatusPills'] > JSXAttribute[name.name='shape'] > Literal[value!=/^(?:pill|rounded)$/]",
+        "message": "<StatusPills> shape must be one of 'pill' | 'rounded'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatusPills'] > JSXAttribute[name.name='availability'] > Literal[value!=/^(?:available|unavailable)$/]",
+        "message": "<StatusPills> availability must be one of 'available' | 'unavailable'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SupplyCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:category|name|availability|availabilityLabel|modelLabel|model|quantity|onQuantityChange|actionLabel|onAction|image|key|ref|className|style|children)$/]",
+        "message": "<SupplyCard> doesn't accept that prop. Declared props: category, name, availability, availabilityLabel, modelLabel, model, quantity, onQuantityChange, actionLabel, onAction, image."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SupplyCard'] > JSXAttribute[name.name='availability'] > Literal[value!=/^(?:available|unavailable)$/]",
+        "message": "<SupplyCard> availability must be one of 'available' | 'unavailable'."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "ArrowCircleDownFill": {
+        "replaces": []
+      },
+      "ArrowCounterClockwise": {
+        "replaces": []
+      },
+      "Backdrop": {
+        "replaces": []
+      },
+      "ButtonTemplate": {
+        "replaces": []
+      },
+      "ButtonWithIcon": {
+        "replaces": []
+      },
+      "CaretRight": {
+        "replaces": []
+      },
+      "CheckCircleFill": {
+        "replaces": []
+      },
+      "CoDevRedMasterLogo": {
+        "replaces": []
+      },
+      "CoDevSupplyRequestsLogo": {
+        "replaces": []
+      },
+      "CoDevWhiteMasterLogo": {
+        "replaces": []
+      },
+      "GoogleIcon": {
+        "replaces": []
+      },
+      "MdiClipboardTextOutline": {
+        "replaces": []
+      },
+      "MdiLightClipboardText": {
+        "replaces": []
+      },
+      "Search": {
+        "replaces": []
+      },
+      "SignInButton": {
+        "replaces": []
+      },
+      "StatusPills": {
+        "replaces": []
+      },
+      "SupplyCard": {
+        "replaces": []
+      }
+    },
+    "tokens": [
+      "--backdrop-fill",
+      "--border-default",
+      "--border-strong",
+      "--brand-on-primary",
+      "--brand-primary",
+      "--brand-primary-alt",
+      "--components-backdrop-fill",
+      "--control-height-lg",
+      "--control-height-md",
+      "--control-height-sm",
+      "--font-display",
+      "--font-google",
+      "--font-noto",
+      "--font-sans",
+      "--layout-content-width",
+      "--layout-gutter",
+      "--layout-page-width",
+      "--layout-topbar-height",
+      "--leading-body",
+      "--leading-display",
+      "--leading-tight",
+      "--motion-base",
+      "--motion-ease",
+      "--motion-fast",
+      "--osrs-amber-50",
+      "--osrs-amber-700",
+      "--osrs-avatar-green",
+      "--osrs-avatar-orange",
+      "--osrs-black",
+      "--osrs-blue-50",
+      "--osrs-blue-600",
+      "--osrs-blue-700",
+      "--osrs-blue-tint",
+      "--osrs-border",
+      "--osrs-border-warm",
+      "--osrs-canvas",
+      "--osrs-google-blue",
+      "--osrs-google-gray",
+      "--osrs-google-red",
+      "--osrs-gray-400",
+      "--osrs-gray-500",
+      "--osrs-green-50",
+      "--osrs-green-600",
+      "--osrs-green-700",
+      "--osrs-green-800",
+      "--osrs-green-avatar",
+      "--osrs-green-tint",
+      "--osrs-ink-700",
+      "--osrs-ink-800",
+      "--osrs-ink-900",
+      "--osrs-red-50",
+      "--osrs-red-500",
+      "--osrs-red-550",
+      "--osrs-red-600",
+      "--osrs-red-700",
+      "--osrs-red-tint",
+      "--osrs-stone-600",
+      "--osrs-stone-900",
+      "--osrs-surface-subtle",
+      "--osrs-surface-table-header",
+      "--osrs-template-ink",
+      "--osrs-template-muted",
+      "--osrs-template-purple",
+      "--osrs-template-surface",
+      "--osrs-white",
+      "--radius-10",
+      "--radius-2",
+      "--radius-24",
+      "--radius-32",
+      "--radius-4",
+      "--radius-6",
+      "--radius-8",
+      "--radius-circle",
+      "--radius-pill",
+      "--red-error",
+      "--ring-brand",
+      "--ring-default",
+      "--ring-ink",
+      "--row-height-inventory",
+      "--row-height-request",
+      "--shadow-card",
+      "--space-1",
+      "--space-10",
+      "--space-12",
+      "--space-14",
+      "--space-16",
+      "--space-18",
+      "--space-2",
+      "--space-20",
+      "--space-22",
+      "--space-24",
+      "--space-28",
+      "--space-32",
+      "--space-4",
+      "--space-5",
+      "--space-6",
+      "--space-7",
+      "--space-8",
+      "--space-9",
+      "--status-available-bg",
+      "--status-available-fg",
+      "--status-info-bg",
+      "--status-info-fg",
+      "--status-pending-bg",
+      "--status-pending-fg",
+      "--status-ready-bg",
+      "--status-ready-fg",
+      "--status-rejected-bg",
+      "--status-rejected-fg",
+      "--status-unavailable-bg",
+      "--status-unavailable-fg",
+      "--surface-bar",
+      "--surface-card",
+      "--surface-page",
+      "--surface-stepper",
+      "--surface-table-header",
+      "--text-11",
+      "--text-11-5",
+      "--text-12",
+      "--text-128",
+      "--text-13",
+      "--text-14",
+      "--text-15",
+      "--text-16",
+      "--text-17",
+      "--text-18",
+      "--text-19",
+      "--text-20",
+      "--text-24",
+      "--text-28",
+      "--text-32",
+      "--text-body",
+      "--text-heading",
+      "--text-link",
+      "--text-muted",
+      "--text-primary",
+      "--text-secondary",
+      "--text-strong",
+      "--type-body",
+      "--type-caption",
+      "--type-card-title",
+      "--type-display-hero",
+      "--type-eyebrow",
+      "--type-meta",
+      "--type-metric",
+      "--type-page-title",
+      "--type-pill",
+      "--type-section-title",
+      "--type-subhead",
+      "--type-ui",
+      "--type-ui-bold",
+      "--weight-bold",
+      "--weight-extrabold",
+      "--weight-medium",
+      "--weight-regular",
+      "--weight-semibold"
+    ],
+    "tokenKinds": {
+      "--osrs-red-700": "color",
+      "--osrs-red-600": "color",
+      "--osrs-red-550": "color",
+      "--osrs-red-500": "color",
+      "--osrs-red-50": "color",
+      "--osrs-black": "color",
+      "--osrs-ink-900": "color",
+      "--osrs-ink-800": "color",
+      "--osrs-ink-700": "color",
+      "--osrs-gray-500": "color",
+      "--osrs-gray-400": "color",
+      "--osrs-stone-900": "color",
+      "--osrs-stone-600": "color",
+      "--osrs-white": "color",
+      "--osrs-canvas": "color",
+      "--osrs-surface-table-header": "color",
+      "--osrs-surface-subtle": "color",
+      "--osrs-border": "color",
+      "--osrs-border-warm": "color",
+      "--osrs-green-700": "color",
+      "--osrs-green-600": "color",
+      "--osrs-green-800": "color",
+      "--osrs-green-avatar": "color",
+      "--osrs-green-50": "color",
+      "--osrs-green-tint": "color",
+      "--osrs-amber-700": "color",
+      "--osrs-amber-50": "color",
+      "--osrs-blue-700": "color",
+      "--osrs-blue-600": "color",
+      "--osrs-blue-50": "color",
+      "--osrs-blue-tint": "color",
+      "--osrs-red-tint": "color",
+      "--osrs-avatar-orange": "color",
+      "--osrs-avatar-green": "color",
+      "--osrs-google-blue": "color",
+      "--osrs-google-red": "color",
+      "--osrs-google-gray": "color",
+      "--osrs-template-purple": "color",
+      "--osrs-template-ink": "color",
+      "--osrs-template-muted": "color",
+      "--osrs-template-surface": "color",
+      "--brand-primary": "color",
+      "--brand-primary-alt": "color",
+      "--brand-on-primary": "color",
+      "--text-primary": "font",
+      "--text-heading": "font",
+      "--text-strong": "font",
+      "--text-body": "font",
+      "--text-secondary": "font",
+      "--text-muted": "font",
+      "--text-link": "font",
+      "--surface-page": "color",
+      "--surface-card": "color",
+      "--surface-bar": "color",
+      "--surface-table-header": "color",
+      "--surface-stepper": "color",
+      "--border-default": "color",
+      "--border-strong": "color",
+      "--backdrop-fill": "color",
+      "--status-pending-bg": "color",
+      "--status-pending-fg": "color",
+      "--status-ready-bg": "color",
+      "--status-ready-fg": "color",
+      "--status-available-bg": "color",
+      "--status-available-fg": "color",
+      "--status-unavailable-bg": "color",
+      "--status-unavailable-fg": "color",
+      "--status-rejected-bg": "color",
+      "--status-rejected-fg": "color",
+      "--status-info-bg": "color",
+      "--status-info-fg": "color",
+      "--font-sans": "font",
+      "--font-display": "font",
+      "--font-google": "font",
+      "--font-noto": "font",
+      "--text-11": "font",
+      "--text-11-5": "font",
+      "--text-12": "font",
+      "--text-13": "font",
+      "--text-14": "font",
+      "--text-15": "font",
+      "--text-16": "font",
+      "--text-17": "font",
+      "--text-18": "font",
+      "--text-19": "font",
+      "--text-20": "font",
+      "--text-24": "font",
+      "--text-28": "font",
+      "--text-32": "font",
+      "--text-128": "font",
+      "--weight-regular": "font",
+      "--weight-medium": "font",
+      "--weight-semibold": "font",
+      "--weight-bold": "font",
+      "--weight-extrabold": "font",
+      "--leading-tight": "font",
+      "--leading-display": "font",
+      "--leading-body": "font",
+      "--type-display-hero": "font",
+      "--type-page-title": "font",
+      "--type-section-title": "font",
+      "--type-metric": "font",
+      "--type-card-title": "font",
+      "--type-subhead": "font",
+      "--type-body": "font",
+      "--type-ui": "font",
+      "--type-ui-bold": "font",
+      "--type-meta": "font",
+      "--type-pill": "font",
+      "--type-caption": "font",
+      "--type-eyebrow": "font",
+      "--space-1": "spacing",
+      "--space-2": "spacing",
+      "--space-4": "spacing",
+      "--space-5": "spacing",
+      "--space-6": "spacing",
+      "--space-7": "spacing",
+      "--space-8": "spacing",
+      "--space-9": "spacing",
+      "--space-10": "spacing",
+      "--space-12": "spacing",
+      "--space-14": "spacing",
+      "--space-16": "spacing",
+      "--space-18": "spacing",
+      "--space-20": "spacing",
+      "--space-22": "spacing",
+      "--space-24": "spacing",
+      "--space-28": "spacing",
+      "--space-32": "spacing",
+      "--layout-page-width": "spacing",
+      "--layout-gutter": "spacing",
+      "--layout-content-width": "spacing",
+      "--layout-topbar-height": "spacing",
+      "--control-height-sm": "spacing",
+      "--control-height-md": "spacing",
+      "--control-height-lg": "spacing",
+      "--row-height-request": "spacing",
+      "--row-height-inventory": "spacing",
+      "--radius-2": "radius",
+      "--radius-4": "radius",
+      "--radius-6": "radius",
+      "--radius-8": "radius",
+      "--radius-10": "radius",
+      "--radius-24": "radius",
+      "--radius-32": "radius",
+      "--radius-pill": "radius",
+      "--radius-circle": "radius",
+      "--shadow-card": "shadow",
+      "--ring-default": "color",
+      "--ring-brand": "color",
+      "--ring-ink": "color",
+      "--motion-fast": "other",
+      "--motion-base": "other",
+      "--motion-ease": "other",
+      "--components-backdrop-fill": "color",
+      "--red-error": "color"
+    },
+    "fontFamilies": [
+      "Inter",
+      "Noto Sans",
+      "Roboto",
+      "Space Grotesk"
+    ]
+  }
+}

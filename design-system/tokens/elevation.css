@@ -1,0 +1,10 @@
+:root{
+--radius-2:2px;--radius-4:4px;--radius-6:6px;--radius-8:8px;--radius-10:10px;--radius-24:24px;--radius-32:32px;--radius-pill:999px;--radius-circle:200px;
+--shadow-card:0px 5px 18px 0px rgba(23,32,51,0.0706);
+--ring-default:inset 0 0 0 1px var(--osrs-border);
+--ring-brand:inset 0 0 0 1px var(--osrs-red-600);
+--ring-ink:inset 0 0 0 1px var(--osrs-black);
+--motion-fast:120ms; /* @kind other */
+--motion-base:180ms; /* @kind other */
+--motion-ease:cubic-bezier(.2,0,.2,1); /* @kind other */
+}
