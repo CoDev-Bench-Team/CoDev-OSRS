@@ -47,7 +47,7 @@ StockStatus   = 'In Stock' | 'Low Stock' | 'Out of Stock'
 Availability  = 'available' | 'unavailable'
 ```
 
-`For Delivery` is dropped — no transition produces it. `Ready for Pickup` is not a status; it is an optional presentational label for `Released`, expressed as a `label` prop override, so an illegal state remains unrepresentable.
+`Ready for Pickup` and `For Delivery` are not statuses; they are optional presentational labels for `Released`, selected by a `handover` prop (`'pickup' | 'delivery'`), so an illegal state remains unrepresentable (D5, amended 2026-09-14).
 
 ## API Contracts
 

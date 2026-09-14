@@ -34,7 +34,11 @@ const ALLOWED = {
 
 const cdp = await connect();
 await cdp.setViewport(1440, 2400);
-await cdp.goto('http://localhost:5173/#compare');
+// The harness is lazy-loaded, so wait for the pairs themselves rather than
+// for a first mount that happens before they exist.
+await cdp.goto('http://localhost:5173/#compare', {
+  ready: () => document.querySelectorAll('[data-cmp]').length >= 12,
+});
 await cdp.evaluate(async () => {
   await document.fonts.ready;
   await Promise.all(

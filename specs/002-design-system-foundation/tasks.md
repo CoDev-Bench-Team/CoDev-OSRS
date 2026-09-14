@@ -60,7 +60,7 @@ Prove the whole chain on one component before any bulk work. If a link is wrong,
 
 ## Phase 5: Primitives (US3, US4)
 
-- [x] T033 [US4] `RequestStatus` (6 states), `StockStatus` (3), `Availability` (2), and the `Released → "Ready for Pickup"` label map — `src/shared/ui/status.ts`
+- [x] T033 [US4] `RequestStatus` (6 states), `StockStatus` (3), `Availability` (2), and the `Released` handover label map (`Ready for Pickup` / `For Delivery`) — `src/shared/ui/status.ts`
 - [x] T034 [P] [US3] Clipboard icons (24×24), painting with `currentColor` — `src/shared/ui/icons/{MdiLightClipboardText,MdiClipboardTextOutline}.tsx`
 - [x] T035 [P] [US3] The four 30×30 library glyphs — `src/shared/ui/icons/{ArrowCircleDownFill,ArrowCounterClockwise,CaretRight,CheckCircleFill}.tsx`
 - [x] T036 [P] [US3] Google mark, sizes 32/40/48 — `src/shared/ui/icons/GoogleIcon.tsx`

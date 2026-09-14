@@ -193,7 +193,7 @@ Made by the project owner before drafting; `plan.md` implements them.
 | D2 | The shell and components are fully responsive from phone width to the 1440px design width. | Exceeds the source, which has only the 1440 frame. Breakpoint layouts are invented and MUST be documented for designer review (FR-018). |
 | D3 | All 17 published component families are ported, and the 8 UI-kit shell helpers are promoted to first-class components. | Complete coverage; page work starts unblocked. Promotion is fed back to the designer for publishing in Figma. |
 | D4 | All four referenced families are self-hosted; Google Fonts is not used at runtime. | No external dependency, works on an isolated LAN. Roboto and Noto Sans are carried for the two imported library components so all 17 families stay pixel-exact. |
-| D5 | Request status is typed to the six legal states; `Ready for Pickup` is a presentational label for `Released`, and `For Delivery` is dropped. | Reconciles the design file's 11-status pill with constitution IV. The mockup wording survives; illegal states become unrepresentable. |
+| D5 | Request status is typed to the six legal states; `Ready for Pickup` and `For Delivery` are presentational labels for `Released` (amended 2026-09-14 — see Clarifications). | Reconciles the design file's 11-status pill with constitution IV. The mockup wording survives; illegal states become unrepresentable. |
 | D6 | The component library is browsable through an in-app gallery route built with the existing toolchain. | Satisfies FR-015 with no new dependency and no ADR under constitution VIII. The gallery renders the real components, so it cannot drift. |
 
 ## Known Gaps — flag to the designer
@@ -225,3 +225,18 @@ None dismissed. All five flagged items (CHK001, CHK003, CHK004, CHK005, CHK006) 
 - Q: D3 keeps the two imported components, which use Noto Sans and Roboto, but D4 self-hosted only Inter and Space Grotesk. How is that resolved? → A: Self-host all four families, so all 17 component families render pixel-exact (D4).
 - Q: The design file's pill defines 11 statuses; the constitution defines 6 request states. How should the pill be typed? → A: Type to the 6 canonical states, keep "Ready for Pickup" as a presentational label for `Released`, drop "For Delivery" (D5).
 - Q: FR-015 requires isolated browsing, but constitution VIII forbids new frameworks without an ADR. How? → A: An in-app gallery route using the existing toolchain — no Storybook, no ADR (D6).
+
+### Session 2026-09-14 — Amendment to D5
+
+Constitution I requires an instruction that contradicts a resolved clarification to be recorded as an amendment rather than applied silently.
+
+- Q: D5 dropped "For Delivery". Should the pill be able to render it? → A: **Yes, as a second presentational label for `Released`**, alongside "Ready for Pickup".
+
+**Scope of the amendment.** This changes what the *pill can read* and nothing else:
+
+- `RequestStatus` is still the six legal states of constitution IV. "For Delivery" is not a state, is not reachable by any transition, and cannot be stored.
+- The two labels are selected by a `handover` prop (`'pickup' | 'delivery'`) on a `Released` pill, replacing the earlier boolean `pickupLabel`. Omitting it renders `Released`.
+- FR-008 is unchanged: a presentational label MAY differ from the state name but MUST NOT introduce a state the machine cannot produce.
+- `docs/process-flow.md` is unchanged — no delivery transition or notification is defined. If delivery ever becomes a real fulfillment mode, that is a spec-001 change with its own status and email.
+
+No constitution version bump is required — no principle changes.

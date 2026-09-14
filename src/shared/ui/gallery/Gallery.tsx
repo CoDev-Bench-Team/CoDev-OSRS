@@ -190,14 +190,15 @@ export function Gallery() {
           </Row>
         </Section>
 
-        <Section id="status" title="Status" note="Amber waits on a human, green is moving or done, red is stopped. Request status is the six legal states — no other value can be expressed.">
+        <Section id="status" title="Status" note="Amber waits on a human, green is moving or done, red is stopped. Request status is the six legal states — no other value can be expressed. The two handover labels are the exception: they read differently and carry their own colours, but the status underneath is still Released.">
           <Row label="Request — the six legal states">
             {REQUEST_STATUSES.map((s) => (
               <StatusPill key={s} status={s} />
             ))}
           </Row>
-          <Row label="Released, shown with its pickup label">
-            <StatusPill status="Released" pickupLabel />
+          <Row label="Released, shown with its handover labels — blue for pickup, pink for delivery">
+            <StatusPill status="Released" handover="pickup" />
+            <StatusPill status="Released" handover="delivery" />
           </Row>
           <Row label="Stock">
             {STOCK_STATUSES.map((s) => (

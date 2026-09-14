@@ -73,26 +73,30 @@ export async function connect(port = 9222) {
     send,
     events,
     close: () => ws.close(),
-    async goto(url) {
+    /** Navigate and wait until the page is genuinely ready.
+     *
+     *  readyState 'complete' only means the document loaded — React may not
+     *  have mounted, and Vite may still be hot-reloading after an edit. Checks
+     *  that run against a half-mounted page fail for no real reason, which is
+     *  worse than not running them.
+     *
+     *  Pass `ready` for pages whose content arrives later than the first mount.
+     *  The compare harness is lazy-loaded behind a null Suspense fallback, so
+     *  #root is legitimately empty for a while and a generic mount check is the
+     *  wrong question to ask. */
+    async goto(url, { ready, timeout = 20000 } = {}) {
       await send('Page.enable');
       await send('Page.navigate', { url });
-      for (let i = 0; i < 100; i++) {
-        await new Promise((r) => setTimeout(r, 100));
-        const { result } = await send('Runtime.evaluate', { expression: 'document.readyState', returnByValue: true });
-        if (result.value === 'complete') break;
-      }
-      // readyState 'complete' only means the document loaded — React may not
-      // have mounted, and Vite may still be hot-reloading after an edit.
-      // Checks that run against a half-mounted page fail for no real reason,
-      // which is worse than not running them.
+      await this.waitFor(() => document.readyState === 'complete', timeout, 'the document to load');
       await this.waitFor(
-        () => !!document.querySelector('#root')?.firstElementChild && document.readyState === 'complete',
-        8000,
+        ready ?? (() => !!document.querySelector('#root')?.firstElementChild),
+        timeout,
+        'the page to render',
       );
       await new Promise((r) => setTimeout(r, 250)); // let fonts and layout settle
     },
     /** Poll a predicate in the page until it is true, or throw. */
-    async waitFor(predicate, timeout = 5000, label = 'condition') {
+    async waitFor(predicate, timeout = 10000, label = 'condition') {
       const started = Date.now();
       for (;;) {
         const expression = `(${predicate.toString()})()`;

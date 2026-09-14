@@ -18,7 +18,11 @@ const TEXT = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'te
 
 const cdp = await connect();
 await cdp.setViewport(1440, 1024);
-await cdp.goto('http://localhost:5173/#compare');
+// The harness is lazy-loaded, so wait for the pairs themselves rather than
+// for a first mount that happens before they exist.
+await cdp.goto('http://localhost:5173/#compare', {
+  ready: () => document.querySelectorAll('[data-cmp]').length >= 12,
+});
 
 const pairs = await cdp.evaluate((box, text) => {
   // Tailwind composes box-shadow from placeholder custom properties, which

@@ -74,6 +74,8 @@
   --color-osrs-ink-700: rgb(75,80,99);
   --color-osrs-ink-800: rgb(27,29,41);
   --color-osrs-ink-900: rgb(23,32,51);
+  --color-osrs-pink-500: rgb(239,93,168);
+  --color-osrs-pink-tint: rgba(239,93,168,0.1);
   --color-osrs-red-50: rgb(255,241,240);
   --color-osrs-red-500: rgb(204,47,74);
   --color-osrs-red-550: rgb(210,58,58);
@@ -92,10 +94,14 @@
   --color-red-error: rgb(198,40,40);
   --color-status-available-bg: var(--color-osrs-green-tint);
   --color-status-available-fg: var(--color-osrs-green-600);
+  --color-status-delivery-bg: var(--color-osrs-pink-tint);
+  --color-status-delivery-fg: var(--color-osrs-pink-500);
   --color-status-info-bg: var(--color-osrs-blue-tint);
   --color-status-info-fg: var(--color-osrs-blue-600);
   --color-status-pending-bg: var(--color-osrs-amber-50);
   --color-status-pending-fg: var(--color-osrs-amber-700);
+  --color-status-pickup-bg: var(--color-osrs-blue-50);
+  --color-status-pickup-fg: var(--color-osrs-blue-700);
   --color-status-ready-bg: var(--color-osrs-green-50);
   --color-status-ready-fg: var(--color-osrs-green-700);
   --color-status-rejected-bg: var(--color-osrs-red-50);

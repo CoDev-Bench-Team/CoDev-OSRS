@@ -1,8 +1,9 @@
 import {
-  PICKUP_LABEL,
+  HANDOVER_LABEL,
   REQUEST_TONE,
   STOCK_TONE,
   type Availability,
+  type Handover,
   type RequestStatus,
   type StatusTone,
   type StockStatus,
@@ -12,6 +13,14 @@ const TONE: Record<StatusTone, string> = {
   pending: 'bg-status-pending-bg text-status-pending-fg',
   ready: 'bg-status-ready-bg text-status-ready-fg',
   rejected: 'bg-status-rejected-bg text-status-rejected-fg',
+};
+
+/** A handover label carries its own palette, not the status tone: pickup is the
+ *  blue pair the design file already defines, delivery the pink one added for
+ *  it (docs/design-system/additions.md). */
+const HANDOVER_TONE: Record<Handover, string> = {
+  pickup: 'bg-status-pickup-bg text-status-pickup-fg',
+  delivery: 'bg-status-delivery-bg text-status-delivery-fg',
 };
 
 const AVAILABILITY: Record<Availability, { cls: string; label: string }> = {
@@ -25,12 +34,13 @@ const AVAILABILITY: Record<Availability, { cls: string; label: string }> = {
  *  - request and stock  — 999px radius, 12px bold, 6x10 padding
  *  - catalog availability — 8px radius, 11.5px bold, 10px padding, on 10% tints
  *
- *  Passing a `pickupLabel` renders `Released` as "Ready for Pickup" without
- *  changing the status itself. */
+ *  Passing a `handover` renders `Released` as "Ready for Pickup" or "For
+ *  Delivery", in that label's own colours, without changing the status
+ *  itself. */
 type Props =
-  | { status: RequestStatus; stock?: never; availability?: never; pickupLabel?: boolean; className?: string }
-  | { stock: StockStatus; status?: never; availability?: never; pickupLabel?: never; className?: string }
-  | { availability: Availability; status?: never; stock?: never; pickupLabel?: never; className?: string };
+  | { status: RequestStatus; stock?: never; availability?: never; handover?: Handover; className?: string }
+  | { stock: StockStatus; status?: never; availability?: never; handover?: never; className?: string }
+  | { availability: Availability; status?: never; stock?: never; handover?: never; className?: string };
 
 export function StatusPill(props: Props) {
   const { className } = props;
@@ -47,12 +57,16 @@ export function StatusPill(props: Props) {
   }
 
   const value = props.status ?? props.stock!;
-  const tone = props.status ? REQUEST_TONE[props.status] : STOCK_TONE[props.stock!];
-  const label = props.status && props.pickupLabel ? (PICKUP_LABEL[props.status] ?? value) : value;
+  const handoverLabel =
+    props.status && props.handover ? HANDOVER_LABEL[props.handover][props.status] : undefined;
+  const label = handoverLabel ?? value;
+  const tone = handoverLabel
+    ? HANDOVER_TONE[props.handover!]
+    : TONE[props.status ? REQUEST_TONE[props.status] : STOCK_TONE[props.stock!]];
 
   return (
     <span
-      className={`inline-flex items-center rounded-pill px-10 py-6 type-pill whitespace-nowrap ${TONE[tone]} ${className ?? ''}`}
+      className={`inline-flex items-center rounded-pill px-10 py-6 type-pill whitespace-nowrap ${tone} ${className ?? ''}`}
     >
       {label}
     </span>
