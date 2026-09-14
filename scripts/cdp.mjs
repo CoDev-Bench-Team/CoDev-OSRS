@@ -1,7 +1,46 @@
 /** Minimal Chrome DevTools Protocol client.
  *  Uses Node's built-in WebSocket, so the fidelity and accessibility checks need
  *  no browser-automation dependency (constitution VIII). */
+import { spawn } from 'node:child_process';
+
+const CHROME =
+  process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+
+async function up(port) {
+  try {
+    await fetch(`http://localhost:${port}/json/version`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Launch headless Chrome if it is not already listening. It exits on its own
+ *  between runs often enough that requiring a manually-started browser made
+ *  every check flaky. */
+async function ensureChrome(port) {
+  if (await up(port)) return;
+  spawn(
+    CHROME,
+    [
+      '--headless=new',
+      `--remote-debugging-port=${port}`,
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--user-data-dir=/tmp/osrs-cdp-profile',
+      'about:blank',
+    ],
+    { detached: true, stdio: 'ignore' },
+  ).unref();
+  for (let i = 0; i < 40; i++) {
+    await new Promise((r) => setTimeout(r, 250));
+    if (await up(port)) return;
+  }
+  throw new Error(`could not start Chrome on :${port} (set CHROME_PATH if it lives elsewhere)`);
+}
+
 export async function connect(port = 9222) {
+  await ensureChrome(port);
   const targets = await (await fetch(`http://localhost:${port}/json/list`)).json();
   let page = targets.find((t) => t.type === 'page');
   if (!page) {

@@ -197,6 +197,23 @@
   /* Elevation — 1 */
   --shadow-card: 0px 5px 18px 0px rgba(23,32,51,0.0706);
 
+  /* Layering — an addition (spec 002 FR-018).
+
+     The source is a static file: it draws one scrim and nothing that overlaps
+     anything else, so it defines no stacking order. Without one, a portalled
+     dropdown and a modal scrim both land in the same layer and whichever
+     declares a z-index wins by accident — which is exactly how the dropdown
+     came to float above the tint.
+
+     A popover sits ABOVE a dialog on purpose: a select inside a dialog must be
+     usable. A stale popover outside the dialog is closed when the scrim mounts
+     rather than being pushed underneath it. */
+  --z-index-sticky: 10;
+  --z-index-backdrop: 40;
+  --z-index-dialog: 50;
+  --z-index-popover: 60;
+  --z-index-toast: 70;
+
   /* Motion — 1 */
   --ease-osrs: cubic-bezier(.2,0,.2,1);
 }

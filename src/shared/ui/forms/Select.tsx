@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MdiChevronDown } from '../icons/MdiChevronDown';
+import { onDismissPopovers } from '../overlay/popover-layer';
 
 /** A custom select with an overlay panel, styled from the design system.
  *
@@ -52,6 +53,11 @@ export function Select({
     },
     [options, onChange, close],
   );
+
+  // A modal appearing dismisses any popover that is already open. The popover
+  // layer sits above the dialog layer so a select inside a dialog works, which
+  // means ordering alone cannot keep a stale popover off a new scrim.
+  useEffect(() => onDismissPopovers(() => setOpen(false)), []);
 
   // Close on a click outside, and on scroll — an anchored panel that stays put
   // while the page moves is worse than one that closes.
@@ -210,7 +216,7 @@ export function Select({
             tabIndex={-1}
             onKeyDown={onKeyDown}
             style={{ position: 'fixed', top: rect.top, left: rect.left, width: rect.width }}
-            className="z-50 max-h-[260px] overflow-y-auto rounded-10 bg-surface-card p-4 shadow-card ring-default"
+            className="z-popover max-h-[260px] overflow-y-auto rounded-10 bg-surface-card p-4 shadow-card ring-default"
           >
             {options.map((option, i) => {
               const selected = option === value;

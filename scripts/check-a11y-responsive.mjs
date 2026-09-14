@@ -174,6 +174,62 @@ else if (geo[0].w !== geo[1].w) fail(`card width changes with content: ${geo[0].
 else if (Math.abs(geo[0].h - geo[1].h) > TITLE_LINE) fail(`card height grew ${Math.abs(geo[0].h - geo[1].h)}px with overlong content — more than the one extra title line the clamps allow`);
 else pass(`width identical (${geo[0].w}px) and height bounded by the clamps (${geo[0].h} vs ${geo[1].h})`);
 
+// ---- Overlay layering ----
+// A popover must sit above a dialog so a select inside one is usable, which
+// means ordering alone cannot keep a popover left open elsewhere off a new
+// scrim. Both halves are checked.
+console.log('\nOverlay layering: popover above dialog, no stale popover over the scrim');
+await cdp.setViewport(1440, 1000);
+await cdp.goto('http://localhost:5173/');
+await cdp.evaluate(() => document.querySelector('#data').scrollIntoView({ block: 'start' }));
+await new Promise((r) => setTimeout(r, 350));
+
+await cdp.evaluate(() => document.querySelector('#data [role=combobox]').click());
+await new Promise((r) => setTimeout(r, 250));
+const openedOutside = await cdp.evaluate(() => !!document.querySelector('[role=listbox]'));
+await cdp.evaluate(() =>
+  [...document.querySelectorAll('button')].find((b) => b.textContent.includes('Show the scrim')).click(),
+);
+await new Promise((r) => setTimeout(r, 400));
+const stale = await cdp.evaluate(() => !!document.querySelector('[role=listbox]'));
+if (!openedOutside) fail('could not open the dropdown to test dismissal');
+else if (stale) fail('a dropdown left open outside the dialog is still showing over the scrim');
+else pass('opening a dialog dismisses a popover left open elsewhere');
+
+const inside = await cdp.evaluate(() => {
+  const scrim = [...document.querySelectorAll('div')].find(
+    (d) => getComputedStyle(d).backgroundColor === 'rgba(0, 0, 0, 0.5)',
+  );
+  if (!scrim) return { error: 'no scrim' };
+  const trigger = scrim.querySelector('[role=combobox]');
+  if (!trigger) return { error: 'no select inside the dialog' };
+  trigger.click();
+  return { ok: true };
+});
+await new Promise((r) => setTimeout(r, 350));
+if (inside.error) fail(`could not test a select inside a dialog: ${inside.error}`);
+else {
+  const r = await cdp.evaluate(() => {
+    const list = document.querySelector('[role=listbox]');
+    if (!list) return { open: false };
+    const b = list.getBoundingClientRect();
+    const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+    const scrim = [...document.querySelectorAll('div')].find(
+      (d) => getComputedStyle(d).backgroundColor === 'rgba(0, 0, 0, 0.5)',
+    );
+    return {
+      open: true,
+      onTop: list.contains(top),
+      listZ: Number(getComputedStyle(list).zIndex),
+      scrimZ: Number(getComputedStyle(scrim).zIndex),
+    };
+  });
+  if (!r.open) fail('the select inside the dialog did not open');
+  else if (!r.onTop || !(r.listZ > r.scrimZ))
+    fail(`select inside a dialog is not above the scrim (popover z ${r.listZ}, scrim z ${r.scrimZ}, on top: ${r.onTop})`);
+  else pass(`a select inside a dialog renders above the scrim (z ${r.listZ} over ${r.scrimZ})`);
+}
+
 console.log(`\n${failures} failure(s)`);
 cdp.close();
 process.exit(failures ? 1 : 0);

@@ -69,6 +69,27 @@ when there is no room below, and closes on outside scroll.
 Each of these is behaviour the platform was providing before. Anything not
 listed here is behaviour that was lost.
 
+## 3c. A stacking order
+
+The source is a static file. It draws one scrim and nothing that overlaps
+anything else, so it defines no layering. Without one, a portalled dropdown and
+a modal scrim land in the same layer and whichever happens to declare a
+`z-index` wins — which is how the dropdown came to float above the tint.
+
+| Token | Value | Layer |
+|-------|-------|-------|
+| `--z-index-sticky` | 10 | Chrome that stays put while content scrolls |
+| `--z-index-backdrop` | 40 | The modal scrim |
+| `--z-index-dialog` | 50 | Dialog content, above its own scrim |
+| `--z-index-popover` | 60 | Dropdown panels |
+| `--z-index-toast` | 70 | Transient notices |
+
+**A popover sits above a dialog on purpose**, because a select inside a dialog
+has to be usable. That ordering cannot also keep a popover left open *elsewhere*
+off a new scrim — the two cases are indistinguishable by z-index alone. So a
+scrim explicitly dismisses any open popover when it mounts
+(`overlay/popover-layer.ts`). Both halves are covered by a regression check.
+
 ## 4. Defects found in the source — flagged, not fixed
 
 Per FR-011a, a source value that fails a threshold is reported rather than

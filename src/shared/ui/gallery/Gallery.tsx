@@ -20,6 +20,7 @@ import {
   REQUEST_STATUSES,
   STOCK_STATUSES,
   Search,
+  Select,
   SignInButton,
   StatusPill,
   SummaryCard,
@@ -84,12 +85,15 @@ const LINKS = [
   ['overflow', 'Overflow'],
 ] as const;
 
+const REASONS = ['Item on hold', 'Insufficient justification', 'Out of budget', 'Duplicate request'];
+
 const LAPTOP_MODELS = ['Dell Latitude 5440', 'Lenovo ThinkPad T14', 'HP EliteBook 840', 'MacBook Pro 14"'];
 
 export function Gallery() {
   const [qty, setQty] = useState(1);
   const [model, setModel] = useState(LAPTOP_MODELS[0]);
   const [scrim, setScrim] = useState(false);
+  const [reason, setReason] = useState(REASONS[0]);
 
   return (
     <div className="min-h-screen bg-surface-page">
@@ -319,9 +323,15 @@ export function Gallery() {
           </Button>
           {scrim && (
             <Backdrop>
-              <div className="flex max-w-[420px] flex-col gap-16 rounded-10 bg-surface-card p-22 shadow-card">
+              <div className="flex w-[420px] max-w-full flex-col gap-16 rounded-10 bg-surface-card p-22 shadow-card">
                 <span className="type-card-title text-ink-primary">Confirm Rejection</span>
-                <p className="type-body text-ink-body">50% black, no blur. The only transparency in the file besides the card shadow and the status tints.</p>
+                <p className="type-body text-ink-body">
+                  50% black, no blur. The only transparency in the file besides the card shadow and the status tints.
+                </p>
+                {/* A select inside a dialog: the popover layer sits above the
+                    dialog layer on purpose, so this stays usable. A select left
+                    open outside the dialog is dismissed when the scrim mounts. */}
+                <Select label="Reason" value={reason} options={REASONS} onChange={setReason} />
                 <Button onClick={() => setScrim(false)}>Close</Button>
               </div>
             </Backdrop>
