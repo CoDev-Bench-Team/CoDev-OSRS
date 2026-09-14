@@ -30,26 +30,18 @@ export function Select({
   onChange?: (value: string) => void;
   label?: string;
   placeholder?: string;
-  /** `true` disables the control outright — the full 40% treatment.
-   *
-   *  Left undefined, a control with fewer than two options becomes *softly*
-   *  disabled: equally inert, but the value keeps its normal contrast and only
-   *  the chevron is muted. The distinction matters because the single-option
-   *  case is still showing the user something worth reading.
-   *
-   *  `false` forces the control interactive regardless. */
+  /** Defaults to disabled when there are fewer than two options — there is
+   *  nothing to choose, so the control should not look as though there is.
+   *  Pass `disabled={false}` to force it interactive regardless. */
   disabled?: boolean;
   className?: string;
 }) {
-  // Two kinds of unavailable, deliberately distinct:
-  //   'hard' — asked for explicitly; the full 40% treatment
-  //   'soft' — nothing to choose between; inert, but still legible
-  // Both use the real `disabled` attribute rather than only `aria-disabled`, so
-  // neither sits in the tab order — which is what a native <select disabled>
-  // does and what a keyboard user expects of a control with nothing to operate.
-  const mode: 'none' | 'soft' | 'hard' =
-    disabled === true ? 'hard' : disabled === false ? 'none' : options.length <= 1 ? 'soft' : 'none';
-  const isDisabled = mode !== 'none';
+  // One disabled state, not two. A control that keeps its normal contrast but
+  // does not respond reads as enabled and broken, which is a worse failure than
+  // one that plainly looks unavailable. Using the real `disabled` attribute
+  // rather than only `aria-disabled` also takes it out of the tab order, which
+  // is what a native <select disabled> does.
+  const isDisabled = disabled ?? options.length <= 1;
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(() => Math.max(0, options.indexOf(value ?? '')));
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -214,7 +206,6 @@ export function Select({
         aria-activedescendant={open ? `${id}-opt-${active}` : undefined}
         disabled={isDisabled}
         aria-disabled={isDisabled || undefined}
-        data-disabled={mode === 'none' ? undefined : mode}
         onClick={() => {
           if (isDisabled) return;
           setActive(Math.max(0, options.indexOf(value ?? '')));
@@ -228,13 +219,7 @@ export function Select({
         <span className={`truncate font-sans text-14 leading-tight ${value ? 'text-ink-primary' : 'text-ink-secondary'}`}>
           {value ?? placeholder}
         </span>
-        {/* In the soft state the chevron carries the whole signal, so it drops
-            to the muted ink while the value stays at full contrast. */}
-        <MdiChevronDown
-          className={`shrink-0 transition-osrs ${mode === 'soft' ? 'text-ink-muted' : 'text-ink-secondary'} ${
-            open ? 'rotate-180' : ''
-          }`}
-        />
+        <MdiChevronDown className={`shrink-0 text-ink-secondary transition-osrs ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open &&

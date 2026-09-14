@@ -232,7 +232,7 @@ export function Gallery() {
         <Section
           id="forms"
           title="Forms"
-          note="Unavailable comes in two kinds. Explicitly disabled takes the source's one precedent — ButtonTemplate's saved state at 40% opacity. Softly disabled, when there is nothing to choose between, stays legible: the value keeps full contrast and only the chevron is muted."
+          note="A select with fewer than two options disables itself: there is nothing to choose, so it should not look as though there is. Disabled follows the source's one precedent — ButtonTemplate's saved state at 40% opacity."
         >
           <div className="max-w-[420px]">
             <Search />
@@ -242,12 +242,12 @@ export function Gallery() {
               <Select label="Model" value={model} options={LAPTOP_MODELS} onChange={setModel} />
             </div>
           </Row>
-          <Row label="Select — one option, soft disabled (value stays readable)">
+          <Row label="Select — one option, disabled automatically">
             <div className="w-[420px] max-w-full">
               <Select label="Model" value="Dell Latitude 5440" options={['Dell Latitude 5440']} />
             </div>
           </Row>
-          <Row label="Select — explicitly disabled (40% opacity)">
+          <Row label="Select — disabled explicitly">
             <div className="w-[420px] max-w-full">
               <Select label="Model" value={model} options={LAPTOP_MODELS} disabled />
             </div>
