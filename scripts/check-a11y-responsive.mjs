@@ -185,12 +185,20 @@ await cdp.evaluate(() => document.querySelector('#data').scrollIntoView({ block:
 await new Promise((r) => setTimeout(r, 350));
 
 await cdp.evaluate(() => document.querySelector('#data [role=combobox]').click());
-await new Promise((r) => setTimeout(r, 250));
-const openedOutside = await cdp.evaluate(() => !!document.querySelector('[role=listbox]'));
+let openedOutside = true;
+try {
+  await cdp.waitFor(() => !!document.querySelector('[role=listbox]'), 3000, 'the dropdown to open');
+} catch {
+  openedOutside = false;
+}
 await cdp.evaluate(() =>
   [...document.querySelectorAll('button')].find((b) => b.textContent.includes('Show the scrim')).click(),
 );
-await new Promise((r) => setTimeout(r, 400));
+await cdp.waitFor(
+  () => !!document.querySelector('div') && [...document.querySelectorAll('div')].some((d) => getComputedStyle(d).backgroundColor === 'rgba(0, 0, 0, 0.5)'),
+  3000,
+  'the scrim to appear',
+);
 const stale = await cdp.evaluate(() => !!document.querySelector('[role=listbox]'));
 if (!openedOutside) fail('could not open the dropdown to test dismissal');
 else if (stale) fail('a dropdown left open outside the dialog is still showing over the scrim');
@@ -209,6 +217,11 @@ const inside = await cdp.evaluate(() => {
 await new Promise((r) => setTimeout(r, 350));
 if (inside.error) fail(`could not test a select inside a dialog: ${inside.error}`);
 else {
+  try {
+    await cdp.waitFor(() => !!document.querySelector('[role=listbox]'), 3000, 'the dialog select to open');
+  } catch {
+    /* reported below */
+  }
   const r = await cdp.evaluate(() => {
     const list = document.querySelector('[role=listbox]');
     if (!list) return { open: false };

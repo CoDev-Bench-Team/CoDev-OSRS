@@ -81,7 +81,26 @@ export async function connect(port = 9222) {
         const { result } = await send('Runtime.evaluate', { expression: 'document.readyState', returnByValue: true });
         if (result.value === 'complete') break;
       }
-      await new Promise((r) => setTimeout(r, 600)); // let React mount + fonts settle
+      // readyState 'complete' only means the document loaded — React may not
+      // have mounted, and Vite may still be hot-reloading after an edit.
+      // Checks that run against a half-mounted page fail for no real reason,
+      // which is worse than not running them.
+      await this.waitFor(
+        () => !!document.querySelector('#root')?.firstElementChild && document.readyState === 'complete',
+        8000,
+      );
+      await new Promise((r) => setTimeout(r, 250)); // let fonts and layout settle
+    },
+    /** Poll a predicate in the page until it is true, or throw. */
+    async waitFor(predicate, timeout = 5000, label = 'condition') {
+      const started = Date.now();
+      for (;;) {
+        const expression = `(${predicate.toString()})()`;
+        const { result } = await send('Runtime.evaluate', { expression, returnByValue: true });
+        if (result.value) return;
+        if (Date.now() - started > timeout) throw new Error(`timed out waiting for ${label}`);
+        await new Promise((r) => setTimeout(r, 100));
+      }
     },
     async evaluate(fn, ...args) {
       const expression = `(${fn.toString()})(${args.map((a) => JSON.stringify(a)).join(',')})`;
