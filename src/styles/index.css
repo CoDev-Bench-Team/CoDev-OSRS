@@ -36,10 +36,15 @@
   /* Below the design width, every interactive target is at least 44x44px
      (spec 002 FR-012). This deliberately does NOT apply at 1440 and above,
      where the source's own geometry wins — its buttons are 42px high and its
-     steppers smaller still. An addition, logged in additions.md. */
+     steppers smaller still. An addition, logged in additions.md.
+
+     `.hit-area` (utilities.css) is exempt: it meets the 44px minimum with an
+     invisible pseudo-element instead of growing its box, so a control the
+     source draws at 22px — the stepper's "-" / "+" — keeps its drawn size at
+     every width. */
   @media (max-width: 1439px) {
     a[href],
-    button:not([disabled]),
+    button:not([disabled]):not(.hit-area),
     input,
     select,
     textarea,

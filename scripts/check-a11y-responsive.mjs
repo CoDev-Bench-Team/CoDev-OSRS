@@ -130,8 +130,21 @@ for (const w of [360, 768, 1024, 1440]) {
       .filter((el) => el.getBoundingClientRect().right > width + 1)
       .map((el) => el.tagName + '.' + String(el.className).slice(0, 30))
       .slice(0, 4);
+    // The target is what the pointer can hit, not only the element's box. A
+    // `.hit-area` control (utilities.css) keeps the source's small box and
+    // grows a centred, absolutely positioned ::before to 44px; that pseudo is
+    // hit-testable and its events reach the button, so it counts.
+    const target = (el) => {
+      const r = el.getBoundingClientRect();
+      const p = getComputedStyle(el, '::before');
+      if (p.content === 'none' || p.position !== 'absolute') return { width: r.width, height: r.height };
+      return {
+        width: Math.max(r.width, parseFloat(p.width) || 0),
+        height: Math.max(r.height, parseFloat(p.height) || 0),
+      };
+    };
     const small = [...document.querySelectorAll('a[href], button:not([disabled])')]
-      .map((el) => ({ el, r: el.getBoundingClientRect() }))
+      .map((el) => ({ el, r: target(el) }))
       .filter(({ r }) => r.width > 0 && (r.width < 44 || r.height < 44))
       .map(({ el, r }) => `${el.tagName}.${String(el.className).slice(0, 24)} ${Math.round(r.width)}x${Math.round(r.height)}`)
       .slice(0, 6);

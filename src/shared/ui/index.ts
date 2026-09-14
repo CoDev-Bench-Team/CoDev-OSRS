@@ -10,6 +10,7 @@ export { ButtonTemplate, ButtonWithIcon, SignInButton } from './actions/imported
 
 // Forms
 export { Search } from './forms/Search';
+export { Select } from './forms/Select';
 
 // Data display
 export { StatusPill } from './data-display/StatusPill';
@@ -32,6 +33,7 @@ export { ArrowCounterClockwise } from './icons/ArrowCounterClockwise';
 export { CaretRight } from './icons/CaretRight';
 export { CheckCircleFill } from './icons/CheckCircleFill';
 export { GoogleIcon, type GoogleIconSize } from './icons/GoogleIcon';
+export { MdiChevronDown } from './icons/MdiChevronDown';
 
 // Status vocabulary
 export {

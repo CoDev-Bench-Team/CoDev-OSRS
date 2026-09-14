@@ -76,6 +76,26 @@
   box-shadow: inset 0 0 0 1px var(--color-osrs-black);
 }
 
+/* A control the source draws smaller than the 44px touch minimum — the
+   stepper's "-" / "+" are 22px squares — keeps its drawn box and grows an
+   invisible, centred 44px hit area instead. Pseudo-elements are hit-testable
+   and their events target the button, so the pointer gets 44px while layout
+   and the pixel diff see the source's geometry. index.css exempts the class
+   from the blanket min-size rule; check-a11y-responsive.mjs measures the
+   hit area rather than the box. */
+@utility hit-area {
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--spacing-touch-target);
+    height: var(--spacing-touch-target);
+    translate: -50% -50%;
+  }
+}
+
 /* Motion. The source records durations and an easing curve but designs no
    interaction, so these are applied by the state rules in index.css. */
 @utility transition-osrs {

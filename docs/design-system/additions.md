@@ -31,7 +31,7 @@ Grouped by how much judgement each required.
 | Addition | What was decided |
 |----------|------------------|
 | **Responsive breakpoints** | Exact source geometry at ≥1440. Fluid 768–1439. Single column below 768. The source has only the 1440 frame, so every breakpoint here is invented. |
-| **44px minimum touch target** | Below the design width. `--spacing-touch-target`. |
+| **44px minimum touch target** | Below the design width. `--spacing-touch-target`. Applied as a minimum box size on links, buttons and fields. The one control the source draws smaller than 44px — the stepper's 22px `-` / `+` — is exempt from the box rule and meets the minimum with an invisible, centred 44px pseudo-element instead (`hit-area` in `utilities.css`), so the stepper keeps its 73×26 geometry at every width. |
 | **`TopBar` redesign** | The source positions it absolutely — logo (32,22), nav x=618, account right:64. Converted to flow layout with a centred nav that wraps below `md`. Preserved exactly: 87px height, white surface, hairline ring, 32px gutter, brand red on the current item, 31px divider. |
 | **`PageHeader` redesign** | Source places it at (32,121) absolutely. Now a flow block with the same 32/1.3 title, 8px gap and 14/1.5 subtitle. |
 | **8 promotions** | `TopBar`, `Avatar`, `PageHeader`, `SummaryCard`, `Button`, `TableCard`, `TableHead`, `SectionTitle` were drawn as frames inside the UI kit, not published as components. They are first-class components here. **Worth publishing in Figma** so future exports stay in sync. |
@@ -44,8 +44,30 @@ with the same visual box.
 
 | Control | Was | Now |
 |---------|-----|-----|
-| **Model select** (`SupplyCard`) | A `div` with a `⌄` character. Not focusable, not operable, no options. | A native `<select>` with `appearance-none`, so the source's own `⌄` still shows. Gains keyboard control, type-ahead, screen-reader semantics and the platform picker on mobile. Renders within 0.01% of the original in the pixel diff. New props: `models`, `onModelChange`. |
-| **Chevron alignment** | The `⌄` glyph's ink is 15px tall inside a 12px line box, so it overflowed its own box and its position was unpredictable. | Placed in a 16×16 box with the ink centred, 16px from the right edge. Optical centre now within 0.5px. |
+| **Model select** (`SupplyCard`) | A `div` with a `⌄` character. Not focusable, not operable, no options. | A custom `Select` implementing the ARIA listbox pattern, with an overlay panel styled from the design system rather than drawn by the OS. New props: `models`, `onModelChange`. |
+| **Dropdown affordance** | The `⌄` character (U+2304). Its ink is 15px tall inside a 12px line box, so it overflowed its own box and its size and vertical position depended on line-box rounding. | MDI `chevron-down` at 20px, optically centred, 16px from the right edge, rotating 180° when open. The readme prescribes MDI for an icon the file does not define, so this stays in register. |
+
+### Why the select is custom rather than native
+
+A native `<select>` gives keyboard operation, type-ahead and screen-reader
+semantics for free, but its dropdown is drawn by the operating system and cannot
+be styled. The requirement was an overlay matching the design system, so all of
+that had to be reimplemented rather than inherited:
+
+- combobox trigger with `aria-expanded`, `aria-controls`, `aria-activedescendant`
+- Enter, Space and Arrow keys open; arrows move; Home and End jump; Escape closes
+- type-ahead jumps to the first option matching what you type
+- focus returns to the trigger on close, so Tab order is never lost
+- the panel is **portalled to `<body>`** and positioned `fixed`
+
+That last point is not a detail. `SupplyCard` clips its content with
+`overflow-hidden` to round the image corners, which cut the panel off inside the
+card — only two of four options were reachable. No `z-index` escapes a clipping
+ancestor; the panel has to leave the subtree entirely. It flips above the trigger
+when there is no room below, and closes on outside scroll.
+
+Each of these is behaviour the platform was providing before. Anything not
+listed here is behaviour that was lost.
 
 ## 4. Defects found in the source — flagged, not fixed
 
@@ -74,20 +96,25 @@ from the source's rendering**, kept because a tokenised grey is deliberate where
 a UA default is not, and because the semantic alias exists for exactly this.
 Worth confirming with the designer, or specifying a placeholder colour in Figma.
 
-### 4.1c The quantity stepper's size and spacing are wrong
+### 4.1c The quantity stepper looked wrong — resolved, not a source defect
 
-**Reported by the project owner against the Figma frame, 2026-09-14.** The port
-reproduces `SupplyCard.jsx` exactly — 73×26, `--osrs-canvas`, radius 4, padding
-2, gap 8 — confirmed by computed-style diff. So the error is in the **extraction
-that produced this design system**, not in the port. Correct values are still
-needed from the Figma inspect panel.
+**Reported by the project owner against the UI kit, 2026-09-14.** The stepper
+rendered noticeably larger than the kit's. The first diagnosis blamed the
+extraction; that was wrong. The port matches `SupplyCard.jsx` exactly at 1440
+(73×26, `--osrs-canvas`, radius 4, padding 2, gap 8), and the kit is the same
+component from the same bundle, so the two could not differ there.
 
-**This matters beyond the stepper.** Every fidelity gate in this repository
-compares the port against the extraction. Where the extraction is wrong, the
-gates confirm a faithful copy of a wrong value and report success. They prove
-the port is correct *with respect to the design system*, never with respect to
-Figma. Only a human comparing against the real frames can catch this class of
-error — and one instance is now confirmed, so others are likely.
+The difference appeared at any viewport **below 1440**: the §3 touch-target
+rule set `min-inline-size` / `min-block-size: 44px` on every button, which grew
+the 22px `-` / `+` to 44×44 and the stepper to 113×48. The kit has no such
+rule, and the fidelity gates run only at 1440, so neither showed it.
+
+Fixed by exempting the stepper buttons from the box rule and giving them the
+44px hit area as a pseudo-element (§3). The responsive gate now measures the
+hit area, not the box, so the requirement still holds. The lesson stands in a
+narrower form: the gates prove fidelity at 1440 only; an addition that applies
+below it can still change designed geometry, and only viewing the port at a
+real window size catches that.
 
 ### 4.2 The Google mark renders monochrome
 
@@ -105,8 +132,8 @@ Ported faithfully; **should be corrected at source**.
 3. Fix the two contrast pairings in §4.1, or accept them explicitly.
 4. Restore the Google mark's four colours in §4.2.
 5. Confirm the search placeholder colour in §4.1b, or specify one in Figma.
-6. **Supply the stepper's real dimensions** (§4.1c) — and re-check the rest of
-   the extraction, since it is now known to be unfaithful in at least one place.
+6. Ratify the stepper's pseudo-element hit area (§3, §4.1c) as the way small
+   controls meet the 44px minimum below the design width.
 7. Adopt the token names in [token-map.md](token-map.md) as Figma Variables — the
    source defines only two, so the whole palette and type scale are currently
    raw values in frames.

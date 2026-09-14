@@ -43,10 +43,20 @@ const used = new Map();
 for (const f of files) {
   const src = await read(f);
   for (const m of src.matchAll(/class(?:Name)?=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
-    for (const raw of (m[1] ?? m[2]).split(/\s+/)) {
-      const c = raw.replace(/\$\{[^}]*\}/g, '').trim();
-      if (!c || c.includes('${') || c.includes('?')) continue;
-      if (!used.has(c)) used.set(c, f);
+    const value = m[1] ?? m[2];
+    // Classes that live inside a ternary — `${open ? 'rotate-180' : ''}` — are
+    // invisible if the interpolation is simply stripped, so pull the quoted
+    // literals out of each `${...}` and check them too.
+    const chunks = [value.replace(/\$\{[^}]*\}/g, ' ')];
+    for (const expr of value.matchAll(/\$\{([^}]*)\}/g)) {
+      for (const lit of expr[1].matchAll(/['"`]([^'"`]*)['"`]/g)) chunks.push(lit[1]);
+    }
+    for (const chunk of chunks) {
+      for (const raw of chunk.split(/\s+/)) {
+        const c = raw.trim();
+        if (!c || c.includes('${') || c.includes('?') || c.includes('(')) continue;
+        if (!used.has(c)) used.set(c, f);
+      }
     }
   }
 }

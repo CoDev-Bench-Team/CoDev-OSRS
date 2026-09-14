@@ -1,4 +1,5 @@
 import { StatusPill } from './StatusPill';
+import { Select } from '../forms/Select';
 import type { Availability } from '../status';
 import itemLaptop from '../../../assets/items/item-laptop.jpg';
 
@@ -40,8 +41,12 @@ export function SupplyCard({
   className?: string;
 }) {
   const step = (d: number) => onQuantityChange?.(Math.max(1, quantity + d));
+  /* `hit-area`: the source draws these as 22px squares. Below the design width
+     the global 44px touch-target rule would grow the box and the stepper with
+     it (73x26 became 113x48), so the 44px is supplied by an invisible
+     pseudo-element instead and the drawn geometry holds at every width. */
   const stepBtn =
-    'cursor-pointer rounded-4 border-none bg-transparent px-8 py-4 font-sans text-14 font-semibold leading-tight text-osrs-stone-600 transition-osrs hover:text-osrs-stone-900';
+    'hit-area cursor-pointer rounded-4 border-none bg-transparent px-8 py-4 font-sans text-14 font-semibold leading-tight text-osrs-stone-600 transition-osrs hover:text-osrs-stone-900';
 
   return (
     <div
@@ -61,40 +66,32 @@ export function SupplyCard({
           </span>
         </div>
         <span className="font-sans text-11-5 font-bold leading-display text-ink-primary">{modelLabel}</span>
-        {/* A real <select>, not a div that looks like one. Native gives keyboard
-            control, type-ahead, screen-reader semantics and the platform picker
-            on mobile for free — none of which a styled div can reproduce.
-            `appearance-none` removes the OS arrow so the source's own "⌄" is
-            what shows. */}
-        <div className="relative w-full">
-          <select
-            value={model}
-            onChange={(e) => onModelChange?.(e.target.value)}
-            aria-label={modelLabel}
-            className="h-control-height-lg w-full cursor-pointer appearance-none truncate rounded-10 bg-surface-card py-0 pr-40 pl-16 font-sans text-14 leading-tight text-ink-primary ring-default transition-osrs focus-visible:ring-brand"
-          >
-            {(models ?? [model]).map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-          {/* The glyph's ink (15px) overflows its 12px line box, so centring the
-              box does not centre what you see. Giving it a square box with the
-              ink centred inside makes its position predictable. */}
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 right-16 flex h-16 w-16 -translate-y-1/2 items-center justify-center font-sans text-12 leading-none text-ink-secondary"
-          >
-            ⌄
-          </span>
-        </div>
+        {/* A custom listbox, not a native <select>: the overlay is styled from
+            the design system rather than drawn by the OS. Everything the native
+            control provided — keyboard operation, type-ahead, screen-reader
+            semantics — is implemented in Select rather than given up. */}
+        <Select
+          label={modelLabel}
+          value={model}
+          options={models ?? [model]}
+          onChange={(m) => onModelChange?.(m)}
+        />
         <div className="flex w-full flex-wrap items-center justify-between gap-12">
           <div className="flex items-center gap-8 rounded-4 bg-surface-stepper p-2">
             <button type="button" className={stepBtn} onClick={() => step(-1)} aria-label="Decrease quantity">
               -
             </button>
-            <span className="font-sans text-13 font-semibold leading-tight text-osrs-stone-900" aria-live="polite">
+            {/* The source draws "1" at its natural width, which would let the
+                stepper widen and the primary button shrink as digits are added.
+                The slot is fixed at three tabular digits instead: a request
+                cannot exceed stock, so 999 covers the range, and tabular
+                figures give every digit the same advance so 1 → 10 → 100
+                moves nothing. Beyond three digits the slot grows rather than
+                overlapping the buttons. */}
+            <span
+              className="min-w-[3ch] text-center font-sans text-13 font-semibold leading-tight tabular-nums text-osrs-stone-900"
+              aria-live="polite"
+            >
               {quantity}
             </span>
             <button type="button" className={stepBtn} onClick={() => step(1)} aria-label="Increase quantity">

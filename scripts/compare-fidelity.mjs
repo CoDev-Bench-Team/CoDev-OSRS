@@ -6,6 +6,14 @@
 import { connect } from './cdp.mjs';
 
 const BOX = ['backgroundColor', 'borderRadius', 'boxShadow', 'padding', 'height', 'width'];
+
+/** Text present in the source that the port deliberately does not reproduce.
+ *  Named per component with a reason, so a genuine missing element still fails. */
+const ALLOWED_MISSING_TEXT = {
+  SupplyCard: {
+    '⌄': "the source draws the dropdown affordance as the text character U+2304, whose ink (15px) overflows its 12px line box, making its size and vertical position depend on line-box rounding. Replaced with MDI chevron-down at 20px, optically centred — the register the design system's readme prescribes for an icon the file does not define. Logged in additions.md.",
+  },
+};
 const TEXT = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'textTransform'];
 
 const cdp = await connect();
@@ -80,6 +88,11 @@ for (const p of pairs) {
   for (const s of p.sourceText) {
     const match = p.portText.find((t) => t.text === s.text);
     if (!match) {
+      const allowed = ALLOWED_MISSING_TEXT[p.name]?.[s.text];
+      if (allowed) {
+        lines.push(`    note: "${s.text}" intentionally absent — ${allowed}`);
+        continue;
+      }
       lines.push(`    text "${s.text}" — no matching element in the port`);
       diffs++;
       continue;
@@ -96,7 +109,8 @@ for (const p of pairs) {
 }
 
 for (const r of report) {
-  console.log(`\n${r.lines.length ? '✗' : '✓'} ${r.name}`);
+  const onlyNotes = r.lines.length > 0 && r.lines.every((l) => l.trim().startsWith('note:'));
+  console.log(`\n${r.lines.length === 0 || onlyNotes ? '✓' : '✗'} ${r.name}`);
   for (const l of r.lines) console.log(l);
 }
 console.log(`\n${pairs.length} pairs · ${checked} properties compared · ${diffs} differences`);
