@@ -14,6 +14,8 @@ export function SupplyCard({
   availability = 'available',
   modelLabel = 'Model',
   model = 'Dell Latitude',
+  models,
+  onModelChange,
   quantity = 1,
   onQuantityChange,
   actionLabel = 'Add to Request List',
@@ -26,6 +28,10 @@ export function SupplyCard({
   availability?: Availability;
   modelLabel?: string;
   model?: string;
+  /** Selectable models. Defaults to just the current one, which keeps the
+      control looking exactly as the source draws it when there is no choice. */
+  models?: string[];
+  onModelChange?: (model: string) => void;
   quantity?: number;
   onQuantityChange?: (n: number) => void;
   actionLabel?: string;
@@ -55,9 +61,33 @@ export function SupplyCard({
           </span>
         </div>
         <span className="font-sans text-11-5 font-bold leading-display text-ink-primary">{modelLabel}</span>
-        <div className="flex h-control-height-lg w-full items-center justify-between overflow-hidden rounded-10 bg-surface-card px-16 ring-default">
-          <span className="truncate font-sans text-14 leading-tight text-ink-primary">{model}</span>
-          <span className="ml-8 shrink-0 font-sans text-12 leading-tight text-ink-secondary">⌄</span>
+        {/* A real <select>, not a div that looks like one. Native gives keyboard
+            control, type-ahead, screen-reader semantics and the platform picker
+            on mobile for free — none of which a styled div can reproduce.
+            `appearance-none` removes the OS arrow so the source's own "⌄" is
+            what shows. */}
+        <div className="relative w-full">
+          <select
+            value={model}
+            onChange={(e) => onModelChange?.(e.target.value)}
+            aria-label={modelLabel}
+            className="h-control-height-lg w-full cursor-pointer appearance-none truncate rounded-10 bg-surface-card py-0 pr-40 pl-16 font-sans text-14 leading-tight text-ink-primary ring-default transition-osrs focus-visible:ring-brand"
+          >
+            {(models ?? [model]).map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+          {/* The glyph's ink (15px) overflows its 12px line box, so centring the
+              box does not centre what you see. Giving it a square box with the
+              ink centred inside makes its position predictable. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 right-16 flex h-16 w-16 -translate-y-1/2 items-center justify-center font-sans text-12 leading-none text-ink-secondary"
+          >
+            ⌄
+          </span>
         </div>
         <div className="flex w-full flex-wrap items-center justify-between gap-12">
           <div className="flex items-center gap-8 rounded-4 bg-surface-stepper p-2">

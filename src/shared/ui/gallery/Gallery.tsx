@@ -84,8 +84,11 @@ const LINKS = [
   ['overflow', 'Overflow'],
 ] as const;
 
+const LAPTOP_MODELS = ['Dell Latitude 5440', 'Lenovo ThinkPad T14', 'HP EliteBook 840', 'MacBook Pro 14"'];
+
 export function Gallery() {
   const [qty, setQty] = useState(1);
+  const [model, setModel] = useState(LAPTOP_MODELS[0]);
   const [scrim, setScrim] = useState(false);
 
   return (
@@ -234,7 +237,13 @@ export function Gallery() {
             <SummaryCard value="2" label="Low stock alerts" />
           </Row>
           <Row label="Supply card">
-            <SupplyCard quantity={qty} onQuantityChange={setQty} />
+            <SupplyCard
+              quantity={qty}
+              onQuantityChange={setQty}
+              model={model}
+              models={LAPTOP_MODELS}
+              onModelChange={setModel}
+            />
             <SupplyCard
               category="Devices"
               name="Monitor"

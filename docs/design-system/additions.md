@@ -36,6 +36,17 @@ Grouped by how much judgement each required.
 | **`PageHeader` redesign** | Source places it at (32,121) absolutely. Now a flow block with the same 32/1.3 title, 8px gap and 14/1.5 subtitle. |
 | **8 promotions** | `TopBar`, `Avatar`, `PageHeader`, `SummaryCard`, `Button`, `TableCard`, `TableHead`, `SectionTitle` were drawn as frames inside the UI kit, not published as components. They are first-class components here. **Worth publishing in Figma** so future exports stay in sync. |
 
+## 3b. Controls made real
+
+The export draws several controls as static shapes. Reproducing them literally
+would ship a catalog nobody can use, so these are implemented as real controls
+with the same visual box.
+
+| Control | Was | Now |
+|---------|-----|-----|
+| **Model select** (`SupplyCard`) | A `div` with a `⌄` character. Not focusable, not operable, no options. | A native `<select>` with `appearance-none`, so the source's own `⌄` still shows. Gains keyboard control, type-ahead, screen-reader semantics and the platform picker on mobile. Renders within 0.01% of the original in the pixel diff. New props: `models`, `onModelChange`. |
+| **Chevron alignment** | The `⌄` glyph's ink is 15px tall inside a 12px line box, so it overflowed its own box and its position was unpredictable. | Placed in a 16×16 box with the ink centred, 16px from the right edge. Optical centre now within 0.5px. |
+
 ## 4. Defects found in the source — flagged, not fixed
 
 Per FR-011a, a source value that fails a threshold is reported rather than
@@ -63,6 +74,21 @@ from the source's rendering**, kept because a tokenised grey is deliberate where
 a UA default is not, and because the semantic alias exists for exactly this.
 Worth confirming with the designer, or specifying a placeholder colour in Figma.
 
+### 4.1c The quantity stepper's size and spacing are wrong
+
+**Reported by the project owner against the Figma frame, 2026-09-14.** The port
+reproduces `SupplyCard.jsx` exactly — 73×26, `--osrs-canvas`, radius 4, padding
+2, gap 8 — confirmed by computed-style diff. So the error is in the **extraction
+that produced this design system**, not in the port. Correct values are still
+needed from the Figma inspect panel.
+
+**This matters beyond the stepper.** Every fidelity gate in this repository
+compares the port against the extraction. Where the extraction is wrong, the
+gates confirm a faithful copy of a wrong value and report success. They prove
+the port is correct *with respect to the design system*, never with respect to
+Figma. Only a human comparing against the real frames can catch this class of
+error — and one instance is now confirmed, so others are likely.
+
 ### 4.2 The Google mark renders monochrome
 
 `GoogleIcon` carries four paths — the real mark is four-colour — but the source
@@ -79,8 +105,10 @@ Ported faithfully; **should be corrected at source**.
 3. Fix the two contrast pairings in §4.1, or accept them explicitly.
 4. Restore the Google mark's four colours in §4.2.
 5. Confirm the search placeholder colour in §4.1b, or specify one in Figma.
-6. Adopt the token names in [token-map.md](token-map.md) as Figma Variables — the
+6. **Supply the stepper's real dimensions** (§4.1c) — and re-check the rest of
+   the extraction, since it is now known to be unfaithful in at least one place.
+7. Adopt the token names in [token-map.md](token-map.md) as Figma Variables — the
    source defines only two, so the whole palette and type scale are currently
    raw values in frames.
-7. Design the gaps that block later work: the Supply Admin's prepare/release
+8. Design the gaps that block later work: the Supply Admin's prepare/release
    screen, the five notification emails, and loading / empty / error states.
