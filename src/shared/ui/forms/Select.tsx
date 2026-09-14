@@ -30,18 +30,16 @@ export function Select({
   onChange?: (value: string) => void;
   label?: string;
   placeholder?: string;
-  /** Defaults to disabled when there are fewer than two options — there is
-   *  nothing to choose, so the control should not look as though there is.
-   *  Pass `disabled={false}` to force it interactive regardless. */
+  /** Disables the control. Option count has no bearing on this: a select with
+   *  one option opens and shows it, the way a native select does. */
   disabled?: boolean;
   className?: string;
 }) {
-  // One disabled state, not two. A control that keeps its normal contrast but
-  // does not respond reads as enabled and broken, which is a worse failure than
-  // one that plainly looks unavailable. Using the real `disabled` attribute
-  // rather than only `aria-disabled` also takes it out of the tab order, which
-  // is what a native <select disabled> does.
-  const isDisabled = disabled ?? options.length <= 1;
+  // Disabled only when asked. A single option is not a reason to disable: the
+  // control still opens and shows what is there, which is what a native select
+  // does. Using the real `disabled` attribute rather than only `aria-disabled`
+  // keeps it out of the tab order when it is set.
+  const isDisabled = disabled === true;
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(() => Math.max(0, options.indexOf(value ?? '')));
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -206,6 +204,7 @@ export function Select({
         aria-activedescendant={open ? `${id}-opt-${active}` : undefined}
         disabled={isDisabled}
         aria-disabled={isDisabled || undefined}
+        data-option-count={options.length}
         onClick={() => {
           if (isDisabled) return;
           setActive(Math.max(0, options.indexOf(value ?? '')));

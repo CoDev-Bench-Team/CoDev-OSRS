@@ -175,33 +175,42 @@ else if (Math.abs(geo[0].h - geo[1].h) > TITLE_LINE) fail(`card height grew ${Ma
 else pass(`width identical (${geo[0].w}px) and height bounded by the clamps (${geo[0].h} vs ${geo[1].h})`);
 
 // ---- Select: disabled ----
-// One disabled state, not two. A control that keeps normal contrast but does
-// not respond reads as enabled and broken; the earlier "soft" variant was
-// removed for that reason and this guards against it creeping back.
-console.log('\nSelect disables itself when there is nothing to choose (FR-010)');
+// Disabled only when asked for. Option count does not affect availability —
+// a single-option select opens and shows what is there, like a native one.
+console.log('\nSelect is disabled only when asked, never by option count (FR-010)');
 await cdp.setViewport(1440, 1000);
 await cdp.goto('http://localhost:5173/');
 await cdp.evaluate(() => document.querySelector('#forms').scrollIntoView({ block: 'start' }));
 await new Promise((r) => setTimeout(r, 300));
 const selects = await cdp.evaluate(() =>
   [...document.querySelectorAll('#forms [role=combobox]')].map((t) => ({
+    options: Number(t.dataset.optionCount),
     disabled: t.disabled,
     opacity: Number(getComputedStyle(t).opacity),
-    softAttr: t.dataset.disabled ?? null,
-    chevron: getComputedStyle(t.querySelector('svg')).color,
   })),
 );
-const enabled = selects.filter((s) => !s.disabled);
+const single = selects.find((s) => s.options === 1);
 const off = selects.filter((s) => s.disabled);
-if (enabled.length === 0 || off.length < 2)
-  fail(`expected one enabled and two disabled selects in the gallery, got ${enabled.length} / ${off.length}`);
-else if (selects.some((s) => s.softAttr))
-  fail('a "soft" disabled variant is present — it was removed deliberately');
-else if (off.some((s) => s.opacity > 0.5))
-  fail(`a disabled select is not faded: ${off.map((s) => s.opacity).join(', ')}`);
-else if (off.some((s) => s.chevron !== enabled[0].chevron))
-  fail('disabled selects should differ from enabled by opacity alone, not by chevron colour');
-else pass(`one disabled treatment: inert, faded to ${off[0].opacity}, out of the tab order`);
+if (!single) fail('the gallery no longer shows a single-option select');
+else if (single.disabled) fail('a single-option select is disabled — option count must not affect availability');
+else pass('a single-option select stays interactive');
+if (off.length !== 1) fail(`expected exactly one explicitly disabled select, found ${off.length}`);
+else if (off[0].opacity > 0.5) fail(`the disabled select is not faded (opacity ${off[0].opacity})`);
+else pass(`explicitly disabled: inert, faded to ${off[0].opacity}, out of the tab order`);
+
+// a single-option select must actually open
+await cdp.evaluate(() => {
+  const t = [...document.querySelectorAll('#forms [role=combobox]')].find((e) => e.dataset.optionCount === '1');
+  t?.click();
+});
+let opened = true;
+try {
+  await cdp.waitFor(() => !!document.querySelector('[role=listbox]'), 2500, 'the single-option select to open');
+} catch {
+  opened = false;
+}
+opened ? pass('and it opens') : fail('a single-option select did not open');
+await cdp.evaluate(() => document.body.click());
 
 // ---- Overlay layering ----
 // A popover must sit above a dialog so a select inside one is usable, which

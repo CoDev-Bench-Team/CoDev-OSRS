@@ -21,7 +21,7 @@ Grouped by how much judgement each required.
 | Addition | What was decided | Basis |
 |----------|------------------|-------|
 | **Hover** | Ink or fill lightens one step, 120ms, eased. No scale, no bounce, no shadow growth. | The one hover variance the file records: `ButtonWithIcon` lightens ink from `rgb(73,76,80)` to `rgb(111,121,133)`. |
-| **Disabled** | 40% opacity, pointer events off, out of the tab order. Applied automatically when a control has fewer than two options. | The source's one precedent: `ButtonTemplate`'s "saved" state sits at 40% opacity. A second, lighter "soft" variant was tried for the single-option case and removed — keeping normal contrast on a control that does not respond reads as enabled and broken, which is worse than plainly looking unavailable. |
+| **Disabled** | 40% opacity, pointer events off, out of the tab order. Set explicitly; option count has no bearing on it. | The source's one precedent: `ButtonTemplate`'s "saved" state sits at 40% opacity. Two variations were tried for the single-option case and both removed — a lighter "soft" state read as enabled-and-broken, and disabling on option count alone was unhelpful: a select with one option opens and shows it, the way a native select does. |
 | **Focus-visible** | 2px brand-red outline at 2px offset, never suppressed. | Nothing in the source. Without it the product is unusable by keyboard. |
 | **Disabled** | 40% opacity, pointer events off. | The source's one precedent: `ButtonTemplate`'s "saved" state sits at 40% opacity. |
 | **Motion tokens** | `--motion-fast` 120ms, `--motion-base` 180ms, `--ease-osrs`. | Shipped in the design system's own token files as a flagged addition. |

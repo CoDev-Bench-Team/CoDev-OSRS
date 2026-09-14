@@ -232,7 +232,7 @@ export function Gallery() {
         <Section
           id="forms"
           title="Forms"
-          note="A select with fewer than two options disables itself: there is nothing to choose, so it should not look as though there is. Disabled follows the source's one precedent — ButtonTemplate's saved state at 40% opacity."
+          note="Option count does not affect availability — a select with one option opens and shows it, the way a native select does. Disabled is set explicitly, and follows the source's one precedent: ButtonTemplate's saved state at 40% opacity."
         >
           <div className="max-w-[420px]">
             <Search />
@@ -242,7 +242,7 @@ export function Gallery() {
               <Select label="Model" value={model} options={LAPTOP_MODELS} onChange={setModel} />
             </div>
           </Row>
-          <Row label="Select — one option, disabled automatically">
+          <Row label="Select — one option, still interactive">
             <div className="w-[420px] max-w-full">
               <Select label="Model" value="Dell Latitude 5440" options={['Dell Latitude 5440']} />
             </div>
