@@ -17,6 +17,7 @@ The product started as a Vite scaffold with no domain specs. These markdown file
 | Product | `docs/product.md` | Problem, users, MVP outcome, non-goals |
 | Domain flow | `docs/process-flow.md` | Status, inventory, emails |
 | Decisions | `docs/adr/*.md` | Why we chose X over Y |
+| Linear SPA epic map | `docs/linear-spa-pages-epic.md` | Dependency graph, BEN parents/sub-issues, merge gates for shell + pages |
 | Constitution (versioned) | `specs/constitution.md` | Same principles, changelog-friendly |
 | Feature WHAT | `specs/001-office-supplies-mvp/spec.md` | Stories, FRs, success criteria |
 | Feature HOW | `specs/001-office-supplies-mvp/plan.md` | Stack, structure, compliance |
