@@ -8,7 +8,17 @@
  *
  *  Chrome decodes the PNGs (via canvas in the page), so there is no image
  *  dependency — constitution VIII holds. */
+/** Spec 003 gave `/` to the routed application shell, so the design system's
+ *  own surfaces moved to development-only addresses: the gallery at
+ *  `/__gallery`, the fidelity harness at `/__compare`. Neither ships in a
+ *  production build. */
 import { connect } from './cdp.mjs';
+
+/** The dev server's origin. Defaults to Vite's first port; set
+ *  `OSRS_DEV_ORIGIN` when running from a worktree whose server took another
+ *  one (`npm run dev` prints it). */
+const ORIGIN = process.env.OSRS_DEV_ORIGIN ?? 'http://localhost:5173';
+
 import { writeFileSync, mkdirSync } from 'node:fs';
 
 const THRESHOLD = 1.5; // % of differing pixels tolerated — antialiasing only
@@ -36,7 +46,7 @@ const cdp = await connect();
 await cdp.setViewport(1440, 2400);
 // The harness is lazy-loaded, so wait for the pairs themselves rather than
 // for a first mount that happens before they exist.
-await cdp.goto('http://localhost:5173/#compare', {
+await cdp.goto(`${ORIGIN}/__compare`, {
   ready: () => document.querySelectorAll('[data-cmp]').length >= 12,
 });
 await cdp.evaluate(async () => {

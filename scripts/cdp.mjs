@@ -39,13 +39,21 @@ async function ensureChrome(port) {
   throw new Error(`could not start Chrome on :${port} (set CHROME_PATH if it lives elsewhere)`);
 }
 
-export async function connect(port = 9222) {
+/** `newTab` attaches to a tab of its own instead of reusing the first one, so a
+ *  check can drive two tabs at once — which is the only honest way to test that
+ *  signing out in one stops the other (spec 003 FR-017a). */
+export async function connect(port = 9222, { newTab = false } = {}) {
   await ensureChrome(port);
-  const targets = await (await fetch(`http://localhost:${port}/json/list`)).json();
-  let page = targets.find((t) => t.type === 'page');
-  if (!page) {
-    await fetch(`http://localhost:${port}/json/new?about:blank`, { method: 'PUT' });
-    page = (await (await fetch(`http://localhost:${port}/json/list`)).json()).find((t) => t.type === 'page');
+  let page;
+  if (newTab) {
+    page = await (await fetch(`http://localhost:${port}/json/new?about:blank`, { method: 'PUT' })).json();
+  } else {
+    const targets = await (await fetch(`http://localhost:${port}/json/list`)).json();
+    page = targets.find((t) => t.type === 'page');
+    if (!page) {
+      await fetch(`http://localhost:${port}/json/new?about:blank`, { method: 'PUT' });
+      page = (await (await fetch(`http://localhost:${port}/json/list`)).json()).find((t) => t.type === 'page');
+    }
   }
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((res, rej) => {
@@ -72,7 +80,13 @@ export async function connect(port = 9222) {
   return {
     send,
     events,
+    targetId: page.id,
     close: () => ws.close(),
+    /** Close the tab itself, not just the connection to it. */
+    closeTab: async () => {
+      ws.close();
+      await fetch(`http://localhost:${port}/json/close/${page.id}`).catch(() => {});
+    },
     /** Navigate and wait until the page is genuinely ready.
      *
      *  readyState 'complete' only means the document loaded — React may not

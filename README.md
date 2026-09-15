@@ -31,7 +31,17 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build
 npm run lint
+npm run verify   # every gate: typecheck, lint, design-system fidelity, shell routing, build
 ```
+
+The application opens at `/login`. Sign-in resolves a **seeded demo account**
+until the backend contract publishes — pick one on the sign-in screen; the three
+roles are listed in
+[quickstart.md](specs/001-office-supplies-mvp/quickstart.md).
+
+The design system's component gallery is not part of the application. It stays
+reachable in development at **`/__gallery`** (and the fidelity harness at
+`/__compare`), and ships in no production build.
 
 Set `VITE_API_ORIGIN` when an API host exists (see `quickstart.md`).
 

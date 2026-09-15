@@ -1,5 +1,7 @@
-/** Every spec 002 gate in one place. Needs `npm run dev` and headless Chrome:
- *    chrome --headless=new --remote-debugging-port=9222 --user-data-dir=/tmp/p */
+/** Every gate in one place — spec 002's design-system checks and spec 003's
+ *  application-shell checks. Needs `npm run dev`; headless Chrome is started
+ *  for you. Set OSRS_DEV_ORIGIN when the dev server took a port other than
+ *  5173 (a worktree usually does). */
 import { spawnSync } from 'node:child_process';
 const steps = [
   ['typecheck', 'npx', ['tsc', '-b', '--force']],
@@ -8,6 +10,7 @@ const steps = [
   ['fidelity (FR-005a)', 'node', ['scripts/compare-fidelity.mjs']],
   ['pixels (FR-005a)', 'node', ['scripts/compare-pixels.mjs']],
   ['a11y + responsive', 'node', ['scripts/check-a11y-responsive.mjs']],
+  ['shell routing + guards', 'node', ['scripts/check-shell.mjs']],
   ['build', 'npm', ['run', 'build']],
 ];
 let failed = 0;

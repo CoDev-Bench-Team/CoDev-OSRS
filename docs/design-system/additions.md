@@ -129,6 +129,106 @@ off a new scrim — the two cases are indistinguishable by z-index alone. So a
 scrim explicitly dismisses any open popover when it mounts
 (`overlay/popover-layer.ts`). Both halves are covered by a regression check.
 
+## 3d. The application shell (spec 003)
+
+Everything in this section is new design. The source draws **screens**, not an
+application: it has no loading, empty, error, not-found or forbidden state
+anywhere, no sign-out control, no narrow-width navigation, and it merges
+Approver and Supply Admin into a single "Admin" identity that constitution II
+forbids. The shell could not be built without inventing all of it. Nothing here
+introduces a colour, type size, radius or shadow that is not already a token
+(spec 003 FR-021, SC-008).
+
+### The five feedback surfaces
+
+All five share ONE invented layout — a card on the page surface carrying an
+eyebrow chip, a title, one sentence of explanation and a route back — rather
+than five separate inventions. The card is the system's own structural
+container (radius 10, card surface, card shadow); the type is the existing page
+title and body roles; the chip reuses the status vocabulary's tints.
+
+| Surface | Eyebrow | Tone | Why it exists |
+|---------|---------|------|---------------|
+| `LoadingState` | — | — | FR-018. Three brand dots on the page surface, fading with the platform's pulse and suppressed under `prefers-reduced-motion`. The label, not the dots, is what a screen reader announces. Not an ad-hoc spinner: the source has no spinner to copy. |
+| `NotFoundScreen` | NOT FOUND | neutral | FR-012. Echoes the address back, because a mistyped link must stay diagnosable. |
+| `RecordUnavailableScreen` | UNAVAILABLE | neutral | FR-012a. The **shared** response for "this request does not exist" and "this request is not yours". Identical words in both cases, and the identifier is deliberately never echoed, so request ids cannot be enumerated by reading the difference. |
+| `ForbiddenScreen` | NO ACCESS | stopped (red tint) | FR-011. Names the role you hold, because the fix is to sign in as the other one — there is no switcher (D5). |
+| `Placeholder` | NOT BUILT YET | info (blue tint) | FR-020. Must not be mistakable for not-found, an error, or an empty result, so it says which screen this is and that the screen's own feature has not shipped. |
+| `ErrorBoundary` fallback | ERROR | stopped | FR-019. Renders inside the shell, so the bar and navigation survive a screen that throws. |
+
+The red tint on a refusal and the blue on a placeholder are the existing status
+colours (`--color-status-rejected-*`, `--color-status-info-*`) used for a new
+purpose. **This widens the status vocabulary's reach beyond request status** —
+worth the designer's ratification alongside the handover labels in §2b.
+
+### The sign-out control
+
+Not drawn anywhere in the source. Placed in the account cluster, at the right
+end of the top bar, as the system's `ghost` button. Its placement, its label
+("Sign Out", Title Case per the content conventions) and its very existence are
+ours.
+
+### Three navigation sets, not the source's one
+
+The file draws `[Catalog, My Requests, Profile]` for the Employee and
+`[Requests Queue, Inventory]` for a merged "Admin". Constitution II forbids that
+merge, so navigation is derived per role from the `ARCHITECT.md` §7
+authorization matrix:
+
+| Role | Navigation |
+|------|-----------|
+| Employee | Catalog · My Requests · Profile (as drawn) |
+| Approver | Requests Queue · Catalog · Profile |
+| Supply Admin | Fulfillment · Inventory · Catalog · Profile |
+
+The Approver and Supply Admin sets are **undesigned**, and "Fulfillment" names a
+queue the file never draws at all.
+
+### Collapsed navigation below 768px
+
+The source has no mobile frame. Below `md` the navigation collapses into a
+"Menu" disclosure that opens a full-width list under the bar; the account
+cluster, the request-list marker and sign-out stay in the bar at every width.
+Carries forward the responsive commitment in §3.
+
+### The bar now starts at the 32px gutter it always claimed
+
+`TopBar` capped at the 1344px **content** width and centred, which at the 1440
+design width put the logo at x=80 — contradicting the 32px gutter this document
+records as preserved. It now spans the 1440 page width with a 32px gutter, so
+the logo sits at x=32 exactly as drawn, and the page content below it sits on
+the same grid. The source reaches its 1344 of content from an **asymmetric**
+pair of gutters (32 left, 64 right, measured from the frame); a symmetric flow
+layout cannot reproduce that, so the content runs 1376 wide instead. The
+designer should confirm the symmetric gutter.
+
+### A third avatar colour
+
+The file designs two identities — Maya Santos (orange) and Ethan Cruz (green).
+The seeded Approver, Samantha Reyes, needs a third and uses the source's
+`--osrs-blue-600`. A palette colour, a new use.
+
+### The sign-in card, composed in flow
+
+The card keeps the source's own fixed dimensions (421×500), its radius 24, its
+card shadow and its four elements, but stacks them in flow rather than by
+absolute coordinate — the same redesign already applied to `TopBar` and
+`PageHeader` in §3. The Google pill's hairline ring moved to a 1px wrapper: an
+inset shadow paints beneath its children, and the control's own icon and label
+panels are opaque white, so on the button itself the ring showed only in the
+gaps between them.
+
+### A seeded account chooser on the sign-in screen
+
+Below the card, a second small card lets a tester choose which seeded demo
+account signs in — the stand-in for Google's account chooser, and the only way
+to reach all three roles while the backend contract is unpublished. It is **not**
+a role switcher (D5): it chooses who signs *in*, and changing role still means
+signing out and back in. It renders only while the active session source offers
+demo accounts, so it disappears by itself the day a real one replaces it.
+
+---
+
 ## 4. Defects found in the source — flagged, not fixed
 
 Per FR-011a, a source value that fails a threshold is reported rather than
@@ -199,3 +299,7 @@ Ported faithfully; **should be corrected at source**.
    raw values in frames.
 8. Design the gaps that block later work: the Supply Admin's prepare/release
    screen, the five notification emails, and loading / empty / error states.
+9. Ratify the application shell in §3d: the five feedback surfaces and their use
+   of the status tints, the sign-out control, the Approver and Supply Admin
+   navigation sets, the collapsed navigation, the symmetric 32px gutter, and the
+   third avatar colour.

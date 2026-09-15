@@ -3,7 +3,17 @@
  *
  *  Screenshots cannot catch a 500-weight that should be 700, or 11.5px rendered
  *  as 12px. Computed styles can. */
+/** Spec 003 gave `/` to the routed application shell, so the design system's
+ *  own surfaces moved to development-only addresses: the gallery at
+ *  `/__gallery`, the fidelity harness at `/__compare`. Neither ships in a
+ *  production build. */
 import { connect } from './cdp.mjs';
+
+/** The dev server's origin. Defaults to Vite's first port; set
+ *  `OSRS_DEV_ORIGIN` when running from a worktree whose server took another
+ *  one (`npm run dev` prints it). */
+const ORIGIN = process.env.OSRS_DEV_ORIGIN ?? 'http://localhost:5173';
+
 
 const BOX = ['backgroundColor', 'borderRadius', 'boxShadow', 'padding', 'height', 'width'];
 
@@ -21,7 +31,7 @@ const cdp = await connect();
 await cdp.setViewport(1440, 1024);
 // The harness is lazy-loaded, so wait for the pairs themselves rather than
 // for a first mount that happens before they exist.
-await cdp.goto('http://localhost:5173/#compare', {
+await cdp.goto(`${ORIGIN}/__compare`, {
   ready: () => document.querySelectorAll('[data-cmp]').length >= 12,
 });
 
