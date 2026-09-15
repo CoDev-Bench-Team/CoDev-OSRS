@@ -58,17 +58,28 @@ export function ButtonWithIcon({
   );
 }
 
-/** Google's sign-in button. A third-party brand asset — never restyle it. */
+/** Google's sign-in button. A third-party brand asset — never restyle it.
+ *
+ *  `iconPadding` and `labelPadding` exist because the source component has
+ *  them and the design file uses them: the login screen's instance overrides
+ *  both to `0 6px` so the control fits the 242x64 pill drawn on the card. The
+ *  port had dropped the two props, which is why the login pill could not be
+ *  reproduced at its drawn width. Both default to the source's own defaults,
+ *  so every other instance renders exactly as before. */
 export function SignInButton({
   darkmode = true,
   mobile = false,
   cta = 'Sign in with Google',
+  iconPadding,
+  labelPadding,
   className,
   onClick,
 }: {
   darkmode?: boolean;
   mobile?: boolean;
   cta?: string;
+  iconPadding?: string;
+  labelPadding?: string;
   className?: string;
   onClick?: () => void;
 }) {
@@ -79,12 +90,18 @@ export function SignInButton({
       className={`inline-flex w-fit cursor-pointer items-center border-none transition-osrs ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'} ${mobile ? 'p-0' : 'pr-32'} ${className ?? ''}`}
     >
       <span
-        className="flex items-center justify-center self-stretch bg-white p-16"
-        style={darkmode ? { boxShadow: 'inset 0 0 0 2px var(--color-osrs-google-blue)' } : undefined}
+        className={`flex items-center justify-center self-stretch bg-white ${iconPadding ? '' : 'p-16'}`}
+        style={{
+          ...(darkmode ? { boxShadow: 'inset 0 0 0 2px var(--color-osrs-google-blue)' } : undefined),
+          ...(iconPadding ? { padding: iconPadding } : undefined),
+        }}
       >
         <GoogleIcon size="32x32" />
       </span>
-      <span className={`flex items-center px-16 py-18 ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'}`}>
+      <span
+        className={`flex items-center ${labelPadding ? '' : 'px-16 py-18'} ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'}`}
+        style={labelPadding ? { padding: labelPadding } : undefined}
+      >
         <span
           className={`font-google text-18 font-medium leading-tight whitespace-nowrap ${darkmode ? 'text-white' : 'text-osrs-google-gray'}`}
           style={{ letterSpacing: '0.005em' }}

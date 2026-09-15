@@ -211,12 +211,26 @@ The seeded Approver, Samantha Reyes, needs a third and uses the source's
 ### The sign-in card, composed in flow
 
 The card keeps the source's own fixed dimensions (421×500), its radius 24, its
-card shadow and its four elements, but stacks them in flow rather than by
-absolute coordinate — the same redesign already applied to `TopBar` and
-`PageHeader` in §3. The Google pill's hairline ring moved to a 1px wrapper: an
-inset shadow paints beneath its children, and the control's own icon and label
-panels are opaque white, so on the button itself the ring showed only in the
-gaps between them.
+card shadow and its four elements, and — unlike `TopBar` and `PageHeader` in §3
+— reproduces the drawn offsets exactly rather than approximating them, because
+this card is a fixed box that never reflows: 59 to the lockup, 94 to the welcome
+line, 13 to the control, 112 to the copyright, 55 to the bottom edge, summing to
+exactly 500. The Google pill's hairline ring moved to a 1px wrapper: an inset
+shadow paints beneath its children, and the control's own icon and label panels
+are opaque white, so on the button itself the ring showed only in the gaps
+between them.
+
+**Checked against the 2026-09-15 `.fig` re-export**, not the 2026-09-12 vendored
+copy — see [drift-2026-09-15.md](drift-2026-09-15.md). Two things came back from
+that check and are **not** additions but corrections:
+
+- The login background is a dark **dotted** panel (1440×1024), not the red
+  photograph the vendored export carried. The photograph is in the current file
+  nowhere at all. The asset was replaced.
+- `SignInButton` regained `iconPadding` and `labelPadding`, which the source
+  component has and the port had dropped. The drawn login instance overrides
+  both to `0 6px` to fit the 242×64 pill; without the props that pill could not
+  be reproduced, and the control rendered 43px too wide.
 
 ### A seeded account chooser on the sign-in screen
 
@@ -303,3 +317,7 @@ Ported faithfully; **should be corrected at source**.
    of the status tints, the sign-out control, the Approver and Supply Admin
    navigation sets, the collapsed navigation, the symmetric 32px gutter, and the
    third avatar colour.
+10. Settle the 2026-09-15 re-export in [drift-2026-09-15.md](drift-2026-09-15.md)
+    — the new `Cancelled` status (which needs a constitution amendment, not a
+    design decision), `Completed`'s new purple, the notification bell, and how
+    Profile is reached now that it is not a navigation item.

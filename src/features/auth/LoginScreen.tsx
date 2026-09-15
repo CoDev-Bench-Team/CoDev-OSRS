@@ -23,8 +23,12 @@ import loginBackground from '../../assets/login/login-background.png';
  *  not published (FR-004).
  *
  *  The card is composed in flow rather than by absolute coordinate, the same
- *  redesign spec 002 applied to the top bar and page header. Its two fixed
- *  dimensions are the source's own (421×500). */
+ *  redesign spec 002 applied to the top bar and page header — but unlike the
+ *  bar, this card is a FIXED 421×500 box that never reflows, so its drawn
+ *  offsets are reproduced exactly instead of approximated. The four spacing
+ *  values below are measured from the file: 59 to the lockup, 94 to the
+ *  welcome line, 13 to the control, 112 to the copyright, 55 to the bottom
+ *  edge. They sum with the elements to exactly 500. */
 export function LoginScreen() {
   const { status, session, signIn, notice, source } = useSession();
   const location = useLocation();
@@ -56,30 +60,37 @@ export function LoginScreen() {
 
   return (
     <div
-      className="flex min-h-screen w-full flex-col items-center justify-center gap-20 bg-surface-page px-layout-gutter py-32"
+      className="relative flex min-h-screen w-full flex-col items-center justify-center bg-surface-page px-layout-gutter py-32"
       style={{ backgroundImage: `url(${loginBackground})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
     >
-      <div className="flex min-h-[500px] w-[421px] max-w-full flex-col items-center justify-between gap-32 rounded-24 bg-surface-card p-32 shadow-card">
+      <div className="flex w-[421px] max-w-full flex-col items-center rounded-24 bg-surface-card px-32 pt-[59px] pb-[55px] shadow-card">
         <CoDevSupplyRequestsLogo markHeight={36} className="items-center" />
 
-        <div className="flex flex-col items-center gap-20">
+        <div className="mt-[94px] flex flex-col items-center gap-[13px]">
           <span className="type-body text-ink-primary">Great to have you with us!</span>
 
           {/* The source rings this pill with a 1px hairline. The ring cannot go
               on the button itself: an inset shadow paints under its children,
               and the control's own icon and label panels are opaque white, so
               it would show only in the gaps between them. One pixel of padding
-              on a wrapper gives the hairline a strip of its own. */}
-          <span className="inline-flex rounded-32 p-1 ring-ink">
+              on a wrapper gives the hairline a strip of its own.
+              The 242x64 box and the 0/6px paddings are the drawn instance's. */}
+          <span className="inline-flex h-[64px] w-[242px] rounded-32 p-1 ring-ink">
             <SignInButton
               mobile
               darkmode={false}
+              iconPadding="0 6px"
+              labelPadding="0 6px"
               onClick={onSignIn}
-              className="justify-center gap-2 rounded-32 px-16"
+              className="w-full justify-center gap-2 rounded-32"
             />
           </span>
+        </div>
 
-          {/* Both notices are live regions so they are announced, not only seen. */}
+        {/* Both notices are live regions so they are announced, not only seen.
+            They sit between the control and the copyright line, which is the
+            only place the card has room the drawing does not already spend. */}
+        <div className="mt-20 flex flex-col items-center gap-8 empty:mt-0">
           {refused ? (
             <p role="alert" className="type-body text-center text-red-error">
               Sign-in did not succeed. Please try again.
@@ -97,9 +108,12 @@ export function LoginScreen() {
           ) : null}
         </div>
 
-        <span className="type-body text-ink-primary">© 2026 CoDev. All rights reserved.</span>
+        <span className="mt-[112px] type-body text-ink-primary">© 2026 CoDev. All rights reserved.</span>
       </div>
 
+      {/* The chooser is not part of the design. It is pinned to the corner so
+          the card keeps the position it is drawn at — centred in the frame —
+          instead of being pushed up by an affordance the file does not have. */}
       {hasDemoAccounts(source) ? <DemoAccountChooser source={source} /> : null}
     </div>
   );
@@ -119,7 +133,7 @@ function DemoAccountChooser({ source }: { source: DemoAccountSource }) {
   const [selected, setSelected] = useState(() => source.selected());
 
   return (
-    <div className="flex w-[421px] max-w-full flex-col gap-12 rounded-10 bg-surface-card p-20 shadow-card">
+    <div className="mt-24 flex w-[421px] max-w-full flex-col gap-12 rounded-10 bg-surface-card p-20 shadow-card lg:absolute lg:top-32 lg:left-layout-gutter lg:mt-0 lg:w-[280px]">
       <div className="flex flex-col gap-4">
         <span className="type-eyebrow uppercase text-ink-secondary">Demo sign-in</span>
         <p className="type-body text-ink-body">

@@ -27,7 +27,7 @@ export function Swatch({ token, name }: { token: string; name: string }) {
     <div className="flex w-[168px] flex-col gap-6">
       <span className="h-[56px] w-full rounded-8 ring-default" style={{ backgroundColor: `var(${token})` }} />
       <span className="font-sans text-12 font-bold leading-tight text-ink-primary">{name}</span>
-      <code className="rounded-4 bg-surface-subtle px-4 py-2 font-sans text-11 leading-tight text-ink-secondary">
+      <code className="rounded-4 bg-osrs-surface-subtle px-4 py-2 font-sans text-11 leading-tight text-ink-secondary">
         {token}
       </code>
     </div>
