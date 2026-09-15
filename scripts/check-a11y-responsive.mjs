@@ -11,7 +11,7 @@ const pass = (m) => console.log(`  ✓ ${m}`);
 // ---- No third-party requests (FR-004, SC-002) ----
 await cdp.send('Network.enable');
 await cdp.setViewport(1440, 1024);
-await cdp.goto('http://localhost:5173/');
+await cdp.goto('http://localhost:5173/gallery');
 const requests = cdp.events
   .filter((e) => e.method === 'Network.requestWillBeSent')
   .map((e) => e.params.request.url)
@@ -179,7 +179,7 @@ else pass(`width identical (${geo[0].w}px) and height bounded by the clamps (${g
 // a single-option select opens and shows what is there, like a native one.
 console.log('\nSelect is disabled only when asked, never by option count (FR-010)');
 await cdp.setViewport(1440, 1000);
-await cdp.goto('http://localhost:5173/');
+await cdp.goto('http://localhost:5173/gallery');
 await cdp.evaluate(() => document.querySelector('#forms').scrollIntoView({ block: 'start' }));
 await new Promise((r) => setTimeout(r, 300));
 const selects = await cdp.evaluate(() =>
@@ -218,7 +218,7 @@ await cdp.evaluate(() => document.body.click());
 // scrim. Both halves are checked.
 console.log('\nOverlay layering: popover above dialog, no stale popover over the scrim');
 await cdp.setViewport(1440, 1000);
-await cdp.goto('http://localhost:5173/');
+await cdp.goto('http://localhost:5173/gallery');
 await cdp.evaluate(() => document.querySelector('#data').scrollIntoView({ block: 'start' }));
 await new Promise((r) => setTimeout(r, 350));
 

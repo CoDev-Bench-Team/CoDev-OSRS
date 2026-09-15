@@ -71,7 +71,7 @@ source failures in §4.1.
 |----------|------------------|
 | **Responsive breakpoints** | Exact source geometry at ≥1440. Fluid 768–1439. Single column below 768. The source has only the 1440 frame, so every breakpoint here is invented. |
 | **44px minimum touch target** | Below the design width. `--spacing-touch-target`. Applied as a minimum box size on links, buttons and fields. The one control the source draws smaller than 44px — the stepper's 22px `-` / `+` — is exempt from the box rule and meets the minimum with an invisible, centred 44px pseudo-element instead (`hit-area` in `utilities.css`), so the stepper keeps its 1440 geometry at every width. |
-| **`TopBar` redesign** | The source positions it absolutely — logo (32,22), nav x=618, account right:64. Converted to flow layout with a centred nav that wraps below `md`. Preserved exactly: 87px height, white surface, hairline ring, 32px gutter, brand red on the current item, 31px divider. |
+| **`TopBar` redesign** | ~~Converted to flow layout with a centred nav.~~ **Superseded 2026-09-15**: the bar is now a port of the `Top Navigation` component (88:22807), matching the frame to within a pixel at 1440. See §3d. |
 | **`PageHeader` redesign** | Source places it at (32,121) absolutely. Now a flow block with the same 32/1.3 title, 8px gap and 14/1.5 subtitle. |
 | **8 promotions** | `TopBar`, `Avatar`, `PageHeader`, `SummaryCard`, `Button`, `TableCard`, `TableHead`, `SectionTitle` were drawn as frames inside the UI kit, not published as components. They are first-class components here. **Worth publishing in Figma** so future exports stay in sync. |
 
@@ -128,6 +128,70 @@ has to be usable. That ordering cannot also keep a popover left open *elsewhere*
 off a new scrim — the two cases are indistinguishable by z-index alone. So a
 scrim explicitly dismisses any open popover when it mounts
 (`overlay/popover-layer.ts`). Both halves are covered by a regression check.
+
+## 3d. The 2026-09-15 frames — newer than the vendored export
+
+Four frames were built against the **live Figma file** rather than
+`design-system/`: `01 - Login` second variant (28:2673), `03 - Inventory`
+(113:27060), `04 - Add Item` (113:27374) and `04 - Update Item` (113:28004).
+
+The vendored export was taken on 2026-09-12 and does not contain them. That is
+drift in the sense of §1 of [DESIGN.md](../../DESIGN.md) — the export and the
+file no longer agree — and the response is the documented one: re-vendor, diff
+`SHA256SUMS`, reconcile the token map. Until that happens, the values below come
+from the file and have no entry in `token-map.md`.
+
+### Values the frames state and the token export does not carry
+
+| Value | Where | Note |
+|-------|-------|------|
+| **22px display size** | The item drawer's heading | Between the 19px section title and the 28px metric. Rendered as `text-[22px]`; wants a token. |
+| **39px control height** | Every field in the drawer | The system's control heights are 46 and 42. |
+| **6px radius, warm 1px border on inputs** | Every field in the drawer | The system's inputs are ringed, not bordered (`DESIGN.md` §6). The frames draw a real border in `--color-osrs-border-warm`, so that is what shipped. |
+| **48px table header** | The inventory table | The library's `TableHead` is 41px and has no alignment control, so this header is inlined in the feature — as the source's own inventory screen does. |
+| **400px drawer, 371px content column** | Both item frames | Fixed panel geometry, no token. |
+| **36px / 4px-radius pagination controls, 14px on 20px text** | The inventory pager | An imported control, like `ButtonTemplate` — see below. |
+
+### Decisions made while porting them
+
+| Decision | Detail |
+|----------|--------|
+| **Two greys substituted in the pager** | The imported pagination component carries its own near-black text grey and pale border grey, which the OSRS palette does not have. Raw hex is a build failure and two new tokens for one imported control would be worse, so they render as `ink-strong` and `line-default`. The one place on these screens where a drawn colour is not reproduced exactly. |
+| **heroicons chevrons ported** | The pager's three chevrons are heroicons-mini, not MDI. Transcribed from the exported paths rather than substituted, and repainted with `currentColor`. |
+| **bytesize close glyph ported** | The drawer's dismiss control. The export ships no close icon. |
+| **Field labels sit on a normal line box** | 11px bold, but not the eyebrow role's 100% line height: the drawn label occupies 13px, and those 2px are what keep a column of fields on the frame's 58px rhythm. |
+| **Asymmetric gutters, as drawn** | The frame insets the bar's row 32px left and 75px right, and the content column 32px left and 64px right — so neither is centred. Both are reproduced exactly at ≥1440 and go symmetric (32/32) below it, where the frame says nothing. Measured against the frame: bar 87px, title at (32,121), table at (32,337) and 1344px wide. |
+| **The pager is pinned near the bottom edge** | The frame places it at y=894 of its 1024 canvas rather than under the table, so it is pushed to the bottom of the viewport here and lands at the drawn position at the design size. |
+| **Subtitle keeps its full stop** | `content-conventions.md` says subtitles take no period; this frame's subtitle ends with one. The designer's copy won. Worth reconciling. |
+| **"+ Add custom field" adds a numbered spec row** | The frame draws the control but not what it produces. |
+| **Update prefills from the row** | The two frames are otherwise identical, and the Update frame shows the same empty placeholders as Add. Prefilling the item's name, category and stock is what "update this item" means. |
+
+### The Admin bar — adopted verbatim, 2026-09-15
+
+The frames carry an **Admin** account cluster and the navigation
+`[Requests Queue, History, Inventory]`, plus a bell with a count of 3. The
+project owner asked for that bar exactly, so it is what the Supply Admin sees:
+
+| Drawn | Shipped | Note |
+|-------|---------|------|
+| `[Requests Queue, History, Inventory]` | the same three | Catalog and Profile remain *reachable* for this role — the authorization matrix grants both — but they are not in the bar. Navigation and authorization are separate questions. |
+| Account cluster reads **Admin** | the same | A caption, not a role. `Role` is still the closed union of `employee`, `approver` and `supply_admin`, the guards still authorize against `supply_admin`, and no approval action is reachable from this bar — which is what constitution II and [ADR-0003](../adr/0003-three-role-model.md) forbid collapsing. One line in `session-source.ts` restores "Supply Admin". |
+| Bell with a count of 3 | the same | Presentational sample data, like the screen's 238 and 1,250. Notifications are sent by the API and spec 003 FR-024 keeps them out of the shell, so there is nothing to open yet. |
+| No sign-out anywhere | inside the account cluster | FR-016 requires one; putting it behind the cluster keeps the bar's drawn silhouette. |
+
+Constitution I asks that a chat instruction contradicting a spec be recorded as
+an amendment rather than applied silently: this supersedes spec 003's D1 for the
+Supply Admin's navigation set only. The Employee's and Approver's sets still come
+from the authorization matrix, and still have no drawn source.
+
+## 3e. The shell's own states (spec 003)
+
+None of these is drawn anywhere in the file: a **loading** state while the
+session resolves, a **not-found** screen, a **forbidden** screen, a
+**placeholder** for a destination whose feature has not shipped, a **sign-out**
+control in the account cluster, and a third **avatar colour** for the Approver
+(the file designs two identities). Each is built from existing tokens and
+components and introduces no new visual value.
 
 ## 4. Defects found in the source — flagged, not fixed
 
@@ -190,7 +254,11 @@ Ported faithfully; **should be corrected at source**.
 1. Ratify or replace the responsive breakpoints in §3 — they are ours, not yours.
 2. Publish the eight promoted components as real Figma components.
 3. Fix the two contrast pairings in §4.1, or accept them explicitly.
-4. Restore the Google mark's four colours in §4.2.
+4. Restore the Google mark's four colours in §4.2. **Confirmed 2026-09-15**: the
+   live Figma file's `Google Icon` exports with all four brand colours, so the
+   monochrome render is an artefact of the 2026-09-12 export, not the design.
+   The port still reproduces the export, per FR-011a — fix it at source and
+   re-vendor rather than patching it here.
 5. Confirm the search placeholder colour in §4.1b, or specify one in Figma.
 6. Ratify the stepper's pseudo-element hit area (§3, §4.1c) as the way small
    controls meet the 44px minimum below the design width.
@@ -199,3 +267,7 @@ Ported faithfully; **should be corrected at source**.
    raw values in frames.
 8. Design the gaps that block later work: the Supply Admin's prepare/release
    screen, the five notification emails, and loading / empty / error states.
+9. Ratify or replace everything in §3d and §3e — the four 2026-09-15 frames are
+   newer than the vendored export, so none of their values is in the token map.
+10. Decide the content column: the frames' 1344px table against the top bar's
+   own alignment (§3d).

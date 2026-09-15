@@ -62,12 +62,19 @@ export function ButtonWithIcon({
 export function SignInButton({
   darkmode = true,
   mobile = false,
+  compact = false,
   cta = 'Sign in with Google',
   className,
   onClick,
 }: {
   darkmode?: boolean;
   mobile?: boolean;
+  /** The padding override the login card instance carries (figma 28:2677):
+   *  the icon block drops its right padding and the label sits on 8px, which
+   *  is what brings the control to its drawn 242px. The vendored component
+   *  exposes the same thing as free-form `iconPadding` / `labelPadding`; only
+   *  this one pairing is ever used, so it is a flag rather than two strings. */
+  compact?: boolean;
   cta?: string;
   className?: string;
   onClick?: () => void;
@@ -79,12 +86,12 @@ export function SignInButton({
       className={`inline-flex w-fit cursor-pointer items-center border-none transition-osrs ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'} ${mobile ? 'p-0' : 'pr-32'} ${className ?? ''}`}
     >
       <span
-        className="flex items-center justify-center self-stretch bg-white p-16"
+        className={`flex items-center justify-center self-stretch bg-white ${compact ? 'py-16 pl-18' : 'p-16'}`}
         style={darkmode ? { boxShadow: 'inset 0 0 0 2px var(--color-osrs-google-blue)' } : undefined}
       >
         <GoogleIcon size="32x32" />
       </span>
-      <span className={`flex items-center px-16 py-18 ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'}`}>
+      <span className={`flex items-center py-18 ${compact ? 'px-8' : 'px-16'} ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'}`}>
         <span
           className={`font-google text-18 font-medium leading-tight whitespace-nowrap ${darkmode ? 'text-white' : 'text-osrs-google-gray'}`}
           style={{ letterSpacing: '0.005em' }}

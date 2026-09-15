@@ -16,6 +16,17 @@ import { onDismissPopovers } from '../overlay/popover-layer';
  *   - focus returns to the trigger on close, so Tab order is never lost
  *   - the panel flips above the trigger when there is not room below
  */
+/** Two drawn geometries. `lg` is the catalog / inventory control the design
+ *  system already shipped (46px, 10px radius, 14px text). `sm` is the one the
+ *  item drawer draws (figma 98:23421), matching `TextInput` so a select and a
+ *  text field sit on the same line without looking like different controls. */
+const SIZE = {
+  lg: 'h-control-height-lg rounded-10 px-16 ring-default',
+  sm: 'h-[39px] rounded-6 px-12 border border-osrs-border-warm',
+} as const;
+
+const SIZE_TEXT = { lg: 'text-14', sm: 'text-12' } as const;
+
 export function Select({
   value,
   options,
@@ -23,6 +34,8 @@ export function Select({
   label,
   placeholder = 'Select',
   disabled,
+  size = 'lg',
+  id: idProp,
   className,
 }: {
   value?: string;
@@ -33,6 +46,9 @@ export function Select({
   /** Disables the control. Option count has no bearing on this: a select with
    *  one option opens and shows it, the way a native select does. */
   disabled?: boolean;
+  size?: keyof typeof SIZE;
+  /** Supplied by `Field`, so a `<label htmlFor>` resolves to the trigger. */
+  id?: string;
   className?: string;
 }) {
   // Disabled only when asked. A single option is not a reason to disable: the
@@ -195,6 +211,7 @@ export function Select({
     <div ref={rootRef} className={`relative w-full ${className ?? ''}`}>
       <button
         ref={triggerRef}
+        id={idProp}
         type="button"
         role="combobox"
         aria-haspopup={isDisabled ? undefined : 'listbox'}
@@ -211,11 +228,13 @@ export function Select({
           setOpen((o) => !o);
         }}
         onKeyDown={onKeyDown}
-        className={`flex h-control-height-lg w-full items-center justify-between gap-8 rounded-10 border-none bg-surface-card px-16 text-left ring-default transition-osrs ${
+        className={`flex w-full items-center justify-between gap-8 bg-surface-card text-left transition-osrs ${SIZE[size]} ${
           isDisabled ? 'cursor-default' : 'cursor-pointer hover:text-ink-secondary'
         }`}
       >
-        <span className={`truncate font-sans text-14 leading-tight ${value ? 'text-ink-primary' : 'text-ink-secondary'}`}>
+        <span
+          className={`truncate font-sans leading-tight ${SIZE_TEXT[size]} ${value ? 'text-ink-primary' : 'text-ink-secondary'}`}
+        >
           {value ?? placeholder}
         </span>
         <MdiChevronDown className={`shrink-0 text-ink-secondary transition-osrs ${open ? 'rotate-180' : ''}`} />
@@ -246,7 +265,7 @@ export function Select({
                   data-active={i === active}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => commit(i)}
-                  className={`flex cursor-pointer items-center justify-between gap-8 rounded-6 px-12 py-10 font-sans text-14 leading-tight transition-osrs ${
+                  className={`flex cursor-pointer items-center justify-between gap-8 rounded-6 px-12 py-10 font-sans leading-tight transition-osrs ${SIZE_TEXT[size]} ${
                     selected ? 'font-bold text-brand-primary' : 'text-ink-primary'
                   } ${i === active ? 'bg-surface-subtle' : ''}`}
                 >

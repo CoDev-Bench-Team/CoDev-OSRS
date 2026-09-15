@@ -26,6 +26,7 @@ The design system is a verbatim export of `Office Supplies Request System
 | **Verify before trusting it** | `cd design-system && shasum -a 256 -c SHA256SUMS` — 106 files. A mismatch is drift, not a bug to fix in place (FR-019). |
 | **Never ship it** | Reachable only through the `@ds` alias, used only by the dev-only fidelity harness. A gate asserts `design-system/` is absent from the build. |
 | **Re-export procedure** | Re-vendor → diff `SHA256SUMS` → reconcile `docs/design-system/token-map.md` → re-run `npm run verify`. |
+| **The export is already behind the file** | Four frames used since — `01 - Login` second variant (28:2673), `03 - Inventory` (113:27060), `04 - Add Item` (113:27374), `04 - Update Item` (113:28004) — postdate the 2026-09-12 export and were built from the live file. Their values have no entry in the token map. Listed in [additions.md §3d](docs/design-system/additions.md). A re-export is owed. |
 
 What the export contains: 7 token files (156 tokens), 17 component families in 6
 groups, 15 guideline specimen cards, a 7-file click-through UI kit of the whole
@@ -45,7 +46,7 @@ question.
 | Fonts | `src/styles/fonts.css` | Four self-hosted variable faces, no runtime third-party request |
 | Utilities | `src/styles/utilities.css` | 13 composite type roles, 3 rings, `hit-area`, `transition-osrs` |
 | Base | `src/styles/index.css` | Page ground, focus, disabled, the sub-1440 touch minimum |
-| Components | `src/shared/ui/` | 27 components behind one barrel (`index.ts`) |
+| Components | `src/shared/ui/` | 27 components from spec 002, plus 11 added since, behind one barrel (`index.ts`) |
 | Vocabulary | `src/shared/ui/status.ts` | The request and stock status types |
 | Gallery | `src/shared/ui/gallery/` | Every component in isolation, 12 sections |
 
@@ -183,11 +184,19 @@ photography is the login background and the 180px catalog product shots.
 
 ## 7. Components
 
-27 components, all behind `src/shared/ui/index.ts`: **17** ported from the
+All behind `src/shared/ui/index.ts`. Spec 002 shipped 27: **17** ported from the
 source's published families, **8** promoted from frames the designer drew inside
 the UI kit but never published (`TopBar`, `Avatar`, `PageHeader`, `SummaryCard`,
 `Button`, `TableCard`, `TableHead`, `SectionTitle`), and **2** added to make a
 drawn shape into a real control (`Select`, `MdiChevronDown`).
+
+Eleven more have landed since, all from §1's newer frames or from the shell's
+undrawn states: `Field` and `TextInput` (the first form controls the system
+has), `BytesizeClose`, `MdiLightBell`, the three heroicons chevrons the imported
+pager uses, and `LoadingState`, `Placeholder`, `NotFoundScreen`,
+`ForbiddenScreen`. `TopBar` stopped being a redesign and became a port of the
+`Top Navigation` component. See
+[additions.md §3d and §3e](docs/design-system/additions.md).
 
 | Group | Components |
 |-------|------------|

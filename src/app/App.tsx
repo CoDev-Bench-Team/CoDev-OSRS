@@ -1,13 +1,14 @@
 import { lazy, Suspense, useSyncExternalStore } from 'react';
-import { Gallery } from './shared/ui/gallery/Gallery';
+import { BrowserRouter } from 'react-router';
+import { SessionProvider } from '../features/auth/SessionProvider';
+import { AppRoutes } from './routes';
 
-/** Spec 002 delivers the component library, not product screens, and FR-016
- *  forbids routing here. So the gallery is simply what the app renders; its
- *  sections are reached by in-page anchors. Spec 003 replaces this with the
- *  routed shell.
+/** The application shell (spec 003): a router for durable addresses, a session
+ *  boundary for identity and role, and one guard between them.
  *
  *  `#compare` is a development-only branch, not a route: it mounts the fidelity
- *  harness, which imports the vendored design-system source.
+ *  harness, which imports the vendored design-system source. It stays outside
+ *  the router because it is not part of the product.
  *
  *  The `import.meta.env.DEV &&` guard must wrap the `lazy()` call itself, not
  *  just its use. Vite replaces DEV with `false` in a production build, which
@@ -15,7 +16,7 @@ import { Gallery } from './shared/ui/gallery/Gallery';
  *  unconditionally and only *using* it behind the guard still emits the chunk,
  *  so design-system/ would ship. */
 const CompareHarness = import.meta.env.DEV
-  ? lazy(() => import('./shared/ui/gallery/compare/CompareHarness').then((m) => ({ default: m.CompareHarness })))
+  ? lazy(() => import('../shared/ui/gallery/compare/CompareHarness').then((m) => ({ default: m.CompareHarness })))
   : null;
 
 /** Reading `location.hash` during render is not enough: changing the hash on an
@@ -41,5 +42,11 @@ export default function App() {
       </Suspense>
     );
   }
-  return <Gallery />;
+  return (
+    <BrowserRouter>
+      <SessionProvider>
+        <AppRoutes />
+      </SessionProvider>
+    </BrowserRouter>
+  );
 }

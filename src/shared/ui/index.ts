@@ -11,6 +11,10 @@ export { ButtonTemplate, ButtonWithIcon, SignInButton } from './actions/imported
 // Forms
 export { Search } from './forms/Search';
 export { Select } from './forms/Select';
+export { Field, TextInput } from './forms/fields';
+
+// Feedback — none of these is drawn in the source (spec 003)
+export { LoadingState, Placeholder, NotFoundScreen, ForbiddenScreen } from './feedback/states';
 
 // Data display
 export { StatusPill } from './data-display/StatusPill';
@@ -27,6 +31,7 @@ export { PageHeader, SectionTitle } from './layout/headings';
 
 // Icons
 export { MdiLightClipboardText } from './icons/MdiLightClipboardText';
+export { MdiLightBell } from './icons/MdiLightBell';
 export { MdiClipboardTextOutline } from './icons/MdiClipboardTextOutline';
 export { ArrowCircleDownFill } from './icons/ArrowCircleDownFill';
 export { ArrowCounterClockwise } from './icons/ArrowCounterClockwise';
@@ -34,6 +39,8 @@ export { CaretRight } from './icons/CaretRight';
 export { CheckCircleFill } from './icons/CheckCircleFill';
 export { GoogleIcon, type GoogleIconSize } from './icons/GoogleIcon';
 export { MdiChevronDown } from './icons/MdiChevronDown';
+export { BytesizeClose } from './icons/BytesizeClose';
+export { HeroChevronLeft, HeroChevronRight, HeroChevronDown } from './icons/heroicons';
 
 // Status vocabulary
 export {
