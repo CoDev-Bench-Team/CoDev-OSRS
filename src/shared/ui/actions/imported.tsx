@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { ArrowCircleDownFill } from '../icons/ArrowCircleDownFill';
 import { ArrowCounterClockwise } from '../icons/ArrowCounterClockwise';
 import { CheckCircleFill } from '../icons/CheckCircleFill';
@@ -60,19 +60,32 @@ export function ButtonWithIcon({
 
 /** Google's sign-in button. A third-party brand asset — never restyle it.
  *
- *  `iconPadding` and `labelPadding` exist because the source component has
- *  them and the design file uses them: the login screen's instance overrides
- *  both to `0 6px` so the control fits the 242x64 pill drawn on the card. The
- *  port had dropped the two props, which is why the login pill could not be
- *  reproduced at its drawn width. Both default to the source's own defaults,
- *  so every other instance renders exactly as before. */
+ *  `iconPadding`, `labelPadding` and `iconPlate` are here because the login
+ *  screen's instance (figma 15:381) overrides all three, and the vendored
+ *  export reproduced none of them correctly. The instance's own
+ *  `derivedSymbolData` — Figma's computed layout, so not a reading of mine —
+ *  resolves to: a 242x64 root, an icon plate 50x64 at x=0 with its fill turned
+ *  OFF and the mark at (18,16), and a label plate 173x57 at x=50 with the text
+ *  at (8,18). That is padding `16px 0 16px 18px` on the plate and `18px 8px`
+ *  on the label, not the `0 6px` pair the 2026-09-12 export guessed.
+ *
+ *  The hidden plate fill matters structurally: the pill's 1px stroke is drawn
+ *  INSIDE the root, so an opaque plate would paint over the top and bottom of
+ *  it for the plate's first 50px. With the fill off — as the file has it — the
+ *  ring can live on the button itself and stay unbroken, and the control keeps
+ *  its drawn 242x64 instead of shrinking to fit inside a wrapper.
+ *
+ *  All three default to the source component's own values, so every other
+ *  instance renders exactly as before. */
 export function SignInButton({
   darkmode = true,
   mobile = false,
   cta = 'Sign in with Google',
   iconPadding,
   labelPadding,
+  iconPlate = true,
   className,
+  style,
   onClick,
 }: {
   darkmode?: boolean;
@@ -80,17 +93,25 @@ export function SignInButton({
   cta?: string;
   iconPadding?: string;
   labelPadding?: string;
+  /** The icon plate's own fill. The login instance switches it off. */
+  iconPlate?: boolean;
   className?: string;
+  /** The source component takes one, and a drawn box needs it: the base class
+   *  list hugs the content (`w-fit`, the source's `width: fit-content`), and a
+   *  `w-[…]` from `className` would only tie with it on specificity. An
+   *  instance whose root is FIXED in the file passes its size here. */
+  style?: CSSProperties;
   onClick?: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      style={style}
       className={`inline-flex w-fit cursor-pointer items-center border-none transition-osrs ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'} ${mobile ? 'p-0' : 'pr-32'} ${className ?? ''}`}
     >
       <span
-        className={`flex items-center justify-center self-stretch bg-white ${iconPadding ? '' : 'p-16'}`}
+        className={`flex shrink-0 items-center justify-center self-stretch ${iconPlate ? 'bg-white' : ''} ${iconPadding ? '' : 'p-16'}`}
         style={{
           ...(darkmode ? { boxShadow: 'inset 0 0 0 2px var(--color-osrs-google-blue)' } : undefined),
           ...(iconPadding ? { padding: iconPadding } : undefined),
@@ -99,7 +120,7 @@ export function SignInButton({
         <GoogleIcon size="32x32" />
       </span>
       <span
-        className={`flex items-center ${labelPadding ? '' : 'px-16 py-18'} ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'}`}
+        className={`flex shrink-0 items-center ${labelPadding ? '' : 'px-16 py-18'} ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'}`}
         style={labelPadding ? { padding: labelPadding } : undefined}
       >
         <span

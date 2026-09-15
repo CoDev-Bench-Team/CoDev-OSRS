@@ -282,7 +282,7 @@ card shadow and its four elements, and — unlike `TopBar` and `PageHeader` in �
 — reproduces the drawn offsets exactly rather than approximating them, because
 this card is a fixed box that never reflows: 59 to the lockup, 94 to the welcome
 line, 13 to the control, 112 to the copyright, 55 to the bottom edge, summing to
-exactly 500. The Google pill carries its own hairline, as drawn.
+exactly 500. The Google control is borderless, as drawn — see below.
 
 **Checked against the 2026-09-15 `.fig` re-export**, not the 2026-09-12 vendored
 copy — see [drift-2026-09-15.md](drift-2026-09-15.md). Three things came back
@@ -304,13 +304,25 @@ from that check and are **not** additions but corrections:
   fixed width. The export instead re-rendered it as `0 6px` on both plates,
   centred, with a 2px gap.
 
-  The hidden plate fill is the structural part. The pill's 1px stroke is drawn
-  INSIDE the root, so an opaque plate paints over the top and bottom of it for
-  the plate's first 50px — which is why the first pass concluded the ring could
-  not live on the button and wrapped the control in a 1px-padded span instead.
-  That wrapper cost the control two pixels on both axes: it rendered 240×62
-  against the drawn 242×64. With the fill off, as the file has it, the ring goes
-  back on the button and the box is the drawn one.
+  With the plate fill off, as the file has it, the control is a plain white box
+  carrying the mark and the label and nothing else. An earlier pass wrapped it
+  in a 1px-padded span to give a hairline a strip of its own, which cost it two
+  pixels on both axes — 240×62 against the drawn 242×64.
+- **There is no border.** The root does carry a 1px INSIDE stroke, but it is
+  bound to the `Surface` paint style, `#ffffff`, so it paints white on a white
+  fill and is invisible. Its `strokePaints` array still caches the black it held
+  before that binding — and stale caches are normal in this file: 70 of its 823
+  local style bindings disagree with the style they point at, including every
+  node still caching the retired `#c62828` while bound to `Codev Red`
+  `#cc2f4a`. The 2026-09-12 export read the cache, emitted
+  `inset 0 0 0 1px var(--border-strong)`, and two passes of this screen
+  inherited a ring the design does not draw. Reported by the project owner,
+  2026-09-15; confirmed against the file.
+
+  **Worth a word from the designer**: a white, borderless, shadowless control on
+  a white card reads as a lockup rather than a button. If the intent was to
+  remove the outline, that is what ships; if the `Surface` binding was a slip
+  and the pill wants Google's own `#DADCE0` hairline, say so and it is one line.
 
 ### A seeded account chooser on the sign-in screen
 

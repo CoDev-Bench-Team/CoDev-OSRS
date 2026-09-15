@@ -185,17 +185,23 @@ for (const [role, paths] of Object.entries(PERMITTED)) {
   // Browser back returns to the previous destination rather than leaving the
   // application. Navigate the way a user does — click a navigation item — so
   // the history entry is the router's own.
-  await go(`${ACCOUNTS[role].landing}`);
+  const landing = ACCOUNTS[role].landing;
+  await go(landing);
   await cdp.evaluate(() => {
     [...document.querySelectorAll('header nav a')].filter((a) => a.getBoundingClientRect().width > 0).pop().click();
   });
+  // Wait for the click to actually land somewhere else, or "back returns to the
+  // landing screen" would pass without anything having moved.
+  await cdp.waitFor(
+    new Function(`return location.pathname !== ${JSON.stringify(landing)}`),
+    5000,
+    `${role} to reach a second destination`,
+  );
   const secondary = await cdp.evaluate(() => location.pathname);
-  await cdp.waitFor(new Function(`return location.pathname !== ${JSON.stringify('')} && location.pathname !== null`), 3000, 'the second destination');
   await cdp.evaluate(() => history.back());
-  await new Promise((r) => setTimeout(r, 400));
+  await cdp.waitFor(new Function(`return location.pathname === ${JSON.stringify(landing)}`), 5000, `back to ${landing}`);
   const back = await cdp.evaluate(shellState);
-  void secondary;
-  check(back.path === ACCOUNTS[role].landing, `${role}: back returns to ${ACCOUNTS[role].landing}`, `got ${back.path}`);
+  check(back.path === landing, `${role}: back from ${secondary} returns to ${landing}`, `got ${back.path}`);
 }
 
 // ---- T046: every forbidden address is refused, with a working route back ----

@@ -36,6 +36,14 @@ const ALLOWED = {
     max: 3,
     why: 'image resampling: the source paints the photo as a CSS background, the port as an <img>. Same file, same box, different scaler. Plus the stepper rework: a fixed three-digit quantity slot, 22px square sign buttons with the glyph optically centred, U+2212 for the decrement and a 4px gap — 82x26 against the source\'s 74x26 drawn around a lone "1". The primary button keeps its 304px. Logged in additions.md.',
   },
+  SignInButton: {
+    max: 3,
+    why: 'the Google mark\'s four colours. The vendored source paints all four paths --osrs-google-red, which is an export artefact: in the .fig the vector node carries only the red in fillPaints and takes the other three from vectorData.styleOverrideTable (styleID 1 rgb(66,133,244), 3 rgb(52,168,83), 4 rgb(251,188,5)), which the exporter dropped. The port restores the file\'s own colours, so the whole difference is the 32x32 mark and nothing else — geometry, box, type and ink all match to the pixel. Logged in additions.md.',
+  },
+  'SignInButton / light': {
+    max: 3,
+    why: 'the Google mark\'s four colours. The vendored source paints all four paths --osrs-google-red, which is an export artefact: in the .fig the vector node carries only the red in fillPaints and takes the other three from vectorData.styleOverrideTable (styleID 1 rgb(66,133,244), 3 rgb(52,168,83), 4 rgb(251,188,5)), which the exporter dropped. The port restores the file\'s own colours, so the whole difference is the 32x32 mark and nothing else — geometry, box, type and ink all match to the pixel. Logged in additions.md.',
+  },
   ButtonWithIcon: {
     max: 3,
     why: 'icon rasterisation: path geometry matches to 0.02px (measured), but the source rasterises inside a 17.88x16.48 SVG viewport and the port inside 22x22, so thin strokes land on a different grid.',

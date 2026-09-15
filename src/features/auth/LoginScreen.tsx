@@ -69,22 +69,37 @@ export function LoginScreen() {
         <div className="mt-[94px] flex flex-col items-center gap-[13px]">
           <span className="type-body text-ink-primary">Great to have you with us!</span>
 
-          {/* The source rings this pill with a 1px hairline. The ring cannot go
-              on the button itself: an inset shadow paints under its children,
-              and the control's own icon and label panels are opaque white, so
-              it would show only in the gaps between them. One pixel of padding
-              on a wrapper gives the hairline a strip of its own.
-              The 242x64 box and the 0/6px paddings are the drawn instance's. */}
-          <span className="inline-flex h-[64px] w-[242px] rounded-32 p-1 ring-ink">
-            <SignInButton
-              mobile
-              darkmode={false}
-              iconPadding="0 6px"
-              labelPadding="0 6px"
-              onClick={onSignIn}
-              className="w-full justify-center gap-2 rounded-32"
-            />
-          </span>
+          {/* Figma 15:381, taken from the instance's own `derivedSymbolData`
+              rather than from the vendored export, which got all of this
+              wrong. The pill is 242x64; the plates resolve to 50x64 at x=0
+              (mark at 18,16) and 173x57 at x=50 (text at 8,18), so the content
+              is packed left and the 32px trailing pad is what is left of the
+              fixed width.
+
+              NO BORDER. The root does carry a 1px INSIDE stroke, but
+              `styleIdForStrokeFill` binds it to the `Surface` paint style —
+              white — so it paints white on a white fill and is invisible.
+              `strokePaints` still caches the black it held before that binding,
+              and the cache is not the authority: 70 of the file's 823 local
+              style bindings disagree with the style they point at, all the same
+              way, a style retuned and the node left holding the old value (the
+              clearest family being nodes bound to `Codev Red` that still cache
+              the retired red the port already resolves as `--osrs-red-500`).
+              The 2026-09-12 export read that cache, emitted
+              `inset 0 0 0 1px var(--border-strong)`, and two passes of this
+              screen inherited a ring the design does not draw.
+
+              The icon plate's fill is switched off in the file too, so the
+              control is a plain white box: mark, label, nothing else. */}
+          <SignInButton
+            darkmode={false}
+            iconPlate={false}
+            iconPadding="16px 0 16px 18px"
+            labelPadding="18px 8px"
+            onClick={onSignIn}
+            style={{ width: 242, height: 64 }}
+            className="rounded-32"
+          />
         </div>
 
         {/* Both notices are live regions so they are announced, not only seen.
