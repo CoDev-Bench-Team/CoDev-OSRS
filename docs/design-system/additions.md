@@ -65,6 +65,45 @@ pink itself: no fill makes it pass at 12px, so clearing 4.5 needs a darker ink
 (around `#B02A6E` at this fill). Flagged for the designer alongside the two
 source failures in §4.1.
 
+## 2c. `Cancelled` and `Completed` — the 2026-09-15 status colours
+
+The re-export gave `Completed` a purple of its own and added a seventh status,
+`Cancelled`. Both are implemented; the decision to build them was the project
+owner's, recorded as an amendment in spec 001 (Session 2026-09-15) and in
+constitution **2.0.0**, which redefines principle IV to admit the new state.
+
+| Label | Ink | Fill | Provenance |
+|-------|-----|------|------------|
+| Completed | `#6840b8` — new `--osrs-purple-600` | `#f1ecff` — new `--osrs-purple-50` | **Both from the file.** The ink is its `Status/Completed` colour style; the fill is the chip as rendered on `04.1 - My Requests - View Request`. Previously green. |
+| Cancelled | `#4b5063` — the existing `--osrs-ink-700` | 10% of the same, new `--osrs-ink-tint` | **Ink from the file** (`Status/Cancelled`). **The fill is ours**: the file draws no Cancelled chip in any screen, so the fill follows the `--osrs-*-tint` convention the source already uses for red, green, blue and pink. |
+
+**Two inconsistencies in the file**, both reported rather than reproduced:
+
+- The `Cancelled` pill in the Status Definitions table has its *frame* bound to
+  the Cancelled colour style (`#4b5063`) but its *label* still purple — the
+  Completed pill it was duplicated from. Rendered literally it would be purple
+  ink on a dark slate chip. The port uses slate on slate-tint, matching how
+  every other pill in the system is built.
+- The `04.2 - My Requests - Cancelled` screen still shows a **Completed** pill.
+
+### Contrast
+
+Measured as in §4.1, at the pill's own 12px bold. Both pass.
+
+| Pairing | Ratio | Needs |
+|---------|-------|-------|
+| `#6840b8` on `#f1ecff` | **6.03** | 4.5 |
+| `#4b5063` on its own 10% tint over white | **6.86** | 4.5 |
+
+### What this does to the colour rule
+
+The rule stated in the gallery — amber waits on a human, green is moving or
+done, red is stopped — no longer holds as written, because `Completed` has left
+green. It now reads: **amber waits on a human · green is moving · red is stopped
+by a decision · purple is closed and done · slate is stopped without a
+decision.** That is a real change to the system's colour semantics and the
+designer should ratify the sentence, not just the swatches.
+
 ## 3. Invented layout — the largest judgement calls
 
 | Addition | What was decided |
@@ -170,19 +209,47 @@ ours.
 
 ### Three navigation sets, not the source's one
 
-The file draws `[Catalog, My Requests, Profile]` for the Employee and
-`[Requests Queue, Inventory]` for a merged "Admin". Constitution II forbids that
-merge, so navigation is derived per role from the `ARCHITECT.md` §7
+The file draws `[Catalog, My Requests]` for the Employee and
+`[Requests Queue, History, Inventory]` for a merged "Admin". Constitution II
+forbids that merge, so navigation is derived per role from the `ARCHITECT.md` §7
 authorization matrix:
 
 | Role | Navigation |
 |------|-----------|
-| Employee | Catalog · My Requests · Profile (as drawn) |
-| Approver | Requests Queue · Catalog · Profile |
-| Supply Admin | Fulfillment · Inventory · Catalog · Profile |
+| Employee | Catalog · My Requests (as drawn) |
+| Approver | Requests Queue · History · Catalog |
+| Supply Admin | Fulfillment · Inventory · History · Catalog |
 
 The Approver and Supply Admin sets are **undesigned**, and "Fulfillment" names a
-queue the file never draws at all.
+queue the file never draws at all. **Catalog is kept for all three**, which the
+drawn Admin bar omits: the authorization matrix gives every role the catalog,
+and that bar is already overridden.
+
+### Profile left the navigation (2026-09-15)
+
+The re-export's Profile screen renders the Employee bar with **no item marked
+current**, so Profile is not a navigation item any more. Nothing is drawn to
+reach it either. The account cluster — avatar, name, role — became the way in,
+which is the conventional place and the only element on the bar that is about
+the signed-in person. It is now a button; its hover is the system's standard
+ink-lightening. **The affordance is ours; the file draws none.**
+
+### The notification bell (2026-09-15)
+
+Both bar variants gained an `mdi-light:bell`, with a count badge on the Admin
+one. The glyph is taken from the file itself (the design system ships no bell)
+and rendered at 24×24 in the light weight, which is the register the readme
+prescribes.
+
+It is rendered as a **marker, not a control**: the file draws no notification
+panel, no list and no destination, so a button here would be a button that goes
+nowhere. It announces its count to a screen reader and does nothing else, and
+its count comes from the same context the request-list badge uses — wired, live,
+and defaulting to none, because no notification feature exists yet.
+
+The file's Admin badge is `#cc2f4a` while the Employee request-list badge is
+`#c62828`. Two reds for the same element is not a distinction the file makes
+anywhere else, so both render in `--brand-primary`. **Worth confirming.**
 
 ### Collapsed navigation below 768px
 
@@ -215,22 +282,35 @@ card shadow and its four elements, and — unlike `TopBar` and `PageHeader` in �
 — reproduces the drawn offsets exactly rather than approximating them, because
 this card is a fixed box that never reflows: 59 to the lockup, 94 to the welcome
 line, 13 to the control, 112 to the copyright, 55 to the bottom edge, summing to
-exactly 500. The Google pill's hairline ring moved to a 1px wrapper: an inset
-shadow paints beneath its children, and the control's own icon and label panels
-are opaque white, so on the button itself the ring showed only in the gaps
-between them.
+exactly 500. The Google pill carries its own hairline, as drawn.
 
 **Checked against the 2026-09-15 `.fig` re-export**, not the 2026-09-12 vendored
-copy — see [drift-2026-09-15.md](drift-2026-09-15.md). Two things came back from
-that check and are **not** additions but corrections:
+copy — see [drift-2026-09-15.md](drift-2026-09-15.md). Three things came back
+from that check and are **not** additions but corrections:
 
 - The login background is a dark **dotted** panel (1440×1024), not the red
   photograph the vendored export carried. The photograph is in the current file
   nowhere at all. The asset was replaced.
 - `SignInButton` regained `iconPadding` and `labelPadding`, which the source
-  component has and the port had dropped. The drawn login instance overrides
-  both to `0 6px` to fit the 242×64 pill; without the props that pill could not
-  be reproduced, and the control rendered 43px too wide.
+  component has and the port had dropped, and gained `iconPlate` and a `style`
+  passthrough the source also has.
+- The pill's geometry now comes from the instance's own `derivedSymbolData` —
+  Figma's computed layout for that instance, so not a reading of ours — rather
+  than from the vendored `ui_kits/osrs-web/LoginScreen.jsx`, which the first
+  pass followed. The two disagree. The file resolves the instance to a 242×64
+  root, an icon plate 50×64 at x=0 **with its fill switched off** and the mark
+  at (18,16), and a label plate 173×57 at x=50 with the text at (8,18) — so the
+  content is packed left and the root's 32px trailing pad is what is left of the
+  fixed width. The export instead re-rendered it as `0 6px` on both plates,
+  centred, with a 2px gap.
+
+  The hidden plate fill is the structural part. The pill's 1px stroke is drawn
+  INSIDE the root, so an opaque plate paints over the top and bottom of it for
+  the plate's first 50px — which is why the first pass concluded the ring could
+  not live on the button and wrapped the control in a 1px-padded span instead.
+  That wrapper cost the control two pixels on both axes: it rendered 240×62
+  against the drawn 242×64. With the fill off, as the file has it, the ring goes
+  back on the button and the box is the drawn one.
 
 ### A seeded account chooser on the sign-in screen
 
@@ -290,12 +370,29 @@ narrower form: the gates prove fidelity at 1440 only; an addition that applies
 below it can still change designed geometry, and only viewing the port at a
 real window size catches that.
 
-### 4.2 The Google mark renders monochrome
+### 4.2 The Google mark renders monochrome — *export artefact, corrected*
 
-`GoogleIcon` carries four paths — the real mark is four-colour — but the source
-fills all four with `--osrs-google-red`. The design system's own readme says the
-Google asset must never be restyled, so the export contradicts its own rule.
-Ported faithfully; **should be corrected at source**.
+`GoogleIcon` carries four paths — the real mark is four-colour — but the
+vendored source fills all four with `--osrs-google-red`.
+
+**Resolved 2026-09-15 against the `.fig`, and it is the export that is wrong,
+not the design.** The vector node (14:331, and the 40 and 48 sizes beside it)
+carries only the red in `fillPaints`; the other three regions take theirs from
+`vectorData.styleOverrideTable` — styleID 1 `rgb(66,133,244)`, styleID 3
+`rgb(52,168,83)`, styleID 4 `rgb(251,188,5)` — and the exporter dropped the
+table. `fillGeometry` lists the regions as styleIDs 1, 3, 4, 0, which is the
+order the four paths appear in, so the mapping is positional.
+
+The port now paints the file's own colours. That is not a restyle of the brand
+asset (which the readme forbids) but its colours restored, so nothing is owed
+to the designer here — the `.fig` is already correct. Two tokens were added to
+carry the colours the vendored `tokens/colors.css` never needed:
+`--color-osrs-google-green` and `--color-osrs-google-yellow`
+([token-map.md](token-map.md) §additions).
+
+The pixel gate records the difference as a named exception for both
+`SignInButton` pairs, because the vendored source it diffs against still paints
+the mark red.
 
 ---
 
@@ -304,7 +401,8 @@ Ported faithfully; **should be corrected at source**.
 1. Ratify or replace the responsive breakpoints in §3 — they are ours, not yours.
 2. Publish the eight promoted components as real Figma components.
 3. Fix the two contrast pairings in §4.1, or accept them explicitly.
-4. Restore the Google mark's four colours in §4.2.
+4. ~~Restore the Google mark's four colours in §4.2.~~ **Closed** — the `.fig`
+   always had them; the export dropped them. Nothing to change in Figma.
 5. Confirm the search placeholder colour in §4.1b, or specify one in Figma.
 6. Ratify the stepper's pseudo-element hit area (§3, §4.1c) as the way small
    controls meet the 44px minimum below the design width.

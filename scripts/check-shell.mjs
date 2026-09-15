@@ -22,20 +22,22 @@ const fail = (m) => {
 const pass = (m) => console.log(`  ✓ ${m}`);
 const check = (ok, m, detail = '') => (ok ? pass(m) : fail(`${m}${detail ? ` — ${detail}` : ''}`));
 
+// Navigation sets as amended on 2026-09-15: Profile left the bar for the
+// account cluster, History joined it for both admin roles.
 const ACCOUNTS = {
-  employee: { account: 'maya.santos', name: 'Maya Santos', landing: '/catalog', nav: ['Catalog', 'My Requests', 'Profile'] },
-  approver: { account: 'samantha.reyes', name: 'Samantha Reyes', landing: '/approvals', nav: ['Requests Queue', 'Catalog', 'Profile'] },
-  supply_admin: { account: 'ethan.cruz', name: 'Ethan Cruz', landing: '/fulfillment', nav: ['Fulfillment', 'Inventory', 'Catalog', 'Profile'] },
+  employee: { account: 'maya.santos', name: 'Maya Santos', landing: '/catalog', nav: ['Catalog', 'My Requests'] },
+  approver: { account: 'samantha.reyes', name: 'Samantha Reyes', landing: '/approvals', nav: ['Requests Queue', 'History', 'Catalog'] },
+  supply_admin: { account: 'ethan.cruz', name: 'Ethan Cruz', landing: '/fulfillment', nav: ['Fulfillment', 'Inventory', 'History', 'Catalog'] },
 };
 
 const PERMITTED = {
   employee: ['/catalog', '/requests', '/requests/REQ-2026-1847', '/profile'],
-  approver: ['/approvals', '/catalog', '/requests/REQ-2026-1847', '/profile'],
-  supply_admin: ['/fulfillment', '/inventory', '/catalog', '/requests/REQ-2026-1847', '/profile'],
+  approver: ['/approvals', '/history', '/catalog', '/requests/REQ-2026-1847', '/profile'],
+  supply_admin: ['/fulfillment', '/inventory', '/history', '/catalog', '/requests/REQ-2026-1847', '/profile'],
 };
 
 const FORBIDDEN = {
-  employee: ['/approvals', '/fulfillment', '/inventory'],
+  employee: ['/approvals', '/fulfillment', '/inventory', '/history'],
   approver: ['/requests', '/fulfillment', '/inventory'],
   supply_admin: ['/requests', '/approvals'],
 };
@@ -64,12 +66,24 @@ const shellState = () => ({
   requestList: document.querySelector('header')?.textContent.includes('Request List') ?? false,
 });
 
+/** `cdp.goto` can return while the OLD document is still up: it waits for
+ *  readyState and a mounted root, both of which the page being navigated away
+ *  from already satisfies. Marking the current document and waiting for one
+ *  without the mark removes that race. */
+const go = async (path) => {
+  await cdp.evaluate(() => {
+    window.__stale = true;
+  });
+  await cdp.goto(`${ORIGIN}${path}`);
+  await cdp.waitFor(() => !window.__stale, 10000, `a fresh document at ${path}`);
+};
+
 /** `cdp.waitFor` takes a bare predicate, so bind the expected path into one. */
 const waitForPath = (path, label) =>
   cdp.waitFor(new Function(`return location.pathname === ${JSON.stringify(path)}`), 8000, label ?? path);
 
 const signOutEverywhere = async () => {
-  await cdp.goto(`${ORIGIN}/login`);
+  await go('/login');
   await cdp.evaluate(() => localStorage.clear());
 };
 
@@ -78,7 +92,7 @@ const signOutEverywhere = async () => {
 async function signIn(role) {
   const { account, landing } = ACCOUNTS[role];
   await signOutEverywhere();
-  await cdp.goto(`${ORIGIN}/login`);
+  await go(`/login`);
   await cdp.evaluate((id) => {
     const radio = document.querySelector(`input[value="${id}"]`);
     radio.click();
@@ -110,21 +124,29 @@ for (const [role, expected] of Object.entries(ACCOUNTS)) {
     s.requestList === (role === 'employee'),
     `${role}: request-list marker ${role === 'employee' ? 'present' : 'absent'} (FR-015)`,
   );
+  check(!s.nav.includes('Profile'), `${role}: Profile is not a navigation item`);
+  await cdp.evaluate(() => {
+    [...document.querySelectorAll('header button')]
+      .find((b) => b.textContent.includes('Santos') || b.textContent.includes('Reyes') || b.textContent.includes('Cruz'))
+      .click();
+  });
+  await waitForPath('/profile', `${role} reaching profile from the account cluster`);
+  pass(`${role}: the account cluster is the way to Profile`);
 }
 
 // ---- T021: `/` is not a destination, it resolves to one ----
 console.log('\n`/` resolves to the role’s landing destination, and `/login` is not a place to stand (FR-007)');
 for (const [role, expected] of Object.entries(ACCOUNTS)) {
   await signIn(role);
-  await cdp.goto(`${ORIGIN}/`);
+  await go(`/`);
   const root = await cdp.evaluate(shellState);
   check(root.path === expected.landing, `${role}: / resolves to ${expected.landing}`, `got ${root.path}`);
-  await cdp.goto(`${ORIGIN}/login`);
+  await go(`/login`);
   const login = await cdp.evaluate(shellState);
   check(login.path === expected.landing, `${role}: /login while signed in returns to ${expected.landing}`, `got ${login.path}`);
 }
 await signOutEverywhere();
-await cdp.goto(`${ORIGIN}/`);
+await go(`/`);
 await waitForPath('/login', 'a signed-out visitor at /');
 pass('signed out, / sends the visitor to sign-in');
 
@@ -134,7 +156,7 @@ for (const [role, paths] of Object.entries(PERMITTED)) {
   await signIn(role);
   let ok = true;
   for (const path of paths) {
-    await cdp.goto(`${ORIGIN}${path}`);
+    await go(`${path}`);
     const direct = await cdp.evaluate(shellState);
     if (direct.path !== path || !direct.hasBar) {
       ok = false;
@@ -163,14 +185,16 @@ for (const [role, paths] of Object.entries(PERMITTED)) {
   // Browser back returns to the previous destination rather than leaving the
   // application. Navigate the way a user does — click a navigation item — so
   // the history entry is the router's own.
-  await cdp.goto(`${ORIGIN}${ACCOUNTS[role].landing}`);
+  await go(`${ACCOUNTS[role].landing}`);
   await cdp.evaluate(() => {
     [...document.querySelectorAll('header nav a')].filter((a) => a.getBoundingClientRect().width > 0).pop().click();
   });
-  await waitForPath('/profile', `${role} navigating to profile`);
+  const secondary = await cdp.evaluate(() => location.pathname);
+  await cdp.waitFor(new Function(`return location.pathname !== ${JSON.stringify('')} && location.pathname !== null`), 3000, 'the second destination');
   await cdp.evaluate(() => history.back());
   await new Promise((r) => setTimeout(r, 400));
   const back = await cdp.evaluate(shellState);
+  void secondary;
   check(back.path === ACCOUNTS[role].landing, `${role}: back returns to ${ACCOUNTS[role].landing}`, `got ${back.path}`);
 }
 
@@ -179,7 +203,7 @@ console.log('\nEvery forbidden address is refused with an explanation and a rout
 for (const [role, paths] of Object.entries(FORBIDDEN)) {
   await signIn(role);
   for (const path of paths) {
-    await cdp.goto(`${ORIGIN}${path}`);
+    await go(`${path}`);
     const s = await cdp.evaluate(shellState);
     const refused = s.eyebrow === 'No access' && s.hasBar;
     if (!refused) {
@@ -197,14 +221,14 @@ for (const [role, paths] of Object.entries(FORBIDDEN)) {
 // ---- T047: not-found is distinguishable; record addresses never leak ----
 console.log('\nNot-found stays diagnosable while record addresses reveal nothing (FR-012, FR-012a)');
 await signIn('employee');
-await cdp.goto(`${ORIGIN}/definitely-not-a-screen`);
+await go(`/definitely-not-a-screen`);
 const missingPath = await cdp.evaluate(shellState);
 check(missingPath.eyebrow === 'Not found', 'an unmatched path renders not-found', `eyebrow ${missingPath.eyebrow}`);
 check(missingPath.hasBar, 'not-found renders inside the shell, chrome intact');
 
-await cdp.goto(`${ORIGIN}/requests/REQ-2026-9999`);
+await go(`/requests/REQ-2026-9999`);
 const missingRecord = await cdp.evaluate(shellState);
-await cdp.goto(`${ORIGIN}/requests/REQ-2026-1500`); // conceptually another employee's
+await go(`/requests/REQ-2026-1500`); // conceptually another employee's
 const forbiddenRecord = await cdp.evaluate(shellState);
 check(
   missingRecord.eyebrow === 'Unavailable' && forbiddenRecord.eyebrow === 'Unavailable',
@@ -223,7 +247,7 @@ check(missingRecord.eyebrow !== missingPath.eyebrow, 'a mistyped address is stil
 // ---- T048: a deep link survives sign-in ----
 console.log('\nA visitor who asked for a destination arrives there after signing in (FR-013)');
 await signOutEverywhere();
-await cdp.goto(`${ORIGIN}/profile`);
+await go(`/profile`);
 await waitForPath('/login', 'the redirect to sign-in');
 const beforeSignIn = await cdp.evaluate(shellState);
 check(!beforeSignIn.hasBar, 'the sign-in screen carries no top bar (Story 5 AC5)');
@@ -236,7 +260,7 @@ pass('a signed-out request for /profile lands on /profile after sign-in, not on 
 
 // A destination the role may NOT use falls back to its landing screen.
 await signOutEverywhere();
-await cdp.goto(`${ORIGIN}/inventory`);
+await go(`/inventory`);
 await waitForPath('/login', 'the redirect to sign-in');
 await cdp.evaluate(() => {
   document.querySelector('input[value="maya.santos"]').click();
@@ -248,7 +272,7 @@ pass('a deep link the role may not use falls back to the landing screen rather t
 // ---- T035 / FR-003b: a refused sign-in ----
 console.log('\nA refused sign-in creates no session and says so (FR-003b)');
 await signOutEverywhere();
-await cdp.goto(`${ORIGIN}/login`);
+await go(`/login`);
 await cdp.evaluate(() => {
   document.querySelector('input[value="refused"]').click();
   [...document.querySelectorAll('button')].find((b) => b.textContent.includes('Sign in with Google')).click();
@@ -268,7 +292,7 @@ check(refusal.control, 'the control is back at rest, so a retry is possible');
 // ---- T049: sign-out, history, and a second tab ----
 console.log('\nSigning out ends the session everywhere and cannot be undone with back (FR-016, FR-017a)');
 await signIn('employee');
-await cdp.goto(`${ORIGIN}/profile`);
+await go(`/profile`);
 await cdp.evaluate(() => {
   [...document.querySelectorAll('header button')].find((b) => b.textContent.includes('Sign Out')).click();
 });
@@ -280,7 +304,7 @@ await new Promise((r) => setTimeout(r, 600));
 const afterBack = await cdp.evaluate(shellState);
 check(afterBack.path === '/login' && !afterBack.account, 'back after sign-out restores no signed-in screen', `at ${afterBack.path}`);
 
-const second = await connect(9222, { newTab: true });
+const second = await connect(undefined, { newTab: true });
 try {
   await second.setViewport(1440, 1024);
   await signIn('employee');
@@ -295,7 +319,7 @@ try {
 
   // ---- FR-017b: a role that changes behind the boundary ----
   await signIn('employee');
-  await cdp.goto(`${ORIGIN}/requests`);
+  await go(`/requests`);
   await second.goto(`${ORIGIN}/login`);
   await second.evaluate(() => {
     // Behind the session boundary: repoint the seeded source's own session
@@ -342,7 +366,7 @@ console.log('\nThe shell holds from 360 to 1440, with navigation and sign-out re
 await signIn('supply_admin'); // the widest navigation set
 for (const width of [360, 768, 1024, 1440]) {
   await cdp.setViewport(width, 900);
-  await cdp.goto(`${ORIGIN}/fulfillment`);
+  await go(`/fulfillment`);
   await new Promise((r) => setTimeout(r, 350));
   const navVisible = await cdp.evaluate(
     () => [...document.querySelectorAll('header nav a')].filter((a) => a.getBoundingClientRect().width > 0).length,
@@ -393,7 +417,7 @@ for (const width of [360, 768, 1024, 1440]) {
 
 // Keyboard: every control in the chrome reachable, each with a visible indicator.
 await cdp.setViewport(1440, 1024);
-await cdp.goto(`${ORIGIN}/fulfillment`);
+await go(`/fulfillment`);
 const focusable = await cdp.evaluate(
   () =>
     [...document.querySelectorAll('header a[href], header button, main a[href], main button:not([disabled])')].filter(

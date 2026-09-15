@@ -40,6 +40,7 @@ export {
 
 // Icons
 export { MdiLightClipboardText } from './icons/MdiLightClipboardText';
+export { MdiLightBell } from './icons/MdiLightBell';
 export { MdiClipboardTextOutline } from './icons/MdiClipboardTextOutline';
 export { ArrowCircleDownFill } from './icons/ArrowCircleDownFill';
 export { ArrowCounterClockwise } from './icons/ArrowCounterClockwise';

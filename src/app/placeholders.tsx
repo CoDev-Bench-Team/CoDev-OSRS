@@ -44,6 +44,7 @@ export const RequestsPlaceholder = () => screen('requests');
 export const ApprovalsPlaceholder = () => screen('approvals');
 export const FulfillmentPlaceholder = () => screen('fulfillment');
 export const InventoryPlaceholder = () => screen('inventory');
+export const HistoryPlaceholder = () => screen('history');
 export const ProfilePlaceholder = () => screen('profile');
 
 /** `/requests/:id` — the one address that identifies a record.

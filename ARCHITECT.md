@@ -84,21 +84,22 @@ Do not add an API implementation directory until an ADR names the stack. Configu
 | Requests | Request aggregate, line items, legal transitions | Email transport internals |
 | Notifications | Templates, recipients, send, send log | Whether a transition is allowed |
 
-**Atomicity (API):** submit and reject MUST change request status and on-hand quantity together. After a valid transition is committed, send the matching email. A notification failure MUST be recorded and MUST NOT undo a valid transition; the API SHOULD surface that the mail step failed.
+**Atomicity (API):** submit, reject and cancel MUST change request status and on-hand quantity together. After a valid transition is committed, send the matching email. A notification failure MUST be recorded and MUST NOT undo a valid transition; the API SHOULD surface that the mail step failed.
 
 ## 5. Request State Machine
 
 ```
             submit                reject
   [create] ───────► Pending Approval ──────► Rejected
-                         │
-                         │ approve
-                         ▼
-                      Approved
-                         │
-                         │ prepare (Supply Admin)
-                         ▼
-                    For Release
+                         │   │
+                         │   └── cancel (owning Employee) ──► Cancelled
+                         │ approve                              ▲
+                         ▼                                      │
+                      Approved ──── cancel (Supply Admin) ──────┤
+                         │                                      │
+                         │ prepare (Supply Admin)               │
+                         ▼                                      │
+                    For Release ─── cancel (Supply Admin) ──────┘
                          │
                          │ release (Supply Admin)
                          ▼
@@ -116,6 +117,7 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 - Prepare: Supply Admin; request is `Approved`.
 - Release: Supply Admin; request is `For Release`; pickup location recorded.
 - Confirm: owning Employee; request is `Released`.
+- Cancel: owning Employee while `Pending Approval` (reason optional), or Supply Admin while `Approved` or `For Release` (reason required). Never once `Released`. Restores stock in the same transaction, exactly as reject does.
 
 ## 6. Inventory Coupling
 
@@ -124,6 +126,7 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 | Item encoded | — | Set by Supply Admin (≥ 0) |
 | Request submitted | Pending Approval | Decrement by requested qty |
 | Request rejected | Rejected | Increment by requested qty |
+| Request cancelled | Cancelled | Increment by requested qty |
 | Approved / For Release / Released / Completed | those statuses | No change (already deducted) |
 
 Concurrent submits for the last units MUST serialize so on-hand never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract’s choice.
@@ -140,6 +143,8 @@ Concurrent submits for the last units MUST serialize so on-hand never goes negat
 | Approve / reject | no | yes | no |
 | Prepare / release | no | no | yes |
 | Confirm receipt | own released request | no | no |
+| Cancel a request | own, while pending | no | any approved or for-release |
+| View resolved history | own only (My Requests) | yes (all requestors) | yes (all requestors) |
 
 \*A person may hold only one role in the MVP seed data. If a real user needs two jobs, that is a later change — do not invent a superuser.
 

@@ -11,6 +11,7 @@ import {
   ApprovalsPlaceholder,
   CatalogPlaceholder,
   FulfillmentPlaceholder,
+  HistoryPlaceholder,
   InventoryPlaceholder,
   ProfilePlaceholder,
   RequestDetailPlaceholder,
@@ -77,6 +78,7 @@ export function AppRoutes() {
         <Route path={DESTINATIONS.approvals.path} element={guarded('approvals', <ApprovalsPlaceholder />)} />
         <Route path={DESTINATIONS.fulfillment.path} element={guarded('fulfillment', <FulfillmentPlaceholder />)} />
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />
+        <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />
         <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePlaceholder />)} />
         <Route path="*" element={<NotFoundRoute />} />
       </Route>

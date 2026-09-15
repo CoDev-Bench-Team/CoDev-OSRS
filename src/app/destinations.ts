@@ -9,7 +9,13 @@ import { ROLES, type Role } from '../features/auth/types';
  *
  *  Copy follows docs/design-system/content-conventions.md: nav items are Title
  *  Case, page titles sentence case, subtitles one sentence with no period. The
- *  four titles the design file draws are used verbatim. */
+ *  titles the design file draws are used verbatim.
+ *
+ *  `history` arrived with the 2026-09-15 design export, which puts it in the
+ *  Admin bar and draws the screen: resolved requests across all requestors,
+ *  with a REQUESTER column and a RESOLVED date. Under the three-role split
+ *  (D1) that is the Approver's and the Supply Admin's, never the Employee's —
+ *  an Employee's own history is My Requests. */
 
 export type DestinationId =
   | 'catalog'
@@ -18,6 +24,7 @@ export type DestinationId =
   | 'approvals'
   | 'fulfillment'
   | 'inventory'
+  | 'history'
   | 'profile';
 
 export type Destination = {
@@ -84,6 +91,14 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     title: 'Inventory management',
     purpose: 'Monitor stock levels, manage reservations, and keep office essentials ready for every team',
     roles: ['supply_admin'],
+  },
+  history: {
+    id: 'history',
+    path: '/history',
+    navLabel: 'History',
+    title: 'History',
+    purpose: 'Every resolved request — completed, rejected and cancelled — across all requestors',
+    roles: ['approver', 'supply_admin'],
   },
   profile: {
     id: 'profile',

@@ -53,10 +53,11 @@ None of these is designed in the source; all five go to the additions list.
 
 ## Phase 5: Layout & Navigation (US2, US5, US6)
 
-- [x] T026 [US2] `navigationFor(role)` as a pure function derived from the AuthZ matrix — Employee: catalog, my requests, profile; Approver: pending queue, catalog, profile; Supply Admin: fulfillment, inventory, catalog, profile — `src/features/auth/navigation.ts`
+- [x] T026 [US2] `navigationFor(role)` as a pure function derived from the AuthZ matrix — **amended 2026-09-15** to Employee: catalog, my requests; Approver: pending queue, history, catalog; Supply Admin: fulfillment, inventory, history, catalog. Profile left the bar for the account cluster; History joined it — `src/features/auth/navigation.ts`
 - [x] T027 [US5] `AppLayout` composing spec 002's `TopBar` with the role's navigation and an `<Outlet/>` — `src/app/AppLayout.tsx`
 - [x] T028 [US2] Exactly one navigation item marked current, in the brand accent — `src/app/AppLayout.tsx`
-- [x] T029 [US5] Account cluster: avatar, name, role — `src/app/AppLayout.tsx`
+- [x] T029 [US5] Account cluster: avatar, name, role — and, since 2026-09-15, the route to Profile — `src/app/AppLayout.tsx`
+- [x] T029a [US5] Notification marker with its count, both roles, opening nothing until a notification feature exists (FR-014a) — `src/shared/ui/layout/TopBar.tsx`, `src/app/request-list-count.ts`
 - [x] T030 [US6] Sign-out control in the account cluster; clears the session and navigates to `/login` with history replaced — `src/app/AppLayout.tsx`
 - [x] T031 [US5] Request-list marker and count badge, employees only, fed by a context defaulting to 0 so the badge is live without inventing a request list — `src/app/request-list-count.ts`, `src/app/AppLayout.tsx`
 - [x] T032 [US5] Catalog offers the request-starting action to Employees only — `src/app/placeholders.tsx`

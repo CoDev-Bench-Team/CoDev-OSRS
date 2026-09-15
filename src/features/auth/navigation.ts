@@ -10,14 +10,22 @@ import type { Role } from './types';
  *  spec 003's Known Gaps.
  *
  *  Order is the order each role works in: their own queue first, then what they
- *  consult, then themselves.
+ *  consult.
+ *
+ *  Amended 2026-09-15 from the design re-export: **Profile is no longer a
+ *  navigation item** — the file's Profile screen shows no current item, and the
+ *  account cluster is the way in — and **History joins the Admin bar**, which
+ *  under the three-role split means the Approver's and the Supply Admin's.
+ *  Catalog stays for all three, which the file's merged Admin bar omits: the
+ *  authorization matrix in ARCHITECT.md §7 gives every role the catalog, and
+ *  D1 already overrides that bar.
  *
  *  A pure function over a constant table, so SC-001's navigation half is
  *  assertable without rendering anything. */
 const NAVIGATION: Record<Role, readonly DestinationId[]> = {
-  employee: ['catalog', 'requests', 'profile'],
-  approver: ['approvals', 'catalog', 'profile'],
-  supply_admin: ['fulfillment', 'inventory', 'catalog', 'profile'],
+  employee: ['catalog', 'requests'],
+  approver: ['approvals', 'history', 'catalog'],
+  supply_admin: ['fulfillment', 'inventory', 'history', 'catalog'],
 };
 
 export function navigationFor(role: Role): readonly Destination[] {

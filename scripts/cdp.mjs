@@ -6,6 +6,12 @@ import { spawn } from 'node:child_process';
 const CHROME =
   process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
+/** One browser per port, one profile per browser. Several worktrees run these
+ *  checks at once, and a shared browser means a shared tab: two runs then
+ *  navigate each other's page and both report nonsense. Set OSRS_CDP_PORT to
+ *  give a run a browser of its own. */
+const DEFAULT_PORT = Number(process.env.OSRS_CDP_PORT ?? 9222);
+
 async function up(port) {
   try {
     await fetch(`http://localhost:${port}/json/version`);
@@ -27,7 +33,7 @@ async function ensureChrome(port) {
       `--remote-debugging-port=${port}`,
       '--no-first-run',
       '--no-default-browser-check',
-      '--user-data-dir=/tmp/osrs-cdp-profile',
+      `--user-data-dir=/tmp/osrs-cdp-profile-${port}`,
       'about:blank',
     ],
     { detached: true, stdio: 'ignore' },
@@ -39,10 +45,10 @@ async function ensureChrome(port) {
   throw new Error(`could not start Chrome on :${port} (set CHROME_PATH if it lives elsewhere)`);
 }
 
-/** `newTab` attaches to a tab of its own instead of reusing the first one, so a
- *  check can drive two tabs at once — which is the only honest way to test that
- *  signing out in one stops the other (spec 003 FR-017a). */
-export async function connect(port = 9222, { newTab = false } = {}) {
+/** Each connection takes a tab of ITS OWN by default: reusing whatever page
+ *  happened to be first is how two concurrent runs end up driving each other.
+ *  Pass `newTab: false` only to attach to an existing tab deliberately. */
+export async function connect(port = DEFAULT_PORT, { newTab = true } = {}) {
   await ensureChrome(port);
   let page;
   if (newTab) {
@@ -81,8 +87,11 @@ export async function connect(port = 9222, { newTab = false } = {}) {
     send,
     events,
     targetId: page.id,
-    close: () => ws.close(),
-    /** Close the tab itself, not just the connection to it. */
+    /** Closes the tab as well as the socket, so runs do not leave tabs behind. */
+    close: () => {
+      ws.close();
+      void fetch(`http://localhost:${port}/json/close/${page.id}`).catch(() => {});
+    },
     closeTab: async () => {
       ws.close();
       await fetch(`http://localhost:${port}/json/close/${page.id}`).catch(() => {});

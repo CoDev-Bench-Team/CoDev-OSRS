@@ -1,6 +1,7 @@
 import { useEffect, useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Avatar } from './Avatar';
 import { MdiChevronDown } from '../icons/MdiChevronDown';
+import { MdiLightBell } from '../icons/MdiLightBell';
 import { MdiLightClipboardText } from '../icons/MdiLightClipboardText';
 import logoLockup from '../../../assets/brand/logo-supply-requests.png';
 
@@ -67,14 +68,24 @@ export function TopBar({
   user,
   requestListCount,
   onOpenRequestList,
+  notifications = false,
+  notificationCount,
   onNavigate,
+  onOpenAccount,
   actions,
 }: {
   nav?: NavItem[];
   user?: { name: string; role: string; initials: string; color?: string };
   requestListCount?: number;
   onOpenRequestList?: () => void;
+  /** The notification marker the 2026-09-15 export added to both variants. */
+  notifications?: boolean;
+  /** A count badge on the marker. The export draws one on the Admin bar only. */
+  notificationCount?: number;
   onNavigate?: (href: string, event: MouseEvent<HTMLAnchorElement>) => void;
+  /** Makes the account cluster the way to the profile screen — which is how
+   *  the export reaches it, now that Profile is not a navigation item. */
+  onOpenAccount?: () => void;
   actions?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -134,16 +145,46 @@ export function TopBar({
             </button>
           )}
 
+          {notifications && (
+            <span className="relative flex min-h-touch-target items-center text-ink-primary">
+              <MdiLightBell size={24} />
+              {typeof notificationCount === 'number' && notificationCount > 0 && (
+                <span className="absolute -top-2 left-14 flex h-22 w-22 items-center justify-center rounded-pill bg-brand-primary font-sans text-11 font-bold leading-tight text-white">
+                  {notificationCount}
+                </span>
+              )}
+              <span className="sr-only">
+                {typeof notificationCount === 'number' && notificationCount > 0
+                  ? `${notificationCount} notifications`
+                  : 'Notifications'}
+              </span>
+            </span>
+          )}
+
           {user && (
             <>
               <span className="hidden h-[31px] w-1 shrink-0 bg-osrs-gray-400 sm:block" aria-hidden="true" />
-              <span className="flex items-center gap-8">
-                <Avatar initials={user.initials} color={user.color} />
-                <span className="flex min-w-0 flex-col gap-1">
-                  <span className="truncate font-sans text-13 leading-tight text-ink-primary">{user.name}</span>
-                  <span className="truncate font-sans text-11 leading-tight text-ink-secondary">{user.role}</span>
+              {onOpenAccount ? (
+                <button
+                  type="button"
+                  onClick={onOpenAccount}
+                  className="flex min-h-touch-target cursor-pointer items-center gap-8 rounded-8 border-none bg-transparent p-0 text-left transition-osrs hover:opacity-80"
+                >
+                  <Avatar initials={user.initials} color={user.color} />
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="truncate font-sans text-13 leading-tight text-ink-primary">{user.name}</span>
+                    <span className="truncate font-sans text-11 leading-tight text-ink-secondary">{user.role}</span>
+                  </span>
+                </button>
+              ) : (
+                <span className="flex items-center gap-8">
+                  <Avatar initials={user.initials} color={user.color} />
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="truncate font-sans text-13 leading-tight text-ink-primary">{user.name}</span>
+                    <span className="truncate font-sans text-11 leading-tight text-ink-secondary">{user.role}</span>
+                  </span>
                 </span>
-              </span>
+              )}
             </>
           )}
           {actions}

@@ -4,7 +4,7 @@ import { Button, ErrorBoundary, TopBar, type NavItem } from '../shared/ui';
 import { navigationFor } from '../features/auth/navigation';
 import { useSession } from '../features/auth/session-context';
 import { ROLE_LABEL } from '../features/auth/types';
-import { canRoleReach, landingPath, SIGN_IN_PATH } from './destinations';
+import { canRoleReach, DESTINATIONS, landingPath, SIGN_IN_PATH } from './destinations';
 import { NavButton } from './NavButton';
 import { useRequestListCount } from './request-list-count';
 
@@ -20,7 +20,7 @@ import { useRequestListCount } from './request-list-count';
  *  demo exercise the real sign-in path. */
 export function AppLayout() {
   const { session, signOut } = useSession();
-  const { count } = useRequestListCount();
+  const { count, notificationCount } = useRequestListCount();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -71,7 +71,16 @@ export function AppLayout() {
         requestListCount={role === 'employee' ? count : undefined}
         // The request-list drawer is spec 001's own work (T010). Until it
         // ships, the marker goes where the list's contents will end up.
-        onOpenRequestList={() => void navigate('/requests')}
+        onOpenRequestList={() => void navigate(DESTINATIONS.requests.path)}
+        // The 2026-09-15 export puts a notification marker in both bars, with a
+        // count on the Admin one. It is a marker, not a control: the file draws
+        // no panel for it to open, so it announces a count and does nothing —
+        // better than a button that goes nowhere. See the drift document.
+        notifications
+        notificationCount={role === 'employee' ? undefined : notificationCount}
+        // Profile left the navigation in that same export; the account cluster
+        // is how the file's Profile screen is reached (FR-006, amended).
+        onOpenAccount={() => void navigate(DESTINATIONS.profile.path)}
         actions={
           // Sign-out is not drawn anywhere in the design file; its placement in
           // the account cluster is an addition (docs/design-system/additions.md).

@@ -10,11 +10,17 @@ import { createContext, use } from 'react';
 export type RequestListCount = {
   count: number;
   setCount: (count: number) => void;
+  /** The notification marker's count, on the same terms: no notification
+   *  feature exists yet, so the badge is wired and defaults to none. */
+  notificationCount: number;
+  setNotificationCount: (count: number) => void;
 };
 
 export const RequestListCountContext = createContext<RequestListCount>({
   count: 0,
   setCount: () => {},
+  notificationCount: 0,
+  setNotificationCount: () => {},
 });
 
 export function useRequestListCount(): RequestListCount {
