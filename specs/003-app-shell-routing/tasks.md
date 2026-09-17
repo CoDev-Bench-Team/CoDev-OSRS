@@ -194,9 +194,15 @@ in ADR-0005; exit condition is a third role value from the backend.
 8. Production build with no client id → Google and the API source are tree-shaken out entirely
    (`accounts.google.com` and `/auth/google` absent from the bundle).
 
-`npm run verify`'s four browser-driven gates do not run in this environment — they fail
-identically on the pristine base commit, so they are not a regression, but they are also not
-evidence. The list above is what was actually observed.
+`npm run verify` passes all eight gates, including `fidelity` and `pixels`, which compare the
+login card against the design source — the screen this feature modifies. The browser gates had
+appeared to fail earlier; the cause was a stale headless Chrome holding port 9222, not the change
+(`OSRS_CDP_PORT=9433` gives a run a browser of its own).
+
+The shell gate drives the **seeded** source, which is what gives it three roles to sign in as, so
+it needs a dev server started with `VITE_GOOGLE_CLIENT_ID=` — otherwise a developer's own `.env`
+selects the API source, the seeded chooser is absent and the gate has nothing to sign in with. It
+now says so instead of dereferencing null. Documented in `quickstart.md`.
 
 **Three defects found by using it, all fixed:**
 

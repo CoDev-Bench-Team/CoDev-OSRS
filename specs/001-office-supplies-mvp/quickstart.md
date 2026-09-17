@@ -48,6 +48,18 @@ whether it offers demo accounts.
 Google's button is the real focusable control. It is invisible at rest and becomes visible
 while focused, so a keyboard user sees and operates it with its own focus ring.
 
+**Running the checks.** `npm run verify` drives the **seeded** source, which is what
+gives it three roles to sign in as, so start the dev server with the client id blanked —
+otherwise your own `.env` changes what is under test:
+
+```bash
+VITE_GOOGLE_CLIENT_ID= npm run dev   # one terminal
+npm run verify                        # another
+```
+
+If a stale headless Chrome is listening on 9222 the browser gates time out; either kill it
+or give the run a browser of its own with `OSRS_CDP_PORT=9433 npm run verify`.
+
 **The dev server must be on port 5173.** Only `http://localhost:5173` is registered as an
 authorized JavaScript origin on the OAuth client, and Google refuses any other origin — the
 sign-in screen can only report its generic "Sign-in did not succeed", because the SPA is
