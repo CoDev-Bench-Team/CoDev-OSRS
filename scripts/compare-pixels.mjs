@@ -8,7 +8,17 @@
  *
  *  Chrome decodes the PNGs (via canvas in the page), so there is no image
  *  dependency — constitution VIII holds. */
+/** Spec 003 gave `/` to the routed application shell, so the design system's
+ *  own surfaces moved to development-only addresses: the gallery at
+ *  `/__gallery`, the fidelity harness at `/__compare`. Neither ships in a
+ *  production build. */
 import { connect } from './cdp.mjs';
+
+/** The dev server's origin. Defaults to Vite's first port; set
+ *  `OSRS_DEV_ORIGIN` when running from a worktree whose server took another
+ *  one (`npm run dev` prints it). */
+const ORIGIN = process.env.OSRS_DEV_ORIGIN ?? 'http://localhost:5173';
+
 import { writeFileSync, mkdirSync } from 'node:fs';
 
 const THRESHOLD = 1.5; // % of differing pixels tolerated — antialiasing only
@@ -26,6 +36,14 @@ const ALLOWED = {
     max: 3,
     why: 'image resampling: the source paints the photo as a CSS background, the port as an <img>. Same file, same box, different scaler. Plus the stepper rework: a fixed three-digit quantity slot, 22px square sign buttons with the glyph optically centred, U+2212 for the decrement and a 4px gap — 82x26 against the source\'s 74x26 drawn around a lone "1". The primary button keeps its 304px. Logged in additions.md.',
   },
+  SignInButton: {
+    max: 3,
+    why: 'the Google mark\'s four colours. The vendored source paints all four paths --osrs-google-red, which is an export artefact: in the .fig the vector node carries only the red in fillPaints and takes the other three from vectorData.styleOverrideTable (styleID 1 rgb(66,133,244), 3 rgb(52,168,83), 4 rgb(251,188,5)), which the exporter dropped. The port restores the file\'s own colours, so the whole difference is the 32x32 mark and nothing else — geometry, box, type and ink all match to the pixel. Logged in additions.md.',
+  },
+  'SignInButton / light': {
+    max: 3,
+    why: 'the Google mark\'s four colours. The vendored source paints all four paths --osrs-google-red, which is an export artefact: in the .fig the vector node carries only the red in fillPaints and takes the other three from vectorData.styleOverrideTable (styleID 1 rgb(66,133,244), 3 rgb(52,168,83), 4 rgb(251,188,5)), which the exporter dropped. The port restores the file\'s own colours, so the whole difference is the 32x32 mark and nothing else — geometry, box, type and ink all match to the pixel. Logged in additions.md.',
+  },
   ButtonWithIcon: {
     max: 3,
     why: 'icon rasterisation: path geometry matches to 0.02px (measured), but the source rasterises inside a 17.88x16.48 SVG viewport and the port inside 22x22, so thin strokes land on a different grid.',
@@ -36,7 +54,7 @@ const cdp = await connect();
 await cdp.setViewport(1440, 2400);
 // The harness is lazy-loaded, so wait for the pairs themselves rather than
 // for a first mount that happens before they exist.
-await cdp.goto('http://localhost:5173/#compare', {
+await cdp.goto(`${ORIGIN}/__compare`, {
   ready: () => document.querySelectorAll('[data-cmp]').length >= 12,
 });
 await cdp.evaluate(async () => {

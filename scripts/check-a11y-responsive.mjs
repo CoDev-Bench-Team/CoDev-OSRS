@@ -1,7 +1,17 @@
 /** FR-011/SC-006 (keyboard + focus), FR-012/SC-005 (responsive, touch targets),
  *  FR-016a (overflow geometry) and FR-004/SC-002 (no third-party requests).
  *  Needs `npm run dev` and headless Chrome on :9222. */
+/** Spec 003 gave `/` to the routed application shell, so the design system's
+ *  own surfaces moved to development-only addresses: the gallery at
+ *  `/__gallery`, the fidelity harness at `/__compare`. Neither ships in a
+ *  production build. */
 import { connect } from './cdp.mjs';
+
+/** The dev server's origin. Defaults to Vite's first port; set
+ *  `OSRS_DEV_ORIGIN` when running from a worktree whose server took another
+ *  one (`npm run dev` prints it). */
+const ORIGIN = process.env.OSRS_DEV_ORIGIN ?? 'http://localhost:5173';
+
 
 const cdp = await connect();
 let failures = 0;
@@ -11,7 +21,7 @@ const pass = (m) => console.log(`  ✓ ${m}`);
 // ---- No third-party requests (FR-004, SC-002) ----
 await cdp.send('Network.enable');
 await cdp.setViewport(1440, 1024);
-await cdp.goto('http://localhost:5173/');
+await cdp.goto(`${ORIGIN}/__gallery`);
 const requests = cdp.events
   .filter((e) => e.method === 'Network.requestWillBeSent')
   .map((e) => e.params.request.url)
@@ -179,7 +189,7 @@ else pass(`width identical (${geo[0].w}px) and height bounded by the clamps (${g
 // a single-option select opens and shows what is there, like a native one.
 console.log('\nSelect is disabled only when asked, never by option count (FR-010)');
 await cdp.setViewport(1440, 1000);
-await cdp.goto('http://localhost:5173/');
+await cdp.goto(`${ORIGIN}/__gallery`);
 await cdp.evaluate(() => document.querySelector('#forms').scrollIntoView({ block: 'start' }));
 await new Promise((r) => setTimeout(r, 300));
 const selects = await cdp.evaluate(() =>
@@ -218,7 +228,7 @@ await cdp.evaluate(() => document.body.click());
 // scrim. Both halves are checked.
 console.log('\nOverlay layering: popover above dialog, no stale popover over the scrim');
 await cdp.setViewport(1440, 1000);
-await cdp.goto('http://localhost:5173/');
+await cdp.goto(`${ORIGIN}/__gallery`);
 await cdp.evaluate(() => document.querySelector('#data').scrollIntoView({ block: 'start' }));
 await new Promise((r) => setTimeout(r, 350));
 

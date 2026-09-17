@@ -19,13 +19,40 @@ Use the origin the backend team documents. Optionally proxy through Vite (`vite.
 
 ## Demo users
 
-Suggested cast for walkthroughs (actual emails/passwords are whatever the backend seeds):
+**Non-production placeholders** (constitution IX). There are no credentials here
+— no passwords, no tokens, nothing to leak. The SPA implements no authentication
+of its own (spec 001 Clarifications, Session 2026-09-12): the sign-in screen
+renders the designed Google control and delegates to the **session boundary**,
+`src/features/auth/session-source.ts`.
 
-| Suggested email | Role |
-|-----------------|------|
-| employee@codev.local | employee |
-| approver@codev.local | approver |
-| supply@codev.local | supply_admin |
+Until the backend contract publishes, that boundary is satisfied by
+`src/features/auth/seeded-source.ts`, which resolves one of these three seeded
+identities — one per role, so every role's landing screen and every refusal can
+be exercised:
+
+| Name | Role | Lands on |
+|------|------|----------|
+| Maya Santos · mayas@codev.com | `employee` | `/catalog` |
+| Samantha Reyes · samanthar@codev.com | `approver` | `/approvals` |
+| Ethan Cruz · ethanc@codev.com | `supply_admin` | `/fulfillment` |
+
+Choose one on the sign-in screen before pressing the Google control — the
+chooser is the seeded source's stand-in for Google's account picker, and it
+disappears on its own once a source backed by the published contract replaces
+it. A fourth entry, **Refused account**, makes sign-in fail, so the refusal path
+can be demonstrated.
+
+**There is no role switcher inside the application** (spec 003 D5). Changing role
+means signing out and signing back in, which is deliberate: it keeps one role
+per user absolute and makes the demo exercise the real sign-in path.
+
+A session is held as an opaque reference plus a timestamp, never a user or a
+role, and it is re-resolved on every load — so a reload keeps you signed in
+while a stale reference left on a shared machine is discarded rather than
+trusted.
+
+When the backend publishes its contract, write a second implementation of
+`SessionSource` against it. No shell code changes.
 
 ## Run the SPA
 
@@ -34,7 +61,9 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL and log in against the API.
+Open the Vite URL. The application opens at `/login`; everything else requires
+a session. The design system's component gallery is **not** part of the
+application — it stays at `/__gallery` in development only.
 
 ## QA regression (target)
 

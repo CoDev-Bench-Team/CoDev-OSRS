@@ -2,7 +2,7 @@
 
 **Date**: 2026-09-12
 **Spec**: `specs/003-app-shell-routing/spec.md`
-**Status**: Draft
+**Status**: Implemented (2026-09-15)
 
 ## Summary
 
@@ -22,7 +22,7 @@ Replace the Vite starter with a routed application shell: React Router v7 suppli
 | # | Precondition | Status |
 |---|--------------|--------|
 | P1 | **Spec 001's auth clarification is amended** | **Done** (2026-09-12). `specs/001-office-supplies-mvp/spec.md` now carries a Session 2026-09-12 amendment superseding "email + password" with the designed Google control delegating to a session boundary. Without it, D4 was an undocumented override of a resolved clarification. |
-| P2 | **Spec 002 has shipped** | **Not yet.** FR-021 requires the shell to be built from spec 002's components and tokens. `TopBar`, `Avatar`, `PageHeader`, `SectionTitle`, `Button` and the brand logos must exist before this feature can render anything. This is a hard sequencing dependency, not a soft one. |
+| P2 | **Spec 002 has shipped** | **Done** (2026-09-15, PR #10). `src/shared/ui/index.ts` exports `TopBar`, `Avatar`, `PageHeader`, `SectionTitle`, `Button`, `SignInButton` and the brand logos, and the token layer compiles. The shell is built from them; the five feedback surfaces are the only new UI (T004 gate). |
 
 ## Data Model
 
@@ -76,7 +76,7 @@ interface SessionSource {
 | Role | Name | Avatar |
 |------|------|--------|
 | `employee` | Maya Santos | orange |
-| `approver` | Samantha Reyes | (to be assigned — the source designs only two avatars) |
+| `approver` | Samantha Reyes | `--osrs-blue-600` — an addition; the source designs only two avatars |
 | `supply_admin` | Ethan Cruz | deep green |
 
 The design file provides avatar colours for two identities only. A third is an addition, logged in `docs/design-system/additions.md`.
@@ -228,6 +228,43 @@ One addition. `ARCHITECT.md` §2 and §13 updated.
 8. **Verification + docs** — the table above; `additions.md` entries for the five feedback screens, the sign-out control, the collapsed nav, and the third avatar colour
 
 Steps 2 and 3 are parallelisable. Step 4 depends on both.
+
+## Routing e2e assertions — for spec 001's T020 (T054)
+
+SC-004 asks that a test reach any destination by address in one navigation.
+Playwright arrives with spec 001's T020, so these assertions are **written here
+and already implemented** against the CDP client the design-system gates use, in
+`scripts/check-shell.mjs`. When Playwright lands, port them; do not re-derive
+them.
+
+Every assertion below passes today. `npm run verify` runs them as the
+"shell routing + guards" gate.
+
+| # | Assertion | Requirement | Implemented in `check-shell.mjs` |
+|---|-----------|-------------|-----------------------------------|
+| 1 | Signing in as each seeded role lands on that role's screen: employee `/catalog`, approver `/approvals`, supply admin `/fulfillment` | FR-007, SC-001 | "Sign-in lands on the role's own screen" |
+| 2 | Each role's navigation is exactly its set, with exactly one item current | FR-006, FR-014 | same block |
+| 3 | The request-list marker appears for the employee and for no one else | FR-015 | same block |
+| 4 | Every permitted address opens directly, reloads without losing the session, and browser back returns to the previous destination | FR-008, SC-002 | "Every permitted address is reachable directly" |
+| 5 | Every forbidden address is refused with an explanation and a working route back | FR-010, FR-011, SC-003 | "Every forbidden address is refused" |
+| 6 | An unmatched path renders not-found inside the shell | FR-012 | "Not-found stays diagnosable" |
+| 7 | A missing request id and a forbidden one render word-for-word identical screens, neither echoing the identifier | FR-012a | same block |
+| 8 | A signed-out visitor who asked for `/profile` arrives there after signing in; one who asked for a destination their role may not use lands on their own instead | FR-013 | "A visitor who asked for a destination" |
+| 9 | A refused sign-in leaves the visitor on `/login` with a message, no stored session reference, and the control at rest | FR-003b | "A refused sign-in creates no session" |
+| 10 | Sign-out returns to `/login` and browser back restores no signed-in screen | FR-016 | "Signing out ends the session everywhere" |
+| 11 | Signing out in one tab returns a second tab to `/login` | FR-017a | same block |
+| 12 | A role changed behind the session boundary re-evaluates navigation and moves the user off a screen the new role may not use | FR-017b | same block |
+| 13 | While session status is unknown the shell shows the loading state, never a flash of sign-in, and never half-rendered chrome | FR-018 | "The shell waits deliberately" |
+| 14 | 360 / 768 / 1024 / 1440: no horizontal overflow, all navigation reachable (collapsed below 768), sign-out reachable, every target ≥ 44px below the design width | FR-022, SC-006 | "The shell holds from 360 to 1440" |
+| 15 | At 1440 the bar is 87px tall, the gutter is 32px, and navigation is inline | Story 8 AC1 | same block |
+| 16 | Every shell control is keyboard-reachable with a visible focus indicator | FR-023, SC-007 | same block |
+
+**Two things a Playwright port should add**, which this client cannot reach:
+
+- Assertion 11 uses a second CDP tab; Playwright's `browser.newContext()` can
+  also cover the case where the two tabs are in different contexts.
+- FR-012a is proven against seeded ownership fixtures. When the backend contract
+  publishes, re-run assertion 7 against real identifiers before trusting it.
 
 ## Known Risks
 

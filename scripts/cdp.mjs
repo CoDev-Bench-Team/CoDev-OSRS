@@ -6,6 +6,12 @@ import { spawn } from 'node:child_process';
 const CHROME =
   process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
+/** One browser per port, one profile per browser. Several worktrees run these
+ *  checks at once, and a shared browser means a shared tab: two runs then
+ *  navigate each other's page and both report nonsense. Set OSRS_CDP_PORT to
+ *  give a run a browser of its own. */
+const DEFAULT_PORT = Number(process.env.OSRS_CDP_PORT ?? 9222);
+
 async function up(port) {
   try {
     await fetch(`http://localhost:${port}/json/version`);
@@ -27,7 +33,7 @@ async function ensureChrome(port) {
       `--remote-debugging-port=${port}`,
       '--no-first-run',
       '--no-default-browser-check',
-      '--user-data-dir=/tmp/osrs-cdp-profile',
+      `--user-data-dir=/tmp/osrs-cdp-profile-${port}`,
       'about:blank',
     ],
     { detached: true, stdio: 'ignore' },
@@ -39,13 +45,21 @@ async function ensureChrome(port) {
   throw new Error(`could not start Chrome on :${port} (set CHROME_PATH if it lives elsewhere)`);
 }
 
-export async function connect(port = 9222) {
+/** Each connection takes a tab of ITS OWN by default: reusing whatever page
+ *  happened to be first is how two concurrent runs end up driving each other.
+ *  Pass `newTab: false` only to attach to an existing tab deliberately. */
+export async function connect(port = DEFAULT_PORT, { newTab = true } = {}) {
   await ensureChrome(port);
-  const targets = await (await fetch(`http://localhost:${port}/json/list`)).json();
-  let page = targets.find((t) => t.type === 'page');
-  if (!page) {
-    await fetch(`http://localhost:${port}/json/new?about:blank`, { method: 'PUT' });
-    page = (await (await fetch(`http://localhost:${port}/json/list`)).json()).find((t) => t.type === 'page');
+  let page;
+  if (newTab) {
+    page = await (await fetch(`http://localhost:${port}/json/new?about:blank`, { method: 'PUT' })).json();
+  } else {
+    const targets = await (await fetch(`http://localhost:${port}/json/list`)).json();
+    page = targets.find((t) => t.type === 'page');
+    if (!page) {
+      await fetch(`http://localhost:${port}/json/new?about:blank`, { method: 'PUT' });
+      page = (await (await fetch(`http://localhost:${port}/json/list`)).json()).find((t) => t.type === 'page');
+    }
   }
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((res, rej) => {
@@ -72,7 +86,16 @@ export async function connect(port = 9222) {
   return {
     send,
     events,
-    close: () => ws.close(),
+    targetId: page.id,
+    /** Closes the tab as well as the socket, so runs do not leave tabs behind. */
+    close: () => {
+      ws.close();
+      void fetch(`http://localhost:${port}/json/close/${page.id}`).catch(() => {});
+    },
+    closeTab: async () => {
+      ws.close();
+      await fetch(`http://localhost:${port}/json/close/${page.id}`).catch(() => {});
+    },
     /** Navigate and wait until the page is genuinely ready.
      *
      *  readyState 'complete' only means the document loaded — React may not

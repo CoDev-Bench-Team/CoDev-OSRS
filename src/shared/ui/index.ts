@@ -25,8 +25,22 @@ export { TopBar, type NavItem } from './layout/TopBar';
 export { Avatar } from './layout/Avatar';
 export { PageHeader, SectionTitle } from './layout/headings';
 
+// Feedback (spec 003 — the shell's loading, refusal, not-found, placeholder
+// and failure surfaces; none is drawn in the source, all are in additions.md)
+export {
+  Notice,
+  type NoticeTone,
+  LoadingState,
+  NotFoundScreen,
+  RecordUnavailableScreen,
+  ForbiddenScreen,
+  Placeholder,
+  ErrorBoundary,
+} from './feedback';
+
 // Icons
 export { MdiLightClipboardText } from './icons/MdiLightClipboardText';
+export { MdiLightBell } from './icons/MdiLightBell';
 export { MdiClipboardTextOutline } from './icons/MdiClipboardTextOutline';
 export { ArrowCircleDownFill } from './icons/ArrowCircleDownFill';
 export { ArrowCounterClockwise } from './icons/ArrowCounterClockwise';

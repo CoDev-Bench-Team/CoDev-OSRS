@@ -2,6 +2,16 @@ import type { SVGProps } from 'react';
 
 export type GoogleIconSize = '32x32' | '40x40' | '48x48';
 
+/** The four regions of the mark, in the order the vector node lists them:
+ *  `fillGeometry` carries styleIDs 1, 3, 4, 0, and `vectorData.styleOverrideTable`
+ *  fills the first three; the fourth falls through to the node's own fill. */
+const GOOGLE_FILLS = [
+  'var(--color-osrs-google-blue)',
+  'var(--color-osrs-google-green)',
+  'var(--color-osrs-google-yellow)',
+  'var(--color-osrs-google-red)',
+] as const;
+
 const GOOGLE_PATHS: Record<GoogleIconSize, [number, string[]]> = {
   "32x32": [
     32,
@@ -32,15 +42,19 @@ const GOOGLE_PATHS: Record<GoogleIconSize, [number, string[]]> = {
   ]
 };
 
-/** Google's "G" mark — ported verbatim from
- *  design-system/components/icons/GoogleIcon.jsx (figma node 14:329).
+/** Google's "G" mark — figma node 14:329, read from the `.fig` rather than from
+ *  the vendored `design-system/components/icons/GoogleIcon.jsx`.
  *
- *  NOTE: the source renders all four paths in a single colour
- *  (`--osrs-google-red`), which is how the mark came out of the .fig export.
- *  The real mark is four-colour, and the design system's own readme says the
- *  Google asset must never be restyled. This port reproduces the source
- *  faithfully rather than silently correcting it; the discrepancy is recorded
- *  in docs/design-system/additions.md for the designer. */
+ *  The vendored export paints all four paths in a single colour
+ *  (`--osrs-google-red`). That is an export artefact, not the design: the
+ *  vector node's `fillPaints` carries only the red, while the other three
+ *  regions take theirs from `vectorData.styleOverrideTable` — styleID 1
+ *  rgb(66,133,244), styleID 3 rgb(52,168,83), styleID 4 rgb(251,188,5) — which
+ *  the exporter dropped. `fillGeometry` lists the regions as 1, 3, 4, 0, which
+ *  is the order the paths below are in, so the mapping is positional.
+ *
+ *  Painting them is therefore not a restyle of the brand asset (which the
+ *  design system's readme forbids) but the file's own colours restored. */
 export function GoogleIcon({
   size = '32x32',
   className,
@@ -58,8 +72,8 @@ export function GoogleIcon({
       className={className}
       {...rest}
     >
-      {paths.map((d) => (
-        <path key={d.slice(0, 24)} d={d} fill="var(--color-osrs-google-red)" fillRule="evenodd" />
+      {paths.map((d, i) => (
+        <path key={d.slice(0, 24)} d={d} fill={GOOGLE_FILLS[i] ?? GOOGLE_FILLS[3]} fillRule="evenodd" />
       ))}
     </svg>
   );

@@ -44,8 +44,10 @@ source name could not survive the port intact.
 
 ## Additions
 
-Six tokens exist that the source does not define. All are recorded in
-`additions.md`.
+Thirteen tokens exist that the vendored source does not define. All are recorded
+in `additions.md`. The last five came from the 2026-09-15 `.fig` re-export
+(`drift-2026-09-15.md`), which gave `Completed` a purple of its own and added
+`Cancelled`.
 
 | Token | Value | Why |
 |-------|-------|-----|
@@ -55,6 +57,13 @@ Six tokens exist that the source does not define. All are recorded in
 | `--color-osrs-pink-tint` | `rgba(239,93,168,0.1)` | Its 10% fill, following the `--osrs-*-tint` convention the source already uses for green and red. |
 | `--color-status-delivery-bg` / `-fg` | the pink pair | Semantic alias for the delivery handover label. |
 | `--color-status-pickup-bg` / `-fg` | `var(--color-osrs-blue-50)` / `var(--color-osrs-blue-700)` | Semantic alias only — **both values are source primitives**, unchanged. The source defines the blues but no component uses this pairing. |
+| `--color-osrs-google-green` | `rgb(52,168,83)` | A Google brand colour. **Present in the `.fig`, absent from the export**: the mark's vector carries only the red in `fillPaints` and takes this from `vectorData.styleOverrideTable` (styleID 3), which `tokens/colors.css` never captured. Restored 2026-09-15 (additions.md §4.2). |
+| `--color-osrs-google-yellow` | `rgb(251,188,5)` | The same, styleID 4. |
+| `--color-osrs-purple-600` | `rgb(104,64,184)` | `Completed`'s ink in the 2026-09-15 export — the file's own `Status/Completed` colour style. Not in the vendored palette, which had `Completed` green. |
+| `--color-osrs-purple-50` | `rgb(241,236,255)` | Its fill, taken from the rendered pill on `04.1 - My Requests - View Request`. Slightly bluer than a flat 10% tint of the ink, so it is transcribed rather than computed. |
+| `--color-osrs-ink-tint` | `rgba(75,80,99,0.1)` | `Cancelled`'s fill. The file gives the ink (`Status/Cancelled` = `rgb(75,80,99)`, already `--osrs-ink-700`) but draws no chip, so the fill follows the `--osrs-*-tint` convention the source uses for red, green, blue and pink. |
+| `--color-status-completed-bg` / `-fg` | the purple pair | Semantic alias for `Completed`. |
+| `--color-status-cancelled-bg` / `-fg` | `var(--color-osrs-ink-tint)` / `var(--color-osrs-ink-700)` | Semantic alias for `Cancelled`. |
 
 ## Every token
 
