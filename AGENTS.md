@@ -6,15 +6,21 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 2.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-15
+**Version**: 3.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-17
 
 ### I. Spec-Driven Development
 
 All user-facing behavior MUST be specified before implementation. Agents MUST read the active `spec.md`, `plan.md`, and `tasks.md` before writing code. Chat instructions that contradict the spec MUST be treated as spec-amendment requests, not silent overrides. Implementation tasks MUST map to a functional requirement or user story.
 
-### II. Three Distinct Human Roles
+### II. Distinct Human Roles
 
-The system MUST enforce three human roles — Employee (requestor), Approver (team lead / department head), and Supply Admin (IT / General Services) — plus a System actor for inventory mutations and notifications. A combined “Admin” role MUST NOT replace Approver and Supply Admin. Each protected action MUST authorize against the role that owns that step in the process flow.
+The system MUST enforce two human roles — **Employee** (requestor) and **Admin** (reviews and decides on requests, then prepares and releases them) — plus a System actor for inventory mutations and notifications. These are the roles the backend team's published contract issues; the SPA MUST NOT invent a role the contract does not expose, nor collapse the two into one.
+
+The pipeline's **stages** remain distinct even though one role performs several of them. Approval and fulfilment are separate transitions in `docs/process-flow.md`, each with its own preconditions and notifications, and each protected action MUST authorize against the role that owns that step. An Employee MUST NOT reach an Admin's actions.
+
+A later contract MAY split Admin into Approver and Supply Admin. The SPA already models both, so that split MUST NOT require another amendment.
+
+*Amended 2026-09-17 (v3.0.0): supersedes the three-role requirement and the prohibition on a combined “Admin”, which contradicted the shipped API. ADR-0003 is superseded by ADR-0005.*
 
 ### III. Inventory Integrity
 

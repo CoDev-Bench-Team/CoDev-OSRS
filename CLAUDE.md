@@ -58,7 +58,7 @@ Do not introduce a new frontend framework or UI kit without an ADR in `docs/adr/
 ## Hard Rules
 
 - Honor AGENTS.md constitution. MUST violations without a documented exception are errors.
-- Three roles only: **Employee**, **Approver**, **Supply Admin**. Do not collapse them into a generic Admin.
+- Two roles, as the published contract issues them: **Employee** and **Admin**. Do not invent a role the contract does not expose. The pipeline's stages stay distinct even though one role performs several (constitution II, amended 2026-09-17).
 - Request status transitions MUST follow `docs/process-flow.md`. No skipped states.
 - Inventory: encoded before requests; decrement on submit (`Pending Approval`); increment on reject; stay decremented through approve/release/complete. Never persist negative stock.
 - Email notification on every defined transition. Missing a notification is a bug (API responsibility; SPA surfaces status).
