@@ -130,3 +130,94 @@ request identifiers (there is no request API yet), and T052's "no arbitrary-valu
 utilities" is a diff review — `scripts/check-utilities.mjs` reports the three
 this feature adds (`w-[421px]`, `min-h-[500px]`, `max-w-[629px]`), all of them
 fixed geometry the source states and never tokenises.
+
+---
+
+## Addendum — T055: the published contract behind the session boundary
+
+**Added 2026-09-17**, after the backend team published its contract
+(<https://codev-osrs-backend.vercel.app/#/>). Maps to **FR-002**, **FR-003**, **FR-003a**,
+**FR-003b**, **FR-017**, **FR-017a**, **FR-017b**.
+
+This is the second half of FR-003 — "satisfiable today by seeded demo users **and later by the
+backend team's published contract, with no change to the shell's behavior**" — so it belongs to
+this feature rather than to a new spec.
+
+| Task | File | Done |
+|------|------|------|
+| T055a | `src/shared/api.ts` — the SPA's only HTTP entry point; `credentials: 'include'`, `401` as a state rather than an error | yes |
+| T055b | `src/features/auth/google-identity.ts` — Google Identity Services, confined to one file | yes |
+| T055c | `src/features/auth/api-source.ts` — the second `SessionSource`, plus the contract→SPA user mapper | yes |
+| T055d | `src/features/auth/active-source.ts` — picks the source from `VITE_GOOGLE_CLIENT_ID` | yes |
+| T055e | `vite.config.ts` — proxy `/api` in development | yes |
+| T055f | `docs/adr/0005-…` — the client-id decision and the `admin` role exception | yes |
+| T055g | `src/features/auth/google-button-source.ts` — the optional `GoogleButtonSource` capability, shaped like `DemoAccountSource` | yes |
+| T055h | `src/features/auth/GoogleSignInOverlay.tsx` — Google's button, invisible over the drawn control | yes |
+
+**The claim this task set has to earn**: FR-003 says the shell's behavior must not change.
+`SessionProvider.tsx`, `session-context.ts`, `session-source.ts`, `types.ts`, `RequireAccess.tsx`,
+`destinations.ts` and `routes.tsx` are untouched; `src/app/App.tsx` gains one prop passing the
+chosen source.
+
+`LoginScreen.tsx` **is** edited, which the first pass of this work avoided. Google Identity
+Services' `prompt()` turned out to render nothing and invoke no callback against the real client
+id, so Google's own button has to receive the click — the Linear requirements say so too. The
+screen therefore wraps the drawn control and conditionally mounts an overlay. It stays
+boundary-shaped: the screen asks `hasGoogleButton(source)`, exactly as it already asks
+`hasDemoAccounts(source)`, and contains no Google-specific code and no environment check. Swap the
+source and the right control appears by itself.
+
+**Known limitation, carried deliberately**: the contract's `role` enum is `admin | employee`, so
+the **Approver role is unreachable through real sign-in** and Story 1 AC3 cannot be demonstrated
+against the live API. It remains demonstrable through the seeded source. Recorded as an exception
+in ADR-0005; exit condition is a third role value from the backend.
+
+**Verified by hand against the live API** on 2026-09-17, with the real client id:
+
+1. **A real Google sign-in completed.** `POST /auth/google` returned the user; the shell rendered
+   the authenticated top bar — name, `Employee`, initials on the employee avatar colour, employee
+   navigation — and landed on the catalog (FR-007).
+2. **Reload restored the session** through `GET /auth/me`, same destination, no second Google
+   login (FR-008). Google's script is not even fetched on an already-signed-in load.
+3. **Sign-out** cleared the cookie: `POST /auth/logout` → 201, `GET /auth/me` → 401 afterwards.
+   The button → `signOut()` → redirect wiring was exercised against the seeded source and returns
+   to `/login` (FR-016).
+4. Client id set, signed out → chooser gone, Google's button mounted over the drawn control at the
+   same 242x64 rect, `GET /api/auth/me` 401 on load, `/catalog` redirects to `/login` (FR-001).
+5. Keyboard (FR-023): the drawn control is `inert`, Google's button is the focusable one, and the
+   overlay goes from `opacity: 0` to `1` while focus is inside it, so the focus indicator is
+   visible.
+6. `VITE_GOOGLE_CLIENT_ID` unset → seeded source, chooser present, Employee signs in and lands on
+   the catalog, sign-out returns to `/login`. No request to Google or to the backend.
+7. Sign-in refused → "Signing in…" clears and "Sign-in did not succeed. Please try again."
+   appears, control back at rest so a retry is possible (FR-003b).
+8. Production build with no client id → Google and the API source are tree-shaken out entirely
+   (`accounts.google.com` and `/auth/google` absent from the bundle).
+
+`npm run verify`'s four browser-driven gates do not run in this environment — they fail
+identically on the pristine base commit, so they are not a regression, but they are also not
+evidence. The list above is what was actually observed.
+
+**Three defects found by using it, all fixed:**
+
+1. *Sign-in failed on a second dev server.* Vite silently moves to the next free port when 5173 is
+   taken, and only `http://localhost:5173` is in the OAuth client's Authorized JavaScript origins,
+   so Google refused the origin and the screen showed its generic refusal with nothing to go on.
+   The dev server is now pinned with `strictPort: true`: a busy 5173 is a startup error, not a
+   silent move to a port where authentication cannot work. **This was the real cause of the
+   reported "Sign-in did not succeed"; sign-in works on 5173.**
+2. *The drawn pill appeared to stretch into Google's button on click.* The overlay revealed itself
+   on `:focus-within`, and a mouse click focuses Google's button too, so every press exposed the
+   vertically-stretched overlay. It now reveals on `:focus-visible` — the browser's own answer to
+   "did this focus come from the keyboard" — and drops the stretch when it does reveal, so a
+   keyboard user sees Google's button undistorted.
+3. *A second press cancelled the first attempt.* Found while investigating (2), not a cause of it:
+   Google's popup takes a moment, so pressing again is natural, and the second press superseded the
+   first — rejecting its promise, so the screen reported a failure for an attempt that had not
+   failed. Repeated presses now join the attempt in flight. One press, one attempt, one outcome.
+
+**Note on the timeout in `google-identity.ts`**: Google Identity Services returns *nothing* — no
+callback, no `error_callback` — when the client id is one its project does not recognise. Without
+a backstop the promise never settles and the control sticks on "Signing in…" permanently, which
+violates FR-003b. The three-minute timeout exists for that, and was verified by temporarily
+shortening it.
