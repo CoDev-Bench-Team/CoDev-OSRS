@@ -37,8 +37,51 @@ function designSystemAssets(): Plugin {
   }
 }
 
+/** The published contract's origin. Recorded in
+ *  specs/001-office-supplies-mvp/contracts/README.md. */
+const API_ORIGIN = 'https://codev-osrs-backend.vercel.app'
+
 export default defineConfig({
   plugins: [react(), tailwindcss(), designSystemAssets()],
+  /** Proxies /api to the deployed backend during development only.
+   *
+   *  Two problems disappear because the browser then sees a same-origin URL:
+   *
+   *  1. The backend returns no `Access-Control-Allow-Origin` for any origin we
+   *     have tried, so a direct cross-origin call is blocked before it starts.
+   *     Raised with the backend team in RG_DOCS/questionsToBackend.md §3.
+   *  2. The session is an httpOnly cookie. Same-origin makes it first-party,
+   *     so it is stored and sent without depending on SameSite=None; Secure.
+   *
+   *  `changeOrigin` rewrites the Host header, which Vercel routes on. The
+   *  rewrite strips the /api prefix, because the contract's paths are
+   *  /auth/me, not /api/auth/me — the prefix exists only to give the proxy
+   *  something to match. A deployed build sets VITE_API_URL instead and
+   *  never reaches this. */
+  server: {
+    /** Pinned, and `strictPort` so a busy 5173 is an ERROR rather than a silent
+     *  move to 5174.
+     *
+     *  Google refuses any origin not listed in the OAuth client's Authorized
+     *  JavaScript origins, and only `http://localhost:5173` is registered. When
+     *  Vite quietly picked the next free port — which it does whenever a dev
+     *  server is already running — sign-in failed with nothing to go on but the
+     *  screen's generic "Sign-in did not succeed", because the SPA never learns
+     *  why Google refused.
+     *
+     *  Failing to start is a far better outcome than starting on a port where
+     *  authentication cannot work. */
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: API_ORIGIN,
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
   resolve: {
     alias: {
       // Resolves the vendored design-system source for the dev-only fidelity

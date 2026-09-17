@@ -3,6 +3,8 @@ import { Navigate, useLocation } from 'react-router';
 import { CoDevSupplyRequestsLogo, LoadingState, SignInButton } from '../../shared/ui';
 import { canRoleReach, landingPath } from '../../app/destinations';
 import { hasDemoAccounts, type DemoAccountSource } from './session-source';
+import { hasGoogleButton } from './google-button-source';
+import { GoogleSignInOverlay } from './GoogleSignInOverlay';
 import { useSession } from './session-context';
 import loginBackground from '../../assets/login/login-background.png';
 
@@ -50,6 +52,11 @@ export function LoginScreen() {
     return <Navigate to={permitted && requested ? requested : landingPath(session.role)} replace />;
   }
 
+  // Asked once: the sign-in screen carries no Google-specific branch, only the
+  // question "does the active source bring its own button?" — the same shape as
+  // `hasDemoAccounts()` below.
+  const googleButton = hasGoogleButton(source);
+
   const onSignIn = () => {
     setRefused(false);
     setBusy(true);
@@ -91,15 +98,33 @@ export function LoginScreen() {
 
               The icon plate's fill is switched off in the file too, so the
               control is a plain white box: mark, label, nothing else. */}
-          <SignInButton
-            darkmode={false}
-            iconPlate={false}
-            iconPadding="16px 0 16px 18px"
-            labelPadding="18px 8px"
-            onClick={onSignIn}
-            style={{ width: 242, height: 64 }}
-            className="rounded-32"
-          />
+          {/* The drawn control, and — when the active source is backed by a
+              real provider — that provider's own button laid invisibly over
+              it. Google's button has to receive the click: One Tap does not
+              reliably appear, so nothing else produces a credential. The
+              seeded source offers no button, so this collapses to the drawn
+              control alone and the demo is unchanged. */}
+          <div className="relative" style={{ width: 242, height: 64 }}>
+            {/* `inert` while Google's button is mounted: the drawn control is
+                then a skin over it, and must not take focus. A keyboard press
+                here could not open Google's popup — a synthetic click cannot
+                reach into a cross-origin iframe — so it would open a credential
+                request nothing could satisfy. With the seeded source there is
+                no overlay, so it stays a live button and the demo is
+                unchanged. */}
+            <div inert={googleButton} style={{ width: 242, height: 64 }}>
+              <SignInButton
+                darkmode={false}
+                iconPlate={false}
+                iconPadding="16px 0 16px 18px"
+                labelPadding="18px 8px"
+                onClick={onSignIn}
+                style={{ width: 242, height: 64 }}
+                className="rounded-32"
+              />
+            </div>
+            {googleButton ? <GoogleSignInOverlay source={source} onPress={onSignIn} /> : null}
+          </div>
         </div>
 
         {/* Both notices are live regions so they are announced, not only seen.
