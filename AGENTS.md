@@ -6,7 +6,7 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 1.2.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-11
+**Version**: 2.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-15
 
 ### I. Spec-Driven Development
 
@@ -18,15 +18,21 @@ The system MUST enforce three human roles — Employee (requestor), Approver (te
 
 ### III. Inventory Integrity
 
-Inventory quantity MUST be encoded before any request can be submitted. Submitting a request MUST decrement stock in the same transaction as the status change to `Pending Approval`. Rejecting a request MUST increment stock back in the same transaction as the status change to `Rejected`. Approving, preparing, releasing, and completing MUST NOT change on-hand quantity. On-hand quantity MUST NEVER be negative. A request quantity MUST NOT exceed available stock at submit time.
+Inventory quantity MUST be encoded before any request can be submitted. Submitting a request MUST decrement stock in the same transaction as the status change to `Pending Approval`. Rejecting a request MUST increment stock back in the same transaction as the status change to `Rejected`; cancelling a request MUST do the same in the same transaction as the status change to `Cancelled`, because the deducted items are not leaving the store. Approving, preparing, releasing, and completing MUST NOT change on-hand quantity. On-hand quantity MUST NEVER be negative. A request quantity MUST NOT exceed available stock at submit time.
 
 ### IV. Explicit Request State Machine
 
-A request MUST move only through the documented statuses: `Pending Approval` → (`Approved` | `Rejected`) → `For Release` → `Released` → `Completed`. Illegal transitions MUST be rejected by the API. Rejection MUST require a reason. After rejection, the employee submits a **new** request; the rejected record is not reopened.
+A request MUST move only through the documented statuses: `Pending Approval` → (`Approved` | `Rejected`) → `For Release` → `Released` → `Completed`, with `Cancelled` reachable from `Pending Approval`, `Approved` and `For Release`. Illegal transitions MUST be rejected by the API.
+
+Rejection MUST require a reason. A rejection is the Approver's decision on a request awaiting one.
+
+Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`; a Supply Admin MAY cancel an `Approved` or `For Release` request that cannot be fulfilled. A cancellation by anyone other than the owning Employee MUST require a reason. A `Released` request MUST NOT be cancelled — the items have been handed over.
+
+`Rejected`, `Cancelled` and `Completed` are terminal. After rejection or cancellation the employee submits a **new** request; neither record is reopened.
 
 ### V. Notification Completeness
 
-The system MUST send the corresponding email at every defined transition: Request Submitted, Request Approved, Request Rejected, Items Ready for Pickup / Released, Request Completed. Recipients MUST match `docs/process-flow.md`. A successful status change with a failed notification is a defect and MUST be visible in logs.
+The system MUST send the corresponding email at every defined transition: Request Submitted, Request Approved, Request Rejected, Items Ready for Pickup / Released, Request Completed, Request Cancelled. Recipients MUST match `docs/process-flow.md`. A successful status change with a failed notification is a defect and MUST be visible in logs.
 
 ### VI. Independently Testable Increments
 

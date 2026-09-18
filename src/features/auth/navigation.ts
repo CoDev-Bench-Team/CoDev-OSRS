@@ -1,61 +1,38 @@
-import type { Role } from './session-source';
+import { DESTINATIONS, type Destination, type DestinationId } from '../../app/destinations';
+import type { Role } from './types';
 
-/** Navigation derived from a role, never hand-maintained per screen
- *  (spec 003 FR-006, D1).
+/** FR-006 / D1: navigation is DERIVED from the authorization matrix in
+ *  ARCHITECT.md §7, per role, and never hand-maintained per screen.
  *
- *  The Supply Admin's set is the drawn admin bar, requested by the project
- *  owner on 2026-09-15: [Requests Queue, History, Inventory]. The Approver's
- *  and the Employee's have no drawn source and come from the authorization
- *  matrix in `ARCHITECT.md` §7; both are flagged to the designer in
- *  docs/design-system/additions.md.
+ *  Three sets, not the design file's two. The file merges Approver and Supply
+ *  Admin into a single "Admin" identity, which constitution II forbids, so the
+ *  Approver and Supply Admin sets are new design — flagged to the designer in
+ *  spec 003's Known Gaps.
  *
- *  Roles are still three and still distinct — a Supply Admin cannot approve and
- *  an Approver cannot encode stock, whatever either bar says. What changed is
- *  the label set on one bar, not the authorization behind it.
+ *  Order is the order each role works in: their own queue first, then what they
+ *  consult.
  *
- *  This is a pure function of role, so it is directly testable and cannot
- *  drift from what the guards allow.
- */
-export type Destination = { label: string; path: string };
-
-export const NAVIGATION: Record<Role, Destination[]> = {
-  employee: [
-    { label: 'Catalog', path: '/catalog' },
-    { label: 'My Requests', path: '/requests' },
-    { label: 'Profile', path: '/profile' },
-  ],
-  approver: [
-    { label: 'Requests Queue', path: '/approvals' },
-    { label: 'Catalog', path: '/catalog' },
-    { label: 'Profile', path: '/profile' },
-  ],
-  // The drawn admin bar, verbatim (figma 88:22807): Requests Queue, History,
-  // Inventory. Catalog and Profile stay *reachable* for this role — the
-  // authorization matrix grants both — but the bar shows what the designer
-  // drew. Navigation and authorization are separate questions, and only the
-  // second one is the constitution's.
-  supply_admin: [
-    { label: 'Requests Queue', path: '/fulfillment' },
-    { label: 'History', path: '/history' },
-    { label: 'Inventory', path: '/inventory' },
-  ],
+ *  Amended 2026-09-15 from the design re-export: **Profile is no longer a
+ *  navigation item** — the file's Profile screen shows no current item, and the
+ *  account cluster is the way in — and **History joins the Admin bar**, which
+ *  under the three-role split means the Approver's and the Supply Admin's.
+ *  Catalog stays for all three, which the file's merged Admin bar omits: the
+ *  authorization matrix in ARCHITECT.md §7 gives every role the catalog, and
+ *  D1 already overrides that bar.
+ *
+ *  A pure function over a constant table, so SC-001's navigation half is
+ *  assertable without rendering anything. */
+const NAVIGATION: Record<Role, readonly DestinationId[]> = {
+  employee: ['catalog', 'requests'],
+  approver: ['approvals', 'history', 'catalog'],
+  supply_admin: ['fulfillment', 'inventory', 'history', 'catalog'],
 };
 
-/** Where each role lands after signing in (FR-007).
- *
- *  Spec 003 names the Supply Admin's landing destination as the fulfillment
- *  queue. That screen has no visual source — `DESIGN.md` §11 lists the missing
- *  prepare/release design as a known gap — and ships here as a placeholder, so
- *  the Supply Admin lands on Inventory, which is drawn and built. Move this
- *  back to `/fulfillment` when that screen exists. */
-export const LANDING: Record<Role, string> = {
-  employee: '/catalog',
-  approver: '/approvals',
-  supply_admin: '/inventory',
-};
+export function navigationFor(role: Role): readonly Destination[] {
+  return NAVIGATION[role].map((id) => DESTINATIONS[id]);
+}
 
-/** Which navigation item is current. A child address keeps its parent marked —
- *  the item drawer at `/inventory/new` is still Inventory (FR-014). */
-export function isCurrent(path: string, pathname: string): boolean {
-  return pathname === path || pathname.startsWith(`${path}/`);
+/** Exported so a check can assert the sets without importing the map itself. */
+export function navigationLabelsFor(role: Role): readonly string[] {
+  return navigationFor(role).map((d) => d.navLabel);
 }

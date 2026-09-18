@@ -1,93 +1,111 @@
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
-import { LoadingState, TopBar, type NavItem } from '../shared/ui';
-import { useSession } from '../features/auth/SessionProvider';
-import { NAVIGATION, isCurrent } from '../features/auth/navigation';
-import { ROLE_LABEL, type Role } from '../features/auth/session-source';
+import { useEffect, useRef } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router';
+import { Button, ErrorBoundary, TopBar, type NavItem } from '../shared/ui';
+import { navigationFor } from '../features/auth/navigation';
+import { useSession } from '../features/auth/session-context';
+import { ROLE_LABEL } from '../features/auth/types';
+import { canRoleReach, DESTINATIONS, landingPath, SIGN_IN_PATH } from './destinations';
+import { NavButton } from './NavButton';
+import { useRequestListCount } from './request-list-count';
 
-/** The avatar colours the source draws. It designs two identities — an orange
- *  Employee and a deep-green Supply Admin — so the Approver's is an addition,
- *  logged in docs/design-system/additions.md for ratification. */
-const AVATAR_COLOR: Record<Role, string> = {
-  employee: 'var(--color-osrs-avatar-orange)',
-  approver: 'var(--color-osrs-gray-500)',
-  supply_admin: 'var(--color-osrs-avatar-green)',
-};
-
-/** What the drawn bar shows. Replace with a real count when notifications land. */
-const DRAWN_NOTIFICATION_COUNT = 3;
-
-/** The persistent chrome every signed-in screen carries (spec 003 FR-014).
+/** The persistent chrome every signed-in destination lives inside (FR-014).
  *
- *  The bar is the only element on every screen, so if it is wrong every screen
- *  is wrong. For the Supply Admin it is the drawn `Top Navigation` component
- *  (figma 88:22807) verbatim — lockup, [Requests Queue, History, Inventory],
- *  the bell with its count, the divider, and the account cluster — at the
- *  project owner's request on 2026-09-15.
+ *  One bar, on every screen: the product lockup, the navigation for the
+ *  signed-in role, and the account cluster naming who is signed in and in what
+ *  role. The Employee's request-list marker and its count are the only part
+ *  that varies by role (FR-015).
  *
- *  The bell's count is sample data, like the inventory screen's 238 and 1,250:
- *  notifications are sent by the API and this repo has no notification feature
- *  (FR-024), so the marker is presentational until one exists. The Employee's
- *  request-list marker (FR-015) takes the same slot for that role.
- *
- *  Sign-out is drawn nowhere in the source, so it sits inside the account
- *  cluster rather than beside it, keeping the bar's drawn silhouette (FR-016).
- */
+ *  There is no role switcher anywhere in here, by design (D5, FR-005).
+ *  Changing role means signing out and signing in, which is also what makes the
+ *  demo exercise the real sign-in path. */
 export function AppLayout() {
-  const { status, session, signOut } = useSession();
-  const navigate = useNavigate();
+  const { session, signOut } = useSession();
+  const { count, notificationCount } = useRequestListCount();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // FR-018: while the session is undetermined the shell waits rather than
-  // flashing the sign-in screen at someone who is already signed in.
-  if (status === 'unknown') {
-    return (
-      <div className="min-h-dvh bg-surface-page">
-        <LoadingState label="Checking your session" />
-      </div>
-    );
-  }
+  // FR-017b: a role that changes mid-session re-evaluates. Navigation derives
+  // from `role` on every render, so it follows on its own; what needs saying is
+  // what happens to someone standing on a screen their NEW role may not use.
+  // They are moved to one it permits rather than left facing a refusal they did
+  // nothing to earn.
+  //
+  // This is the only navigation in the shell that a guard does not perform, and
+  // it cannot loop: it fires on a role TRANSITION, and a landing destination is
+  // always reachable by the role that owns it.
+  const lastRole = useRef(session?.role);
+  useEffect(() => {
+    const role = session?.role;
+    if (!role || lastRole.current === role) return;
+    lastRole.current = role;
+    if (!canRoleReach(role, location.pathname)) void navigate(landingPath(role), { replace: true });
+  }, [session?.role, location.pathname, navigate]);
 
-  if (status === 'signed-out' || !session) {
-    return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
-  }
+  if (!session) return null; // RequireAccess resolves this; belt and braces.
 
-  const nav: NavItem[] = NAVIGATION[session.role].map((d) => ({
-    label: d.label,
-    href: d.path,
-    current: isCurrent(d.path, location.pathname),
-    // A real href keeps middle-click and "open in new tab" working; the plain
-    // left-click is intercepted so navigation stays client-side.
-    onClick: (event) => {
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-      event.preventDefault();
-      void navigate(d.path);
-    },
+  const { user, role } = session;
+
+  // Exactly one item is current (FR-014). `startsWith` so a nested address —
+  // /requests/REQ-2026-1847 — still marks My Requests, but only on a path
+  // boundary, so /requests never lights up /request-something-else.
+  const isCurrent = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
+
+  const nav: NavItem[] = navigationFor(role).map((destination) => ({
+    label: destination.navLabel,
+    href: destination.path,
+    current: isCurrent(destination.path),
   }));
 
-  async function onSignOut() {
-    await signOut();
-    // Replace, so browser back cannot restore a signed-in screen (FR-016).
-    void navigate('/login', { replace: true });
-  }
-
   return (
-    <div className="flex min-h-dvh flex-col bg-surface-page">
+    <div className="flex min-h-screen flex-col bg-surface-page">
       <TopBar
         nav={nav}
-        user={{
-          name: session.user.name,
-          role: ROLE_LABEL[session.role],
-          initials: session.user.initials,
-          color: AVATAR_COLOR[session.role],
+        onNavigate={(href, event) => {
+          event.preventDefault();
+          void navigate(href);
         }}
-        notificationCount={session.role === 'supply_admin' ? DRAWN_NOTIFICATION_COUNT : undefined}
-        onSignOut={() => void onSignOut()}
+        user={{ name: user.name, role: ROLE_LABEL[role], initials: user.initials, color: user.avatarColor }}
+        // FR-015: employees only. `undefined` removes the marker entirely for
+        // the other two roles rather than showing them a zero.
+        requestListCount={role === 'employee' ? count : undefined}
+        // The request-list drawer is spec 001's own work (T010). Until it
+        // ships, the marker goes where the list's contents will end up.
+        onOpenRequestList={() => void navigate(DESTINATIONS.requests.path)}
+        // The 2026-09-15 export puts a notification marker in both bars, with a
+        // count on the Admin one. It is a marker, not a control: the file draws
+        // no panel for it to open, so it announces a count and does nothing —
+        // better than a button that goes nowhere. See the drift document.
+        notifications
+        notificationCount={role === 'employee' ? undefined : notificationCount}
+        // Profile left the navigation in that same export; the account cluster
+        // is how the file's Profile screen is reached (FR-006, amended).
+        onOpenAccount={() => void navigate(DESTINATIONS.profile.path)}
+        actions={
+          // Sign-out is not drawn anywhere in the design file; its placement in
+          // the account cluster is an addition (docs/design-system/additions.md).
+          // History is REPLACED so back cannot restore a signed-in screen
+          // (FR-016).
+          <Button
+            variant="ghost"
+            onClick={() => {
+              void signOut().then(() => navigate(SIGN_IN_PATH, { replace: true }));
+            }}
+          >
+            Sign Out
+          </Button>
+        }
       />
-      {/* The drawn content column: 32px from the left edge, 1344px wide at the
-          design width, which is where the frame puts the title and the table.
-          Below 1440 the gutters go symmetric. */}
-      <main className="mx-auto flex w-full max-w-layout-page-width flex-1 flex-col px-layout-gutter pt-[34px] pb-32 min-[1440px]:pr-[64px]">
-        <Outlet />
+
+      <main className="mx-auto flex w-full max-w-layout-page-width flex-1 flex-col px-layout-gutter">
+        {/* FR-019: a screen that throws loses itself, not the shell. Keyed by
+            address, so navigating away clears the failure. */}
+        <ErrorBoundary
+          key={location.pathname}
+          action={<NavButton to={landingPath(role)} variant="ghost">{`Go to ${navigationFor(role)[0].navLabel}`}</NavButton>}
+        >
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );

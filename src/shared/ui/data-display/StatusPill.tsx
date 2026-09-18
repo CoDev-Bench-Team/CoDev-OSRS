@@ -13,6 +13,8 @@ const TONE: Record<StatusTone, string> = {
   pending: 'bg-status-pending-bg text-status-pending-fg',
   ready: 'bg-status-ready-bg text-status-ready-fg',
   rejected: 'bg-status-rejected-bg text-status-rejected-fg',
+  completed: 'bg-status-completed-bg text-status-completed-fg',
+  cancelled: 'bg-status-cancelled-bg text-status-cancelled-fg',
 };
 
 /** A handover label carries its own palette, not the status tone: pickup is the

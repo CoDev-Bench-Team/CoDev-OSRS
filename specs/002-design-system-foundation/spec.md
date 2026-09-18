@@ -193,7 +193,7 @@ Made by the project owner before drafting; `plan.md` implements them.
 | D2 | The shell and components are fully responsive from phone width to the 1440px design width. | Exceeds the source, which has only the 1440 frame. Breakpoint layouts are invented and MUST be documented for designer review (FR-018). |
 | D3 | All 17 published component families are ported, and the 8 UI-kit shell helpers are promoted to first-class components. | Complete coverage; page work starts unblocked. Promotion is fed back to the designer for publishing in Figma. |
 | D4 | All four referenced families are self-hosted; Google Fonts is not used at runtime. | No external dependency, works on an isolated LAN. Roboto and Noto Sans are carried for the two imported library components so all 17 families stay pixel-exact. |
-| D5 | Request status is typed to the six legal states; `Ready for Pickup` and `For Delivery` are presentational labels for `Released` (amended 2026-09-14 — see Clarifications). | Reconciles the design file's 11-status pill with constitution IV. The mockup wording survives; illegal states become unrepresentable. |
+| D5 | Request status is typed to the legal states — six, then seven once `Cancelled` arrived (amended 2026-09-14 and 2026-09-15 — see Clarifications); `Ready for Pickup` and `For Delivery` remain presentational labels for `Released`. | Reconciles the design file's status pill with constitution IV. The mockup wording survives; illegal states become unrepresentable. |
 | D6 | The component library is browsable through an in-app gallery route built with the existing toolchain. | Satisfies FR-015 with no new dependency and no ADR under constitution VIII. The gallery renders the real components, so it cannot drift. |
 
 ## Known Gaps — flag to the designer
@@ -225,6 +225,20 @@ None dismissed. All five flagged items (CHK001, CHK003, CHK004, CHK005, CHK006) 
 - Q: D3 keeps the two imported components, which use Noto Sans and Roboto, but D4 self-hosted only Inter and Space Grotesk. How is that resolved? → A: Self-host all four families, so all 17 component families render pixel-exact (D4).
 - Q: The design file's pill defines 11 statuses; the constitution defines 6 request states. How should the pill be typed? → A: Type to the 6 canonical states, keep "Ready for Pickup" as a presentational label for `Released`, drop "For Delivery" (D5).
 - Q: FR-015 requires isolated browsing, but constitution VIII forbids new frameworks without an ADR. How? → A: An in-app gallery route using the existing toolchain — no Storybook, no ADR (D6).
+
+### Session 2026-09-15 — Amendment to D5 (a seventh state)
+
+Raised by the 2026-09-15 `.fig` re-export (`docs/design-system/drift-2026-09-15.md`) and decided by the project owner. Recorded here, not applied silently.
+
+- Q: The re-export defines a seventh status, `Cancelled`, and recolours `Completed` from green to purple. D5 types the pill to six states. Now what? → A: **Type to seven.** `Cancelled` is a real state, not a presentational label.
+
+**Scope of the amendment.**
+
+- **This one does bump the constitution**, unlike the 2026-09-14 amendment. `Cancelled` is a state the machine must be able to produce, so constitution **2.0.0** redefines principle IV to admit it (and extends III and V to its stock restore and its email). `RequestStatus` is now those seven states and still nothing else.
+- `Completed` takes `#6840b8` on `#f1ecff`, `Cancelled` `#4b5063` on that ink at 10%. The inks are the file's own `Status/Completed` and `Status/Cancelled` colour styles; `Completed`'s fill is transcribed from a rendered pill; `Cancelled`'s fill follows the `--osrs-*-tint` convention, because the file draws no Cancelled chip anywhere. Both pairs pass AA at 12px bold (6.03 and 6.86) — unlike the delivery pink, which still does not.
+- **The stated colour rule changes.** "Amber waits on a human, green is moving or done, red is stopped" no longer holds, because `Completed` left green. It now reads: amber waits on a human · green is moving · red is stopped by a decision · purple is closed and done · slate is stopped without a decision. Recorded in `docs/design-system/additions.md` §2c for ratification.
+- Two inconsistencies in the file are reported rather than reproduced: the Cancelled pill's label is still Completed's purple over a slate frame, and `04.2 - My Requests - Cancelled` still shows a Completed pill.
+- Unlike the delivery label, this one **does** reach `docs/process-flow.md`: the cancel path, its inventory restore and its notification are defined there, and spec 001 carries the functional requirements (FR-009a–c, FR-014, FR-016a).
 
 ### Session 2026-09-14 — Amendment to D5
 

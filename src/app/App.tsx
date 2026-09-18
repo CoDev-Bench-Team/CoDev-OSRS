@@ -1,51 +1,66 @@
-import { lazy, Suspense, useSyncExternalStore } from 'react';
-import { BrowserRouter } from 'react-router';
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router';
 import { SessionProvider } from '../features/auth/SessionProvider';
+import { RequestListCountProvider } from './RequestListCountProvider';
 import { AppRoutes } from './routes';
 
-/** The application shell (spec 003): a router for durable addresses, a session
- *  boundary for identity and role, and one guard between them.
+/** The application root: history, then session, then the count the top bar
+ *  shows, then the routes.
  *
- *  `#compare` is a development-only branch, not a route: it mounts the fidelity
- *  harness, which imports the vendored design-system source. It stays outside
- *  the router because it is not part of the product.
+ *  Order matters. The router is outermost because guards redirect, and a guard
+ *  is rendered by a route. The session provider sits above every route so a
+ *  single resolution serves all of them — and so `status` is shared, which is
+ *  what makes the loading state a property of the application rather than of a
+ *  screen.
+ *
+ *  Spec 002's component gallery is not a destination; it is the design system's
+ *  own surface and the fidelity gates run against it. It stays reachable in
+ *  development at `/__gallery` and `/__compare`, outside the destination set
+ *  and outside any guard, and — like the compare harness before it — is
+ *  dropped from production builds entirely.
  *
  *  The `import.meta.env.DEV &&` guard must wrap the `lazy()` call itself, not
  *  just its use. Vite replaces DEV with `false` in a production build, which
- *  lets Rollup drop the dynamic import entirely. Declaring the lazy component
+ *  lets Rollup drop the dynamic import. Declaring the lazy component
  *  unconditionally and only *using* it behind the guard still emits the chunk,
- *  so design-system/ would ship. */
+ *  so the gallery — and through the harness, design-system/ — would ship. */
+const Gallery = import.meta.env.DEV
+  ? lazy(() => import('../shared/ui/gallery/Gallery').then((m) => ({ default: m.Gallery })))
+  : null;
+
 const CompareHarness = import.meta.env.DEV
   ? lazy(() => import('../shared/ui/gallery/compare/CompareHarness').then((m) => ({ default: m.CompareHarness })))
   : null;
 
-/** Reading `location.hash` during render is not enough: changing the hash on an
- *  already-open page fires `hashchange` without reloading, so React would never
- *  re-render and `#compare` would appear to do nothing. */
-function useHash() {
-  return useSyncExternalStore(
-    (onChange) => {
-      window.addEventListener('hashchange', onChange);
-      return () => window.removeEventListener('hashchange', onChange);
-    },
-    () => window.location.hash,
-    () => '',
-  );
-}
-
 export default function App() {
-  const hash = useHash();
-  if (CompareHarness && hash === '#compare') {
-    return (
-      <Suspense fallback={null}>
-        <CompareHarness />
-      </Suspense>
-    );
-  }
   return (
     <BrowserRouter>
       <SessionProvider>
-        <AppRoutes />
+        <RequestListCountProvider>
+          {Gallery && CompareHarness ? (
+            <Routes>
+              <Route
+                path="/__gallery"
+                element={
+                  <Suspense fallback={null}>
+                    <Gallery />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/__compare"
+                element={
+                  <Suspense fallback={null}>
+                    <CompareHarness />
+                  </Suspense>
+                }
+              />
+              <Route path="*" element={<AppRoutes />} />
+            </Routes>
+          ) : (
+            <AppRoutes />
+          )}
+        </RequestListCountProvider>
       </SessionProvider>
     </BrowserRouter>
   );

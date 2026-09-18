@@ -1,50 +1,56 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { ForbiddenScreen, LoadingState } from '../../shared/ui';
-import { useSession } from './SessionProvider';
-import { LANDING } from './navigation';
-import type { Role } from './session-source';
-import { BackToWork } from './BackToWork';
+import { NavButton } from '../../app/NavButton';
+import { landingDestination, landingPath, SIGN_IN_PATH } from '../../app/destinations';
+import { useSession } from './session-context';
+import { ROLE_LABEL, type Role } from './types';
 
 /** The one guard, applied to every protected route element, so authorization
- *  cannot be forgotten on a screen-by-screen basis (spec 003 FR-010).
+ *  cannot be forgotten screen by screen (FR-010).
  *
- *  **This is a user-experience boundary, not a security boundary.** Everything
- *  here runs in the browser and can be bypassed by anyone willing to edit
- *  client state. Spec 001's SC-005 — that one role cannot complete another
- *  role's action "through the UI or API" — is satisfied only when the API
- *  enforces the same matrix independently, which `ARCHITECT.md` §7 makes an
- *  API responsibility. Nothing here relieves the backend of it. The guard's job
- *  is that an Approver never *sees* the inventory screen; the API's job is that
- *  they cannot *change* inventory.
+ *  Resolution order is fixed, and the order is the design:
  *
- *  Resolution order matters:
+ *  1. `unknown` renders the loading state and NEVER redirects. This is what
+ *     stops a signed-in user seeing a flash of the sign-in screen while the
+ *     session is still resolving (FR-018).
+ *  2. `signed-out` redirects to sign-in, recording the address that was asked
+ *     for so the visitor is returned to it afterwards (FR-013).
+ *  3. A role outside `allow` gets the refusal screen and a route back to a
+ *     screen it may use — never a blank page, never a silent redirect (FR-011).
+ *  4. Otherwise the destination renders.
  *
- *   1. `unknown` never redirects — it waits, which is what stops a signed-in
- *      user seeing a flash of the sign-in screen (FR-018).
- *   2. `signed-out` redirects to sign-in, recording where the visitor was
- *      headed so they are returned to it afterwards (FR-013).
- *   3. A role outside `allow` gets an explanation and a route back, never a
- *      blank screen or a silent bounce (FR-011).
+ *  Redirects always REPLACE. A pushed redirect leaves an entry in history that
+ *  would immediately bounce the user again, which is how a back button turns
+ *  into a loop (and why sign-out cannot be undone with back — FR-016).
  *
- *  Because it reads live context rather than a value captured when the routes
- *  were defined, a role change mid-session re-evaluates on the next render
- *  (FR-017b). Redirects replace rather than push, so browser back cannot land
- *  on a route that immediately bounces again (FR-016).
- */
-export function RequireAccess({ allow, children }: { allow: readonly Role[]; children: ReactNode }) {
+ *  The guard reads live context rather than a value captured when the routes
+ *  were defined, so a role that changes mid-session re-evaluates on the next
+ *  render (FR-017b).
+ *
+ *  This is a user-experience boundary, NOT a security boundary. Everything here
+ *  runs in the browser. Spec 001's SC-005 is satisfied only when the API
+ *  enforces the same matrix independently — ARCHITECT.md §7 makes that an API
+ *  responsibility, and nothing here relieves it. */
+export function RequireAccess({ allow, children }: { allow?: readonly Role[]; children: ReactNode }) {
   const { status, session } = useSession();
   const location = useLocation();
 
   if (status === 'unknown') return <LoadingState label="Checking your session" />;
 
   if (status === 'signed-out' || !session) {
-    return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
+    return <Navigate to={SIGN_IN_PATH} replace state={{ from: location.pathname + location.search }} />;
   }
 
-  if (!allow.includes(session.role)) {
-    return <ForbiddenScreen action={<BackToWork to={LANDING[session.role]} />} />;
+  if (allow && !allow.includes(session.role)) {
+    const home = landingDestination(session.role);
+    return (
+      <ForbiddenScreen
+        roleLabel={ROLE_LABEL[session.role]}
+        action={<NavButton to={landingPath(session.role)} replace>{`Go to ${home.navLabel}`}</NavButton>}
+      />
+    );
   }
 
-  return children;
+  return <>{children}</>;
 }

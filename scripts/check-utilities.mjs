@@ -61,27 +61,48 @@ for (const f of files) {
   }
 }
 
-const compiler = await compile(await read('src/styles/index.css'), {
-  base: 'src/styles',
-  loadStylesheet: async (id, base) => {
-    if (id === 'tailwindcss') {
-      const p = 'node_modules/tailwindcss/index.css';
-      return { path: p, base: 'node_modules/tailwindcss', content: await read(p) };
-    }
-    const p = path.resolve(base, id);
-    return { path: p, base: path.dirname(p), content: await read(p) };
-  },
-});
+const entryCss = await read('src/styles/index.css');
+const newCompiler = () =>
+  compile(entryCss, {
+    base: 'src/styles',
+    loadStylesheet: async (id, base) => {
+      if (id === 'tailwindcss') {
+        const p = 'node_modules/tailwindcss/index.css';
+        return { path: p, base: 'node_modules/tailwindcss', content: await read(p) };
+      }
+      const p = path.resolve(base, id);
+      return { path: p, base: path.dirname(p), content: await read(p) };
+    },
+  });
 
-// Compare each candidate's output against the empty build. Pattern-matching
-// the emitted CSS is unreliable: Tailwind escapes `:` and `/` in selectors, so
-// a working variant like `focus-within:ring-brand` looks absent to a naive
-// regex. If a name adds no rule, it compiles to nothing.
+const compiler = await newCompiler();
+
+// Does each candidate actually emit a rule? Pattern-matching the CSS is
+// unreliable — Tailwind escapes `:` and `/` in selectors, so a working variant
+// like `focus-within:ring-brand` looks absent to a naive regex — so measure
+// whether the output GREW.
+//
+// `compiler.build()` is INCREMENTAL: every call returns the CSS for every
+// candidate seen so far, not just the one passed in. Comparing each candidate
+// against the original empty baseline therefore passes everything after the
+// first one that compiles, which is how this gate came to report `all
+// utilities resolve` for classes that emit nothing at all — `gap-13`,
+// `bg-surface-subtle`, even `text-nonsense-999`. Compare against the PREVIOUS
+// length instead, and then re-check anything that looks wrong on a clean
+// compiler so an ordering quirk cannot produce a false accusation.
 const names = [...used.keys()];
-const baseline = compiler.build([]).length;
-const bad = [];
+let previous = compiler.build([]).length;
+const suspect = [];
 for (const n of names) {
-  if (compiler.build([n]).length <= baseline) bad.push([n, used.get(n)]);
+  const length = compiler.build([n]).length;
+  if (length <= previous) suspect.push(n);
+  previous = length;
+}
+const bad = [];
+for (const n of suspect) {
+  const clean = await newCompiler();
+  const baseline = clean.build([]).length;
+  if (clean.build([n]).length <= baseline) bad.push([n, used.get(n)]);
 }
 
 // Token adherence (spec 002 FR-003). The design system ships these as oxlint

@@ -1,60 +1,60 @@
+import type { Session } from './types';
+
 /** The session boundary (spec 003 D3, FR-002, FR-003).
  *
- *  Everything the shell knows about who is signed in comes through this one
- *  interface, and the interface is expressed in the SPA's own vocabulary —
- *  `Session`, `User`, `Role`. There is no endpoint here, no payload shape and
- *  no error code, because `ARCHITECT.md` §8 reserves the REST contract to the
- *  backend team and constitution VII forbids inventing one here (FR-004).
+ *  Everything the shell knows about authentication is these four methods. There
+ *  is no endpoint here, no payload, no error code — the interface is expressed
+ *  entirely in the SPA's own vocabulary, which is what keeps FR-004 true while
+ *  the backend contract is unpublished. Today `seeded-source.ts` satisfies it;
+ *  when the contract publishes, a second implementation is written against it
+ *  and no shell code changes.
  *
- *  Today `seeded-source.ts` satisfies it. When the contract publishes, a second
- *  implementation is written against it and nothing else in the shell changes.
- */
-
-/** The three human roles of constitution II, as a closed union. There is no
- *  combined "Admin" *role*: the design file's Admin surface merges Approver and
- *  Supply Admin, and ADR-0003 refuses that merge where it counts — in what a
- *  signed-in person is allowed to do. A person holds exactly one role, and
- *  changing it takes a full sign-out and sign-in (FR-005, D5). */
-export const ROLES = ['employee', 'approver', 'supply_admin'] as const;
-export type Role = (typeof ROLES)[number];
-
-/** How a role is named on screen.
- *
- *  The Supply Admin's cluster reads "Admin" because that is what the drawn top
- *  bar says (figma 88:22832) and the project owner asked for that bar verbatim
- *  on 2026-09-15. It is a caption, not a role: `Role` is still the closed union
- *  below, the guards still authorize against `supply_admin`, and no approval
- *  action is reachable from it — which is what constitution II and ADR-0003
- *  actually forbid collapsing. Recorded in docs/design-system/additions.md;
- *  restoring "Supply Admin" is this one line. */
-export const ROLE_LABEL: Record<Role, string> = {
-  employee: 'Employee',
-  approver: 'Approver',
-  supply_admin: 'Admin',
-};
-
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  /** Two letters on a flat colour. The design system never shows a photo. */
-  initials: string;
-  role: Role;
-};
-
-export type Session = { user: User; role: Role };
-
+ *  `signIn()` REJECTS when authentication is refused — it never resolves to
+ *  `null`. A refusal and a signed-out success are different outcomes and must
+ *  never be confused (FR-003b). */
 export interface SessionSource {
-  /** Resolve an existing session, or `null` when there is none. Never throws
-   *  for "not signed in" — that is a `null`, not a failure. */
+  /** Resolve the stored session reference into a session, or `null` when there
+   *  is none and when the reference is stale. Called on every load, so a
+   *  reference left behind on a shared device is revalidated, never trusted. */
   current(): Promise<Session | null>;
-  /** Establish a session. Rejects when sign-in is refused, so a refusal can
-   *  never be mistaken for a signed-out success (FR-003b). Takes no argument:
-   *  the SPA does not choose a role, and implements no authentication of its
-   *  own (FR-003a). */
+
+  /** Begin a session. The shell calls this from the designed Google control and
+   *  never learns what happens inside. Rejects when sign-in is refused. */
   signIn(): Promise<Session>;
+
+  /** End the session. Must also clear the stored reference. */
   signOut(): Promise<void>;
-  /** Fires when the session may have changed elsewhere — another tab signing
-   *  out, or a role change (FR-017a, FR-017b). Returns its own unsubscribe. */
-  subscribe(onChange: () => void): () => void;
+
+  /** Notify when the session may have changed elsewhere — another tab signing
+   *  out (FR-017a), or a role change behind the boundary (FR-017b). The shell
+   *  responds by re-resolving through `current()`; the callback carries no
+   *  session, so no authorization fact travels on this channel. */
+  subscribe(listener: () => void): () => void;
+}
+
+/** A demo affordance, deliberately NOT part of `SessionSource`.
+ *
+ *  A source that authenticates nobody has to be told whom to sign in as, and a
+ *  tester has to be able to reach all three roles to exercise SC-001 and
+ *  SC-003. A source backed by the real contract authenticates a real person, so
+ *  it implements none of this and the chooser disappears from the sign-in
+ *  screen on its own — see `hasDemoAccounts()`. */
+export interface DemoAccountSource {
+  accounts(): readonly DemoAccount[];
+  /** The account id `signIn()` will resolve to. */
+  selected(): string;
+  select(id: string): void;
+}
+
+export type DemoAccount = {
+  id: string;
+  label: string;
+  detail: string;
+  /** Selecting this one makes `signIn()` reject, so a refusal (FR-003b) can be
+   *  demonstrated without a backend that can refuse. */
+  refuses?: boolean;
+};
+
+export function hasDemoAccounts(source: SessionSource): source is SessionSource & DemoAccountSource {
+  return typeof (source as Partial<DemoAccountSource>).accounts === 'function';
 }

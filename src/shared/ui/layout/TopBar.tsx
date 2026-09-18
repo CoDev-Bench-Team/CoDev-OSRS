@@ -1,97 +1,134 @@
-import { useEffect, useId, useRef, useState, type MouseEventHandler, type ReactNode } from 'react';
+import { useEffect, useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Avatar } from './Avatar';
+import { MdiChevronDown } from '../icons/MdiChevronDown';
 import { MdiLightBell } from '../icons/MdiLightBell';
 import { MdiLightClipboardText } from '../icons/MdiLightClipboardText';
 import logoLockup from '../../../assets/brand/logo-supply-requests.png';
 
-/** `href` stays a real address so middle-click and "open in new tab" work;
- *  `onClick` is how a router intercepts the plain left-click and navigates
- *  client-side instead. The bar itself knows nothing about routing. */
-export type NavItem = {
-  label: string;
-  href?: string;
-  current?: boolean;
-  onClick?: MouseEventHandler<HTMLAnchorElement>;
-};
+export type NavItem = { label: string; href?: string; current?: boolean };
 
-/** The persistent chrome — a port of the `Top Navigation` component
- *  (figma 88:22807), re-checked against the live file on 2026-09-15.
+/** REDESIGN, not a port (spec 002 FR-006).
  *
- *  Drawn geometry, reproduced exactly at the design width: an 87px bar on white
- *  with a hairline bottom border, and one row inset 32px from the left and 75
- *  from the right, holding the 93x43 lockup, the navigation and the account
- *  cluster with `justify-between`. Navigation is 14px on a 1.5 line box, 28px
- *  apart, the current item bold in `--color-brand-primary-alt` and the rest
- *  regular in `--color-ink-muted`. The account cluster runs marker, 1x31px
- *  divider, 34px avatar, then the 13px name over the 11px role.
+ *  The UI kit positions this bar by absolute coordinate — logo at (32, 22),
+ *  nav at x=618, account cluster at right:64. Those numbers only hold at the
+ *  1440 frame the designer drew. Converting to flow layout, and then making it
+ *  work down to 360px, is new layout design; it is logged in
+ *  docs/design-system/additions.md for ratification.
  *
- *  Two things the frame does not draw:
+ *  What is preserved exactly: the 87px height, the white surface, the hairline
+ *  ring, the 32px gutter, brand red on the current item, and the 31px divider.
  *
- *   - **Sign-out.** Spec 003 FR-016 requires one and the source has none, so it
- *     lives behind the account cluster: the bar keeps its drawn silhouette and
- *     the control is one click (or one Enter) away.
- *   - **Below the design width.** The source has only the 1440 frame. The row
- *     wraps, navigation moves to its own line, and the gutters go symmetric.
+ *  The bar spans the 1440 page width with a 32px gutter, so the logo sits at
+ *  x=32 exactly as drawn. (It previously capped at the 1344 CONTENT width and
+ *  centred, which put the logo at x=80 and quietly contradicted the preserved
+ *  gutter this comment claims. The source reaches 1344 of content from an
+ *  ASYMMETRIC pair of gutters — 32 left, 64 right — which a symmetric flow
+ *  layout cannot reproduce; spec 003 FR-022 keeps the gutter and lets the
+ *  content run 1376 wide. Logged in additions.md.)
  *
- *  Both are logged in docs/design-system/additions.md.
- */
+ *  Below `md` the navigation collapses into a disclosure (spec 003 FR-022, also
+ *  an addition). Above it, the bar is unchanged — the fidelity gates compare
+ *  this component at 1440 and must keep passing.
+ *
+ *  `onNavigate` exists so an application with a router can navigate without a
+ *  page load while the markup stays a real `<a href>` — so a nav item can still
+ *  be copied, middle-clicked or opened in a new tab. Modified clicks are left
+ *  to the browser. */
+function NavLink({
+  item,
+  onNavigate,
+  className,
+}: {
+  item: NavItem;
+  onNavigate?: (href: string, event: MouseEvent<HTMLAnchorElement>) => void;
+  className?: string;
+}) {
+  const href = item.href ?? '#';
+  return (
+    <a
+      href={href}
+      aria-current={item.current ? 'page' : undefined}
+      onClick={(event) => {
+        if (!onNavigate || !item.href) return;
+        if (event.defaultPrevented || event.button !== 0) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        onNavigate(item.href, event);
+      }}
+      className={`flex min-h-touch-target items-center font-sans text-14 leading-tight whitespace-nowrap transition-osrs ${
+        item.current ? 'font-bold text-brand-primary' : 'font-medium text-ink-secondary hover:text-ink-primary'
+      } ${className ?? ''}`}
+    >
+      {item.label}
+    </a>
+  );
+}
+
 export function TopBar({
   nav = [],
   user,
   requestListCount,
   onOpenRequestList,
+  notifications = false,
   notificationCount,
-  onSignOut,
+  onNavigate,
+  onOpenAccount,
   actions,
 }: {
   nav?: NavItem[];
   user?: { name: string; role: string; initials: string; color?: string };
-  /** Employee-only marker (spec 003 FR-015). */
   requestListCount?: number;
   onOpenRequestList?: () => void;
-  /** The admin bar's bell. Presentational: notifications are sent by the API
-   *  and this repo has no notification feature to open (FR-024). */
+  /** The notification marker the 2026-09-15 export added to both variants. */
+  notifications?: boolean;
+  /** A count badge on the marker. The export draws one on the Admin bar only. */
   notificationCount?: number;
-  onSignOut?: () => void;
+  onNavigate?: (href: string, event: MouseEvent<HTMLAnchorElement>) => void;
+  /** Makes the account cluster the way to the profile screen — which is how
+   *  the export reaches it, now that Profile is not a navigation item. */
+  onOpenAccount?: () => void;
   actions?: ReactNode;
 }) {
-  // The drawn bar is 87px *including* its hairline, so the height sits on the
-  // header and the border is inside it. Putting the minimum on the row instead
-  // made every page one pixel taller than the frame.
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   return (
-    <header className="flex min-h-layout-topbar-height w-full items-center border-b border-line-default bg-surface-bar">
-      <div className="mx-auto flex w-full max-w-layout-page-width flex-wrap items-center justify-between gap-16 px-layout-gutter py-12 min-[1440px]:pr-[75px]">
-        <img src={logoLockup} alt="codev Supply Requests" className="h-[43px] w-[93px] shrink-0 object-cover" />
+    <header className="w-full bg-surface-bar ring-default">
+      <div className="mx-auto flex min-h-layout-topbar-height w-full max-w-layout-page-width flex-wrap items-center gap-16 px-layout-gutter py-12">
+        <img src={logoLockup} alt="codev Supply Requests" className="h-[43px] w-auto shrink-0" />
 
         {nav.length > 0 && (
-          <nav className="order-3 flex w-full flex-wrap items-center gap-28 md:order-none md:w-auto">
-            {nav.map((n) => (
-              <a
-                key={n.label}
-                href={n.href ?? '#'}
-                onClick={n.onClick}
-                aria-current={n.current ? 'page' : undefined}
-                className={`flex min-h-touch-target items-center font-sans text-14 leading-body whitespace-nowrap transition-osrs ${
-                  n.current ? 'font-bold text-brand-primary-alt' : 'font-normal text-ink-muted hover:text-ink-primary'
-                }`}
-              >
-                {n.label}
-              </a>
-            ))}
-          </nav>
+          <>
+            <nav className="hidden md:flex md:flex-1 md:flex-wrap md:items-center md:justify-center md:gap-28">
+              {nav.map((n) => (
+                <NavLink key={n.label} item={n} onNavigate={onNavigate} />
+              ))}
+            </nav>
+
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={panelId}
+              onClick={() => setOpen((v) => !v)}
+              className="flex min-h-touch-target cursor-pointer items-center gap-4 rounded-8 border-none bg-transparent px-8 font-sans text-14 font-medium leading-tight text-ink-secondary transition-osrs hover:text-ink-primary md:hidden"
+            >
+              Menu
+              <span className={`flex transition-osrs ${open ? 'rotate-180' : ''}`}>
+                <MdiChevronDown size={20} />
+              </span>
+            </button>
+          </>
         )}
 
-        <div className="ml-auto flex items-center gap-18 md:ml-0">
-          {typeof notificationCount === 'number' && (
-            <span className="relative flex items-center text-ink-primary">
-              <MdiLightBell />
-              <span className="absolute top-[-4.5px] left-[11px] flex h-22 w-22 items-center justify-center rounded-pill bg-brand-primary-alt font-sans text-11 font-bold leading-tight text-white">
-                {notificationCount}
-              </span>
-              <span className="sr-only">{notificationCount} notifications</span>
-            </span>
-          )}
-
+        <div className="ml-auto flex flex-wrap items-center gap-18">
           {typeof requestListCount === 'number' && (
             <button
               type="button"
@@ -108,96 +145,72 @@ export function TopBar({
             </button>
           )}
 
+          {notifications && (
+            <span className="relative flex min-h-touch-target items-center text-ink-primary">
+              <MdiLightBell size={24} />
+              {typeof notificationCount === 'number' && notificationCount > 0 && (
+                <span className="absolute -top-2 left-14 flex h-22 w-22 items-center justify-center rounded-pill bg-brand-primary font-sans text-11 font-bold leading-tight text-white">
+                  {notificationCount}
+                </span>
+              )}
+              <span className="sr-only">
+                {typeof notificationCount === 'number' && notificationCount > 0
+                  ? `${notificationCount} notifications`
+                  : 'Notifications'}
+              </span>
+            </span>
+          )}
+
           {user && (
             <>
-              <span className="h-[31px] w-1 shrink-0 bg-osrs-gray-400" aria-hidden="true" />
-              <AccountCluster user={user} onSignOut={onSignOut} />
+              <span className="hidden h-[31px] w-1 shrink-0 bg-osrs-gray-400 sm:block" aria-hidden="true" />
+              {onOpenAccount ? (
+                <button
+                  type="button"
+                  onClick={onOpenAccount}
+                  className="flex min-h-touch-target cursor-pointer items-center gap-8 rounded-8 border-none bg-transparent p-0 text-left transition-osrs hover:opacity-80"
+                >
+                  <Avatar initials={user.initials} color={user.color} />
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="truncate font-sans text-13 leading-tight text-ink-primary">{user.name}</span>
+                    <span className="truncate font-sans text-11 leading-tight text-ink-secondary">{user.role}</span>
+                  </span>
+                </button>
+              ) : (
+                <span className="flex items-center gap-8">
+                  <Avatar initials={user.initials} color={user.color} />
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="truncate font-sans text-13 leading-tight text-ink-primary">{user.name}</span>
+                    <span className="truncate font-sans text-11 leading-tight text-ink-secondary">{user.role}</span>
+                  </span>
+                </span>
+              )}
             </>
           )}
           {actions}
         </div>
+
+        {nav.length > 0 && (
+          <nav
+            id={panelId}
+            className={`order-last w-full flex-col gap-4 border-t border-line-default pt-12 md:hidden ${
+              open ? 'flex' : 'hidden'
+            }`}
+          >
+            {nav.map((n) => (
+              <NavLink
+                key={n.label}
+                item={n}
+                className="w-full"
+                onNavigate={(href, event) => {
+                  setOpen(false);
+                  onNavigate?.(href, event);
+                }}
+              />
+            ))}
+          </nav>
+        )}
       </div>
     </header>
-  );
-}
-
-/** Avatar, name and role — and, when the shell supplies one, the sign-out the
- *  source never drew. With no `onSignOut` it renders as the plain drawn cluster
- *  rather than a dead menu. */
-function AccountCluster({
-  user,
-  onSignOut,
-}: {
-  user: { name: string; role: string; initials: string; color?: string };
-  onSignOut?: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const id = useId();
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
-
-  const identity = (
-    <>
-      <Avatar initials={user.initials} color={user.color} />
-      {/* The drawn text nodes are 16px and 15px tall on a 1px gap; leaving the
-          line boxes to the browser spreads the two lines 4px further apart than
-          the frame does. */}
-      <span className="flex min-w-0 flex-col items-start gap-1">
-        <span className="truncate font-sans text-13 leading-[16px] text-ink-primary">{user.name}</span>
-        <span className="truncate font-sans text-11 leading-[15px] text-ink-secondary">{user.role}</span>
-      </span>
-    </>
-  );
-
-  if (!onSignOut) return <span className="flex items-center gap-8">{identity}</span>;
-
-  return (
-    <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={`${id}-menu`}
-        onClick={() => setOpen((o) => !o)}
-        className="flex cursor-pointer items-center gap-8 border-none bg-transparent p-0 text-left transition-osrs"
-      >
-        {identity}
-      </button>
-
-      {open && (
-        <div
-          id={`${id}-menu`}
-          role="menu"
-          className="absolute top-full right-0 z-popover mt-8 min-w-[160px] rounded-10 bg-surface-card p-4 shadow-card ring-default"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onSignOut();
-            }}
-            className="w-full cursor-pointer rounded-6 border-none bg-transparent px-12 py-10 text-left type-ui text-ink-primary transition-osrs hover:text-brand-primary"
-          >
-            Sign Out
-          </button>
-        </div>
-      )}
-    </div>
   );
 }

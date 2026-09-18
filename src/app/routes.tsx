@@ -1,134 +1,96 @@
-import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router';
-import { LoadingState, NotFoundScreen, Placeholder } from '../shared/ui';
-import { AppLayout } from './AppLayout';
+import type { ReactNode } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router';
+import { NotFoundScreen } from '../shared/ui';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { RequireAccess } from '../features/auth/RequireAccess';
-import { BackToWork } from '../features/auth/BackToWork';
-import { useSession } from '../features/auth/SessionProvider';
-import { LANDING } from '../features/auth/navigation';
-import { ROLES } from '../features/auth/session-source';
+import { useSession } from '../features/auth/session-context';
+import { AppLayout } from './AppLayout';
+import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './destinations';
+import { NavButton } from './NavButton';
+import {
+  ApprovalsPlaceholder,
+  CatalogPlaceholder,
+  FulfillmentPlaceholder,
+  HistoryPlaceholder,
+  ProfilePlaceholder,
+  RequestDetailPlaceholder,
+  RequestsPlaceholder,
+} from './placeholders';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { AddCatalogItemRoute, UpdateStockRoute } from '../features/inventory/drawer-routes';
 
-/** The route map — the concrete form of spec 003's Destination Set, and the
- *  one place that says who may reach what.
+/** The route map — the destination set in `destinations.ts`, made addressable.
  *
- *  Every protected element is wrapped in `RequireAccess`, so authorization is
- *  checked on entry rather than being remembered per screen (FR-010). The
- *  destinations whose own features have not been built render a `Placeholder`
- *  that names them and says so, which FR-020 requires to be distinguishable
- *  from a not-found and from an error.
- *
- *  Only Inventory is built. It is also where the Supply Admin lands, because
- *  the fulfillment queue spec 003 names as their landing destination has no
- *  design yet (`navigation.ts`).
- *
- *  The gallery is a development surface, not a destination: like the fidelity
- *  harness it is lazily imported behind `import.meta.env.DEV`, so Rollup drops
- *  it — and the vendored design system it reaches — from a production build.
- */
-const Gallery = import.meta.env.DEV
-  ? lazy(() => import('../shared/ui/gallery/Gallery').then((m) => ({ default: m.Gallery })))
-  : null;
+ *  One source of truth, and every protected element goes through the same
+ *  guard with the roles that destination's row declares. There is no route here
+ *  whose authorization is written by hand (FR-010). */
+
+function guarded(id: DestinationId, element: ReactNode) {
+  return <RequireAccess allow={DESTINATIONS[id].roles}>{element}</RequireAccess>;
+}
+
+/** `/` is not a destination: it resolves to wherever this role's work starts
+ *  (FR-007). Signed out, the outer guard has already sent the visitor to
+ *  sign-in, so this only ever runs with a session. */
+function LandingRedirect() {
+  const { session } = useSession();
+  if (!session) return <Navigate to={SIGN_IN_PATH} replace />;
+  return <Navigate to={landingPath(session.role)} replace />;
+}
+
+/** FR-012: an address matching no destination. Rendered INSIDE the shell, so
+ *  the chrome and navigation survive, and distinguishable from a refusal so a
+ *  mistyped address stays diagnosable. */
+function NotFoundRoute() {
+  const { session } = useSession();
+  const location = useLocation();
+  return (
+    <NotFoundScreen
+      path={location.pathname}
+      action={session ? <NavButton to={landingPath(session.role)}>Go to Your Home Screen</NavButton> : undefined}
+    />
+  );
+}
 
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginScreen />} />
-      {Gallery ? (
-        <Route
-          path="/gallery"
-          element={
-            <Suspense fallback={<LoadingState />}>
-              <Gallery />
-            </Suspense>
-          }
-        />
-      ) : null}
+      {/* No shell chrome on sign-in (FR-014 / Story 5 AC5): it is outside the
+          layout route, not a layout that hides its own bar. */}
+      <Route path={SIGN_IN_PATH} element={<LoginScreen />} />
 
-      <Route element={<AppLayout />}>
+      {/* Everything below requires a session (FR-001). The outer guard carries
+          no `allow`, so it checks only that someone is signed in; the inner
+          guard on each element checks the role. */}
+      <Route
+        element={
+          <RequireAccess>
+            <AppLayout />
+          </RequireAccess>
+        }
+      >
         <Route index element={<LandingRedirect />} />
-
+        <Route path={DESTINATIONS.catalog.path} element={guarded('catalog', <CatalogPlaceholder />)} />
+        <Route path={DESTINATIONS.requests.path} element={guarded('requests', <RequestsPlaceholder />)} />
         <Route
-          path="catalog"
-          element={
-            <RequireAccess allow={ROLES}>
-              <Placeholder name="Catalog" />
-            </RequireAccess>
-          }
+          path={DESTINATIONS.requestDetail.path}
+          element={guarded('requestDetail', <RequestDetailPlaceholder />)}
         />
-        <Route
-          path="requests"
-          element={
-            <RequireAccess allow={['employee']}>
-              <Placeholder name="My requests" />
-            </RequireAccess>
-          }
-        />
-        <Route
-          path="approvals"
-          element={
-            <RequireAccess allow={['approver']}>
-              <Placeholder name="Requests queue" />
-            </RequireAccess>
-          }
-        />
-        <Route
-          path="history"
-          element={
-            <RequireAccess allow={['supply_admin']}>
-              <Placeholder name="Request history" />
-            </RequireAccess>
-          }
-        />
-        <Route
-          path="fulfillment"
-          element={
-            <RequireAccess allow={['supply_admin']}>
-              <Placeholder
-                name="Requests queue"
-                note="The Supply Admin's queue — preparing and releasing approved requests — has no design in the source file yet, so this screen is waiting on one."
-              />
-            </RequireAccess>
-          }
-        />
-        <Route
-          path="profile"
-          element={
-            <RequireAccess allow={ROLES}>
-              <Placeholder name="Profile" />
-            </RequireAccess>
-          }
-        />
-
-        <Route
-          path="inventory"
-          element={
-            <RequireAccess allow={['supply_admin']}>
-              <InventoryPage />
-            </RequireAccess>
-          }
-        >
+        <Route path={DESTINATIONS.approvals.path} element={guarded('approvals', <ApprovalsPlaceholder />)} />
+        <Route path={DESTINATIONS.fulfillment.path} element={guarded('fulfillment', <FulfillmentPlaceholder />)} />
+        {/* Inventory is the one destination whose own screen has shipped. Its
+            two drawers are nested addresses rather than component state (FR-008),
+            so they can be linked, reloaded, and closed with browser back; they
+            render through the screen's own `<Outlet/>`, which is why inventory
+            stays visible behind the scrim as the frames draw it. */}
+        <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPage />)}>
           <Route path="new" element={<AddCatalogItemRoute />} />
           <Route path=":itemId/stock" element={<UpdateStockRoute />} />
         </Route>
-
+        <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />
+        <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePlaceholder />)} />
         <Route path="*" element={<NotFoundRoute />} />
       </Route>
     </Routes>
   );
-}
-
-/** `/` is not a screen: it is whichever screen the signed-in role starts from
- *  (FR-007). Signed out, `AppLayout` has already sent the visitor to sign-in. */
-function LandingRedirect() {
-  const { session } = useSession();
-  if (!session) return null;
-  return <Navigate to={LANDING[session.role]} replace />;
-}
-
-function NotFoundRoute() {
-  const { session } = useSession();
-  return <NotFoundScreen action={session ? <BackToWork to={LANDING[session.role]} /> : null} />;
 }

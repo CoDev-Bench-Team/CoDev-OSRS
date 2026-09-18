@@ -52,7 +52,11 @@ export function InventoryPage() {
   }, [query, stock, category]);
 
   return (
-    <>
+    // The shell's `<main>` supplies the gutter and nothing else, so the drawn
+    // vertical rhythm lives here: the frame puts the title at y=121 under an
+    // 87px bar. `flex-1` keeps the pager's `mt-auto` pinned near the bottom
+    // edge, where the frame places it.
+    <div className="flex flex-1 flex-col pt-[34px] pb-32">
       <div className="flex flex-wrap items-center justify-between gap-16">
         <PageHeader
           title="Inventory"
@@ -184,6 +188,6 @@ export function InventoryPage() {
       {/* `/inventory/new` and `/inventory/:itemId/stock` render their drawer
           here, over this screen, exactly as both frames draw them. */}
       <Outlet />
-    </>
+    </div>
   );
 }

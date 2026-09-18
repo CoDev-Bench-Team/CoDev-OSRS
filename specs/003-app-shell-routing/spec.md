@@ -159,7 +159,8 @@ The shell remains usable from a phone up to the 1440px design width, carrying fo
 - **FR-003b**: A refused sign-in MUST leave the visitor on the sign-in screen with a clear message and no session.
 - **FR-004**: The SPA MUST NOT invent routes, payloads, fields or error codes that the backend contract does not expose.
 - **FR-005**: Every user MUST hold exactly one role; the shell MUST NOT support a combined or elevated role, and MUST NOT offer any control that changes the acting role without a full sign-out and sign-in.
-- **FR-006**: Navigation offered to a user MUST be derived from their role using the authorization matrix in `ARCHITECT.md` §7 — Employee: catalog, own requests, profile; Approver: pending queue, catalog, profile; Supply Admin: fulfillment queue, inventory, catalog, profile.
+- **FR-006**: Navigation offered to a user MUST be derived from their role using the authorization matrix in `ARCHITECT.md` §7 — Employee: catalog, own requests; Approver: pending queue, history, catalog; Supply Admin: fulfillment queue, inventory, history, catalog. *(Amended 2026-09-15: profile left the navigation, history joined it. See Session 2026-09-15.)*
+- **FR-006a**: Profile MUST be reachable from the account cluster rather than from navigation.
 - **FR-007**: Each role MUST have a defined landing destination reached on sign-in: Employee the catalog, Approver the pending queue, Supply Admin the fulfillment queue.
 - **FR-008**: Every destination MUST have a stable, shareable address that survives reload and supports browser back and forward.
 - **FR-009**: Request detail MUST be addressable by request identifier. An Employee MUST reach only their own requests; an Approver or Supply Admin MUST reach any request regardless of status, with the actions offered on it still gated by status and role.
@@ -168,7 +169,8 @@ The shell remains usable from a phone up to the 1440px design width, carrying fo
 - **FR-012**: An address matching no destination MUST produce a not-found screen inside the shell, distinguishable from a refusal, so that a mistyped address is diagnosable.
 - **FR-012a**: Addresses that identify a specific record MUST NOT reveal whether that record exists. A request the user may not see and a request that does not exist MUST produce the same response.
 - **FR-013**: A signed-out visitor who requests a specific destination MUST be returned to it after successful sign-in, provided their role permits it.
-- **FR-014**: The shell MUST render persistent chrome on every signed-in destination: product lockup, role navigation with exactly one current item, and an account cluster naming the signed-in user and role.
+- **FR-014**: The shell MUST render persistent chrome on every signed-in destination: product lockup, role navigation with exactly one current item, an account cluster naming the signed-in user and role, and a notification marker.
+- **FR-014a**: The notification marker MUST show a count when there is one. Until a notification feature ships it MUST NOT present itself as a control, because there is nothing for it to open.
 - **FR-015**: The request-list marker and its live count MUST appear only for Employees.
 - **FR-016**: The shell MUST provide sign-out; after it, no signed-in screen may be restored by browser history.
 - **FR-017**: An invalidated session MUST return the user to sign-in with an explanation rather than leaving a broken screen.
@@ -195,7 +197,8 @@ The complete set of addressable destinations and the roles permitted to reach ea
 | Pending-requests queue | no | yes | no | Approver landing destination |
 | Fulfillment queue | no | no | yes | Supply Admin landing destination |
 | Inventory management | no | no | yes | |
-| Profile | yes | yes | yes | The signed-in user's own |
+| History | no | yes | yes | Resolved requests across all requestors — completed, rejected, cancelled (added 2026-09-15) |
+| Profile | yes | yes | yes | The signed-in user's own; reached from the account cluster, not from navigation |
 | Not found | any signed-in | any signed-in | any signed-in | Reached by an unmatched address |
 
 Landing destinations: Employee → catalog; Approver → pending-requests queue; Supply Admin → fulfillment queue.
@@ -259,7 +262,9 @@ No constitution version bump is required — no principle changes. `docs/product
 
 | Gap | Impact |
 |-----|--------|
-| The UI kit merges Approver and Supply Admin into one **"Admin"** identity with nav `[Requests Queue, Inventory]`. | Constitution II forbids it. D1 splits them, so the Approver and Supply Admin navigation sets are undesigned. |
+| The UI kit merges Approver and Supply Admin into one **"Admin"** identity with nav `[Requests Queue, History, Inventory]`. | Constitution II forbids it. D1 splits them, so the Approver and Supply Admin navigation sets are undesigned. |
+| **No affordance is drawn for reaching Profile** now that it has left the navigation. | The account cluster was made the route in. Ours, not the designer's. |
+| **The notification bell opens nothing** — no panel, list or destination is drawn. | It ships as a marker with a count (FR-014a). What it should open is undesigned. |
 | **No designed fulfillment queue** for the Supply Admin's Prepare / Release step. | Supply Admin's landing destination has no visual source; ships as a placeholder. |
 | **No designed Profile screen for Approver or Supply Admin** — only the Employee's. | Profile appears in all three navigation sets under D1. |
 | **No loading, error, not-found, or forbidden screens** designed anywhere. | Stories 4 and 7 require all four; each is invented and needs ratification. |
@@ -272,6 +277,17 @@ No constitution version bump is required — no principle changes. `docs/product
 None dismissed. One consistency defect (CHK007, not-found versus record-existence leakage) and three gaps (CHK001, CHK002, CHK003) were found and all four resolved into requirements above.
 
 ## Clarifications
+
+### Session 2026-09-15 — Amendment
+
+Raised by the 2026-09-15 `.fig` re-export
+(`docs/design-system/drift-2026-09-15.md`) and decided by the project owner.
+Constitution I requires it recorded here rather than applied silently.
+
+- Q: The re-exported bar drops Profile from navigation and the Profile screen marks no item current. Where does Profile live? → A: **The account cluster.** Profile leaves the navigation set (FR-006, FR-006a). The affordance is ours — the file draws none.
+- Q: The re-exported Admin bar carries a History item and the file draws the screen. Who gets it? → A: **Approver and Supply Admin.** History is resolved requests across all requestors; an Employee's own history is My Requests. Added to the destination set.
+- Q: Both re-exported bars carry a notification bell, with a count on the Admin one. Build it? → A: **Yes, as a marker.** No panel, list or destination is drawn anywhere in the file, so it shows a count and opens nothing (FR-014a). Making it a control would invent a destination.
+- Q: The drawn Admin bar has no Catalog. Drop it for the admin roles? → A: **No.** `ARCHITECT.md` §7 gives every role the catalog, and D1 already overrides that bar because it merges two roles the constitution keeps apart.
 
 ### Session 2026-09-12
 

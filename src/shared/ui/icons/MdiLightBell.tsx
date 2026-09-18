@@ -1,8 +1,14 @@
 import type { SVGProps } from 'react';
 
-/** Material Design Icons Light `bell`, 24x24 — the notification marker the
- *  admin top bar draws (figma 88:22837). Ported verbatim from the exported
- *  path; painted with `currentColor`, like every other icon here. */
+/** MdiLightBell — `mdi-light:bell`, the notification marker the 2026-09-15
+ *  design export added to both top-bar variants.
+ *
+ *  The design system ships no bell, so the path is taken from the `.fig`
+ *  itself: the glyph's own 17x19 outline, drawn at (3, 3) in a 24x24 frame,
+ *  exactly as the file positions it. It is MDI at 24x24 in the light weight,
+ *  which is the register the design system's readme prescribes for an icon the
+ *  file does not otherwise define. Paints with `currentColor` (spec 002
+ *  FR-014). */
 export function MdiLightBell({ size = 24, className, ...rest }: SVGProps<SVGSVGElement> & { size?: number }) {
   return (
     <svg
@@ -15,10 +21,13 @@ export function MdiLightBell({ size = 24, className, ...rest }: SVGProps<SVGSVGE
       className={className}
       {...rest}
     >
-      <path
-        d="M12 4.5C12 4.36739 11.9473 4.24021 11.8536 4.14645C11.7598 4.05268 11.6326 4 11.5 4C11.3674 4 11.2402 4.05268 11.1464 4.14645C11.0527 4.24021 11 4.36739 11 4.5V6.03C8.75 6.28 7 8.18 7 10.5V16.41L5.41 18H17.59L16 16.41V10.5C16 8.18 14.25 6.28 12 6.03V4.5ZM11.5 3C11.8978 3 12.2794 3.15804 12.5607 3.43934C12.842 3.72064 13 4.10218 13 4.5V5.21C15.31 5.86 17 8 17 10.5V16L20 19H3L6 16V10.5C6 8 7.69 5.86 10 5.21V4.5C10 4.10218 10.158 3.72064 10.4393 3.43934C10.7206 3.15804 11.1022 3 11.5 3ZM11.5 22C10.9237 22.0001 10.365 21.8011 9.91855 21.4367C9.47209 21.0722 9.16527 20.5647 9.05 20H10.09C10.1928 20.2918 10.3837 20.5445 10.6362 20.7233C10.8888 20.9021 11.1906 20.9981 11.5 20.9981C11.8094 20.9981 12.1112 20.9021 12.3638 20.7233C12.6163 20.5445 12.8072 20.2918 12.91 20H13.95C13.8347 20.5647 13.5279 21.0722 13.0815 21.4367C12.635 21.8011 12.0763 22.0001 11.5 22Z"
-        fill="currentColor"
-      />
+      <g transform="translate(3.0 3.0) scale(1.0 1.0)">
+        <path
+          d="M 9 1.5 C 9 1.367 8.947 1.24 8.854 1.146 C 8.76 1.053 8.633 1 8.5 1 C 8.367 1 8.24 1.053 8.146 1.146 C 8.053 1.24 8 1.367 8 1.5 L 8 3.03 C 5.75 3.28 4 5.18 4 7.5 L 4 13.41 L 2.41 15 L 14.59 15 L 13 13.41 L 13 7.5 C 13 5.18 11.25 3.28 9 3.03 L 9 1.5 Z M 8.5 0 C 8.898 0 9.279 0.158 9.561 0.439 C 9.842 0.721 10 1.102 10 1.5 L 10 2.21 C 12.31 2.86 14 5 14 7.5 L 14 13 L 17 16 L 0 16 L 3 13 L 3 7.5 C 3 5 4.69 2.86 7 2.21 L 7 1.5 C 7 1.102 7.158 0.721 7.439 0.439 C 7.721 0.158 8.102 0 8.5 0 Z M 8.5 19 C 7.924 19 7.365 18.801 6.919 18.437 C 6.472 18.072 6.165 17.565 6.05 17 L 7.09 17 C 7.193 17.292 7.384 17.545 7.636 17.723 C 7.889 17.902 8.191 17.998 8.5 17.998 C 8.809 17.998 9.111 17.902 9.364 17.723 C 9.616 17.545 9.807 17.292 9.91 17 L 10.95 17 C 10.835 17.565 10.528 18.072 10.081 18.437 C 9.635 18.801 9.076 19 8.5 19 Z"
+          fill="currentColor"
+          fillRule="nonzero"
+        />
+      </g>
     </svg>
   );
 }

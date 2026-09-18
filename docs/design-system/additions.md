@@ -65,6 +65,45 @@ pink itself: no fill makes it pass at 12px, so clearing 4.5 needs a darker ink
 (around `#B02A6E` at this fill). Flagged for the designer alongside the two
 source failures in §4.1.
 
+## 2c. `Cancelled` and `Completed` — the 2026-09-15 status colours
+
+The re-export gave `Completed` a purple of its own and added a seventh status,
+`Cancelled`. Both are implemented; the decision to build them was the project
+owner's, recorded as an amendment in spec 001 (Session 2026-09-15) and in
+constitution **2.0.0**, which redefines principle IV to admit the new state.
+
+| Label | Ink | Fill | Provenance |
+|-------|-----|------|------------|
+| Completed | `#6840b8` — new `--osrs-purple-600` | `#f1ecff` — new `--osrs-purple-50` | **Both from the file.** The ink is its `Status/Completed` colour style; the fill is the chip as rendered on `04.1 - My Requests - View Request`. Previously green. |
+| Cancelled | `#4b5063` — the existing `--osrs-ink-700` | 10% of the same, new `--osrs-ink-tint` | **Ink from the file** (`Status/Cancelled`). **The fill is ours**: the file draws no Cancelled chip in any screen, so the fill follows the `--osrs-*-tint` convention the source already uses for red, green, blue and pink. |
+
+**Two inconsistencies in the file**, both reported rather than reproduced:
+
+- The `Cancelled` pill in the Status Definitions table has its *frame* bound to
+  the Cancelled colour style (`#4b5063`) but its *label* still purple — the
+  Completed pill it was duplicated from. Rendered literally it would be purple
+  ink on a dark slate chip. The port uses slate on slate-tint, matching how
+  every other pill in the system is built.
+- The `04.2 - My Requests - Cancelled` screen still shows a **Completed** pill.
+
+### Contrast
+
+Measured as in §4.1, at the pill's own 12px bold. Both pass.
+
+| Pairing | Ratio | Needs |
+|---------|-------|-------|
+| `#6840b8` on `#f1ecff` | **6.03** | 4.5 |
+| `#4b5063` on its own 10% tint over white | **6.86** | 4.5 |
+
+### What this does to the colour rule
+
+The rule stated in the gallery — amber waits on a human, green is moving or
+done, red is stopped — no longer holds as written, because `Completed` has left
+green. It now reads: **amber waits on a human · green is moving · red is stopped
+by a decision · purple is closed and done · slate is stopped without a
+decision.** That is a real change to the system's colour semantics and the
+designer should ratify the sentence, not just the swatches.
+
 ## 3. Invented layout — the largest judgement calls
 
 | Addition | What was decided |
@@ -129,7 +168,173 @@ off a new scrim — the two cases are indistinguishable by z-index alone. So a
 scrim explicitly dismisses any open popover when it mounts
 (`overlay/popover-layer.ts`). Both halves are covered by a regression check.
 
-## 3d. The 2026-09-15 frames — newer than the vendored export
+## 3d. The application shell (spec 003)
+
+Everything in this section is new design. The source draws **screens**, not an
+application: it has no loading, empty, error, not-found or forbidden state
+anywhere, no sign-out control, no narrow-width navigation, and it merges
+Approver and Supply Admin into a single "Admin" identity that constitution II
+forbids. The shell could not be built without inventing all of it. Nothing here
+introduces a colour, type size, radius or shadow that is not already a token
+(spec 003 FR-021, SC-008).
+
+### The five feedback surfaces
+
+All five share ONE invented layout — a card on the page surface carrying an
+eyebrow chip, a title, one sentence of explanation and a route back — rather
+than five separate inventions. The card is the system's own structural
+container (radius 10, card surface, card shadow); the type is the existing page
+title and body roles; the chip reuses the status vocabulary's tints.
+
+| Surface | Eyebrow | Tone | Why it exists |
+|---------|---------|------|---------------|
+| `LoadingState` | — | — | FR-018. Three brand dots on the page surface, fading with the platform's pulse and suppressed under `prefers-reduced-motion`. The label, not the dots, is what a screen reader announces. Not an ad-hoc spinner: the source has no spinner to copy. |
+| `NotFoundScreen` | NOT FOUND | neutral | FR-012. Echoes the address back, because a mistyped link must stay diagnosable. |
+| `RecordUnavailableScreen` | UNAVAILABLE | neutral | FR-012a. The **shared** response for "this request does not exist" and "this request is not yours". Identical words in both cases, and the identifier is deliberately never echoed, so request ids cannot be enumerated by reading the difference. |
+| `ForbiddenScreen` | NO ACCESS | stopped (red tint) | FR-011. Names the role you hold, because the fix is to sign in as the other one — there is no switcher (D5). |
+| `Placeholder` | NOT BUILT YET | info (blue tint) | FR-020. Must not be mistakable for not-found, an error, or an empty result, so it says which screen this is and that the screen's own feature has not shipped. |
+| `ErrorBoundary` fallback | ERROR | stopped | FR-019. Renders inside the shell, so the bar and navigation survive a screen that throws. |
+
+The red tint on a refusal and the blue on a placeholder are the existing status
+colours (`--color-status-rejected-*`, `--color-status-info-*`) used for a new
+purpose. **This widens the status vocabulary's reach beyond request status** —
+worth the designer's ratification alongside the handover labels in §2b.
+
+### The sign-out control
+
+Not drawn anywhere in the source. Placed in the account cluster, at the right
+end of the top bar, as the system's `ghost` button. Its placement, its label
+("Sign Out", Title Case per the content conventions) and its very existence are
+ours.
+
+### Three navigation sets, not the source's one
+
+The file draws `[Catalog, My Requests]` for the Employee and
+`[Requests Queue, History, Inventory]` for a merged "Admin". Constitution II
+forbids that merge, so navigation is derived per role from the `ARCHITECT.md` §7
+authorization matrix:
+
+| Role | Navigation |
+|------|-----------|
+| Employee | Catalog · My Requests (as drawn) |
+| Approver | Requests Queue · History · Catalog |
+| Supply Admin | Fulfillment · Inventory · History · Catalog |
+
+The Approver and Supply Admin sets are **undesigned**, and "Fulfillment" names a
+queue the file never draws at all. **Catalog is kept for all three**, which the
+drawn Admin bar omits: the authorization matrix gives every role the catalog,
+and that bar is already overridden.
+
+### Profile left the navigation (2026-09-15)
+
+The re-export's Profile screen renders the Employee bar with **no item marked
+current**, so Profile is not a navigation item any more. Nothing is drawn to
+reach it either. The account cluster — avatar, name, role — became the way in,
+which is the conventional place and the only element on the bar that is about
+the signed-in person. It is now a button; its hover is the system's standard
+ink-lightening. **The affordance is ours; the file draws none.**
+
+### The notification bell (2026-09-15)
+
+Both bar variants gained an `mdi-light:bell`, with a count badge on the Admin
+one. The glyph is taken from the file itself (the design system ships no bell)
+and rendered at 24×24 in the light weight, which is the register the readme
+prescribes.
+
+It is rendered as a **marker, not a control**: the file draws no notification
+panel, no list and no destination, so a button here would be a button that goes
+nowhere. It announces its count to a screen reader and does nothing else, and
+its count comes from the same context the request-list badge uses — wired, live,
+and defaulting to none, because no notification feature exists yet.
+
+The file's Admin badge is `#cc2f4a` while the Employee request-list badge is
+`#c62828`. Two reds for the same element is not a distinction the file makes
+anywhere else, so both render in `--brand-primary`. **Worth confirming.**
+
+### Collapsed navigation below 768px
+
+The source has no mobile frame. Below `md` the navigation collapses into a
+"Menu" disclosure that opens a full-width list under the bar; the account
+cluster, the request-list marker and sign-out stay in the bar at every width.
+Carries forward the responsive commitment in §3.
+
+### The bar now starts at the 32px gutter it always claimed
+
+`TopBar` capped at the 1344px **content** width and centred, which at the 1440
+design width put the logo at x=80 — contradicting the 32px gutter this document
+records as preserved. It now spans the 1440 page width with a 32px gutter, so
+the logo sits at x=32 exactly as drawn, and the page content below it sits on
+the same grid. The source reaches its 1344 of content from an **asymmetric**
+pair of gutters (32 left, 64 right, measured from the frame); a symmetric flow
+layout cannot reproduce that, so the content runs 1376 wide instead. The
+designer should confirm the symmetric gutter.
+
+### A third avatar colour
+
+The file designs two identities — Maya Santos (orange) and Ethan Cruz (green).
+The seeded Approver, Samantha Reyes, needs a third and uses the source's
+`--osrs-blue-600`. A palette colour, a new use.
+
+### The sign-in card, composed in flow
+
+The card keeps the source's own fixed dimensions (421×500), its radius 24, its
+card shadow and its four elements, and — unlike `TopBar` and `PageHeader` in §3
+— reproduces the drawn offsets exactly rather than approximating them, because
+this card is a fixed box that never reflows: 59 to the lockup, 94 to the welcome
+line, 13 to the control, 112 to the copyright, 55 to the bottom edge, summing to
+exactly 500. The Google control is borderless, as drawn — see below.
+
+**Checked against the 2026-09-15 `.fig` re-export**, not the 2026-09-12 vendored
+copy — see [drift-2026-09-15.md](drift-2026-09-15.md). Three things came back
+from that check and are **not** additions but corrections:
+
+- The login background is a dark **dotted** panel (1440×1024), not the red
+  photograph the vendored export carried. The photograph is in the current file
+  nowhere at all. The asset was replaced.
+- `SignInButton` regained `iconPadding` and `labelPadding`, which the source
+  component has and the port had dropped, and gained `iconPlate` and a `style`
+  passthrough the source also has.
+- The pill's geometry now comes from the instance's own `derivedSymbolData` —
+  Figma's computed layout for that instance, so not a reading of ours — rather
+  than from the vendored `ui_kits/osrs-web/LoginScreen.jsx`, which the first
+  pass followed. The two disagree. The file resolves the instance to a 242×64
+  root, an icon plate 50×64 at x=0 **with its fill switched off** and the mark
+  at (18,16), and a label plate 173×57 at x=50 with the text at (8,18) — so the
+  content is packed left and the root's 32px trailing pad is what is left of the
+  fixed width. The export instead re-rendered it as `0 6px` on both plates,
+  centred, with a 2px gap.
+
+  With the plate fill off, as the file has it, the control is a plain white box
+  carrying the mark and the label and nothing else. An earlier pass wrapped it
+  in a 1px-padded span to give a hairline a strip of its own, which cost it two
+  pixels on both axes — 240×62 against the drawn 242×64.
+- **There is no border.** The root does carry a 1px INSIDE stroke, but it is
+  bound to the `Surface` paint style, `#ffffff`, so it paints white on a white
+  fill and is invisible. Its `strokePaints` array still caches the black it held
+  before that binding — and stale caches are normal in this file: 70 of its 823
+  local style bindings disagree with the style they point at, including every
+  node still caching the retired `#c62828` while bound to `Codev Red`
+  `#cc2f4a`. The 2026-09-12 export read the cache, emitted
+  `inset 0 0 0 1px var(--border-strong)`, and two passes of this screen
+  inherited a ring the design does not draw. Reported by the project owner,
+  2026-09-15; confirmed against the file.
+
+  **Worth a word from the designer**: a white, borderless, shadowless control on
+  a white card reads as a lockup rather than a button. If the intent was to
+  remove the outline, that is what ships; if the `Surface` binding was a slip
+  and the pill wants Google's own `#DADCE0` hairline, say so and it is one line.
+
+### A seeded account chooser on the sign-in screen
+
+Below the card, a second small card lets a tester choose which seeded demo
+account signs in — the stand-in for Google's account chooser, and the only way
+to reach all three roles while the backend contract is unpublished. It is **not**
+a role switcher (D5): it chooses who signs *in*, and changing role still means
+signing out and back in. It renders only while the active session source offers
+demo accounts, so it disappears by itself the day a real one replaces it.
+
+
+## 3e. The 2026-09-15 frames — newer than the vendored export
 
 Four frames were built against the **live Figma file** rather than
 `design-system/`: `01 - Login` second variant (28:2673), `03 - Inventory`
@@ -166,32 +371,28 @@ from the file and have no entry in `token-map.md`.
 | **"+ Add custom field" adds a numbered spec row** | The frame draws the control but not what it produces. |
 | **Update prefills from the row** | The two frames are otherwise identical, and the Update frame shows the same empty placeholders as Add. Prefilling the item's name, category and stock is what "update this item" means. |
 
-### The Admin bar — adopted verbatim, 2026-09-15
+### The Admin bar — drawn verbatim, then superseded
 
 The frames carry an **Admin** account cluster and the navigation
-`[Requests Queue, History, Inventory]`, plus a bell with a count of 3. The
-project owner asked for that bar exactly, so it is what the Supply Admin sees:
+`[Requests Queue, History, Inventory]`, plus a bell with a count of 3, and the
+project owner asked on 2026-09-15 for that bar exactly. This branch built it.
+
+**§3d won it.** The shell derives every navigation set from the authorization
+matrix in `ARCHITECT.md` §7, which gives the Supply Admin
+`[Fulfillment, Inventory, History, Catalog]` — the drawn three plus Catalog, and
+`Fulfillment` where the frame writes `Requests Queue`. Two decisions survive
+from the drawn bar and are worth keeping on the record:
 
 | Drawn | Shipped | Note |
 |-------|---------|------|
-| `[Requests Queue, History, Inventory]` | the same three | Catalog and Profile remain *reachable* for this role — the authorization matrix grants both — but they are not in the bar. Navigation and authorization are separate questions. |
-| Account cluster reads **Admin** | the same | A caption, not a role. `Role` is still the closed union of `employee`, `approver` and `supply_admin`, the guards still authorize against `supply_admin`, and no approval action is reachable from this bar — which is what constitution II and [ADR-0003](../adr/0003-three-role-model.md) forbid collapsing. One line in `session-source.ts` restores "Supply Admin". |
-| Bell with a count of 3 | the same | Presentational sample data, like the screen's 238 and 1,250. Notifications are sent by the API and spec 003 FR-024 keeps them out of the shell, so there is nothing to open yet. |
-| No sign-out anywhere | inside the account cluster | FR-016 requires one; putting it behind the cluster keeps the bar's drawn silhouette. |
+| Account cluster reads **Admin** | "Supply Admin" | A caption in the file, not a role. `Role` is still the closed union of `employee`, `approver` and `supply_admin`, the guards still authorize against `supply_admin`, and no approval action is reachable from this bar — which is what constitution II and [ADR-0003](../adr/0003-three-role-model.md) forbid collapsing. |
+| Bell with a count of 3 | the bell, count from context | Presentational, like the screen's 238 and 1,250. Notifications are sent by the API and spec 003 FR-024 keeps them out of the shell, so it announces a count and opens nothing. |
 
-Constitution I asks that a chat instruction contradicting a spec be recorded as
-an amendment rather than applied silently: this supersedes spec 003's D1 for the
-Supply Admin's navigation set only. The Employee's and Approver's sets still come
-from the authorization matrix, and still have no drawn source.
+**Still open for the designer**: whether the Supply Admin's bar reads
+`Requests Queue` (as drawn) or `Fulfillment` (as the destination table names it),
+and whether Catalog belongs on it. Neither changes what the role may do.
 
-## 3e. The shell's own states (spec 003)
-
-None of these is drawn anywhere in the file: a **loading** state while the
-session resolves, a **not-found** screen, a **forbidden** screen, a
-**placeholder** for a destination whose feature has not shipped, a **sign-out**
-control in the account cluster, and a third **avatar colour** for the Approver
-(the file designs two identities). Each is built from existing tokens and
-components and introduces no new visual value.
+---
 
 ## 4. Defects found in the source — flagged, not fixed
 
@@ -240,12 +441,29 @@ narrower form: the gates prove fidelity at 1440 only; an addition that applies
 below it can still change designed geometry, and only viewing the port at a
 real window size catches that.
 
-### 4.2 The Google mark renders monochrome
+### 4.2 The Google mark renders monochrome — *export artefact, corrected*
 
-`GoogleIcon` carries four paths — the real mark is four-colour — but the source
-fills all four with `--osrs-google-red`. The design system's own readme says the
-Google asset must never be restyled, so the export contradicts its own rule.
-Ported faithfully; **should be corrected at source**.
+`GoogleIcon` carries four paths — the real mark is four-colour — but the
+vendored source fills all four with `--osrs-google-red`.
+
+**Resolved 2026-09-15 against the `.fig`, and it is the export that is wrong,
+not the design.** The vector node (14:331, and the 40 and 48 sizes beside it)
+carries only the red in `fillPaints`; the other three regions take theirs from
+`vectorData.styleOverrideTable` — styleID 1 `rgb(66,133,244)`, styleID 3
+`rgb(52,168,83)`, styleID 4 `rgb(251,188,5)` — and the exporter dropped the
+table. `fillGeometry` lists the regions as styleIDs 1, 3, 4, 0, which is the
+order the four paths appear in, so the mapping is positional.
+
+The port now paints the file's own colours. That is not a restyle of the brand
+asset (which the readme forbids) but its colours restored, so nothing is owed
+to the designer here — the `.fig` is already correct. Two tokens were added to
+carry the colours the vendored `tokens/colors.css` never needed:
+`--color-osrs-google-green` and `--color-osrs-google-yellow`
+([token-map.md](token-map.md) §additions).
+
+The pixel gate records the difference as a named exception for both
+`SignInButton` pairs, because the vendored source it diffs against still paints
+the mark red.
 
 ---
 
@@ -254,11 +472,8 @@ Ported faithfully; **should be corrected at source**.
 1. Ratify or replace the responsive breakpoints in §3 — they are ours, not yours.
 2. Publish the eight promoted components as real Figma components.
 3. Fix the two contrast pairings in §4.1, or accept them explicitly.
-4. Restore the Google mark's four colours in §4.2. **Confirmed 2026-09-15**: the
-   live Figma file's `Google Icon` exports with all four brand colours, so the
-   monochrome render is an artefact of the 2026-09-12 export, not the design.
-   The port still reproduces the export, per FR-011a — fix it at source and
-   re-vendor rather than patching it here.
+4. ~~Restore the Google mark's four colours in §4.2.~~ **Closed** — the `.fig`
+   always had them; the export dropped them. Nothing to change in Figma.
 5. Confirm the search placeholder colour in §4.1b, or specify one in Figma.
 6. Ratify the stepper's pseudo-element hit area (§3, §4.1c) as the way small
    controls meet the 44px minimum below the design width.
@@ -267,7 +482,15 @@ Ported faithfully; **should be corrected at source**.
    raw values in frames.
 8. Design the gaps that block later work: the Supply Admin's prepare/release
    screen, the five notification emails, and loading / empty / error states.
-9. Ratify or replace everything in §3d and §3e — the four 2026-09-15 frames are
-   newer than the vendored export, so none of their values is in the token map.
-10. Decide the content column: the frames' 1344px table against the top bar's
-   own alignment (§3d).
+9. Ratify the application shell in §3d: the five feedback surfaces and their use
+   of the status tints, the sign-out control, the Approver and Supply Admin
+   navigation sets, the collapsed navigation, the symmetric 32px gutter, and the
+   third avatar colour.
+10. Settle the 2026-09-15 re-export in [drift-2026-09-15.md](drift-2026-09-15.md)
+    — the new `Cancelled` status (which needs a constitution amendment, not a
+    design decision), `Completed`'s new purple, the notification bell, and how
+    Profile is reached now that it is not a navigation item.
+11. Ratify or replace everything in §3e — the four 2026-09-15 frames are newer
+    than the vendored export, so none of their values is in the token map.
+12. Decide the content column: the frames' 1344px table against the top bar's
+    own 32px gutter (§3d, §3e).

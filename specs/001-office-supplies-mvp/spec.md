@@ -88,6 +88,9 @@ An Employee sees real-time status and a history of their requests (including rej
 - Inactive or deleted-looking items: employees cannot submit them (MVP: Supply Admin can mark an item inactive).
 - Actor uses the wrong role’s action (Employee approve, Approver release): refused.
 - Duplicate confirm on an already completed request: refused, status stays `Completed`.
+- Cancel attempted on a request that has already been released, completed, rejected or cancelled: refused, status unchanged.
+- Employee attempts to cancel a request that has already been approved: refused — after a decision, only a Supply Admin may cancel, and only with a reason.
+- Two actors cancel the same request at once: stock is restored once, never twice.
 - Email delivery fails after a valid transition: request status remains; failure is recorded for that notification.
 
 ## Requirements
@@ -102,21 +105,25 @@ An Employee sees real-time status and a history of their requests (including rej
 - **FR-006**: System MUST, on successful submit, create the request in `Pending Approval` and decrement on-hand quantity by each line quantity in one atomic operation.
 - **FR-007**: System MUST allow Approvers to approve a `Pending Approval` request, moving it to `Approved` without changing inventory.
 - **FR-008**: System MUST allow Approvers to reject a `Pending Approval` request only when a non-empty reason is provided, moving it to `Rejected` and incrementing on-hand by the request’s line quantities in one atomic operation.
-- **FR-009**: System MUST NOT reopen a rejected request; the Employee MUST create a new request if they still need items.
+- **FR-009**: System MUST NOT reopen a rejected or cancelled request; the Employee MUST create a new request if they still need items.
+- **FR-009a**: System MUST allow the owning Employee to cancel their own request while it is `Pending Approval`, moving it to `Cancelled` and incrementing on-hand by the request's line quantities in one atomic operation. A reason is optional.
+- **FR-009b**: System MUST allow a Supply Admin to cancel an `Approved` or `For Release` request that cannot be fulfilled, only when a non-empty reason is provided, with the same atomic status change and stock restore.
+- **FR-009c**: System MUST refuse cancellation of a `Released`, `Completed`, `Rejected` or already-`Cancelled` request.
 - **FR-010**: System MUST allow Supply Admins to move `Approved` requests to `For Release` (prepare) without changing inventory.
 - **FR-011**: System MUST allow Supply Admins to move `For Release` requests to `Released`, recording a pickup/handover location, without changing inventory.
 - **FR-012**: System MUST allow the owning Employee to move `Released` requests to `Completed` (confirm receipt) without changing inventory.
 - **FR-013**: System MUST refuse illegal status transitions and actions not allowed for the caller’s role.
-- **FR-014**: System MUST send email notifications: Submitted (Employee); Approved (Employee, Supply Admin); Rejected (Employee); Ready for Pickup/Released (Employee); Completed (Employee, Approver), using the subjects and body facts in `docs/process-flow.md`.
+- **FR-014**: System MUST send email notifications: Submitted (Employee); Approved (Employee, Supply Admin); Rejected (Employee); Ready for Pickup/Released (Employee); Completed (Employee, Approver); Cancelled (Employee, Approver, and the Supply Admin when the request had reached them), using the subjects and body facts in `docs/process-flow.md`.
 - **FR-015**: System MUST persist notification attempts (sent or failed) tied to the request and type.
 - **FR-016**: System MUST show Employees their request history and current status; Approvers a pending queue; Supply Admins a fulfillment queue (`Approved` and `For Release`).
+- **FR-016a**: System MUST show Approvers and Supply Admins a history of resolved requests across all requestors — `Completed`, `Rejected` and `Cancelled` — with request id, requestor, items, status and the date it was resolved.
 - **FR-017**: System MUST never persist negative on-hand quantity.
 
 ### Key Entities
 
 - **User**: Authenticated person with name, email, and a single role.
 - **Inventory item**: Named supply with on-hand quantity and active flag; must exist before it can be requested.
-- **Request**: Header with requestor, status, optional purpose, optional rejection reason, optional release location, and timestamps per transition.
+- **Request**: Header with requestor, status, optional purpose, optional rejection reason, optional cancellation reason and who cancelled, optional release location, and timestamps per transition.
 - **Request line**: Item + quantity captured at submit (quantity does not change after submit).
 - **Notification log**: Type, recipients, request id, payload facts, send outcome.
 
@@ -160,6 +167,22 @@ Resolved from the Linear brief and process diagram with MVP defaults (no blockin
 - Q: Resubmit after reject? → A: New request, not reopen.
 - Q: Who can approve? → A: Any user with Approver role (small internal team).
 - Q: Auth for MVP? → A: ~~Username/password (email + password) with seeded demo users; SSO later.~~ **Superseded 2026-09-12 — see Session 2026-09-12 below.**
+
+### Session 2026-09-15 — Amendment
+
+Raised by the 2026-09-15 `.fig` re-export (`docs/design-system/drift-2026-09-15.md`)
+and decided by the project owner. Constitution I requires it to be recorded here
+rather than applied silently.
+
+- Q: The design file now defines a seventh request status, `Cancelled`, with a drawn cancel flow, and recolours `Completed` from green to purple. The state machine admits neither. Build them? → A: **Yes, both.** `Cancelled` is a real state, not a label.
+
+**Scope of the amendment.**
+
+- Constitution **2.0.0** redefines principle IV to admit `Cancelled` from `Pending Approval`, `Approved` and `For Release`, and extends principles III and V to cover its stock restore and its email. The version bump is MAJOR because a principle was redefined, not added.
+- Who may cancel, and when, is settled as: the owning Employee while `Pending Approval` (reason optional); a Supply Admin on `Approved` or `For Release` when it cannot be fulfilled (reason **required**); never once `Released`. The design file says "either by the Employee (before approval) or by the Supply Admin (after approval)" and then "a reason is required when the Approver cancels" — an Approver the first sentence does not list. The resolution above keeps the two actors the file names and attaches the reason requirement to whoever is not the requestor. **Flagged to the designer.**
+- Cancelling **restores inventory**, in the same transaction as the status change. The file does not say so; constitution III leaves no alternative, since stock is deducted at submit and cancelled items never leave the store.
+- The `Request Cancelled` email is **invented copy**. The file defines the status but no notification, and constitution V does not allow a defined transition without one.
+- `Completed` takes the purple pair the file now carries; `Cancelled` takes the file's own `Status/Cancelled` slate. See the drift document for how the tints were derived.
 
 ### Session 2026-09-12 — Amendment
 

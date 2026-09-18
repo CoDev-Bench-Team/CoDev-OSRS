@@ -267,7 +267,7 @@ export function Select({
                   onClick={() => commit(i)}
                   className={`flex cursor-pointer items-center justify-between gap-8 rounded-6 px-12 py-10 font-sans leading-tight transition-osrs ${SIZE_TEXT[size]} ${
                     selected ? 'font-bold text-brand-primary' : 'text-ink-primary'
-                  } ${i === active ? 'bg-surface-subtle' : ''}`}
+                  } ${i === active ? 'bg-osrs-surface-subtle' : ''}`}
                 >
                   <span className="truncate">{option}</span>
                 </li>

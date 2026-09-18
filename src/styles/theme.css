@@ -32,7 +32,10 @@
   --spacing: initial;
   --spacing-*: initial;
 
-  /* Colour — palette and semantic aliases — 75 */
+  /* Colour — palette and semantic aliases — 80.
+     Five added 2026-09-15 from the `.fig` re-export: the purple pair that
+     `Completed` now carries, the slate tint `Cancelled` sits on, and the two
+     status aliases for each. See docs/design-system/drift-2026-09-15.md. */
   --color-backdrop: rgba(0,0,0,0.5);
   --color-black: var(--color-osrs-black);
   --color-brand-on-primary: var(--color-osrs-white);
@@ -62,7 +65,9 @@
   --color-osrs-canvas: rgb(250,250,249);
   --color-osrs-google-blue: rgb(66,133,244);
   --color-osrs-google-gray: rgb(128,134,139);
+  --color-osrs-google-green: rgb(52,168,83);
   --color-osrs-google-red: rgb(234,67,53);
+  --color-osrs-google-yellow: rgb(251,188,5);
   --color-osrs-gray-400: rgb(138,143,156);
   --color-osrs-gray-500: rgb(102,112,133);
   --color-osrs-green-50: rgb(234,248,240);
@@ -74,8 +79,11 @@
   --color-osrs-ink-700: rgb(75,80,99);
   --color-osrs-ink-800: rgb(27,29,41);
   --color-osrs-ink-900: rgb(23,32,51);
+  --color-osrs-ink-tint: rgba(75,80,99,0.1);
   --color-osrs-pink-500: rgb(239,93,168);
   --color-osrs-pink-tint: rgba(239,93,168,0.1);
+  --color-osrs-purple-50: rgb(241,236,255);
+  --color-osrs-purple-600: rgb(104,64,184);
   --color-osrs-red-50: rgb(255,241,240);
   --color-osrs-red-500: rgb(204,47,74);
   --color-osrs-red-550: rgb(210,58,58);
@@ -94,6 +102,10 @@
   --color-red-error: rgb(198,40,40);
   --color-status-available-bg: var(--color-osrs-green-tint);
   --color-status-available-fg: var(--color-osrs-green-600);
+  --color-status-cancelled-bg: var(--color-osrs-ink-tint);
+  --color-status-cancelled-fg: var(--color-osrs-ink-700);
+  --color-status-completed-bg: var(--color-osrs-purple-50);
+  --color-status-completed-fg: var(--color-osrs-purple-600);
   --color-status-delivery-bg: var(--color-osrs-pink-tint);
   --color-status-delivery-fg: var(--color-osrs-pink-500);
   --color-status-info-bg: var(--color-osrs-blue-tint);
