@@ -1,12 +1,13 @@
 # SPA Routing & Pages Epic — Linear Handoff
 
 **Created**: 2026-09-15  
-**Last reviewed**: 2026-09-15  
+**Last reviewed**: 2026-09-19  
 **Team**: BEN (Bench Synergy Project)  
 **Project**: [OSRS (Office Supplies Request System)](https://linear.app/bench-synergy-project/project/osrs-office-supplies-request-system-a2a70f69dfae)  
 **Labels**: Frontend + Feature  
 **Integration branch**: `dev` (current SPA default)  
-**Source**: Figma `Office Supplies Request System (OSRS).fig` → UI kit `OSRS Design System/ui_kits/osrs-web/` → `specs/003-app-shell-routing/`
+**Source**: Figma `Office Supplies Request System (OSRS).fig` → UI kit `OSRS Design System/ui_kits/osrs-web/` → `specs/003-app-shell-routing/`  
+**Contract**: [Swagger](https://codev-osrs-backend.vercel.app/) — see `specs/001-office-supplies-mvp/contracts/README.md`
 
 This document is the **canonical handoff map** for the Linear epic covering app shell, routing, and product pages. Each parent is an AI-SDD feature; each child is a runnable step (`create-spec` / `create-plan` / `create-tasks` / `execute` / `run-checks` / `create-pr`).
 
@@ -185,6 +186,8 @@ Linear `blocks` relations were created 2026-09-15 (64 relations). They include A
 
 **Unlocks:** Parent C. **Parallel after A6 with:** F, H, I (and G).
 
+**2026-09-19 field source-of-truth:** Use the **latest Figma Asset/Catalog screens** (inventory-sheet-accurate). Do **not** treat the checked-in `CatalogScreen.jsx` mock fields as authoritative if they drift. Display/read shapes must align with published Assets contract fields (`name`, `model`, `type`, image, `quantity` / availability, etc.) — see `contracts/README.md`.
+
 ---
 
 ## Parent C — Request drawer & submit (BEN-43)
@@ -194,11 +197,12 @@ Linear `blocks` relations were created 2026-09-15 (64 relations). They include A
 | C0 | [BEN-56](https://linear.app/bench-synergy-project/issue/BEN-56) | Specify drawer & submit | **B2** |
 | C1 | [BEN-57](https://linear.app/bench-synergy-project/issue/BEN-57) | Plan + tasks | C0 |
 | C2 | [BEN-58](https://linear.app/bench-synergy-project/issue/BEN-58) | Execute drawer UI | C1 |
-| C3 | [BEN-59](https://linear.app/bench-synergy-project/issue/BEN-59) | Submit + map backend validation errors only | C2 + contract/mock |
+| C3 | [BEN-59](https://linear.app/bench-synergy-project/issue/BEN-59) | Submit + map backend validation errors only | C2 + contract |
 | C4 | [BEN-60](https://linear.app/bench-synergy-project/issue/BEN-60) | Run checks + PR | C3 |
 
 **Constraint:** No invented error codes (constitution VII). Soft dep: shell request-list badge context from **A5** (available once shell PR #1 lands — not “already shipped” before A5).
 
+**2026-09-19 validation contract (C3):** Map RFC 9457 / BEN-98 responses — `type: "validation-error"`, `status: 400`, `errors[].detail` + `errors[].pointer` (JSON Pointer, e.g. `#/name`) to under-field messages. Documented in `specs/001-office-supplies-mvp/contracts/README.md`.
 ---
 
 ## Parent D — My Requests (BEN-44)
@@ -271,10 +275,12 @@ Prepare/release **actions** may live in **E4**. G itself is **not** blocked on E
 |-------|----------------|
 | [BEN-13](https://linear.app/bench-synergy-project/issue/BEN-13) Admin – Inventory Page | Related — leave as-is; SPA work tracked here |
 | [BEN-7](https://linear.app/bench-synergy-project/issue/BEN-7) Admin – Add Catalog Item | Related (H3) |
+| [BEN-18](https://linear.app/bench-synergy-project/issue/BEN-18) Add Catalog item slide-out | Related (H3) — field list superseded by Assets DTO |
 | [BEN-23](https://linear.app/bench-synergy-project/issue/BEN-23) Admin – Update catalog item | Related (H4) |
 
 Consume the **published** backend assets contract only — no invented routes.
 
+**2026-09-19 field source-of-truth:** Latest Figma Asset/Inventory screens + `CreateAssetDto` / `UpdateAssetDto`: `imageBase64`, `name`, `model`, `type`, `location`, `specs[]`, `quantity`, `lowQtyAlert`. H3/H4 MUST surface BEN-98 validation errors under inputs via `pointer` → field mapping (same as C3).
 ---
 
 ## Parent I — Profile (BEN-49)
@@ -395,3 +401,13 @@ Issues found and corrected in this revision:
 | Catalog folder vs 001 `inventory/CatalogPage` | Documented plan-wins rule |
 | Integration branch vague | Named **`dev`** |
 | Todo states could drift | Marked **as of 2026-09-15** + maintenance note |
+
+## Review log (2026-09-19)
+
+| Trigger | Epic impact |
+|---------|-------------|
+| UI/UX: Figma Asset + Catalog fields aligned to inventory sheet | Amend **B0–B2**, **H0–H4** (and parents B/H): use latest Figma + Assets DTO; ignore stale UI-kit field lists |
+| Backend: BEN-98 validation-error Problem Details schema | Amend **C3**, **H3**, **H4**: map `errors[].pointer` → under-field UI; link `contracts/README.md` |
+| Contract published | `specs/001-office-supplies-mvp/contracts/README.md` now points at Swagger |
+
+**Not amended:** A (Done), B3/B4, C0–C2/C4, D–G, H5, I, J — no field-model or validation-mapping change required.
