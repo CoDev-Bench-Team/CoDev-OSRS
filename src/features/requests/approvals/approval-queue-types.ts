@@ -26,6 +26,9 @@ export interface ApprovalQueueRow {
   requestorContext?: string;
   itemSummary: string;
   submittedLabel: string;
+  /** Carried so the row's pill states what the row IS, rather than repeating
+   *  a literal that only the model's filter keeps true. */
+  status: RequestStatus;
 }
 
 export interface ApprovalQueueViewModel {

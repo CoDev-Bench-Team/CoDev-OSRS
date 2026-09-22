@@ -1,6 +1,11 @@
 import type { ApprovalQueueSnapshot, ApprovalQueueSource } from './approval-queue-types';
 
-/** Non-production demo data used only until the backend team publishes its contract. */
+/** Non-production demo data used only until the backend team publishes its contract.
+ *
+ *  No requestor here is a seeded Approver or Supply Admin: one person holds one
+ *  role (ARCHITECT.md 7), so the signed-in Approver must never find her own
+ *  request waiting on her own decision. Names follow the Filipino register in
+ *  docs/design-system/content-conventions.md. */
 const SEEDED_SNAPSHOT: ApprovalQueueSnapshot = {
   lowStockAlertCount: 2,
   requests: [
@@ -14,7 +19,7 @@ const SEEDED_SNAPSHOT: ApprovalQueueSnapshot = {
     },
     {
       id: 'REQ-2026-1842',
-      requestorName: 'Samantha Reyes',
+      requestorName: 'Andrea Villanueva',
       requestorContext: 'Finance',
       items: ['Monitor', 'Dock'],
       submittedAt: '2026-09-08T08:15:00Z',
@@ -38,7 +43,7 @@ const SEEDED_SNAPSHOT: ApprovalQueueSnapshot = {
     },
     {
       id: 'REQ-2026-1748',
-      requestorName: 'Noah Garcia',
+      requestorName: 'Rafael Garcia',
       requestorContext: 'Operations',
       items: ['External Monitor'],
       submittedAt: '2026-08-12T10:10:00Z',
@@ -46,7 +51,7 @@ const SEEDED_SNAPSHOT: ApprovalQueueSnapshot = {
     },
     {
       id: 'REQ-2026-1726',
-      requestorName: 'Ava Reyes',
+      requestorName: 'Bea Reyes',
       requestorContext: 'People Operations',
       items: ['Headset'],
       submittedAt: '2026-08-09T07:40:00Z',
@@ -54,7 +59,7 @@ const SEEDED_SNAPSHOT: ApprovalQueueSnapshot = {
     },
     {
       id: 'REQ-2026-1703',
-      requestorName: 'Liam Cruz',
+      requestorName: 'Miguel Cruz',
       requestorContext: 'Engineering',
       items: ['Keyboard'],
       submittedAt: '2026-08-05T12:30:00Z',

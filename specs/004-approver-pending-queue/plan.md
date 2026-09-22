@@ -40,9 +40,14 @@ The backend contract remains unpublished at `specs/001-office-supplies-mvp/contr
 - `src/features/requests/approvals/approval-queue-model.ts` — pure derivation of pending, in-processing, and pending-row projections.
 - `src/features/requests/approvals/seeded-approval-queue-source.ts` — explicit temporary fixture source; supplies low-stock count rather than a threshold.
 - `src/features/requests/approvals/ApprovalsQueuePage.tsx` — loading, failure, empty, summaries, responsive table, and Review links.
-- `src/app/routes.tsx` — import the real page and replace only the `ApprovalsPlaceholder` route element.
+- `src/app/routes.tsx` — import the real page and replace only the `ApprovalsPlaceholder` route element, and drop that placeholder from `src/app/placeholders.tsx` once nothing references it.
+- `src/shared/ui/actions/button-styles.ts` — `BUTTON_SHAPE` and `BUTTON_VARIANT`, lifted out of `Button.tsx` (**amended 2026-09-22**, see below).
 
-Shared components remain unchanged. Approve, reject, and request-detail behavior remain owned by BEN-45.
+**Amendment — 2026-09-22.** This section previously read "Shared components remain unchanged." Code review found the Review action had hand-copied eleven of `Button`'s twelve primary classes and dropped the semantic `min-w-touch-target`, which is the drift this plan's own red-team section warns about in a different form. The row's action must be an `<a>` so copy-link and middle-click keep working, so it cannot simply *be* a `<Button>`.
+
+The resolution is the smallest one that removes the duplication: the class strings move to their own module and both `Button` and the link consume them. `Button`'s rendered output is unchanged, no component gains a prop, and no other caller is touched. They live apart from `Button.tsx` because a component file that also exports constants loses Fast Refresh. Recorded here rather than applied silently, per constitution I.
+
+Approve, reject, and request-detail behavior remain owned by BEN-45.
 
 ## UI and State Flow
 
@@ -66,6 +71,9 @@ src/features/requests/approvals/
 ├── approval-queue-model.ts
 ├── approval-queue-types.ts
 └── seeded-approval-queue-source.ts
+
+src/shared/ui/actions/
+└── button-styles.ts            # added by the 2026-09-22 amendment above
 ```
 
 ## Dependencies

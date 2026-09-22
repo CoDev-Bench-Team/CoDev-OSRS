@@ -33,7 +33,7 @@ An Approver scans pending requests, identifies the requestor and requested items
 
 **Acceptance Criteria**:
 
-1. **Given** pending requests exist, **When** the queue renders, **Then** each row shows request id, requestor identity and organizational context, item summary, submitted date, and a Review action.
+1. **Given** pending requests exist, **When** the queue renders, **Then** each row shows request id, requestor identity and organizational context, item summary, submitted date, a `Pending Approval` status pill, and a Review action.
 2. **Given** a pending request row, **When** the Approver activates Review, **Then** the application navigates to `/requests/:id` for that request.
 3. **Given** requests in statuses other than `Pending Approval`, **When** the pending table renders, **Then** those requests do not appear as reviewable rows.
 4. **Given** the Approver returns from request detail after a decision changed the request status, **When** current data is shown, **Then** the decided request is no longer in the pending table and the summary reflects the current workload.
@@ -81,7 +81,7 @@ An Approver can review the queue with keyboard controls and at every width suppo
 - **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, `For Release`, and `Released`.
 - **FR-007**: Low stock alerts MUST count inventory items classified as low stock by the system's data source; the SPA MUST NOT invent a threshold.
 - **FR-008**: The pending table MUST contain only requests currently in `Pending Approval`.
-- **FR-009**: Each pending row MUST show request id, requestor name, requestor organizational context when available, an item summary, submitted date, and Review.
+- **FR-009**: Each pending row MUST show request id, requestor name, requestor organizational context when available, an item summary, submitted date, a `Pending Approval` status pill, and Review.
 - **FR-010**: Review MUST navigate to the stable request-detail destination for that request.
 - **FR-011**: The queue MUST NOT approve, reject, cancel, prepare, release, or complete a request.
 - **FR-012**: The page MUST show distinct loading, empty, and failure states.
@@ -128,6 +128,9 @@ An Approver can review the queue with keyboard controls and at every width suppo
 - Q: Where do decisions occur? → A: Review links to `/requests/:id`; approve and reject belong to BEN-45.
 - Q: May this feature define the missing HTTP contract or a low-stock threshold? → A: No. Both remain owned outside this SPA feature.
 - Q: Was the linked live Figma node verified? → A: No. Cursor's Figma integration continued to report `needsAuth` after reauthentication and session refresh, so the repository's 2026-09-15 re-export and drift report were used.
+- Q: Does the pending table include a Status column? → A: Yes. Confirmed by the project owner after initial implementation; each row displays the canonical `Pending Approval` pill.
+- Q: Which timezone does the submitted date display in? → A: `Asia/Manila`. Codev is Manila-based, and a UTC label reads a day early for anything submitted before 08:00 local — misleading in the column an Approver uses to judge how long a request has waited. Pinned rather than viewer-local so every Approver reads the same date whatever their machine is set to. Revisit if the system ever serves more than one timezone.
+- Q: What does a row show when the source supplies an unusable submitted timestamp? → A: An em dash in that cell. Date formatting happens during render, so an unparseable value would otherwise escape the page's own failure state and surface as the shell's generic error — a worse outcome than one incomplete cell, and a regression against FR-012.
 
 ## Validation
 

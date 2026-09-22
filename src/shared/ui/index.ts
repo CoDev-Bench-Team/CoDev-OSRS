@@ -5,7 +5,8 @@
 export { CoDevRedMasterLogo, CoDevWhiteMasterLogo, CoDevSupplyRequestsLogo } from './brand/logos';
 
 // Actions
-export { Button, type ButtonVariant } from './actions/Button';
+export { Button } from './actions/Button';
+export { BUTTON_SHAPE, BUTTON_VARIANT, type ButtonVariant } from './actions/button-styles';
 export { ButtonTemplate, ButtonWithIcon, SignInButton } from './actions/imported';
 
 // Forms

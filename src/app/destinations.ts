@@ -127,6 +127,13 @@ export function landingDestination(role: Role): Destination {
   return DESTINATIONS[LANDING[role]];
 }
 
+/** The concrete request-detail address for one request, derived from the
+ *  canonical `requestDetail` destination rather than restated by hand, so a
+ *  caller's link cannot drift from the route map if the path ever changes. */
+export function requestDetailPath(id: string): string {
+  return DESTINATIONS.requestDetail.path.replace(':id', encodeURIComponent(id));
+}
+
 /** Whether a role may reach an address at all — used to decide whether a
  *  visitor returning from sign-in goes to the destination they asked for or to
  *  their own landing screen (FR-013). An address matching no destination is not

@@ -18,7 +18,7 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 
 ## Phase 3: User Story 2 — Find and open a pending request (P1)
 
-- [x] T005 [US2] [BEN-74] Render pending-only rows and keyboard-operable Review links to request detail — `src/features/requests/approvals/ApprovalsQueuePage.tsx`
+- [x] T005 [US2] [BEN-74] Render pending-only rows with status pills and keyboard-operable Review links to request detail — `src/features/requests/approvals/ApprovalsQueuePage.tsx`
 
 ## Phase 4: User Story 3 — Understand non-success states (P1)
 
@@ -30,8 +30,9 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 
 ## Final Phase: Integration and Verification
 
-- [x] T008 [BEN-74] Replace only the guarded `/approvals` placeholder with the real page — `src/app/routes.tsx`
+- [x] T008 [BEN-74] Replace only the guarded `/approvals` placeholder with the real page, and retire the now-unreferenced placeholder — `src/app/routes.tsx`, `src/app/placeholders.tsx`
 - [x] T009 [BEN-75] Run lint, build, verify, scoped diff review, and PR delivery — `package.json`
+- [x] T010 [BEN-75] Share the button's class strings with the Review link instead of hand-copying them; see the 2026-09-22 amendment in `plan.md` — `src/shared/ui/actions/button-styles.ts`, `src/shared/ui/actions/Button.tsx`, `src/shared/ui/index.ts`
 
 ## Dependencies
 
@@ -40,6 +41,7 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 - T004–T007 are implemented together in one page and completed in story order.
 - T004–T007 block T008.
 - T008 blocks T009.
+- T010 arose from review during T009 and touches no file T001–T008 owns.
 
 ## Parallel Opportunities
 
@@ -47,4 +49,4 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 
 ## MVP Slice
 
-T001–T008. T009 is the required delivery gate.
+T001–T008. T009 is the required delivery gate; T010 was raised by review inside it.
