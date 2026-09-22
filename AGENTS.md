@@ -6,7 +6,7 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 3.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-17
+**Version**: 3.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-23
 
 ### I. Spec-Driven Development
 
@@ -32,7 +32,9 @@ A request MUST move only through the documented statuses: `Pending Approval` →
 
 Rejection MUST require a reason. A rejection is the Approver's decision on a request awaiting one.
 
-Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`; a Supply Admin MAY cancel an `Approved` or `For Release` request that cannot be fulfilled. A cancellation by anyone other than the owning Employee MUST require a reason. A `Released` request MUST NOT be cancelled — the items have been handed over.
+Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`; a Supply Admin MAY cancel an `Approved` or `For Release` request that cannot be fulfilled. Every cancellation MUST require a reason, whoever cancels. A `Released` request MUST NOT be cancelled — the items have been handed over.
+
+*Amended within v3.0.0 (2026-09-23, Linear BEN-45): the owning Employee's reason is no longer optional — the drawn cancel dialog marks it required. 3.0.0 is not yet released, so no further bump.*
 
 `Rejected`, `Cancelled` and `Completed` are terminal. After rejection or cancellation the employee submits a **new** request; neither record is reopened.
 
@@ -42,7 +44,7 @@ The system MUST send the corresponding email at every defined transition: Reques
 
 ### VI. Independently Testable Increments
 
-Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — check inventory → request → approve/reject → prepare → release → confirm receipt — MUST have an end-to-end test.
+Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — check inventory → request → approve/reject → prepare → release → complete — MUST have an end-to-end test. *(v3.0.0: the Admin completes a released request; the Employee does not confirm receipt — ADR-0007, BEN-45.)*
 
 ### VII. Typed Contracts
 
