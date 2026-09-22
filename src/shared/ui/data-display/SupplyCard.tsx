@@ -1,6 +1,6 @@
 import { StatusPill } from './StatusPill';
 import { Select } from '../forms/Select';
-import type { Availability } from '../status';
+import type { Availability, StockStatus } from '../status';
 import itemLaptop from '../../../assets/items/item-laptop.jpg';
 
 /** The catalog tile. 436px at the design width, fluid below it (spec 002 D2).
@@ -13,6 +13,10 @@ export function SupplyCard({
   category = 'Devices',
   name = 'Business Laptop',
   availability = 'available',
+  stock,
+  onHand,
+  maxQuantity,
+  actionDisabled = false,
   modelLabel = 'Model',
   model = 'Dell Latitude',
   models,
@@ -27,6 +31,16 @@ export function SupplyCard({
   category?: string;
   name?: string;
   availability?: Availability;
+  /** When given, the pill carries the three-state stock vocabulary instead of
+   *  the binary availability one, and `availability` is ignored. Added for the
+   *  catalog, which must show real stock rather than a boolean (spec 005 D1);
+   *  omit it and the card renders exactly as it did before. */
+  stock?: StockStatus;
+  /** On-hand count, shown beside the model label. Omitted, nothing is drawn. */
+  onHand?: number;
+  /** Upper bound for the stepper. Omitted, the stepper is unbounded as before. */
+  maxQuantity?: number;
+  actionDisabled?: boolean;
   modelLabel?: string;
   model?: string;
   /** Selectable models. Defaults to just the current one, which keeps the
@@ -35,12 +49,20 @@ export function SupplyCard({
   onModelChange?: (model: string) => void;
   quantity?: number;
   onQuantityChange?: (n: number) => void;
-  actionLabel?: string;
+  /** `null` removes the action entirely — the card renders read-only. Used by
+   *  the catalog, where only an Employee is offered the control that starts a
+   *  request (spec 005 FR-008). `undefined` keeps the default label, so the
+   *  gallery is unaffected. */
+  actionLabel?: string | null;
   onAction?: () => void;
-  image?: string;
+  /** `undefined` keeps the sample photo the gallery relies on. Pass `null` to
+   *  say the item genuinely has no image, and a neutral tile is drawn instead —
+   *  a laptop photograph standing in for a headset is worse than no photograph. */
+  image?: string | null;
   className?: string;
 }) {
-  const step = (d: number) => onQuantityChange?.(Math.max(1, quantity + d));
+  const ceiling = maxQuantity ?? Number.POSITIVE_INFINITY;
+  const step = (d: number) => onQuantityChange?.(Math.min(ceiling, Math.max(1, quantity + d)));
   /* The source pads the glyph (4px 8px), which makes the button as wide as
      its character: 22.5px around "-" and 25.4px around "+". Both are fixed
      22px squares here so the pair reads as symmetric.
@@ -61,7 +83,16 @@ export function SupplyCard({
     <div
       className={`flex w-full max-w-[436px] flex-col items-start overflow-hidden rounded-10 bg-surface-card shadow-card ${className ?? ''}`}
     >
-      <img src={image ?? itemLaptop} alt="" className="h-[180px] w-full shrink-0 object-cover" />
+      {image === null ? (
+        <div
+          aria-hidden
+          className="flex h-[180px] w-full shrink-0 items-center justify-center bg-surface-stepper"
+        >
+          <span className="type-eyebrow uppercase text-ink-secondary">No image</span>
+        </div>
+      ) : (
+        <img src={image ?? itemLaptop} alt="" className="h-[180px] w-full shrink-0 object-cover" />
+      )}
       <div className="flex w-full flex-col items-start gap-12 p-18">
         <span className="line-clamp-1 type-eyebrow uppercase text-ink-secondary">{category}</span>
         {/* The pill sits immediately after the name, as the source draws it —
@@ -71,10 +102,19 @@ export function SupplyCard({
         <div className="flex w-full items-center gap-12">
           <span className="line-clamp-2 min-w-0 type-card-title text-ink-primary">{name}</span>
           <span className="shrink-0">
-            <StatusPill availability={availability} />
+            {stock ? <StatusPill stock={stock} /> : <StatusPill availability={availability} />}
           </span>
         </div>
-        <span className="font-sans text-11-5 font-bold leading-display text-ink-primary">{modelLabel}</span>
+        <div className="flex w-full items-baseline justify-between gap-12">
+          <span className="font-sans text-11-5 font-bold leading-display text-ink-primary">{modelLabel}</span>
+          {/* The number FR-002 asks for. The pill says which band the shelf is
+              in; this says how deep it is. */}
+          {onHand === undefined ? null : (
+            <span className="font-sans text-11-5 leading-display tabular-nums text-ink-secondary">
+              {onHand} on hand
+            </span>
+          )}
+        </div>
         {/* A custom listbox, not a native <select>: the overlay is styled from
             the design system rather than drawn by the OS. Everything the native
             control provided — keyboard operation, type-ahead, screen-reader
@@ -93,7 +133,13 @@ export function SupplyCard({
                 6.5px dash sitting on the x-height axis; the minus is 9.42px on
                 the math axis, exactly matching "+" in width and height, so the
                 two signs are the same size and sit on the same line. */}
-            <button type="button" className={stepBtn} onClick={() => step(-1)} aria-label="Decrease quantity">
+            <button
+              type="button"
+              className={stepBtn}
+              onClick={() => step(-1)}
+              disabled={quantity <= 1}
+              aria-label="Decrease quantity"
+            >
               −
             </button>
             {/* The source draws "1" at its natural width, which would let the
@@ -109,19 +155,28 @@ export function SupplyCard({
             >
               {quantity}
             </span>
-            <button type="button" className={stepBtn} onClick={() => step(1)} aria-label="Increase quantity">
+            <button
+              type="button"
+              className={stepBtn}
+              onClick={() => step(1)}
+              disabled={quantity >= ceiling}
+              aria-label="Increase quantity"
+            >
               +
             </button>
           </div>
+          {actionLabel === null ? null : (
           <button
             type="button"
             onClick={onAction}
+            disabled={actionDisabled}
             /* 304px is the source's width. Capped rather than fixed so the
                button still shrinks below the design width (spec 002 D2). */
-            className="flex h-control-height-md w-full max-w-[304px] flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-10 border-none bg-brand-primary px-18 type-ui-bold whitespace-nowrap text-brand-on-primary ring-brand transition-osrs hover:bg-osrs-red-550"
+            className="flex h-control-height-md w-full max-w-[304px] flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-10 border-none bg-brand-primary px-18 type-ui-bold whitespace-nowrap text-brand-on-primary ring-brand transition-osrs hover:bg-osrs-red-550 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-brand-primary"
           >
             {actionLabel}
           </button>
+          )}
         </div>
       </div>
     </div>

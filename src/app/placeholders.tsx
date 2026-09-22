@@ -1,5 +1,5 @@
 import { useParams } from 'react-router';
-import { Button, Placeholder, RecordUnavailableScreen } from '../shared/ui';
+import { Placeholder, RecordUnavailableScreen } from '../shared/ui';
 import { useSession } from '../features/auth/session-context';
 import { DESTINATIONS, landingPath, type DestinationId } from './destinations';
 import { mayViewRequest } from './seeded-request-ids';
@@ -14,30 +14,6 @@ import { NavButton } from './NavButton';
 function screen(id: DestinationId) {
   const { title, purpose } = DESTINATIONS[id];
   return <Placeholder name={title} purpose={purpose} />;
-}
-
-export function CatalogPlaceholder() {
-  const { session } = useSession();
-  const { title, purpose } = DESTINATIONS.catalog;
-  // Story 2 AC5: every role sees stock, but only an Employee is offered the
-  // action that starts a request. The action is disabled because starting a
-  // request is spec 001's own feature — the shell shows who is offered it, not
-  // what it does.
-  const employee = session?.role === 'employee';
-  return (
-    <Placeholder
-      name={title}
-      purpose={purpose}
-      action={
-        employee ? (
-          <>
-            <Button disabled>Add to Request List</Button>
-            <span className="type-body text-ink-secondary">Requesting ships with the catalog feature</span>
-          </>
-        ) : undefined
-      }
-    />
-  );
 }
 
 export const AssetsPlaceholder = () => screen('assets');
