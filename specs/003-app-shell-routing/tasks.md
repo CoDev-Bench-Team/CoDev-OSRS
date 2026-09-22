@@ -153,6 +153,7 @@ this feature rather than to a new spec.
 | T055f | `docs/adr/0005-…` — the client-id decision and the `admin` role exception | yes |
 | T055g | `src/features/auth/google-button-source.ts` — the optional `GoogleButtonSource` capability, shaped like `DemoAccountSource` | yes |
 | T055h | `src/features/auth/GoogleSignInOverlay.tsx` — Google's button, invisible over the drawn control | yes |
+| T055i | `src/shared/ui/layout/Avatar.tsx` + the `avatarUrl` path from the contract to the top bar — the profile photograph, initials as fallback (Story 5 AC4, amended 2026-09-22) | yes |
 
 **The claim this task set has to earn**: FR-003 says the shell's behavior must not change.
 `SessionProvider.tsx`, `session-context.ts`, `session-source.ts`, `types.ts`, `RequireAccess.tsx`,

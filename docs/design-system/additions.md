@@ -324,6 +324,32 @@ from that check and are **not** additions but corrections:
   remove the outline, that is what ships; if the `Surface` binding was a slip
   and the pill wants Google's own `#DADCE0` hairline, say so and it is one line.
 
+### A profile photograph in the avatar
+
+The file draws every avatar as white initials on a flat colour, and spec 003 said
+"never a photograph". BEN-96 requires the avatar URL the backend returns — the
+person's Google profile image — to be used, and the project owner asked for it on
+2026-09-22.
+
+`Avatar` now takes an optional `src`. With a photograph it fills the same circle
+(`object-cover`, clipped by the circle's `overflow-hidden`), at the same 34px, with
+nothing added around it — no ring, no border, no shadow. Without one, or when the
+image fails to load, it renders exactly as drawn: initials on the role's flat colour.
+Nothing in the design system's own surfaces passes a photograph, so the gallery and
+the fidelity and pixel gates are unchanged.
+
+Two details a designer might otherwise read as accidents:
+
+- **The fallback is per URL.** A failure is remembered against the URL that failed,
+  so a user whose photograph later changes gets a fresh attempt instead of staying
+  on initials for the rest of the session.
+- **No referrer is sent.** Google's profile-image host refuses a noticeable share of
+  hotlinked requests that carry one, which would otherwise surface as a broken image.
+
+For ratification: whether a photograph should carry the role colour as a thin ring,
+so the two forms still read as the same component. Left out, because the file draws
+no ring and adding one would be a new visual rather than a fallback.
+
 ### A seeded account chooser on the sign-in screen
 
 Below the card, a second small card lets a tester choose which seeded demo

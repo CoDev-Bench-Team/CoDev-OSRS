@@ -75,7 +75,7 @@ export function TopBar({
   actions,
 }: {
   nav?: NavItem[];
-  user?: { name: string; role: string; initials: string; color?: string };
+  user?: { name: string; role: string; initials: string; color?: string; avatarUrl?: string };
   requestListCount?: number;
   onOpenRequestList?: () => void;
   /** The notification marker the 2026-09-15 export added to both variants. */
@@ -170,7 +170,7 @@ export function TopBar({
                   onClick={onOpenAccount}
                   className="flex min-h-touch-target cursor-pointer items-center gap-8 rounded-8 border-none bg-transparent p-0 text-left transition-osrs hover:opacity-80"
                 >
-                  <Avatar initials={user.initials} color={user.color} />
+                  <Avatar initials={user.initials} color={user.color} src={user.avatarUrl} />
                   <span className="flex min-w-0 flex-col gap-1">
                     <span className="truncate font-sans text-13 leading-tight text-ink-primary">{user.name}</span>
                     <span className="truncate font-sans text-11 leading-tight text-ink-secondary">{user.role}</span>
@@ -178,7 +178,7 @@ export function TopBar({
                 </button>
               ) : (
                 <span className="flex items-center gap-8">
-                  <Avatar initials={user.initials} color={user.color} />
+                  <Avatar initials={user.initials} color={user.color} src={user.avatarUrl} />
                   <span className="flex min-w-0 flex-col gap-1">
                     <span className="truncate font-sans text-13 leading-tight text-ink-primary">{user.name}</span>
                     <span className="truncate font-sans text-11 leading-tight text-ink-secondary">{user.role}</span>

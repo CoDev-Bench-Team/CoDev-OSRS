@@ -65,7 +65,13 @@ export function AppLayout() {
           event.preventDefault();
           void navigate(href);
         }}
-        user={{ name: user.name, role: ROLE_LABEL[role], initials: user.initials, color: user.avatarColor }}
+        user={{
+          name: user.name,
+          role: ROLE_LABEL[role],
+          initials: user.initials,
+          color: user.avatarColor,
+          avatarUrl: user.avatarUrl,
+        }}
         // FR-015: employees only. `undefined` removes the marker entirely for
         // the other two roles rather than showing them a zero.
         requestListCount={role === 'employee' ? count : undefined}

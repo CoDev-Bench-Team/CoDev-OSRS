@@ -23,7 +23,8 @@ export const ROLES: readonly Role[] = ['employee', 'approver', 'supply_admin', '
 
 /** What the account cluster needs to name the signed-in person, and nothing
  *  more. `initials` is carried rather than derived: a name is not reliably two
- *  words, and the design system's Avatar never renders a photograph. */
+ *  words, and initials are what the avatar falls back to whenever a photograph
+ *  is absent or fails to load. */
 export type User = {
   id: string;
   name: string;
@@ -32,6 +33,10 @@ export type User = {
   role: Role;
   /** A token colour for the avatar. Optional — Avatar has its own default. */
   avatarColor?: string;
+  /** The person's profile photograph, from the contract's `avatarUrl` (Google's
+   *  profile image). Optional: seeded users have none, and Avatar falls back to
+   *  initials on flat colour when it is missing or will not load. */
+  avatarUrl?: string;
 };
 
 export type Session = {

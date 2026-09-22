@@ -30,8 +30,23 @@ type ContractUser = {
   email: string;
   firstName: string;
   lastName: string;
+  avatarUrl: string;
   role: string;
 };
+
+/** Only an absolute https URL is passed to an `<img>`. The contract marks
+ *  `avatarUrl` required but says nothing about its shape, and an empty string, a
+ *  relative path or a `javascript:`/`data:` value should degrade to initials,
+ *  not become a request the SPA did not mean to make. */
+function photoUrl(value: unknown): string | undefined {
+  if (typeof value !== 'string' || value === '') return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** The contract's `role` enum is `admin | employee`, and that is the product's
  *  role model — confirmed by the product owner on 2026-09-17, not a gap waiting
@@ -99,10 +114,11 @@ function toSession(body: unknown): Session | null {
     initials: initialsOf(firstName, lastName),
     role,
     avatarColor: AVATAR_COLOR[role],
+    // BEN-96: the avatar URL the contract returns is used. Spec 003 Story 5
+    // AC4 was amended to allow it; initials remain the fallback.
+    avatarUrl: photoUrl(contract.avatarUrl),
   };
 
-  // `avatarUrl` is on the wire and is deliberately ignored. Story 5 AC4: the
-  // avatar is initials on flat colour, never a photograph.
   return { user, role };
 }
 
