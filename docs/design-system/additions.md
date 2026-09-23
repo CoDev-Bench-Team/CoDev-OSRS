@@ -365,6 +365,25 @@ below is ours.
 
 ---
 
+## 3f. The Employee request panel (BEN-45, 2026-09-23)
+
+`SidePanel`, `StatusTimeline` and `TextField` are **drawn** (`04.1`, `04.2`,
+`Status Timeline`); what follows is only what the frames leave open.
+
+| Addition | What was decided | Basis |
+|----------|------------------|-------|
+| **Panel behaviour** | Esc and a scrim click close it; focus moves in on open, is held there, and returns to the row's *View details* on close. Closing never navigates. | A sheet over a scrim is a modal in everything but position. The frames draw only the ✕. |
+| **Rejected timeline ending** | Collapses to Submitted → Rejected, the ending in `status-rejected-fg` red. | `04.2 - Cancelled` draws the Cancelled collapse in slate; Rejected is not drawn, so it takes the same shape in its own status colour. |
+| **`For Release` on the timeline** | The handover node stays *Pending* until `Released`. Once released it reads *Ready for Pickup* or *For Delivery*; before that, the drawn *For Delivery/For Pickup*. | The drawing has four nodes for five forward states; `For Release` is preparation, not handover. |
+| **Refused cancel** | An inline red note above the items: the request changed while the panel was open, and the panel shows its current status. | The file draws no failure. The copy follows the Notice voice. |
+| **Empty reason** | The drawn pink block, plus one line saying why — announced through `aria-describedby`. | The asterisk alone does not tell a screen-reader user what went wrong. Whitespace counts as empty. |
+| **Stand-in My Requests table** | The `04 - My Requests` frame's five columns over the seeded source, so the panel has a *View details* to open from. Replaced by BEN-44. | BEN-44 had not shipped when BEN-45 was built. |
+| **REQ-2026-1838** | The For Delivery row's id. | The frame gives REQ-2026-1842 to both the Ready for Pickup and the For Delivery row; an id must be unique. **Flagged to the designer.** |
+
+**Not built:** the cancellation reason on a cancelled request. `04.2 - Cancelled`
+does not show it, and spec 001's Request entity stores it — **flagged to the
+designer** as a likely omission.
+
 ## 4. Defects found in the source — flagged, not fixed
 
 Per FR-011a, a source value that fails a threshold is reported rather than

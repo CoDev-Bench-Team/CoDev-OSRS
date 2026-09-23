@@ -40,12 +40,14 @@ export function CatalogPlaceholder() {
   );
 }
 
-export const RequestsPlaceholder = () => screen('requests');
 export const AssetsPlaceholder = () => screen('assets');
 export const InventoryPlaceholder = () => screen('inventory');
 export const HistoryPlaceholder = () => screen('history');
 
-/** `/requests/:id` — the one address that identifies a record.
+/** `/requests/:id` — the one address that identifies a record, for the
+ *  Approver and the Supply Admin only. An Employee's request detail is a panel
+ *  on My Requests (spec 003, 2026-09-23), and BEN-47 replaces this address
+ *  with the Admin's own panel.
  *
  *  It must not reveal whether that record exists (FR-012a), so a request the
  *  signed-in Employee does not own and a request that does not exist render the

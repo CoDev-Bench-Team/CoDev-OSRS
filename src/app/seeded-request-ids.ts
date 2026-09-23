@@ -20,7 +20,12 @@ const OWNED_BY: Record<string, readonly string[]> = {
   'maya.santos': ['REQ-2026-1847', 'REQ-2026-1842', 'REQ-2026-1805', 'REQ-2026-1760', 'REQ-2026-1733'],
 };
 
-/** Employees reach only their own requests; an Admin reaches any request
+/** Since 2026-09-23 an Employee never reaches `/requests/:id` — the route's
+ *  role guard refuses them before this runs, for every id alike, which keeps
+ *  FR-012a's no-enumeration guarantee. The employee branch stays so the rule
+ *  still holds if the screen is ever reused behind a looser guard.
+ *
+ *  Employees reach only their own requests; an Admin reaches any request
  *  regardless of status, with the actions on it still gated by status and role
  *  when those actions ship (D6, FR-009). */
 export function mayViewRequest(user: User, requestId: string): boolean {

@@ -1,0 +1,149 @@
+import { useState, type FormEvent } from 'react';
+import { Button, SidePanel, StatusPill, StatusTimeline, TableCard, TableHead, TextField } from '../../../shared/ui';
+import type { CancelResult, EmployeeRequest } from './request-detail-types';
+import { requestTimeline } from './request-timeline';
+
+/** The Employee's request detail — a side panel over My Requests (BEN-45,
+ *  frames `04.1`, `04.2 - Cancel Request`, `04.2 - Cancelled`).
+ *
+ *  It reads the request back and offers exactly one action: **Cancel Request**,
+ *  and only while the request is `Pending Approval` (spec 001 FR-009a). There
+ *  is no confirm-receipt control in any state — a Supply Admin completes a
+ *  request (FR-012a, ADR-0007). Ownership needs no check here: the page only
+ *  ever holds the signed-in Employee's own requests. */
+const REFUSAL_COPY: Record<Exclude<CancelResult, { ok: true }>['refusal'], string> = {
+  'status-changed':
+    'This request was updated while you were viewing it and can no longer be cancelled. Its current status is shown above.',
+  'reason-required': 'Enter a reason for cancelling this request.',
+  unavailable: 'This request could not be cancelled. Close the panel and try again.',
+};
+
+export function RequestDetailPanel({
+  request,
+  onClose,
+  onCancel,
+}: {
+  request: EmployeeRequest;
+  onClose: () => void;
+  /** Performs the cancel and refreshes the page's copy of the request. */
+  onCancel: (id: string, reason: string) => Promise<CancelResult>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [reason, setReason] = useState('');
+  const [invalid, setInvalid] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
+
+  const cancellable = request.status === 'Pending Approval';
+
+  const backOut = () => {
+    setConfirming(false);
+    setReason('');
+    setInvalid(false);
+  };
+
+  const confirm = async (e: FormEvent) => {
+    e.preventDefault();
+    // Acceptance 3: an empty reason — or one that is only spaces — is refused
+    // here, before anything is sent, and the status does not change.
+    if (!reason.trim()) {
+      setInvalid(true);
+      return;
+    }
+    setSubmitting(true);
+    setRefusal(null);
+    const result = await onCancel(request.id, reason);
+    setSubmitting(false);
+    if (result.ok) {
+      backOut();
+      return;
+    }
+    if (result.refusal === 'reason-required') {
+      setInvalid(true);
+      return;
+    }
+    backOut();
+    setRefusal(REFUSAL_COPY[result.refusal]);
+  };
+
+  const footer = !cancellable ? undefined : confirming ? (
+    <form onSubmit={confirm} className="flex flex-col gap-12" noValidate>
+      <TextField
+        label="Reason for cancellation"
+        required
+        autoFocus
+        placeholder="e.g duplicate request..."
+        value={reason}
+        invalid={invalid}
+        message={REFUSAL_COPY['reason-required']}
+        onChange={(e) => {
+          setReason(e.target.value);
+          if (invalid && e.target.value.trim()) setInvalid(false);
+        }}
+      />
+      <div className="flex items-center justify-center gap-12">
+        <Button variant="ghost" onClick={backOut} disabled={submitting}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={submitting}>
+          Confirm Cancellation
+        </Button>
+      </div>
+    </form>
+  ) : (
+    <Button variant="ghost" className="w-full" onClick={() => setConfirming(true)}>
+      Cancel Request
+    </Button>
+  );
+
+  return (
+    <SidePanel
+      title={`Request ${request.id}`}
+      onClose={onClose}
+      header={
+        <>
+          <h2 className="type-section-title truncate text-ink-heading">{request.id}</h2>
+          <StatusPill status={request.status} handover={request.handover} />
+        </>
+      }
+      footer={footer}
+    >
+      {refusal ? (
+        <p role="alert" className="rounded-8 bg-status-rejected-bg px-12 py-10 type-body text-status-rejected-fg">
+          {refusal}
+        </p>
+      ) : null}
+
+      <section className="flex flex-col gap-10" aria-labelledby="items-requested">
+        <h3 id="items-requested" className="type-eyebrow uppercase text-ink-secondary">
+          Items Requested
+        </h3>
+        <TableCard>
+          <TableHead cols={[['Item'], ['Qty', '48px']]} />
+          <ul>
+            {request.lines.map((line) => (
+              <li key={line.description} className="flex items-center border-t border-line-default px-20 py-14">
+                <span className="flex-1 type-ui-bold text-ink-primary">{line.description}</span>
+                <span className="w-[48px] shrink-0 type-ui-bold tabular-nums text-ink-primary">{line.qty}</span>
+              </li>
+            ))}
+          </ul>
+        </TableCard>
+      </section>
+
+      {request.noteToApprover ? (
+        <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-14 shadow-card">
+          <h3 className="type-ui-bold text-ink-primary">Note to Approver</h3>
+          <p className="type-meta text-ink-body">{request.noteToApprover}</p>
+        </section>
+      ) : null}
+
+      <section className="flex flex-col gap-12" aria-labelledby="request-status">
+        <h3 id="request-status" className="type-eyebrow uppercase text-ink-secondary">
+          Status
+        </h3>
+        <StatusTimeline nodes={requestTimeline(request)} />
+      </section>
+    </SidePanel>
+  );
+}
