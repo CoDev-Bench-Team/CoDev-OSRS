@@ -23,12 +23,14 @@ import {
   Select,
   SignInButton,
   StatusPill,
+  StatusTimeline,
   SummaryCard,
   SupplyCard,
   TableCard,
   TableHead,
   TABLE_ROW_PADDING_CLASS,
   tableColumnStyle,
+  TextField,
   TopBar,
   type ColumnWidth,
 } from '../index';
@@ -268,9 +270,43 @@ export function Gallery() {
               <Select label="Model" value={model} options={LAPTOP_MODELS} disabled />
             </div>
           </Row>
+          <Row label="Text field — required, then refused empty (04.2 cancel form)">
+            <div className="flex w-[420px] max-w-full flex-col gap-12">
+              <TextField label="Reason for cancellation" required placeholder="e.g duplicate request..." />
+              <TextField
+                label="Reason for cancellation"
+                required
+                invalid
+                message="Enter a reason for cancelling this request."
+                placeholder="e.g duplicate request..."
+              />
+            </div>
+          </Row>
         </Section>
 
         <Section id="data" title="Data display">
+          <Row label="Status timeline — in progress, cancelled, rejected">
+            <StatusTimeline
+              nodes={[
+                { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
+                { label: 'Approved', state: 'reached', when: 'Sep 11, 2026, 1:05 PM' },
+                { label: 'For Delivery/For Pickup', state: 'pending' },
+                { label: 'Complete', state: 'pending' },
+              ]}
+            />
+            <StatusTimeline
+              nodes={[
+                { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
+                { label: 'Cancelled', state: 'cancelled', when: 'Sep 11, 2026, 9:58 AM' },
+              ]}
+            />
+            <StatusTimeline
+              nodes={[
+                { label: 'Submitted', state: 'reached', when: 'Aug 14, 2026, 11:05 AM' },
+                { label: 'Rejected', state: 'rejected', when: 'Aug 15, 2026, 9:20 AM' },
+              ]}
+            />
+          </Row>
           <Row label="Summary cards">
             <SummaryCard value="12" label="Pending approval" />
             <SummaryCard value="108" label="Available units" />
