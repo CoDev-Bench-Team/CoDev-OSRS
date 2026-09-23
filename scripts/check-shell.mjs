@@ -30,12 +30,14 @@ const ACCOUNTS = {
 };
 
 const PERMITTED = {
-  employee: ['/catalog', '/requests', '/requests/REQ-2026-1847', '/profile'],
+  employee: ['/catalog', '/requests', '/profile'],
   admin: ['/queue', '/assets', '/inventory', '/history', '/catalog', '/requests/REQ-2026-1847', '/profile'],
 };
 
 const FORBIDDEN = {
-  employee: ['/queue', '/assets', '/inventory', '/history'],
+  // Since 2026-09-23 an Employee's request detail is a panel on /requests,
+  // not an address (spec 003 amendment, BEN-45).
+  employee: ['/queue', '/assets', '/inventory', '/history', '/requests/REQ-2026-1847'],
   admin: ['/requests'],
 };
 
@@ -239,21 +241,28 @@ for (const retired of ['/approvals', '/fulfillment']) {
 }
 await signIn('employee');
 
+// An Employee has no record address since 2026-09-23: every id — their own,
+// someone else's, one that does not exist — gets the same role refusal, so the
+// response still cannot be used to enumerate identifiers.
 await go(`/requests/REQ-2026-9999`);
 const missingRecord = await cdp.evaluate(shellState);
 await go(`/requests/REQ-2026-1500`); // conceptually another employee's
 const forbiddenRecord = await cdp.evaluate(shellState);
+await go(`/requests/REQ-2026-1847`); // Maya's own
+const ownRecord = await cdp.evaluate(shellState);
 check(
-  missingRecord.eyebrow === 'Unavailable' && forbiddenRecord.eyebrow === 'Unavailable',
-  'a request that does not exist and one that is not yours both render the record response',
+  [missingRecord, forbiddenRecord, ownRecord].every((r) => r.eyebrow === 'No access'),
+  'an Employee is refused /requests/:id for a missing, a foreign and their own id alike',
 );
 check(
-  missingRecord.body === forbiddenRecord.body && missingRecord.title === forbiddenRecord.title,
-  'and the two responses are word-for-word identical, so identifiers cannot be enumerated',
+  missingRecord.body === forbiddenRecord.body &&
+    forbiddenRecord.body === ownRecord.body &&
+    missingRecord.title === forbiddenRecord.title,
+  'and the three responses are word-for-word identical, so identifiers cannot be enumerated',
 );
 check(
-  !missingRecord.body?.includes('9999') && !forbiddenRecord.body?.includes('1500'),
-  'neither response echoes the identifier back',
+  !missingRecord.body?.includes('9999') && !forbiddenRecord.body?.includes('1500') && !ownRecord.body?.includes('1847'),
+  'no response echoes the identifier back',
 );
 check(missingRecord.eyebrow !== missingPath.eyebrow, 'a mistyped address is still distinguishable from a refused record');
 
