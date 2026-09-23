@@ -7,6 +7,12 @@
  *  T020 lands (see specs/003-app-shell-routing/plan.md, "Routing e2e
  *  assertions").
  *
+ *  These checks drive the SEEDED session source, which is what gives them
+ *  three roles to sign in as. Start the dev server with the client id blanked
+ *  so a developer's own `.env` cannot change what is under test:
+ *
+ *      VITE_GOOGLE_CLIENT_ID= npm run dev
+ *
  *  Needs `npm run dev` and headless Chrome; both are started for you by
  *  cdp.mjs. Set OSRS_DEV_ORIGIN when the dev server took a port other than
  *  5173. */
@@ -95,6 +101,16 @@ async function signIn(role) {
   await go(`/login`);
   await cdp.evaluate((id) => {
     const radio = document.querySelector(`input[value="${id}"]`);
+    if (!radio) {
+      // The chooser belongs to the seeded session source. A dev server started
+      // with VITE_GOOGLE_CLIENT_ID set runs the API source instead, which
+      // offers Google's button and no seeded accounts — so these checks have
+      // nothing to sign in with. Say that, rather than dereferencing null.
+      throw new Error(
+        'no seeded account chooser on /login — start the dev server with the seeded source: ' +
+          'VITE_GOOGLE_CLIENT_ID= npm run dev',
+      );
+    }
     radio.click();
   }, account);
   await cdp.evaluate(() => {

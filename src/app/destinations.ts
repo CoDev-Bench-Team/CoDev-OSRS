@@ -74,7 +74,7 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     navLabel: 'Requests Queue',
     title: 'Requests Queue',
     purpose: 'Review and decide on pending supply requests',
-    roles: ['approver'],
+    roles: ['approver', 'admin'],
   },
   fulfillment: {
     id: 'fulfillment',
@@ -82,7 +82,7 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     navLabel: 'Fulfillment',
     title: 'Fulfillment queue',
     purpose: 'Prepare and release approved requests',
-    roles: ['supply_admin'],
+    roles: ['supply_admin', 'admin'],
   },
   inventory: {
     id: 'inventory',
@@ -90,7 +90,7 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     navLabel: 'Inventory',
     title: 'Inventory management',
     purpose: 'Monitor stock levels, manage reservations, and keep office essentials ready for every team',
-    roles: ['supply_admin'],
+    roles: ['supply_admin', 'admin'],
   },
   history: {
     id: 'history',
@@ -98,7 +98,7 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     navLabel: 'History',
     title: 'History',
     purpose: 'Every resolved request — completed, rejected and cancelled — across all requestors',
-    roles: ['approver', 'supply_admin'],
+    roles: ['approver', 'supply_admin', 'admin'],
   },
   profile: {
     id: 'profile',
@@ -117,6 +117,8 @@ export const LANDING: Record<Role, DestinationId> = {
   employee: 'catalog',
   approver: 'approvals',
   supply_admin: 'fulfillment',
+  // An admin's work starts with the decisions waiting on them, not the shelf.
+  admin: 'approvals',
 };
 
 export function landingPath(role: Role): string {

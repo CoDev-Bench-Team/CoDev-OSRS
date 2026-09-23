@@ -37,6 +37,10 @@ const LIFETIME_MS = 12 * 60 * 60 * 1000;
 
 /** One seeded user per role, so SC-001 and SC-003 are exercisable.
  *
+ *  Four, since the 2026-09-17 amendment: `admin` is what the contract issues and
+ *  what a real user signs in as, while `approver` and `supply_admin` are the
+ *  split the SPA still models so each pipeline stage can be demonstrated alone.
+ *
  *  Maya and Ethan are the design file's two identities, with its avatar colours.
  *  The Approver is a third identity the source never draws — the file merges
  *  Approver and Supply Admin into one "Admin" — so her avatar colour is an
@@ -66,14 +70,28 @@ const SEEDED_USERS: Record<string, User> = {
     role: 'supply_admin',
     avatarColor: 'var(--color-osrs-avatar-green)',
   },
+  /** The role the published contract actually issues (constitution II, amended
+   *  2026-09-17). Without it the seeded source could demonstrate every role
+   *  except the one real users sign in as. Ethan is the design file's own Admin
+   *  identity, so the same person appears under both — the split roles are the
+   *  invented ones, and this is the identity the file drew. */
+  'ethan.cruz.admin': {
+    id: 'ethan.cruz.admin',
+    name: 'Ethan Cruz',
+    email: 'ethanc@codev.com',
+    initials: 'EC',
+    role: 'admin',
+    avatarColor: 'var(--color-osrs-avatar-green)',
+  },
 };
 
 const REFUSED_ACCOUNT = 'refused';
 
 const DEMO_ACCOUNTS: readonly DemoAccount[] = [
   { id: 'maya.santos', label: 'Maya Santos', detail: 'Employee' },
-  { id: 'samantha.reyes', label: 'Samantha Reyes', detail: 'Approver' },
-  { id: 'ethan.cruz', label: 'Ethan Cruz', detail: 'Supply Admin' },
+  { id: 'ethan.cruz.admin', label: 'Ethan Cruz', detail: 'Admin' },
+  { id: 'samantha.reyes', label: 'Samantha Reyes', detail: 'Approver (split role)' },
+  { id: 'ethan.cruz', label: 'Ethan Cruz', detail: 'Supply Admin (split role)' },
   { id: REFUSED_ACCOUNT, label: 'Refused account', detail: 'Sign-in fails', refuses: true },
 ];
 

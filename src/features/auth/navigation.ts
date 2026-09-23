@@ -4,10 +4,12 @@ import type { Role } from './types';
 /** FR-006 / D1: navigation is DERIVED from the authorization matrix in
  *  ARCHITECT.md §7, per role, and never hand-maintained per screen.
  *
- *  Three sets, not the design file's two. The file merges Approver and Supply
- *  Admin into a single "Admin" identity, which constitution II forbids, so the
- *  Approver and Supply Admin sets are new design — flagged to the designer in
- *  spec 003's Known Gaps.
+ *  Four sets. The design file draws two — Employee, and a merged "Admin" — and
+ *  the published contract issues exactly those two, so `admin` is the bar the
+ *  file drew. The separate `approver` and `supply_admin` sets remain new design
+ *  (flagged to the designer in spec 003's Known Gaps); they are not issued by
+ *  the contract and are exercised only by the seeded demo source, which is what
+ *  lets each pipeline stage be demonstrated on its own.
  *
  *  Order is the order each role works in: their own queue first, then what they
  *  consult.
@@ -26,6 +28,10 @@ const NAVIGATION: Record<Role, readonly DestinationId[]> = {
   employee: ['catalog', 'requests'],
   approver: ['approvals', 'history', 'catalog'],
   supply_admin: ['fulfillment', 'inventory', 'history', 'catalog'],
+  // The contract's admin: the union of the two, in pipeline order — decide,
+  // then prepare and release, then the stock behind it. This is the bar the
+  // design file actually drew, before D1 split it (see the note above).
+  admin: ['approvals', 'fulfillment', 'inventory', 'history', 'catalog'],
 };
 
 export function navigationFor(role: Role): readonly Destination[] {

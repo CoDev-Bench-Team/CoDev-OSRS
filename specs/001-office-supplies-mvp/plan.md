@@ -75,7 +75,8 @@ No `server/` package unless ADR-0001 is superseded.
 ## Dependencies
 
 - A reachable REST host and the backend team’s published contract
-- `VITE_API_ORIGIN` (or Vite proxy target) in `.env`
+- `VITE_GOOGLE_CLIENT_ID` in `.env`; `VITE_API_URL` for deployed builds (development
+  proxies `/api` through the Vite dev server)
 - Playwright as a dev dependency when e2e lands
 
 ## Complexity Tracking

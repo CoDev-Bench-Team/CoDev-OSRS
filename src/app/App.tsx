@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { SessionProvider } from '../features/auth/SessionProvider';
+import { activeSessionSource } from '../features/auth/active-source';
 import { RequestListCountProvider } from './RequestListCountProvider';
 import { AppRoutes } from './routes';
 
@@ -35,7 +36,7 @@ const CompareHarness = import.meta.env.DEV
 export default function App() {
   return (
     <BrowserRouter>
-      <SessionProvider>
+      <SessionProvider source={activeSessionSource}>
         <RequestListCountProvider>
           {Gallery && CompareHarness ? (
             <Routes>

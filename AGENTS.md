@@ -6,15 +6,21 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 2.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-15
+**Version**: 3.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-23
 
 ### I. Spec-Driven Development
 
 All user-facing behavior MUST be specified before implementation. Agents MUST read the active `spec.md`, `plan.md`, and `tasks.md` before writing code. Chat instructions that contradict the spec MUST be treated as spec-amendment requests, not silent overrides. Implementation tasks MUST map to a functional requirement or user story.
 
-### II. Three Distinct Human Roles
+### II. Distinct Human Roles
 
-The system MUST enforce three human roles — Employee (requestor), Approver (team lead / department head), and Supply Admin (IT / General Services) — plus a System actor for inventory mutations and notifications. A combined “Admin” role MUST NOT replace Approver and Supply Admin. Each protected action MUST authorize against the role that owns that step in the process flow.
+The system MUST enforce two human roles — **Employee** (requestor) and **Admin** (reviews and decides on requests, then prepares and releases them) — plus a System actor for inventory mutations and notifications. These are the roles the backend team's published contract issues; the SPA MUST NOT invent a role the contract does not expose, nor collapse the two into one.
+
+The pipeline's **stages** remain distinct even though one role performs several of them. Approval and fulfilment are separate transitions in `docs/process-flow.md`, each with its own preconditions and notifications, and each protected action MUST authorize against the role that owns that step. An Employee MUST NOT reach an Admin's actions.
+
+A later contract MAY split Admin into Approver and Supply Admin. The SPA already models both, so that split MUST NOT require another amendment.
+
+*Amended 2026-09-17 (v3.0.0): supersedes the three-role requirement and the prohibition on a combined “Admin”, which contradicted the shipped API. ADR-0003 is superseded by ADR-0005.*
 
 ### III. Inventory Integrity
 
@@ -26,7 +32,9 @@ A request MUST move only through the documented statuses: `Pending Approval` →
 
 Rejection MUST require a reason. A rejection is the Approver's decision on a request awaiting one.
 
-Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`; a Supply Admin MAY cancel an `Approved` or `For Release` request that cannot be fulfilled. A cancellation by anyone other than the owning Employee MUST require a reason. A `Released` request MUST NOT be cancelled — the items have been handed over.
+Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`; a Supply Admin MAY cancel an `Approved` or `For Release` request that cannot be fulfilled. Every cancellation MUST require a reason, whoever cancels. A `Released` request MUST NOT be cancelled — the items have been handed over.
+
+*Amended within v3.0.0 (2026-09-23, Linear BEN-45): the owning Employee's reason is no longer optional — the drawn cancel dialog marks it required. 3.0.0 is not yet released, so no further bump.*
 
 `Rejected`, `Cancelled` and `Completed` are terminal. After rejection or cancellation the employee submits a **new** request; neither record is reopened.
 
@@ -36,7 +44,7 @@ The system MUST send the corresponding email at every defined transition: Reques
 
 ### VI. Independently Testable Increments
 
-Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — check inventory → request → approve/reject → prepare → release → confirm receipt — MUST have an end-to-end test.
+Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — check inventory → request → approve/reject → prepare → release → complete — MUST have an end-to-end test. *(v3.0.0: the Admin completes a released request; the Employee does not confirm receipt — ADR-0007, BEN-45.)*
 
 ### VII. Typed Contracts
 

@@ -6,6 +6,8 @@ Significant HOW decisions for OSRS. New ADRs get the next number and `Accepted` 
 |----|--------|
 | [0001](0001-spa-rest-api.md) | SPA consumes REST owned by the backend team |
 | [0002](0002-deduct-inventory-on-submit.md) | Deduct inventory on submit |
-| [0003](0003-three-role-model.md) | Separate Approver and Supply Admin |
+| [0003](0003-three-role-model.md) | Separate Approver and Supply Admin — **superseded by 0005** |
+| [0004](0004-client-routing.md) | Client-side routing for the SPA |
+| [0005](0005-google-sign-in-against-the-published-contract.md) | Google sign-in against the published contract |
 
 Template: context, decision, consequences, alternatives. See `ARCHITECT.md` §13.

@@ -43,7 +43,9 @@ The design system's component gallery is not part of the application. It stays
 reachable in development at **`/__gallery`** (and the fidelity harness at
 `/__compare`), and ships in no production build.
 
-Set `VITE_API_ORIGIN` when an API host exists (see `quickstart.md`).
+Set `VITE_GOOGLE_CLIENT_ID` to run against the published contract instead of the seeded
+demo users; `VITE_API_URL` is for deployed builds only, since development proxies
+`/api` through the dev server. See `specs/001-office-supplies-mvp/quickstart.md`.
 
 ## Stack
 

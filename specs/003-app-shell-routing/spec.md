@@ -91,7 +91,7 @@ Every signed-in screen carries the same top bar: the product lockup, the role's 
 1. **Given** any signed-in destination, **When** it renders, **Then** the top bar is present with the lockup, role navigation, and the account cluster naming the signed-in user and their role.
 2. **Given** a signed-in Employee, **When** the shell renders, **Then** the request-list marker and its count badge appear; for other roles they do not.
 3. **Given** an Employee whose request list changes, **When** items are added or removed, **Then** the count badge reflects the new total without a reload.
-4. **Given** any signed-in user, **When** the shell renders, **Then** their avatar shows their initials on a flat colour, never a photograph.
+4. **Given** any signed-in user, **When** the shell renders, **Then** their avatar shows the profile photograph the backend supplies, and their initials on a flat colour whenever there is no photograph or it fails to load. *(Amended 2026-09-22; originally "never a photograph".)*
 5. **Given** the sign-in screen, **When** it renders, **Then** no top bar is present.
 
 ---
@@ -277,6 +277,15 @@ No constitution version bump is required — no principle changes. `docs/product
 None dismissed. One consistency defect (CHK007, not-found versus record-existence leakage) and three gaps (CHK001, CHK002, CHK003) were found and all four resolved into requirements above.
 
 ## Clarifications
+
+### Session 2026-09-22 — Amendment
+
+Raised by BEN-96, whose requirements list the avatar URL among the fields of
+the returned user object that must populate authenticated state, and requested
+by the project owner. Constitution I requires it recorded here rather than
+applied silently.
+
+- Q: Story 5 AC4 says the avatar is initials on a flat colour, "never a photograph". The backend returns each user's Google profile image as `avatarUrl`. Use it? → A: **Yes.** The photograph is shown when the contract supplies one. Initials on a flat colour remain the design's own rendering and the fallback whenever the URL is absent, is not an absolute `https` URL, or fails to load — so a missing or blocked image never leaves an empty circle or a broken-image icon. Seeded demo users have no photograph and keep their initials. Logged as a design addition for ratification in `docs/design-system/additions.md`.
 
 ### Session 2026-09-15 — Amendment
 
