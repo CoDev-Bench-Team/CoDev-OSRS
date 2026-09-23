@@ -4,7 +4,7 @@ import { NotFoundScreen } from '../shared/ui';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { RequireAccess } from '../features/auth/RequireAccess';
 import { ProfilePage } from '../features/profile/ProfilePage';
-import { MyRequestsPage } from '../features/requests/list/MyRequestsPage';
+import { MyRequestsPage } from '../features/requests/history/MyRequestsPage';
 import { useSession } from '../features/auth/session-context';
 import { QueuePage } from '../features/requests/queue/QueuePage';
 import { AppLayout } from './AppLayout';
