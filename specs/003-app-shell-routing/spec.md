@@ -83,7 +83,7 @@ An Employee who types the inventory address, or an Admin who opens an Employee's
 
 1. **Given** a signed-in Employee, **When** they open the inventory-management address directly, **Then** access is refused and they are not shown inventory controls.
 2. **Given** a signed-in Admin, **When** they open the My Requests address directly, **Then** access is refused.
-3. **Given** a signed-in Employee, **When** they open a request detail belonging to a different employee, **Then** the response is identical to the one for a request that does not exist.
+3. **Given** a signed-in Employee, **When** they open any request detail address — their own, another employee's, or one that does not exist — **Then** the response is identical in all three cases. *(Amended 2026-09-23: the Employee's detail is a side panel on My Requests, so the address refuses every id alike.)*
 4. **Given** a signed-in Admin, **When** they open any request detail by address, **Then** it renders regardless of the request's current status; the actions offered on it remain gated by status and role.
 5. **Given** any refusal, **When** it occurs, **Then** the user sees an explanation and a route back to a screen they may use — not a blank page or a silent redirect loop.
 6. **Given** the shell's guards, **When** any protected destination is reached, **Then** authorization is checked against the signed-in role every time, not only on first entry.
@@ -153,7 +153,7 @@ The shell remains usable from a phone up to the 1440px design width, carrying fo
 
 - A user's role changes while they are signed in and viewing a screen their new role may not use → navigation and access re-evaluate rather than stranding them on a forbidden screen.
 - Two tabs open, the user signs out in one → the other does not continue to act as signed in.
-- A deep link to a request that does not exist, versus one that exists but belongs to someone else → both produce the same response, so request identifiers cannot be enumerated (FR-012a), while a mistyped address still produces a diagnosable not-found (FR-012).
+- A deep link to a request that does not exist, versus one that exists but belongs to someone else → both produce the same response (for an Employee, the role refusal the address gives every id since 2026-09-23), so request identifiers cannot be enumerated (FR-012a), while a mistyped address still produces a diagnosable not-found (FR-012).
 - The address for a destination whose feature has not shipped yet → renders a placeholder inside the shell, not a not-found screen.
 - A user signs in on a device where a previous session was left behind → the stale session is not silently reused.
 - Navigation labels grow long (a localized or renamed queue) → the bar reflows rather than overlapping the account cluster.
@@ -173,7 +173,7 @@ The shell remains usable from a phone up to the 1440px design width, carrying fo
 - **FR-006a**: Profile MUST be reachable from the account cluster rather than from navigation.
 - **FR-007**: Each role MUST have a defined landing destination reached on sign-in: Employee the catalog, Admin the Requests Queue. *(Amended 2026-09-24.)*
 - **FR-008**: Every destination MUST have a stable, shareable address that survives reload and supports browser back and forward.
-- **FR-009**: Request detail MUST be addressable by request identifier. An Employee MUST reach only their own requests; an Admin MUST reach any request regardless of status, with the actions offered on it still gated by status and role.
+- **FR-009**: Request detail MUST be addressable by request identifier for an Admin, who MUST reach any request regardless of status, with the actions offered on it still gated by status and role. An Employee's request detail is a side panel on My Requests with no address of its own. *(Amended 2026-09-23, BEN-45.)*
 - **FR-010**: Every protected destination MUST authorize against the signed-in role on every entry, independently of whether its navigation item is visible.
 - **FR-011**: A refused destination MUST produce an explanation and a route to a permitted screen — never a blank screen, a silent redirect loop, or a partially rendered forbidden screen.
 - **FR-012**: An address matching no destination MUST produce a not-found screen inside the shell, distinguishable from a refusal, so that a mistyped address is diagnosable.
@@ -204,8 +204,8 @@ The complete set of addressable destinations and the roles permitted to reach ea
 |-------------|----------|-------|-------|
 | Sign-in | signed-out only | signed-out only | No shell chrome |
 | Catalog | yes | yes (by address; not in the Admin bar) | Only an Employee is offered the action that starts a request |
-| My requests | yes | no | The signed-in Employee's own history |
-| Request detail | own only | any request | Actions gated by status and role; FR-012a applies |
+| My requests | yes | no | The signed-in Employee's own history. Their request detail is a side panel here, not an address (amended 2026-09-23) |
+| Request detail | no | any request | Actions gated by status and role; FR-012a applies. Replaced by the Admin review panel in BEN-47 |
 | Requests Queue | no | yes | Admin landing destination — review, approve, and fulfill (replaces the pending-requests and fulfillment queues) |
 | Assets | no | yes | Added 2026-09-24 |
 | Inventory | no | yes | |
@@ -300,6 +300,12 @@ gates cite this spec's FR-006, FR-007, FR-009, D1, D6 and SC-001.
 
 - Q: Constitution 3.0.0 retires Approver and Supply Admin for one Admin. What navigation and landing does the shell carry? → A: **The drawn bars.** Employee: Catalog · My Requests, landing on the catalog. Admin: Requests Queue · Assets · Inventory · History, landing on `/queue`. `/approvals` and `/fulfillment` are removed; `/assets` is added as a placeholder.
 - Q: The drawn Admin bar has no Catalog, which Session 2026-09-15 overrode. Keep the override? → A: **No.** The override rested on D1, which is withdrawn. The Admin may still open the catalog by address (`ARCHITECT.md` §7), but the bar does not offer it.
+
+### Session 2026-09-23 — Amendment
+
+Raised by Linear BEN-45 (re-scoped 2026-09-22) and decided by the project owner.
+
+- Q: The design draws the Employee's request detail as a side panel over My Requests, with no address of its own. Keep `/requests/:id` for the Employee? → A: **No.** The Employee's detail is a panel on `/requests` that opens from *View details* and closes without navigating. `/requests/:id` is removed from the Employee's destination set; the Admin keeps it until BEN-47 replaces it with the review panel. An Employee now gets the same role refusal for every id, so FR-012a holds trivially (FR-009, Story 4 AC3).
 
 ### Session 2026-09-15 — Amendment
 
