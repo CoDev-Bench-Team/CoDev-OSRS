@@ -395,16 +395,19 @@ reasons. **Flagged to the designer** to draw it.
 Per FR-011a, a source value that fails a threshold is reported rather than
 silently changed.
 
-### 4.1 Two contrast pairings fail WCAG 2.1 AA
+### 4.1 Contrast pairings that fail WCAG 2.1 AA
 
-Measured across 15 key pairings; 13 pass.
+Measured across 15 key pairings; 13 pass. The last two rows were added
+2026-09-25 for the Catalog's `Inventory Status` pill, and both fail.
 
 | Pairing | Ratio | Needs | Note |
 |---------|-------|-------|------|
 | Muted / caption — `--osrs-gray-400` on white, 11px | **3.24** | 4.5 | Clear fail. |
 | Eyebrow and ALL-CAPS table heading — `--osrs-gray-500` on `--osrs-surface-table-header`, 11px bold | **4.44** | 4.5 | Marginal. One step darker clears it. |
+| Catalog `Low in Stock` pill — `#b4740e` on its own 10% tint over white, 11.5px bold (added 2026-09-25) | **3.44** | 4.5 | **Fails.** The file's `Status/Pending Approval` style. The vendored `--osrs-amber-700` `#a15c00` on the same tint is 4.63 and would pass. |
+| Catalog `Available` pill — `#2e7e47` on its 10% tint over white, 11.5px bold | **4.40** | 4.5 | **Fails, marginally.** The same pair the vendored `available` chip already used; `Out of Stock` (`#c81e1e` on its tint) is 4.87 and passes. |
 
-Both are unchanged in the code.
+All are unchanged in the code.
 
 ### 4.1b Search placeholder colour
 

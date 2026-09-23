@@ -72,7 +72,7 @@ other seeded role and confirm the action is absent.
 **Acceptance Scenarios**:
 
 1. **Given** an Employee and an item with on-hand quantity ≥ 1, **When** they view the card, **Then** an add-to-request-list action is present.
-2. **Given** any non-Employee role, **When** they view the same card, **Then** the add action is absent and the rest of the card is unchanged.
+2. **Given** any non-Employee role, **When** they view the same card, **Then** the add action and its quantity stepper are absent and the rest of the card is unchanged. *(Amended 2026-09-25: a stepper with no action to count toward is removed with it.)*
 3. **Given** an Employee and an item with on-hand quantity 0, **When** they view the card, **Then** the add action is present but disabled and labelled as out of stock.
 4. **Given** an Employee on an item with on-hand quantity N, **When** they raise the requested quantity, **Then** it cannot exceed N and cannot fall below 1.
 5. **Given** an Employee adds an item, **When** the action completes, **Then** the item is recorded in their pending request list and the catalog's on-hand quantity is unchanged.
@@ -221,9 +221,12 @@ published contract, resolved in the contract's favour as BEN-42 directs.
   category enum says `Wifi`. The SPA renders the contract's value. **Flagged.**
 - **D7 — `Ortigas`.** The contract's `location` enum now says `Ortigas`,
   matching the design, so the catalog's office list does too. The shell's
-  `Office` type (`src/features/auth/types.ts`) still says `Pasig`; a user whose
-  home office is `Pasig` falls back to the first office. Contract conflict 2 in
-  `specs/001-office-supplies-mvp/contracts/README.md` needs closing by its owner.
+  `Office` type (`src/features/auth/types.ts`) still says `Pasig`. A user whose
+  home office is `Pasig`, or who has none, opens on the first office and is
+  offered no request action anywhere: the gate fails closed rather than opening
+  every office (FR-014). Contract conflict 2 in
+  `specs/001-office-supplies-mvp/contracts/README.md` is closed on the contract
+  side as of 2026-09-25; the shell's type still has to follow.
 - **D8 — Monitor spec rows.** FR-002a gives no rule for Monitor (no Add Asset
   frame draws it). The card draws a model for it, so it is treated like
   Headset: Model only.

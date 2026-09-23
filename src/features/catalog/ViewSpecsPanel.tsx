@@ -14,7 +14,11 @@ import type { CatalogItem, CatalogOffice } from './types';
  *  Rows are the item's category-dependent specs only (spec 005 FR-015), then
  *  its description and the office the availability was read for. The footer's
  *  action is the card's own — same label, same gate, same quantity — so the
- *  two can never disagree about what may be requested. */
+ *  two can never disagree about what may be requested.
+ *
+ *  Adding does not close the panel. Every close goes through `SidePanel`'s own
+ *  exit (✕, Esc, the scrim), which has no programmatic trigger; unmounting from
+ *  here would skip it. The shell's request-list badge records the add. */
 export function ViewSpecsPanel({
   item,
   office,
@@ -45,10 +49,7 @@ export function ViewSpecsPanel({
                the card's, so the panel's disabled action reads the same. */
             className="w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-brand-primary"
             disabled={!action.enabled}
-            onClick={() => {
-              onAdd?.();
-              onClose();
-            }}
+            onClick={onAdd}
           >
             {action.label}
           </Button>

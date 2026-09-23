@@ -67,6 +67,9 @@ and the one justified `SupplyCard` exception recorded in the plan.
 - [x] T034 2026-09-24 export: `InventoryStatus` (`Available` / `Low in Stock` / `Out of Stock`) on the 8px chip; View Specs H2, values, office tag; chip label colour — `src/shared/ui/status.ts`, `StatusPill.tsx`, `SupplyCard.tsx`, `src/styles/theme.css`, `ViewSpecsPanel.tsx`; recorded in `docs/design-system/drift-2026-09-24.md` §9
 
 - [x] T035 Rebased on `dev` after spec 004 merged: category chips use the shared `FilterChip` (same design chip, active in `brand-primary-alt`); the local `CategoryChip` is deleted — `CatalogPage.tsx`
+- [x] T036 PR #35 review: the request gate fails closed for an Employee with no recognised home office; View Specs stays open after an add so every close runs `SidePanel`'s exit; Story 3 AC2 amended for the removed stepper; `contracts/README.md` re-read against the live Swagger — `request-action.ts`, `ViewSpecsPanel.tsx`, `spec.md`, `specs/001-office-supplies-mvp/contracts/README.md`
+- [x] T037 Second review: `scripts/check-catalog.mjs` registered in `verify` (gate, fail-closed branch, office re-read, chips and search, View Specs rows, Admin read-only, failure and empty states); the four new tokens documented in `token-map.md`, and the `Low in Stock` contrast failure flagged in `additions.md` §4.1; `requestAction` takes `Role`; the draft seam records the merge-on-add rule for Parent C
+- [x] T038 Rebased on `dev` after #38 (BEN-45) merged: `SidePanel` taken from `dev` unchanged; `/requests` keeps #38's `MyRequestsPage` beside `/catalog`'s `CatalogPage`; both the catalog and request-panel gates in `verify`; plan's SidePanel and Verification sections updated
 
 ## Dependencies
 

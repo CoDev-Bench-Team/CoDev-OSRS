@@ -83,7 +83,7 @@ export function SupplyCard({
      44px is supplied by an invisible pseudo-element instead and the drawn
      geometry holds at every width. */
   const stepBtn =
-    'hit-area flex size-22 cursor-pointer items-center justify-center rounded-4 border-none bg-transparent p-0 pb-2 font-sans text-14 font-semibold leading-tight text-osrs-stone-600 transition-osrs hover:text-osrs-stone-900';
+    'hit-area flex size-22 cursor-pointer items-center justify-center rounded-4 border-none bg-transparent p-0 pb-2 font-sans text-14 font-semibold leading-tight text-osrs-stone-600 transition-osrs hover:text-osrs-stone-900 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-osrs-stone-600';
 
   return (
     <div

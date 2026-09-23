@@ -32,10 +32,12 @@
   --spacing: initial;
   --spacing-*: initial;
 
-  /* Colour — palette and semantic aliases — 80.
+  /* Colour — palette and semantic aliases — 99.
      Five added 2026-09-15 from the `.fig` re-export: the purple pair that
      `Completed` now carries, the slate tint `Cancelled` sits on, and the two
-     status aliases for each. See docs/design-system/drift-2026-09-15.md. */
+     status aliases for each. See docs/design-system/drift-2026-09-15.md.
+     Four added 2026-09-25 for the Catalog's `Low in Stock` pill — see
+     docs/design-system/token-map.md, Additions. */
   --color-backdrop: rgba(0,0,0,0.5);
   --color-black: var(--color-osrs-black);
   --color-brand-on-primary: var(--color-osrs-white);

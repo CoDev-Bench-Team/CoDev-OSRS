@@ -1,4 +1,4 @@
-import { Notice } from '../../shared/ui';
+import { Button, Notice } from '../../shared/ui';
 import { CatalogItemCard } from './CatalogItemCard';
 import type { CatalogItem, CatalogOffice } from './types';
 
@@ -28,15 +28,7 @@ export function CatalogGrid({
         eyebrow="No matches"
         title="No supplies match these filters"
         body="Try a different search term, or clear the filters to see the whole catalog."
-        actions={
-          <button
-            type="button"
-            onClick={onClearFilters}
-            className="hit-area inline-flex h-control-height-md cursor-pointer items-center rounded-10 border-none bg-brand-primary px-18 type-ui-bold text-brand-on-primary ring-brand transition-osrs hover:bg-osrs-red-550"
-          >
-            Clear filters
-          </button>
-        }
+        actions={<Button onClick={onClearFilters}>Clear filters</Button>}
       />
     );
   }

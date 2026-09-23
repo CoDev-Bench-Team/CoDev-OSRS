@@ -131,10 +131,16 @@ Shared touch — kept to the minimum BEN-42 allows:
 
 ### Shared `SidePanel` (2026-09-25)
 
-`src/shared/ui/overlay/SidePanel.tsx`, its export and its slide/fade utilities
-in `src/styles/utilities.css` are taken **byte-for-byte** from PR #38 (BEN-45),
-not re-implemented, so the two screens share one sheet and the two branches
-merge without a real conflict. Whichever lands second sees identical content.
+The View Specs panel is built on `src/shared/ui/overlay/SidePanel.tsx`, the
+sheet My Requests uses. It is not re-implemented. It was first copied from PR #38
+(BEN-45) while that PR was open. #38 merged on 2026-09-25 with a later revision
+(a named exit backstop and a stated `onClose` contract), and the rebase took
+`dev`'s file unchanged. This feature now adds nothing to the component, its
+export or its utilities.
+
+`ViewSpecsPanel` meets that contract. Its `onClose` unmounts the panel
+(`setSpecsOpen(false)` in `CatalogItemCard`), and it never closes itself, so
+every close runs the sheet's own exit and focus return.
 
 ### One justified exception to folder ownership
 
@@ -168,8 +174,9 @@ error code appears in this feature.
 | Lint | `npm run lint` |
 | Build | `npm run build` |
 | Full gates | `npm run verify` (needs a dev server; see `scripts/verify.mjs`) |
-| Stock derivation | Exercised at all three boundaries incl. `onHand === lowQtyAlert` |
-| Role gating | Signed in as each seeded role |
+| Catalog gate | `scripts/check-catalog.mjs`, run by `verify` as `catalog (spec 005)`: the request gate including its fail-closed branch, the per-office re-read, chips and search, View Specs rows by category, Admin read-only, failure and empty states |
+| Stock derivation | All three bands, including `available === lowQtyAlert` (Dell Monitor, 4 of 4, reads `Low in Stock`), asserted by the catalog gate |
+| Role gating | Asserted by the catalog gate for the seeded Employee and Admin, and for an Employee with no recognised home office |
 
 ## Implementation Sequence
 
