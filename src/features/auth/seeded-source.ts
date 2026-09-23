@@ -40,7 +40,11 @@ const LIFETIME_MS = 12 * 60 * 60 * 1000;
  *  Maya and Ethan are the design file's two identities, with its avatar colours.
  *  The Approver is a third identity the source never draws — the file merges
  *  Approver and Supply Admin into one "Admin" — so her avatar colour is an
- *  addition, logged in docs/design-system/additions.md. */
+ *  addition, logged in docs/design-system/additions.md.
+ *
+ *  Offices: Maya's Davao is the design file's. Samantha's and Ethan's are
+ *  non-production placeholders with no design source (constitution IX), kept
+ *  distinct so each profile is tell-apart at a glance (spec 006 plan). */
 const SEEDED_USERS: Record<string, User> = {
   'maya.santos': {
     id: 'maya.santos',
@@ -49,6 +53,7 @@ const SEEDED_USERS: Record<string, User> = {
     initials: 'MS',
     role: 'employee',
     avatarColor: 'var(--color-osrs-avatar-orange)',
+    office: 'Davao',
   },
   'samantha.reyes': {
     id: 'samantha.reyes',
@@ -57,6 +62,7 @@ const SEEDED_USERS: Record<string, User> = {
     initials: 'SR',
     role: 'approver',
     avatarColor: 'var(--color-osrs-blue-600)',
+    office: 'Makati',
   },
   'ethan.cruz': {
     id: 'ethan.cruz',
@@ -65,6 +71,7 @@ const SEEDED_USERS: Record<string, User> = {
     initials: 'EC',
     role: 'supply_admin',
     avatarColor: 'var(--color-osrs-avatar-green)',
+    office: 'Cebu',
   },
 };
 

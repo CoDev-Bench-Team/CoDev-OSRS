@@ -1,6 +1,7 @@
-/** Every gate in one place — spec 002's design-system checks and spec 003's
- *  application-shell checks. Needs `npm run dev`; headless Chrome is started
- *  for you. Set OSRS_DEV_ORIGIN when the dev server took a port other than
+/** Every gate in one place — spec 002's design-system checks, spec 003's
+ *  application-shell checks and spec 006's Profile checks. Order matters:
+ *  `check-profile-build` scans `dist/`, so it runs after `build`. Needs
+ *  `npm run dev`; headless Chrome is started for you. Set OSRS_DEV_ORIGIN when the dev server took a port other than
  *  5173 (a worktree usually does). */
 import { spawnSync } from 'node:child_process';
 const steps = [
@@ -11,7 +12,9 @@ const steps = [
   ['pixels (FR-005a)', 'node', ['scripts/compare-pixels.mjs']],
   ['a11y + responsive', 'node', ['scripts/check-a11y-responsive.mjs']],
   ['shell routing + guards', 'node', ['scripts/check-shell.mjs']],
+  ['profile (spec 006)', 'node', ['scripts/check-profile.mjs']],
   ['build', 'npm', ['run', 'build']],
+  ['profile production bundle (FR-010)', 'node', ['scripts/check-profile-build.mjs']],
 ];
 let failed = 0;
 for (const [name, cmd, args] of steps) {

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { NotFoundScreen } from '../shared/ui';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { RequireAccess } from '../features/auth/RequireAccess';
+import { ProfilePage } from '../features/profile/ProfilePage';
 import { useSession } from '../features/auth/session-context';
 import { AppLayout } from './AppLayout';
 import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './destinations';
@@ -13,7 +14,6 @@ import {
   FulfillmentPlaceholder,
   HistoryPlaceholder,
   InventoryPlaceholder,
-  ProfilePlaceholder,
   RequestDetailPlaceholder,
   RequestsPlaceholder,
 } from './placeholders';
@@ -79,7 +79,7 @@ export function AppRoutes() {
         <Route path={DESTINATIONS.fulfillment.path} element={guarded('fulfillment', <FulfillmentPlaceholder />)} />
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />
         <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />
-        <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePlaceholder />)} />
+        <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePage />)} />
         <Route path="*" element={<NotFoundRoute />} />
       </Route>
     </Routes>

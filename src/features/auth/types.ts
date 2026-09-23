@@ -11,6 +11,10 @@ export type Role = 'employee' | 'approver' | 'supply_admin';
 
 export const ROLES: readonly Role[] = ['employee', 'approver', 'supply_admin'];
 
+/** A home office, in the published contract's own vocabulary — the current
+ *  user's `location` enum, transcribed rather than invented (spec 006 D3). */
+export type Office = 'Cebu' | 'Bacolod' | 'Makati' | 'Pasig' | 'Davao';
+
 /** What the account cluster needs to name the signed-in person, and nothing
  *  more. `initials` is carried rather than derived: a name is not reliably two
  *  words, and the design system's Avatar never renders a photograph. */
@@ -22,6 +26,10 @@ export type User = {
   role: Role;
   /** A token colour for the avatar. Optional — Avatar has its own default. */
   avatarColor?: string;
+  /** The person's home office, shown on Profile. Optional: a user without one
+   *  renders their email alone (spec 006 Edge Cases). A contract-backed source
+   *  maps the contract's `location` into it. */
+  office?: Office;
 };
 
 export type Session = {

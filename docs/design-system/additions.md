@@ -335,6 +335,23 @@ demo accounts, so it disappears by itself the day a real one replaces it.
 
 ---
 
+## 3e. Profile (spec 006)
+
+`05 - Profile` draws one Employee's profile with three assigned units. Everything
+below is ours.
+
+| Addition | What was decided | Basis |
+|----------|------------------|-------|
+| **Approver and Supply Admin profile** | The Employee layout, unchanged. Nothing on the page varies by role. | Only the Employee's is drawn (spec 006 D2). |
+| **`Currently Assigned` hidden with no source** | When the backend exposes no assigned equipment, which is the case today, the section is not rendered at all: no heading and no gap. | The list reads a per-unit register the MVP does not build (spec 006 D1, FR-007c). An empty state would claim "nothing assigned" when the truth is "unknown". |
+| **Empty state** | A card at half the grid's width: `Nothing is assigned to you` (subhead) over `Equipment issued to you will appear here` (body, secondary). Shown only when a source answers with no items. | Not drawn. Uses the assigned card's own treatment, so it reads as the list's absence rather than a notice. |
+| **Loading and failure** | Inline under the heading. `Loading assigned equipment` (body, secondary, `role="status"`), and `Couldn't load your assigned equipment` (body, rejected ink, `role="alert"`) with no retry control. The identity block always renders. | Not drawn. The shell's `LoadingState` and `Notice` are full-screen surfaces, which would bury the identity block for a failure in one section. |
+| **Missing assigned date** | The date line reads `Assignment date not available` (body, secondary) when the backend sends no date or one that does not format. The line is never dropped, so every card is the same height. Added 2026-09-23 after design review. | Not drawn; every drawn card has a date. Omitting the line left a shorter card beside full ones. The copy states the absence and invents no date. |
+| **Identity line office** | `email • <Office> Office`, falling back to the email alone. Office comes from the session. The seeded Approver's `Makati` and Supply Admin's `Cebu` are placeholders; only Maya's `Davao` is from the file. | The frame draws `mayas@codev.com • Davao Office` only. |
+| **Identity and section-title sizes from the frame** | Name 24px medium; `Currently Assigned` 24px display medium; two-column grid of cards with 14px/20px gaps inside 1222px. | The UI kit's JSX carries the file's cached 13px / 14px sizes and a single 700px column, which drift §9 records as wrong. The rendered frame wins. |
+
+---
+
 ## 4. Defects found in the source — flagged, not fixed
 
 Per FR-011a, a source value that fails a threshold is reported rather than
@@ -431,3 +448,7 @@ the mark red.
     — the new `Cancelled` status (which needs a constitution amendment, not a
     design decision), `Completed`'s new purple, the notification bell, and how
     Profile is reached now that it is not a navigation item.
+11. Ratify Profile in §3e: the reuse for Approver and Supply Admin, and the
+    hidden / empty / loading / failure treatments of `Currently Assigned`, and
+    the `Assignment date not available` line for a card with no date. Decide
+    whether the per-unit register behind the drawn asset tags is ever in scope.

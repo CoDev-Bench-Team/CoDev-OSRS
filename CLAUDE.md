@@ -26,7 +26,7 @@ Do not implement from chat alone. Spec → plan → tasks → code.
 2. **Plan** — `create-plan` → `plan.md` (do not author a REST `api.md`)
 3. **Tasks** — `create-tasks` → `tasks.md`
 4. **Execute** — `execute` (organize `specs/<slug>/`, implement, `run-checks`)
-5. **PR** — `create-pr` (base `main`)
+5. **PR** — `create-pr` (base `dev`, the integration branch — not `main`)
 6. **Review** — `code-review` and/or `code-reviewer`
 
 Skill files: `.agents/skills/`. See that folder’s README for the full pipeline.
