@@ -380,9 +380,11 @@ below is ours.
 | **Stand-in My Requests table** | The `04 - My Requests` frame's five columns over the seeded source, so the panel has a *View details* to open from. Replaced by BEN-44. | BEN-44 had not shipped when BEN-45 was built. |
 | **REQ-2026-1838** | The For Delivery row's id. | The frame gives REQ-2026-1842 to both the Ready for Pickup and the For Delivery row; an id must be unique. **Flagged to the designer.** |
 
-**Not built:** the cancellation reason on a cancelled request. `04.2 - Cancelled`
-does not show it, and spec 001's Request entity stores it — **flagged to the
-designer** as a likely omission.
+**Reason read-back.** A cancelled request shows its reason under *Reason for
+cancellation*, and a rejected one under *Reason for rejection*, in the same card
+as *Note to Approver*, above the timeline. `04.2 - Cancelled` does not draw it;
+Linear BEN-67 and BEN-70 ask for it, and spec 001's Request entity stores both
+reasons. **Flagged to the designer** to draw it.
 
 ## 4. Defects found in the source — flagged, not fixed
 

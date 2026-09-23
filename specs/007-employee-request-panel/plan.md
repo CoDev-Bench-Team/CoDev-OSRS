@@ -43,7 +43,7 @@ Replace the `/requests` placeholder with a minimal My Requests table, and open a
 Feature-local read model, not a backend contract:
 
 - `RequestLine`: `name` (for the list summary), `description` (for the panel), `qty`.
-- `EmployeeRequest`: `id`, `submittedAt`, `lines`, optional `noteToApprover`, `status`, optional `handover`, optional `approvedAt` / `releasedAt` / `completedAt` / `rejectedAt`, optional `cancellation: { reason, at }`.
+- `EmployeeRequest`: `id`, `submittedAt`, `lines`, optional `noteToApprover`, `status`, optional `handover`, optional `approvedAt` / `releasedAt` / `completedAt`, optional `rejection: { reason, at }` and `cancellation: { reason, at }`.
 - `CancelResult`: `{ ok: true, request }` or `{ ok: false, refusal: 'status-changed' | 'reason-required' | 'unavailable' }`.
 - `EmployeeRequestSource`: `list(user)` returns only that Employee's requests; `cancel(user, id, reason)`.
 
@@ -62,9 +62,9 @@ The backend contract is linked from `specs/001-office-supplies-mvp/contracts/REA
 **Feature**
 
 - `src/features/requests/detail/request-detail-types.ts`: the read model and source interface above.
-- `src/features/requests/detail/seeded-employee-request-source.ts`: Maya's six requests from `04 - My Requests` (1847 Pending Approval, 1805 Approved, 1842 Ready for Pickup, 1838 For Delivery, 1760 Rejected, 1733 Completed), with items and note from `04.1`. `cancel` refuses anything not `Pending Approval`. Stock restore is the backend's job, and the file says so.
+- `src/features/requests/detail/seeded-employee-request-source.ts`: Maya's six requests from `04 - My Requests` (1847 Pending Approval, 1805 Approved, 1842 Ready for Pickup, 1838 For Delivery, 1760 Rejected, 1733 Completed), with items and note from `04.1`. The Rejected row carries a placeholder reason, since the frame draws none. `cancel` refuses anything outside the signed-in Employee's own requests, and anything not `Pending Approval`. Stock restore is the backend's job, and the file says so.
 - `src/features/requests/detail/request-timeline.ts`: a pure mapping from request to timeline nodes (D5).
-- `src/features/requests/detail/RequestDetailPanel.tsx`: header and pill, Items Requested, Note to Approver, Status timeline, and the cancel form. No confirm-receipt control.
+- `src/features/requests/detail/RequestDetailPanel.tsx`: header and pill, Items Requested, Note to Approver, the stop reason (*Reason for cancellation* / *Reason for rejection*) in the same card style, Status timeline, and the cancel form. No confirm-receipt control.
 - `src/features/requests/history/MyRequestsPage.tsx`: the D1 stand-in. `PageHeader`, the five drawn columns, loading/empty/failure states, and the open panel.
 - `src/features/requests/format.ts`: date formatting and the item summary ("Laptop, Keyboard + 1 more"). The summary copies BEN-46's helper; dedupe once #36 merges.
 
@@ -120,7 +120,7 @@ scripts/check-request-detail.mjs
 
 - `npm run dev`, then `npm run verify`: typecheck, lint, utilities/adherence, fidelity, pixels, a11y and responsive, shell, request detail, and build. Needs Node ≥ 22, because `scripts/cdp.mjs` uses the global `WebSocket`.
 - `scripts/check-shell.mjs`: an Employee on `/requests/:id` gets the role refusal for owned, unowned and missing ids; Approver deep links are unchanged.
-- `scripts/check-request-detail.mjs` proves the five acceptance criteria: open and close without navigating; Cancel Request only on Pending Approval; empty and whitespace reasons refused; a valid reason gives Cancelled in the panel pill, timeline and row pill; no receipt control in any of the six seeded states.
+- `scripts/check-request-detail.mjs` proves the five acceptance criteria: open and close without navigating; Cancel Request only on Pending Approval; empty and whitespace reasons refused; a valid reason gives Cancelled in the panel pill, timeline and row pill, and is read back; only the Rejected row shows a rejection reason; no receipt control in any of the six seeded states.
 - Manual: sign in as Maya and compare with Figma `04.1`, `04.2` and Cancelled at 1440px. Sign in as the Approver and confirm `/requests/REQ-2026-1847` still renders.
 
 No unit-test runner exists in this repository, so this feature adds no framework. The timeline mapping is a pure function, ready for unit coverage later.
@@ -128,7 +128,7 @@ No unit-test runner exists in this repository, so this feature adds no framework
 ## Requirement Coverage
 
 - FR-001, FR-002: `SidePanel` and component state in `MyRequestsPage`.
-- FR-003, FR-004: `RequestDetailPanel` and `request-timeline.ts`.
+- FR-003, FR-003a, FR-004: `RequestDetailPanel` and `request-timeline.ts`.
 - FR-005 to FR-008: the cancel form in `RequestDetailPanel` and the seeded source's `cancel`.
 - FR-009: no such control exists; checked by `check-request-detail.mjs`.
 - FR-010: `destinations.ts`; checked by `check-shell.mjs`.
@@ -136,7 +136,7 @@ No unit-test runner exists in this repository, so this feature adds no framework
 - FR-012: adherence lint.
 - FR-013, FR-014: the source seam; no HTTP, no inventory.
 
-All 14 requirements are covered.
+All 15 requirements are covered.
 
 ## Constitution Compliance
 
@@ -172,4 +172,5 @@ All 14 requirements are covered.
 ## Known Risks
 
 - Constitution 3.0.0 IV lands with PR #33. If #38 merges first, `dev` briefly says the owner's reason is optional while the code requires it. The spec 001 amendment already on this branch is the tie-breaker.
-- The cancellation reason is stored but not shown on a cancelled request, pending the designer.
+- The stop-reason card is not drawn in Figma. It reuses the Note to Approver card and is flagged to the designer.
+- E6 (BEN-71) says "PR base `main`". PR #38 targets `dev`, like every other P2 page PR (#35, #36, #37).

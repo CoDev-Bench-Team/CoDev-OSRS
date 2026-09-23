@@ -133,6 +133,11 @@ for (const row of initial) {
     `${row.id}: no confirm-receipt control or copy`,
   );
   check(p.timeline.length > 0 && p.timeline[0][1] === 'Submitted', `${row.id}: the status timeline starts at Submitted`);
+  // BEN-67: a stopped request reads back its reason; no other state shows one.
+  check(
+    /Reason for rejection/.test(p.text) === (row.pill === 'Rejected') && !/Reason for cancellation/.test(p.text),
+    `${row.id}: ${row.pill === 'Rejected' ? 'reads back its rejection reason' : 'shows no stop reason'}`,
+  );
   await cdp.evaluate(() => document.querySelector('[role="dialog"] button[aria-label="Close"]').click());
   await closed();
 }
@@ -175,6 +180,10 @@ check(
   JSON.stringify(p.timeline),
 );
 check(!p.buttons.includes('Cancel Request'), 'Cancel Request is gone once cancelled');
+check(
+  p.text.includes('Reason for cancellation') && p.text.includes('duplicate request'),
+  'the stored reason is read back under Reason for cancellation (BEN-70)',
+);
 const after = await cdp.evaluate(rows);
 check(after.find((r) => r.id === 'REQ-2026-1847')?.pill === 'Cancelled', 'the row’s pill reads Cancelled');
 check((await cdp.evaluate(() => location.pathname)) === '/requests', 'and nothing navigated');

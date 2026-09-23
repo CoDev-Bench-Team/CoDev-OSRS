@@ -65,7 +65,8 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
       submittedAt: '2026-08-14T03:05:00Z',
       lines: [{ name: 'Laptop Stand', description: 'Laptop Stand - Rain Design mStand', qty: 1 }],
       status: 'Rejected',
-      rejectedAt: '2026-08-15T01:20:00Z',
+      // The frame draws no reason; this one is placeholder copy.
+      rejection: { reason: 'A laptop stand was issued to you in June', at: '2026-08-15T01:20:00Z' },
     },
     {
       id: 'REQ-2026-1733',

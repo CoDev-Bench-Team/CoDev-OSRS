@@ -28,7 +28,7 @@ export function requestTimeline(request: EmployeeRequest): TimelineNode[] {
     return [submitted, { label: 'Cancelled', state: 'cancelled', when: formatDateTime(request.cancellation?.at) }];
   }
   if (request.status === 'Rejected') {
-    return [submitted, { label: 'Rejected', state: 'rejected', when: formatDateTime(request.rejectedAt) }];
+    return [submitted, { label: 'Rejected', state: 'rejected', when: formatDateTime(request.rejection?.at) }];
   }
 
   const reached = (yes: boolean): TimelineNodeState => (yes ? 'reached' : 'pending');

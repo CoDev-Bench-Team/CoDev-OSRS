@@ -44,6 +44,7 @@ Linear lifecycle: BEN-65 (E0, spec) → BEN-66 (E1, plan/tasks) → BEN-67 (E2, 
 - [x] T019 [BEN-71] Request-detail gate for acceptance 1–5, wired into verify — `scripts/check-request-detail.mjs`, `scripts/verify.mjs`
 - [x] T020 [BEN-71] `npm run verify`, scoped diff review, and PR #38 against `dev`
 - [x] T021 [BEN-65] [BEN-66] Record this feature's spec, plan and tasks — `specs/007-employee-request-panel/`
+- [x] T022 [US1] [US2] [BEN-67] [BEN-70] Read back the cancel or rejection reason on a stopped request, and check it — `src/features/requests/detail/`, `scripts/check-request-detail.mjs`, `docs/design-system/additions.md`
 
 ## Dependencies
 
@@ -51,7 +52,7 @@ Linear lifecycle: BEN-65 (E0, spec) → BEN-66 (E1, plan/tasks) → BEN-67 (E2, 
 - T006 and T007 block T008–T012.
 - T011–T013 block T014–T016.
 - T014–T016 block T018–T020.
-- T021 was added after T020, when the epic's E0/E1 convention was checked against the branch; it touches no file T001–T020 owns.
+- T021 and T022 were added after T020, when the sub-issues' descriptions were checked against the branch. T022 reopens files from T008, T009, T012 and T019.
 
 ## Parallel Opportunities
 

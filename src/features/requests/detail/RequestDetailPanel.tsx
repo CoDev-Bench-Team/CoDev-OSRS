@@ -9,7 +9,8 @@ import { requestTimeline } from './request-timeline';
  *  It reads the request back and offers exactly one action: **Cancel Request**,
  *  and only while the request is `Pending Approval` (spec 001 FR-009a). There
  *  is no confirm-receipt control in any state — a Supply Admin completes a
- *  request (FR-012a, ADR-0007). Ownership needs no check here: the page only
+ *  request (FR-012a, ADR-0007). A cancelled or rejected request reads back
+ *  its reason. Ownership needs no check here: the page only
  *  ever holds the signed-in Employee's own requests. */
 const REFUSAL_COPY: Record<Exclude<CancelResult, { ok: true }>['refusal'], string> = {
   'status-changed':
@@ -35,6 +36,14 @@ export function RequestDetailPanel({
   const [refusal, setRefusal] = useState<string | null>(null);
 
   const cancellable = request.status === 'Pending Approval';
+  // BEN-67 / BEN-70: a stopped request reads back why. The `04.2 - Cancelled`
+  // frame does not draw it; Linear asks for it (additions.md §3e).
+  const stopped =
+    request.status === 'Cancelled' && request.cancellation
+      ? { label: 'Reason for cancellation', reason: request.cancellation.reason }
+      : request.status === 'Rejected' && request.rejection
+        ? { label: 'Reason for rejection', reason: request.rejection.reason }
+        : null;
 
   const backOut = () => {
     setConfirming(false);
@@ -135,6 +144,13 @@ export function RequestDetailPanel({
         <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-14 shadow-card">
           <h3 className="type-ui-bold text-ink-primary">Note to Approver</h3>
           <p className="type-meta text-ink-body">{request.noteToApprover}</p>
+        </section>
+      ) : null}
+
+      {stopped ? (
+        <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-14 shadow-card">
+          <h3 className="type-ui-bold text-ink-primary">{stopped.label}</h3>
+          <p className="type-meta text-ink-body">{stopped.reason}</p>
         </section>
       ) : null}
 

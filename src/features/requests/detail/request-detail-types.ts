@@ -24,7 +24,9 @@ export interface EmployeeRequest {
   approvedAt?: string;
   releasedAt?: string;
   completedAt?: string;
-  rejectedAt?: string;
+  /** A stopped request carries why, and the panel reads it back (BEN-67,
+   *  BEN-70). */
+  rejection?: { reason: string; at: string };
   cancellation?: { reason: string; at: string };
 }
 
