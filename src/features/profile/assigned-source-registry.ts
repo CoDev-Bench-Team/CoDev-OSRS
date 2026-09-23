@@ -7,18 +7,16 @@ import type { AssignedEquipmentSource } from './assigned-source';
  *  today, because the published contract has no such resource. When it does, a
  *  contract-backed source is returned here and the page does not change.
  *
- *  In development only, `?assigned=items|empty|loading|failing` on `/profile`
- *  selects a stub so states (a) and (b), loading and failure can be reached
- *  without a backend (FR-010 as amended 2026-09-23). The guard is the literal
- *  `import.meta.env.DEV`, which Vite replaces with `false` in a production
- *  build, so the branch and the stub's chunk are dropped from the bundle. */
+ *  `?assigned=items|empty|loading|failing` on `/profile` selects a stub so
+ *  states (a) and (b), loading and failure can be reached without a backend —
+ *  locally, on deploy previews and in production (FR-010 as amended
+ *  2026-09-23, second amendment). It is opt-in only: without the parameter this
+ *  returns `null` exactly as before. The stub is a dynamic `import()`, so it is
+ *  its own chunk and a normal visit never downloads it; `check-profile-build`
+ *  fails if it is ever folded into the main bundle. */
 export async function resolveAssignedSource(search: string): Promise<AssignedEquipmentSource | null> {
-  if (import.meta.env.DEV) {
-    const mode = new URLSearchParams(search).get('assigned');
-    if (mode) {
-      const { stubSource } = await import('./dev/assigned-stub');
-      return stubSource(mode);
-    }
-  }
-  return null;
+  const mode = new URLSearchParams(search).get('assigned');
+  if (!mode) return null;
+  const { stubSource } = await import('./dev/assigned-stub');
+  return stubSource(mode);
 }

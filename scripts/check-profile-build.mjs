@@ -1,18 +1,25 @@
-/** Spec 006 FR-010 — development-only Profile fixtures must not ship.
+/** Spec 006 FR-010 (second amendment) — the Profile demo stub ships, but only
+ *  as its own lazy chunk, and the host serves the SPA on every route.
  *
  *  Run after `npm run build` (verify.mjs orders it so). The stub module exports
  *  `DEV_STUB_SENTINEL` and uses it; this gate reads that value from the stub's
  *  source rather than keeping its own copy, so renaming the stub's rows or
- *  messages cannot quietly blind it. If Vite ever stops removing the guarded
- *  dynamic import, the sentinel or the stub chunk's name appears in a
- *  generated text asset and this gate fails. */
+ *  messages cannot quietly blind it. It fails when:
+ *
+ *  - `dist/` is missing or has no JavaScript (a pass would prove nothing);
+ *  - the sentinel is found in no chunk (the stub vanished, or the gate is blind);
+ *  - the sentinel is found in any file other than the stub's own
+ *    `assigned-stub-*.js` chunk — i.e. the stub was folded into the entry
+ *    bundle and every visit would download it;
+ *  - `_redirects` did not reach `dist/`, so deep links 404 on Netlify. */
 import { readdir, readFile } from 'node:fs/promises';
-import { extname, join, relative } from 'node:path';
+import { basename, extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url));
 const STUB = fileURLToPath(new URL('../src/features/profile/dev/assigned-stub.ts', import.meta.url));
-const TEXT_ASSETS = new Set(['.css', '.html', '.js', '.map']);
+const TEXT_ASSETS = new Set(['.css', '.html', '.js']);
+const STUB_CHUNK = /^assigned-stub-[\w-]+\.js$/;
 
 const fail = (message) => {
   console.error(message);
@@ -21,8 +28,6 @@ const fail = (message) => {
 
 const sentinel = /export const DEV_STUB_SENTINEL = '([^']+)'/.exec(await readFile(STUB, 'utf8'))?.[1];
 if (!sentinel) fail(`Could not read DEV_STUB_SENTINEL from ${relative(process.cwd(), STUB)}`);
-// The sentinel catches the stub's code; the chunk name catches its file.
-const markers = [sentinel, 'assigned-stub'];
 
 async function generatedTextFiles(directory) {
   const files = [];
@@ -40,16 +45,27 @@ try {
 } catch {
   fail('No dist/ directory — run `npm run build` first');
 }
-// A pass over a bundle with no JavaScript would prove nothing.
 if (!files.some((file) => file.endsWith('.js'))) fail('No JavaScript found in dist/ — run `npm run build` first');
 
-const leaks = [];
+const carriers = [];
 for (const file of files) {
-  const contents = await readFile(file, 'utf8');
-  const found = markers.filter((marker) => contents.includes(marker));
-  if (found.length) leaks.push(`${relative(DIST, file)} (${found.join(', ')})`);
+  if ((await readFile(file, 'utf8')).includes(sentinel)) carriers.push(file);
+}
+if (!carriers.length) fail(`The Profile stub is in no chunk: nothing in dist/ carries ${sentinel}`);
+const misplaced = carriers.filter((file) => !STUB_CHUNK.test(basename(file)));
+if (misplaced.length) {
+  fail(
+    `The Profile stub was bundled outside its own lazy chunk, so every visit would download it:\n${misplaced
+      .map((file) => `  - ${relative(DIST, file)}`)
+      .join('\n')}`,
+  );
 }
 
-if (leaks.length) fail(`Profile development stub leaked into the production build:\n${leaks.map((f) => `  - ${f}`).join('\n')}`);
+const redirects = await readFile(join(DIST, '_redirects'), 'utf8').catch(() => '');
+if (!/^\/\*\s+\/index\.html\s+200\s*$/m.test(redirects)) {
+  fail('dist/_redirects is missing the SPA fallback `/*  /index.html  200` — deep links would 404 on Netlify');
+}
 
-console.log(`Profile production bundle is clean: ${files.length} text assets scanned for ${markers.join(', ')}`);
+console.log(
+  `Profile build is sound: stub only in ${carriers.map((f) => relative(DIST, f)).join(', ')}; SPA fallback present`,
+);

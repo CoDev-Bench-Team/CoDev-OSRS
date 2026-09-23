@@ -1,13 +1,14 @@
 /** Spec 006 — Profile's own verification.
  *
  *  Asserts the identity block for all three seeded roles and every state of
- *  `Currently Assigned` through the development-only `?assigned=` stub:
+ *  `Currently Assigned` through the opt-in `?assigned=` demo stub:
  *  hidden (no source), empty, list, loading and failure. Runs through the same
  *  CDP client as the other gates; Playwright (BEN-50) can lift these
  *  assertions as they stand.
  *
- *  Needs `npm run dev`; headless Chrome is started for you. Set
- *  OSRS_DEV_ORIGIN when the dev server took a port other than 5173. */
+ *  Needs `npm run dev`, or `npm run build && npx vite preview` to check the
+ *  production build (the stub is opt-in there too). Headless Chrome is started
+ *  for you. Set OSRS_DEV_ORIGIN when the server is not on port 5173. */
 import { connect } from './cdp.mjs';
 
 const ORIGIN = process.env.OSRS_DEV_ORIGIN ?? 'http://localhost:5173';

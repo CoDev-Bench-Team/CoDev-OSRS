@@ -1,7 +1,8 @@
 import type { AssignedEquipmentSource, AssignedItem } from '../assigned-source';
 
-/** DEVELOPMENT ONLY — never imported outside the `import.meta.env.DEV` branch
- *  in `assigned-source-registry.ts`, so it is absent from the production build.
+/** OPT-IN DEMO STUB — loaded only by `assigned-source-registry.ts`, and only
+ *  when `/profile` carries `?assigned=`. It ships in every build as its own lazy
+ *  chunk, so a normal visit never downloads it (FR-010, second amendment).
  *
  *  It exists to reach spec 006 states (a) and (b), loading and failure while the
  *  backend exposes no assigned equipment (FR-010 as amended 2026-09-23). The
@@ -15,9 +16,10 @@ const STUB_ITEMS: AssignedItem[] = [
 ];
 
 /** Marks this module's code. `scripts/check-profile-build.mjs` reads this value
- *  from this file and fails the build gate if it appears in `dist/` — so it
- *  must stay a string literal, and it must stay USED (below), or the gate could
- *  never see a leak (FR-010). */
+ *  from this file and requires it to appear ONLY in the stub's own chunk in
+ *  `dist/`, never in the entry bundle — so it must stay a string literal, and
+ *  it must stay USED (below), or the gate could not tell where the stub went
+ *  (FR-010). */
 export const DEV_STUB_SENTINEL = 'osrs-profile-dev-stub';
 
 const LOADING_MS = 2000;

@@ -14,7 +14,7 @@ const steps = [
   ['shell routing + guards', 'node', ['scripts/check-shell.mjs']],
   ['profile (spec 006)', 'node', ['scripts/check-profile.mjs']],
   ['build', 'npm', ['run', 'build']],
-  ['profile production bundle (FR-010)', 'node', ['scripts/check-profile-build.mjs']],
+  ['profile build: lazy stub + SPA fallback (FR-010)', 'node', ['scripts/check-profile-build.mjs']],
 ];
 let failed = 0;
 for (const [name, cmd, args] of steps) {

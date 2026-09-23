@@ -27,8 +27,8 @@ This feature adds no HTTP. There is no route, payload or error code anywhere in 
 
 **Goal**: `Currently Assigned` has exactly three data states (FR-007) plus loading and failure (FR-011). State (c), hidden, is the live one today.
 
-- [x] T009 [US2] [BEN-88] Registry resolving the active source as `AssignedEquipmentSource | null`: always `null` in production; under a **literal** `if (import.meta.env.DEV)` guard, a dynamic `import()` of the stub, selected by `?assigned=` (R4) — `src/features/profile/assigned-source-registry.ts`
-- [x] T010 [P] [US2] [BEN-88] DEV-only stub with visibly synthetic rows (`Stub item A`, `STUB-0001`, …): `items` has three rows, one with no tag and one with no date; `empty` resolves `[]`; `loading` resolves after a visible delay; `failing` rejects (FR-010 as amended) — `src/features/profile/dev/assigned-stub.ts`
+- [x] T009 [US2] [BEN-88] Registry resolving the active source as `AssignedEquipmentSource | null`: `null` without `?assigned=`; with it, a dynamic `import()` of the stub. *Second amendment 2026-09-23:* no longer DEV-only; opt-in in every build (R4) — `src/features/profile/assigned-source-registry.ts`
+- [x] T010 [P] [US2] [BEN-88] Opt-in demo stub with visibly synthetic rows (`Stub item A`, `STUB-0001`, …): `items` has three rows, one with no tag and one with no date; `empty` resolves `[]`; `loading` resolves after a visible delay; `failing` rejects (FR-010 as amended) — `src/features/profile/dev/assigned-stub.ts`
 - [x] T011 [US2] [BEN-88] Load-state hook returning `unavailable | loading | failed | loaded(items)`. Resolution and load share one `try`, so a source that fails to resolve is `failed`, not `unavailable`; the cause is logged to the console. A response that arrives after the effect is torn down is discarded. The caller keys it on user id + query, so a new user or stub mode starts fresh (FR-006, FR-008) — `src/features/profile/useAssignedEquipment.ts`
 - [x] T012 [P] [US2] [BEN-88] Item card: bold name, tag chip only when a tag is present (`bg-status-info-bg text-status-info-fg`, radius 4), `Assigned <date>` when the date formats, otherwise `Assignment date not available` (amended 2026-09-23); card radius 10, `shadow-card`, card surface (FR-009) — `src/features/profile/AssignedItemCard.tsx`
 - [x] T013 [US2] [BEN-88] Section: `unavailable` renders nothing, not even the heading or gap. Every other state shows `Currently Assigned` as an `h2` (24px display medium, per the frame), followed by an inline `role="status"` line `Loading assigned equipment`, the inline error `Couldn't load your assigned equipment` (no retry control), the empty state `Nothing is assigned to you` / `Equipment issued to you will appear here`, or a two-column grid that collapses to one column at narrow widths (FR-007, FR-011) — `src/features/profile/AssignedSection.tsx`
@@ -47,10 +47,11 @@ This feature adds no HTTP. There is no route, payload or error code anywhere in 
 - [x] T020 [BEN-89] Reach all five section states: `/profile` (hidden), `?assigned=items`, `empty`, `loading`, `failing`. Partial rows invent no values (a missing date is stated in words), the identity block renders in every state, and the error is never shown as the empty state (SC-003, SC-004, FR-007, FR-009, FR-011) — `/profile?assigned=…`
 - [x] T021 [BEN-89] Edge cases: a dev session with no office shows email alone with no `•`; a long name wraps; at narrow width the grid is one column and the `a11y` gate passes; signing out as Maya and in as Ethan with `?assigned=items` shows no stale identity or rows — `/profile`
 - [x] T022 [BEN-89] Read-only: no `input`, `textarea`, `select` or edit control on `/profile` in any state (FR-013) — `/profile`
-- [x] T023 [BEN-89] Leak checks: searching `src/features/profile/` excluding `dev/` for seeded names, emails, offices, tags and dates returns zero hits (SC-002); the production bundle contains no development stub, now enforced by the `check-profile-build` gate (see T026) (FR-010) — `src/features/profile/`, `dist/`
+- [x] T023 [BEN-89] Leak checks: searching `src/features/profile/` excluding `dev/` for seeded names, emails, offices, tags and dates returns zero hits (SC-002); the stub stays in its own lazy chunk, enforced by the `check-profile-build` gate (see T026 and T027) (FR-010) — `src/features/profile/`, `dist/`
 - [ ] T024 [BEN-89] PR against `dev` (the integration branch; branch fast-forwarded onto `origin/dev` 2026-09-23). The description must: explain that the hidden section is the intended live state (R3); list the `?assigned=` stub states for QA; name the `location` → `office` mapping in the contract-backed `SessionSource` as an open dependency (R2); and include the auth-branch rebase note (R1) — GitHub PR
 - [x] T025 [BEN-89] Flag the `location` → `office` mapping (R2): created **[BEN-112](https://linear.app/bench-synergy-project/issue/BEN-112)** as a sub-issue of BEN-49 with the rebase note for the auth branch, and amended the BEN-49, BEN-88 and BEN-89 checklists to FR-007's three states and PR base `dev` (2026-09-23). The auth branch's owner has not been pinged directly; BEN-112 is unassigned — Linear BEN-49, BEN-88, BEN-89, BEN-112
 - [x] T026 [BEN-89] Automated checks for Profile, added after review, both in `npm run verify`. `check-profile`: identity for all three roles, read-only, no current nav item, and every `Currently Assigned` state (hidden — proven able to fail — empty, list with a tagless row and an undated row, loading, failing); timeouts count as failures. `check-profile-build` (after `build`): the stub's `DEV_STUB_SENTINEL` and chunk name are absent from `dist/`, and a `dist/` with no JavaScript fails — `scripts/check-profile.mjs`, `scripts/check-profile-build.mjs`, `scripts/verify.mjs`, `src/features/profile/dev/assigned-stub.ts`
+- [x] T027 [BEN-89] After the PR #37 deploy preview 404'd: add the SPA fallback `/*  /index.html  200` so Netlify serves every route; make `?assigned=` work in every build (opt-in, lazy chunk); repoint `check-profile-build` to require the stub only in its own chunk and the fallback in `dist/`; run `check-profile` against `vite preview` (FR-010, second amendment) — `public/_redirects`, `src/features/profile/assigned-source-registry.ts`, `src/features/profile/dev/assigned-stub.ts`, `scripts/check-profile-build.mjs`, `scripts/verify.mjs`
 
 ## Dependencies
 
@@ -112,3 +113,13 @@ Run on 2026-09-23 against the dev server (`:5249`), signed in as each seeded rol
 **Found outside this feature, not fixed:** at 375px with a very long user name, the shell's account cluster in the top bar overflows horizontally. Profile's own content wraps correctly. The account cluster belongs to spec 003.
 
 **T024 is outward-facing** (open the PR against `dev`) and waits for explicit go-ahead. T025 was done on 2026-09-23 at the owner's instruction.
+
+**Second FR-010 amendment, verified 2026-09-23:**
+
+| Check | Result |
+|---|---|
+| Deploy preview before the fix | `/` 200, but `/login`, `/catalog`, `/profile` and `/profile?assigned=items` all 404: no SPA fallback on the host |
+| `check-profile-build` on the real build | Pass: stub only in `assets/assigned-stub-*.js`; `dist/_redirects` present |
+| Stub forced into the entry bundle (static import, reverted) | Fail: names `assets/index-*.js` |
+| `public/_redirects` removed (restored) | Fail: "missing the SPA fallback" |
+| `check-profile` against `vite preview` (production build) | All states pass: hidden, empty, items, loading, failing |

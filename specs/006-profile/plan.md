@@ -16,7 +16,7 @@ Replace the `/profile` placeholder with the designed Profile page. The identity 
 **Storage**: none. Identity comes from the session context; equipment comes from the boundary
 **Target Layer**: frontend only
 **Performance Goals**: identity renders on first paint after the session resolves, with no extra round trip. Only the equipment section may load
-**Constraints**: constitution VII (no invented contract) and VIII (no per-unit register); BEN-49 folder ownership (`src/features/profile/*`); spec FR-010 (no fabricated rows in shipped code)
+**Constraints**: constitution VII (no invented contract) and VIII (no per-unit register); BEN-49 folder ownership (`src/features/profile/*`); spec FR-010 (no fabricated rows on a normal visit; the demo stub is opt-in and lazy)
 **Testing**: `npm run verify` gates, plus a browser walk of all three roles and all five section states. Playwright is Parent J's job
 
 ## Blocking Preconditions
@@ -122,21 +122,28 @@ export interface AssignedEquipmentSource {
 - `formatAssignedDate('2026-01-14')` returns `Jan 14, 2026` via `Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })`. It formats in UTC because the value is a calendar date, not an instant. Formatting it in local time would shift it by a day west of UTC.
 - A missing or malformed date returns `null`, and the card's date line reads `Assignment date not available` rather than printing `Invalid Date` (FR-009 as amended 2026-09-23).
 
-## Development-Only Stub (states a and b)
+## Opt-in Demo Stub (states a and b)
 
-`src/features/profile/dev/assigned-stub.ts`: reachable **only** when `import.meta.env.DEV` is true, via a dynamic `import()` in the registry. The guard MUST be the literal `if (import.meta.env.DEV)` wrapping the `import()`, not a variable or helper, so Vite replaces it with a constant and removes the branch from the production build (R4).
+`src/features/profile/dev/assigned-stub.ts` is loaded by the registry through a dynamic `import()`, and **only when `/profile` carries `?assigned=`**. That holds in every build: the dev server, Netlify deploy previews and production (FR-010, second amendment 2026-09-23). Because it is a dynamic import, Vite emits it as its own `assigned-stub-*.js` chunk, and a normal visit never downloads it (R4).
 
-It is selected by a query parameter on `/profile`, so every state is reachable in one dev-server run without restarts (SC-004):
+*Superseded:* the first version guarded the import with a literal `if (import.meta.env.DEV)`, so the stub existed only on the dev server. The owner reversed that after the PR #37 preview, so demo states can be shown and screenshotted on previews and production.
+
+It is selected by a query parameter on `/profile`, so every state is reachable in one run without restarts (SC-004):
 
 | `?assigned=` | Behaviour |
 |---|---|
-| *(absent)* | `null`: state (c), same as production |
+| *(absent)* | `null`: state (c), the normal production view |
 | `items` | Resolves three rows, including one with no tag and one with no date |
 | `empty` | Resolves `[]` |
 | `loading` | Resolves after a delay, so the loading state is visible |
 | `failing` | Rejects |
+| *(anything else)* | `null`: state (c) |
 
-Stub rows are **visibly synthetic**: names like `Stub item A` and tags like `STUB-0001`. They are not the design's laptop, mouse and phone, so no one mistakes them for data. This keeps FR-010 true: nothing fabricated ships, and nothing in the dev stub impersonates a real unit.
+Stub rows are **visibly synthetic**: names like `Stub item A` and tags like `STUB-0001`. They are not the design's laptop, mouse and phone, so no one mistakes them for data, even on production, where anyone can open them.
+
+### Hosting: SPA fallback
+
+`public/_redirects` holds `/*  /index.html  200`. Vite copies it into `dist/`, and Netlify then serves the SPA for every route instead of a 404 on direct visits and reloads. Real files in `dist/` still take precedence. This covers every page, not only Profile (ADR-0004's client routing needs it on any static host).
 
 ## API Contracts
 
@@ -156,7 +163,7 @@ Owned: `src/features/profile/`
 | `assigned-source-registry.ts` | The active source, or `null` |
 | `useAssignedEquipment.ts` | Load state; resolution and load in one `try`; failure logged; stale-response guard. The caller keys it on user id + query |
 | `format.ts` | `identityLine`, `formatAssignedDate` |
-| `dev/assigned-stub.ts` | DEV-only stub (see above) |
+| `dev/assigned-stub.ts` | Opt-in demo stub, lazy chunk (see above) |
 
 Shared touch:
 
@@ -214,7 +221,7 @@ No new packages or services. External: none until the backend publishes an assig
 | Partial rows | Stub row with no tag has no chip; the row with no date reads `Assignment date not available` and matches its neighbours' height | FR-009, Edge Cases |
 | No office | Temporarily clear a seeded office in a dev session: email alone, no `•` | Edge Cases |
 | No hard-coded identity | `grep` over `src/features/profile/` excluding `dev/` for seeded names, emails, offices, tags and dates: zero hits | SC-002 |
-| Stub absent from prod | `check-profile-build` in `npm run verify`, after `build`: scans every text asset in `dist/` for the stub's `DEV_STUB_SENTINEL` (read from the stub's own source) and its chunk name, and refuses to pass on a `dist/` with no JavaScript | FR-010 |
+| Stub is lazy; host serves the SPA | `check-profile-build` in `npm run verify`, after `build`. The stub's `DEV_STUB_SENTINEL` (read from the stub's own source) must appear **only** in its `assigned-stub-*.js` chunk, never in the entry bundle; `dist/_redirects` must hold the SPA fallback; a `dist/` with no JavaScript fails. `check-profile` also passes against `vite preview`, i.e. the production build | FR-010 |
 | Role switch | Sign out as Maya, sign in as Ethan with `?assigned=items`: no stale rows or identity | FR-006 |
 | Read-only | No `input`, `textarea`, `select` or edit control is rendered on `/profile` in any state | FR-013 |
 | Narrow viewport | List collapses to one column; `a11y` gate passes | Edge Cases |
@@ -238,7 +245,7 @@ No new packages or services. External: none until the backend publishes an assig
 | R1 | **The unmerged auth branch** (`origin/ruben/auth-google-integration`) lands first. It adopts the contract's two-role model (adds `admin`, constitution 3.0.0, ADR-0005), makes `Avatar` render the Google photo, and edits `auth/types.ts` and `seeded-source.ts`. | **Mitigated.** Profile never branches on role, so `admin` renders with no change. `IdentityBlock` never passes a photo, so FR-003 holds whatever `Avatar` supports. Rebase note: our `auth/` edits are one optional `office` field, one `Office` type, and three seeded values. Re-apply them on top of that branch's `User` (which adds `avatarUrl`) rather than resolving hunks. If constitution 3.0.0 merges, spec 006's "three roles" wording is amended in the same rebase; the page itself does not change. |
 | R2 | **Office never reaches the real session.** That branch's contract-backed session source lists `location` as unconsumed, so in production the identity line would fall back to email alone and BEN-49 acceptance 1 would pass only in the demo. | **Mitigated, tracked as [BEN-112](https://linear.app/bench-synergy-project/issue/BEN-112)** (sub-issue of BEN-49, created 2026-09-23). The mapping belongs in the contract-backed `SessionSource`, which is not on this branch. The PR lists BEN-112 as an open dependency. |
 | R3 | **The hidden section reads as a bug.** With today's backend there is no `Currently Assigned` at all, and QA files it as missing against the frame. | **Mitigated.** The PR description states that state (c) is the intended live state (spec FR-007c, Linear Reconciliation) and lists the `?assigned=items\|empty\|loading\|failing` stub states for QA. |
-| R4 | **The stub leaks into production** if the DEV guard isn't statically removable. | **Mitigated.** Literal `import.meta.env.DEV` guard (see Development-Only Stub) plus the `dist/` search in Verification. |
+| R4 | **The stub is folded into the entry bundle** and every visit downloads it (for example, a static import slipped in). | **Mitigated.** Dynamic `import()` only, and `check-profile-build` fails if the sentinel appears outside the stub's own chunk (proven by forcing a static import). |
 | R5 | **The fidelity gates can't judge the list.** The frame shows the design's rows and the stub shows synthetic ones; `compare-pixels` does not cover `/profile` today. | **Mitigated as planned.** Structural comparison only: layout, sizes, tokens, chip treatment. The pixel gate is not extended to Profile in this feature. |
 
 ## Constitution Compliance
@@ -252,5 +259,5 @@ No new packages or services. External: none until the backend publishes an assig
 | V. Notifications | PASS | None emitted |
 | VI. Testable Increments | PASS | Story 1 ships alone; Story 2's three states each reachable via the DEV stub |
 | VII. Typed Contracts | PASS | Only `location` is used, transcribed as `Office`; no route, field or error code invented; the equipment boundary is SPA vocabulary |
-| VIII. MVP Restraint | PASS | No register, no units, no dependency; stub is DEV-only and synthetic |
+| VIII. MVP Restraint | PASS | No register, no units, no dependency. The demo stub is synthetic, opt-in by query and lazily loaded. `_redirects` is hosting config for the existing router (ADR-0004), not new infrastructure |
 | IX. Secrets | PASS | Placeholder offices are non-production seed data; no credentials |
