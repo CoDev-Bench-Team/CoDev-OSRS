@@ -1,46 +1,46 @@
-# Feature Specification: Approver Pending Queue
+# Feature Specification: Requests Queue — Pending Approval list
 
 **Feature Branch**: `emmanuelr/ben-46-p2spa-approver-pending-queue`  
 **Created**: 2026-09-22  
 **Status**: Draft  
-**Sources**: BEN-46, BEN-72, `specs/001-office-supplies-mvp/spec.md`, `specs/003-app-shell-routing/spec.md`, vendored Figma re-export dated 2026-09-15 — **superseded**; see the 2026-09-24 amendment below
+**Sources**: BEN-46, BEN-72, `specs/001-office-supplies-mvp/spec.md`, `specs/003-app-shell-routing/spec.md`, vendored Figma re-export dated 2026-09-15 — **superseded**; realigned to the 2026-09-22 export ([drift](../../docs/design-system/drift-2026-09-22.md)) by the second 2026-09-24 amendment below
 
 ## Overview
 
-Give an Approver a focused landing page that summarizes request workload and lists every request awaiting an approval decision. Each row leads to the existing request-detail destination where review actions belong.
+Give an Admin a focused landing page — the **Requests Queue** — that summarizes request workload and lists every request awaiting an approval decision. Each row leads to the existing request-detail destination where review actions belong.
 
-This feature specializes the merged Admin queue from the design source for the Approver role. It does not grant Supply Admin access or implement approval and rejection actions.
+This feature is the list slice of the merged Admin queue the design source draws (constitution 3.0.0 II, [ADR-0005](../../docs/adr/0005-two-role-model.md)). It does not implement approval, rejection, handover or completion actions; those belong to the review panel (BEN-47).
 
 ## User Stories
 
 ### Story 1 — See approval workload at a glance (Priority: P1)
 
-An Approver opens their landing page and sees current workload totals before reviewing individual requests.
+An Admin opens their landing page and sees current workload totals before reviewing individual requests.
 
-**Why this priority**: The queue is the Approver's primary work surface and must immediately communicate whether action is required.
+**Why this priority**: The queue is the Admin's primary work surface and must immediately communicate whether action is required.
 
 **Acceptance Criteria**:
 
-1. **Given** an Approver with pending requests, **When** they open `/approvals`, **Then** they see summary cards for Pending approval, In Processing, and Low stock alerts.
+1. **Given** an Admin with pending requests, **When** they open `/queue`, **Then** they see summary cards for Pending approval, In Processing, and Low stock alerts.
 2. **Given** the summary and queue are based on the same current state, **When** the page renders, **Then** the Pending approval total equals the number of requests eligible for review.
 3. **Given** inventory items have been classified as low stock by the system's data source, **When** the page renders, **Then** Low stock alerts shows that count without defining a new low-stock threshold in the SPA.
 
 ### Story 2 — Find and open a pending request (Priority: P1)
 
-An Approver scans pending requests, identifies the requestor and requested items, and opens a request for review.
+An Admin scans pending requests, identifies the requestor and requested items, and opens a request for review.
 
 **Why this priority**: Moving from the queue to request detail is the feature's core task.
 
 **Acceptance Criteria**:
 
 1. **Given** pending requests exist, **When** the queue renders, **Then** each row shows request id, requestor identity and organizational context, item summary, submitted date, a `Pending Approval` status pill, and a Review action.
-2. **Given** a pending request row, **When** the Approver activates Review, **Then** the application navigates to `/requests/:id` for that request.
+2. **Given** a pending request row, **When** the Admin activates Review, **Then** the application navigates to `/requests/:id` for that request.
 3. **Given** requests in statuses other than `Pending Approval`, **When** the pending table renders, **Then** those requests do not appear as reviewable rows.
-4. **Given** the Approver returns from request detail after a decision changed the request status, **When** current data is shown, **Then** the decided request is no longer in the pending table and the summary reflects the current workload.
+4. **Given** the Admin returns from request detail after a decision changed the request status, **When** current data is shown, **Then** the decided request is no longer in the pending table and the summary reflects the current workload.
 
 ### Story 3 — Understand non-success states (Priority: P1)
 
-An Approver receives a clear, usable page while data is loading, when no requests are pending, or when current data cannot be shown.
+An Admin receives a clear, usable page while data is loading, when no requests are pending, or when current data cannot be shown.
 
 **Why this priority**: An empty queue is a normal outcome; failures and waiting must not look like an empty workload.
 
@@ -52,7 +52,7 @@ An Approver receives a clear, usable page while data is loading, when no request
 
 ### Story 4 — Use the queue safely across supported devices (Priority: P2)
 
-An Approver can review the queue with keyboard controls and at every width supported by the application shell.
+An Admin can review the queue with keyboard controls and at every width supported by the application shell.
 
 **Why this priority**: The queue must preserve the shell's accessibility and responsive commitments.
 
@@ -69,7 +69,8 @@ An Approver can review the queue with keyboard controls and at every width suppo
 - Long requestor names and item summaries remain readable without overlapping adjacent columns or controls.
 - A request with many items uses a concise item summary rather than expanding the row indefinitely.
 - A metric may be available while pending rows are empty; each value reflects its own defined population.
-- A non-Approver opening `/approvals` continues to receive the shell's existing access refusal.
+- An Employee opening `/queue` continues to receive the shell's existing access refusal.
+- The retired `/approvals` address renders not-found for every role, the Admin included (ADR-0005).
 
 ## Functional Requirements
 
@@ -79,12 +80,12 @@ An Approver can review the queue with keyboard controls and at every width suppo
 > record, and which Phase 0 task owns each migration, is the
 > [2026-09-24 amendment](#session-2026-09-24--amendment-this-spec-predates-constitution-300).
 
-- **FR-001**: The page MUST be the Approver landing destination at `/approvals`.
-- **FR-002**: ~~The page MUST remain accessible only to users whose single role is Approver.~~ **SUPERSEDED** by constitution 3.0.0 — the role is **Admin**; see the 2026-09-24 amendment. Owned by spec 001 T000.
-- **FR-003**: ~~The page MUST NOT merge Approver and Supply Admin capabilities or identity.~~ **SUPERSEDED** by constitution 3.0.0 — the two roles *are* merged ([ADR-0005](../../docs/adr/0005-two-role-model.md)); see the 2026-09-24 amendment. Owned by spec 001 T000.
+- **FR-001**: The page MUST be the Admin landing destination at `/queue`, titled **Requests Queue** and subtitled *"Review, approve, and fulfill supply requests"*. ~~Approver landing destination at `/approvals`~~ — realigned by the second 2026-09-24 amendment.
+- **FR-002**: ~~The page MUST remain accessible only to users whose single role is Approver.~~ **SUPERSEDED** by constitution 3.0.0. **Now:** the page MUST remain accessible only to users whose single role is **Admin**; see the 2026-09-24 amendments.
+- **FR-003**: ~~The page MUST NOT merge Approver and Supply Admin capabilities or identity.~~ **SUPERSEDED** by constitution 3.0.0 — the two roles *are* merged ([ADR-0005](../../docs/adr/0005-two-role-model.md)). **Now:** withdrawn; the one Admin both decides and fulfils, and this page links to both halves through Review.
 - **FR-004**: The page MUST show three read-only summary cards labelled Pending approval, In Processing, and Low stock alerts.
 - **FR-005**: Pending approval MUST count requests whose current status is `Pending Approval`.
-- **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, ~~`For Release`, and `Released`~~ — those two statuses are **SUPERSEDED** by constitution 3.0.0 in favour of `For Delivery` / `For Pickup` ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)); see the 2026-09-24 amendment. Owned by spec 001 T000c.
+- **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, ~~`For Release`, and `Released`~~ — those two statuses are **SUPERSEDED** by constitution 3.0.0 ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)). **Now:** `Approved`, `For Delivery` and `For Pickup`.
 - **FR-007**: Low stock alerts MUST count inventory items classified as low stock by the system's data source; the SPA MUST NOT invent a threshold.
 - **FR-008**: The pending table MUST contain only requests currently in `Pending Approval`.
 - **FR-009**: Each pending row MUST show request id, requestor name, requestor organizational context when available, an item summary, submitted date, a `Pending Approval` status pill, and Review.
@@ -94,13 +95,13 @@ An Approver can review the queue with keyboard controls and at every width suppo
 - **FR-013**: A successful refresh after a request leaves `Pending Approval` MUST remove it from the table and update affected metrics.
 - **FR-014**: Interactive controls MUST be keyboard operable and show a visible focus indicator.
 - **FR-015**: The page MUST remain usable from 360px through 1440px without page-level horizontal overflow.
-- **FR-016**: The page MUST use the established design vocabulary and shared shell rather than introduce a second Approver layout.
+- **FR-016**: The page MUST use the established design vocabulary and shared shell rather than introduce a second Admin layout.
 - **FR-017**: The SPA MUST NOT invent REST routes, payloads, response fields, error codes, or low-stock thresholds.
 - **FR-018**: Until the backend contract is published, demonstrable queue data MAY come from a typed temporary source that preserves these product semantics.
 
 ## Key Entities
 
-- **Approval queue**: The current set of requests awaiting an Approver decision.
+- **Approval queue**: The current set of requests awaiting an Admin decision.
 - **Queue row**: A concise projection of one pending request for navigation to detail.
 - **Workload metric**: A read-only count for pending approval, in-processing requests, or low-stock items.
 
@@ -108,7 +109,8 @@ An Approver can review the queue with keyboard controls and at every width suppo
 
 - Approve and reject mutations, including rejection-reason entry
 - Request-detail content and status actions
-- Supply Admin fulfillment and inventory-management actions
+- Fulfilment (For Delivery / For Pickup, Complete) and cancellation actions — the review panel's (BEN-47)
+- Asset and inventory-management actions
 - Employee request history
 - Defining or publishing a REST contract
 - Defining the low-stock threshold
@@ -117,9 +119,9 @@ An Approver can review the queue with keyboard controls and at every width suppo
 
 ## Success Criteria
 
-- **SC-001**: An Approver can open `/approvals`, identify every request awaiting review, and reach any listed request detail in one action.
+- **SC-001**: An Admin can open `/queue`, identify every request awaiting review, and reach any listed request detail in one action.
 - **SC-002**: Pending approval equals the number of reviewable rows for every demonstrated data set.
-- **SC-003**: Employee and Supply Admin users cannot access the page through navigation or direct address.
+- **SC-003**: Employee users cannot access the page through navigation or direct address.
 - **SC-004**: Empty, loading, and failure outcomes are visually distinguishable.
 - **SC-005**: Every Review action is keyboard operable with visible focus.
 - **SC-006**: The page is usable without page-level horizontal overflow at every viewport width from 360px through 1440px.
@@ -189,6 +191,35 @@ role merge itself.
 
 `plan.md`'s Constitution Compliance table is corrected in the same change: its
 principle II row named a principle that 3.0.0 deleted.
+
+### Session 2026-09-24 — Amendment 2: realigned to constitution 3.0.0
+
+Spec 001 Phase 0 (T000–T000d, T000f) merged to `dev` as PR #40, and this branch
+was rebased onto it. The first 2026-09-24 amendment above recorded this spec as a
+pre-3.0.0 slice whose migration Phase 0 owned. Once Phase 0 landed, the slice no
+longer compiled — `DESTINATIONS.approvals` and the `For Release` / `Released`
+statuses were gone — and at runtime the Admin's landing screen fell to the shell's
+error boundary (*"This screen could not be shown"*). The migration is therefore
+done here, not deferred.
+
+- The page is the **Admin**'s **Requests Queue** at `/queue`. Title and subtitle
+  come from `DESTINATIONS.queue`, which carries the design's copy verbatim.
+  FR-001–FR-003 are rewritten in place; the struck text stays.
+- **In Processing** counts `Approved`, `For Delivery` and `For Pickup` (FR-006).
+- Feature code moves from `src/features/requests/approvals/` to
+  `src/features/requests/queue/`, the path spec 001 T014 names for this screen,
+  and drops the `Approval` prefix from its module and type names.
+- The seeded fixtures use the new statuses; no requestor is the seeded Admin.
+
+**Kept out of this spec, on purpose.** The 2026-09-22 export also gives the
+queue filter chips (`All requests · Pending Approval · Approved · For Delivery
+· For Pickup`), search, sort and pagination, and
+`docs/linear-spa-pages-epic.md` re-scopes BEN-46 to include them. The vendored
+`design-system/` still has only the 2026-09-12 queue, which draws none of them
+(spec 001 T000e, deferred), so they cannot be built to a verifiable design yet.
+They stay under Out of Scope here and wait for a spec amendment and a re-vendor.
+Review still links to `/requests/:id`; the design's review side panel belongs
+to BEN-47.
 
 ## Validation
 

@@ -1,12 +1,12 @@
-import type { ApprovalQueueSnapshot, ApprovalQueueSource } from './approval-queue-types';
+import type { QueueSnapshot, QueueSource } from './queue-types';
 
 /** Non-production demo data used only until the backend team publishes its contract.
  *
- *  No requestor here is a seeded Approver or Supply Admin: one person holds one
- *  role (ARCHITECT.md 7), so the signed-in Approver must never find her own
- *  request waiting on her own decision. Names follow the Filipino register in
+ *  No requestor here is the seeded Admin: one person holds one role
+ *  (ARCHITECT.md 7), so the signed-in Admin must never find their own request
+ *  waiting on their own decision. Maya Santos is the seeded Employee. Names follow the Filipino register in
  *  docs/design-system/content-conventions.md. */
-const SEEDED_SNAPSHOT: ApprovalQueueSnapshot = {
+const SEEDED_SNAPSHOT: QueueSnapshot = {
   lowStockAlertCount: 2,
   requests: [
     {
@@ -55,7 +55,7 @@ const SEEDED_SNAPSHOT: ApprovalQueueSnapshot = {
       requestorContext: 'People Operations',
       items: ['Headset'],
       submittedAt: '2026-08-09T07:40:00Z',
-      status: 'For Release',
+      status: 'For Delivery',
     },
     {
       id: 'REQ-2026-1703',
@@ -63,12 +63,12 @@ const SEEDED_SNAPSHOT: ApprovalQueueSnapshot = {
       requestorContext: 'Engineering',
       items: ['Keyboard'],
       submittedAt: '2026-08-05T12:30:00Z',
-      status: 'Released',
+      status: 'For Pickup',
     },
   ],
 };
 
-export const seededApprovalQueueSource: ApprovalQueueSource = {
+export const seededQueueSource: QueueSource = {
   async load() {
     return SEEDED_SNAPSHOT;
   },

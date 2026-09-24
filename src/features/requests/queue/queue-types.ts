@@ -1,7 +1,7 @@
 import type { RequestStatus } from '../../../shared/ui';
 
 /** A feature-local read model, not a backend response shape. */
-export interface ApprovalQueueRequest {
+export interface QueueRequest {
   id: string;
   requestorName: string;
   requestorContext?: string;
@@ -10,21 +10,21 @@ export interface ApprovalQueueRequest {
   status: RequestStatus;
 }
 
-export interface ApprovalQueueSnapshot {
-  requests: readonly ApprovalQueueRequest[];
+export interface QueueSnapshot {
+  requests: readonly QueueRequest[];
   /** Classified by the source; the SPA deliberately owns no threshold. */
   lowStockAlertCount: number;
 }
 
-export interface ApprovalQueueSource {
-  load(): Promise<ApprovalQueueSnapshot>;
+export interface QueueSource {
+  load(): Promise<QueueSnapshot>;
 }
 
 /** A row is a projection of a request: the identity fields are carried over
  *  as-is (typed off the source so they cannot drift), and the display-only
  *  `items`/`submittedAt` are replaced by their rendered forms. */
-export interface ApprovalQueueRow
-  extends Pick<ApprovalQueueRequest, 'id' | 'requestorName' | 'requestorContext'> {
+export interface QueueRow
+  extends Pick<QueueRequest, 'id' | 'requestorName' | 'requestorContext'> {
   itemSummary: string;
   submittedLabel: string;
   /** Carried so the row's pill states what the row IS, rather than repeating
@@ -32,9 +32,9 @@ export interface ApprovalQueueRow
   status: RequestStatus;
 }
 
-export interface ApprovalQueueViewModel {
+export interface QueueViewModel {
   pendingApprovalCount: number;
   inProcessingCount: number;
   lowStockAlertCount: number;
-  pendingRows: readonly ApprovalQueueRow[];
+  pendingRows: readonly QueueRow[];
 }

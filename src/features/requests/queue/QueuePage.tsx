@@ -17,18 +17,18 @@ import {
   type ColumnWidth,
 } from '../../../shared/ui';
 import { DESTINATIONS, requestDetailPath } from '../../../app/destinations';
-import { buildApprovalQueueViewModel, NO_VALUE } from './approval-queue-model';
+import { buildQueueViewModel, NO_VALUE } from './queue-model';
 import type {
-  ApprovalQueueSnapshot,
-  ApprovalQueueSource,
-  ApprovalQueueViewModel,
-} from './approval-queue-types';
-import { seededApprovalQueueSource } from './seeded-approval-queue-source';
+  QueueSnapshot,
+  QueueSource,
+  QueueViewModel,
+} from './queue-types';
+import { seededQueueSource } from './seeded-queue-source';
 
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'failed' }
-  | { kind: 'loaded'; snapshot: ApprovalQueueSnapshot };
+  | { kind: 'loaded'; snapshot: QueueSnapshot };
 
 /** One source of truth for the grid. The header and the row cells read the
  *  same widths through the same `tableColumnStyle`, so a column cannot be
@@ -54,12 +54,12 @@ const TABLE_MIN_WIDTH = tableMinWidth(Object.values(COLUMNS), MIN_ITEMS_WIDTH);
  *  whole point, so the settled announcement carries it rather than saying only
  *  that something changed. Annotated `: string` with no `default`, so adding a
  *  state without an announcement is a type error. */
-function announce(state: LoadState, queue: ApprovalQueueViewModel | null): string {
+function announce(state: LoadState, queue: QueueViewModel | null): string {
   switch (state.kind) {
     case 'loading':
-      return 'Loading approval queue.';
+      return 'Loading requests queue.';
     case 'failed':
-      return 'The approval queue could not be loaded.';
+      return 'The requests queue could not be loaded.';
     case 'loaded': {
       const pending = queue?.pendingApprovalCount ?? 0;
       if (pending === 0) return 'No requests are awaiting approval.';
@@ -68,13 +68,13 @@ function announce(state: LoadState, queue: ApprovalQueueViewModel | null): strin
   }
 }
 
-export function ApprovalsQueuePage({
+export function QueuePage({
   /** Must be referentially stable — it is an effect dependency, so an object
    *  built inline in the caller's render would reload the queue on every
    *  render. Pass a module constant, or hold it in `useMemo`/a ref. */
-  source = seededApprovalQueueSource,
+  source = seededQueueSource,
 }: {
-  source?: ApprovalQueueSource;
+  source?: QueueSource;
 }) {
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
@@ -119,7 +119,7 @@ export function ApprovalsQueuePage({
 
   /** Derived once here rather than inside the table, so the announcement and
    *  what is on screen are the same projection of the same snapshot. */
-  const queue = state.kind === 'loaded' ? buildApprovalQueueViewModel(state.snapshot) : null;
+  const queue = state.kind === 'loaded' ? buildQueueViewModel(state.snapshot) : null;
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-32 py-32">
@@ -127,7 +127,7 @@ export function ApprovalsQueuePage({
           screen it carries its own title heading, so rendering this header too
           would put two `<h1>`s in the document at once. */}
       {queue ? (
-        <PageHeader title={DESTINATIONS.approvals.title} subtitle={DESTINATIONS.approvals.purpose} />
+        <PageHeader title={DESTINATIONS.queue.title} subtitle={DESTINATIONS.queue.purpose} />
       ) : null}
 
       {/* One region, mounted for the page's whole life, whose text changes as
@@ -142,7 +142,7 @@ export function ApprovalsQueuePage({
         <Notice
           eyebrow="Loading"
           tone="info"
-          title="Loading approval queue"
+          title="Loading requests queue"
           body="Current request workload is being prepared."
         />
       ) : null}
@@ -151,7 +151,7 @@ export function ApprovalsQueuePage({
         <Notice
           eyebrow="Unavailable"
           tone="stopped"
-          title="Approval queue could not be loaded"
+          title="Requests queue could not be loaded"
           body="Try again to retrieve the current request workload."
           actions={
             <Button
@@ -176,13 +176,13 @@ function LoadedQueue({
   queue,
   headingRef,
 }: {
-  queue: ApprovalQueueViewModel;
+  queue: QueueViewModel;
   /** Where focus lands when a retry succeeds; see the effect that uses it. */
   headingRef: RefObject<HTMLDivElement | null>;
 }) {
   return (
     <>
-      <section className="grid grid-cols-1 gap-16 md:grid-cols-3" aria-label="Approval workload summary">
+      <section className="grid grid-cols-1 gap-16 md:grid-cols-3" aria-label="Requests workload summary">
         <SummaryCard value={String(queue.pendingApprovalCount)} label="Pending approval" />
         <SummaryCard value={String(queue.inProcessingCount)} label="In Processing" />
         <SummaryCard value={String(queue.lowStockAlertCount)} label="Low stock alerts" />

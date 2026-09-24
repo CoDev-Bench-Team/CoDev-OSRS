@@ -1,4 +1,4 @@
-# Implementation Plan: Approver Pending Queue
+# Implementation Plan: Requests Queue — Pending Approval list
 
 **Date**: 2026-09-22  
 **Spec**: `specs/004-approver-pending-queue/spec.md`  
@@ -6,7 +6,7 @@
 
 ## Summary
 
-Replace the `/approvals` shell placeholder with an Approver-only queue composed from the existing design-system components. Until the backend contract is published, one typed feature-local source supplies demonstrable queue data; the page derives request metrics and pending rows without defining HTTP behavior or inventory thresholds.
+Replace the `/queue` shell placeholder with the Admin's Requests Queue composed from the existing design-system components. Until the backend contract is published, one typed feature-local source supplies demonstrable queue data; the page derives request metrics and pending rows without defining HTTP behavior or inventory thresholds.
 
 ## Technical Context
 
@@ -15,16 +15,16 @@ Replace the `/approvals` shell placeholder with an Approver-only queue composed 
 **Storage**: None in the SPA; temporary in-memory fixture data  
 **Target Layer**: Frontend SPA  
 **Performance Goals**: Derive metrics and rows in one linear pass over the small internal queue; no additional network behavior  
-**Constraints**: Approver-only; exactly three roles remain distinct; no request transitions; no invented REST contract or low-stock threshold; feature ownership stays under `src/features/requests/approvals/*` with a minimal route swap
+**Constraints**: Admin-only (constitution 3.0.0 II); no request transitions; no invented REST contract or low-stock threshold; feature ownership stays under `src/features/requests/queue/*` with a minimal route swap
 
 ## Data Model
 
 Feature-local view data, not a backend contract:
 
-- `ApprovalQueueRequest`: request id, requestor name, optional organizational context, item names, submitted timestamp, and canonical request status.
-- `ApprovalQueueSnapshot`: requests plus a source-provided low-stock alert count.
-- `ApprovalQueueViewModel`: three summary metrics and rows filtered to `Pending Approval`.
-- `ApprovalQueueSource`: asynchronous read boundary returning one snapshot.
+- `QueueRequest`: request id, requestor name, optional organizational context, item names, submitted timestamp, and canonical request status.
+- `QueueSnapshot`: requests plus a source-provided low-stock alert count.
+- `QueueViewModel`: three summary metrics and rows filtered to `Pending Approval`.
+- `QueueSource`: asynchronous read boundary returning one snapshot.
 
 The temporary source owns fixture values. The view model may count canonical request statuses but must not classify inventory or define a low-stock threshold.
 
@@ -32,15 +32,15 @@ The temporary source owns fixture values. The view model may count canonical req
 
 The backend contract remains unpublished at `specs/001-office-supplies-mvp/contracts/README.md`. This feature adds no HTTP call, endpoint, payload, response field, or error mapping.
 
-`ApprovalQueueSource` is an internal UI seam, not a proposed REST contract. It can be replaced only after the backend-published contract defines the real data.
+`QueueSource` is an internal UI seam, not a proposed REST contract. It can be replaced only after the backend-published contract defines the real data.
 
 ## Component / Module Breakdown
 
-- `src/features/requests/approvals/approval-queue-types.ts` — feature-local request, snapshot, source, and view-model types.
-- `src/features/requests/approvals/approval-queue-model.ts` — pure derivation of pending, in-processing, and pending-row projections.
-- `src/features/requests/approvals/seeded-approval-queue-source.ts` — explicit temporary fixture source; supplies low-stock count rather than a threshold.
-- `src/features/requests/approvals/ApprovalsQueuePage.tsx` — loading, failure, empty, summaries, responsive table, and Review links.
-- `src/app/routes.tsx` — import the real page and replace only the `ApprovalsPlaceholder` route element, and drop that placeholder from `src/app/placeholders.tsx` once nothing references it.
+- `src/features/requests/queue/queue-types.ts` — feature-local request, snapshot, source, and view-model types.
+- `src/features/requests/queue/queue-model.ts` — pure derivation of pending, in-processing, and pending-row projections.
+- `src/features/requests/queue/seeded-queue-source.ts` — explicit temporary fixture source; supplies low-stock count rather than a threshold.
+- `src/features/requests/queue/QueuePage.tsx` — loading, failure, empty, summaries, responsive table, and Review links.
+- `src/app/routes.tsx` — import the real page and replace only the `QueuePlaceholder` route element (was `ApprovalsPlaceholder` before the 3.0.0 realignment), and drop that placeholder from `src/app/placeholders.tsx` once nothing references it.
 - `src/shared/ui/actions/button-styles.ts` — `BUTTON_SHAPE` and `BUTTON_VARIANT`, lifted out of `Button.tsx` (**amended 2026-09-22**, see below).
 - `src/shared/ui/data-display/table-columns.ts` — `tableColumnStyle`, the one column-sizing rule shared by `TableHead` and the queue's row cells (**amended 2026-09-24**, see below).
 
@@ -167,10 +167,20 @@ lives.
 
 Approve, reject, and request-detail behavior remain owned by BEN-45.
 
+**Amendment — 2026-09-24 (realignment to constitution 3.0.0).** Spec 001
+Phase 0 merged to `dev` and removed `DESTINATIONS.approvals`, the `approver`
+role and the `For Release` / `Released` statuses. After the rebase the page
+read `DESTINATIONS.approvals.title` during render, the render threw, and the
+Admin's landing screen fell to the shell's error boundary. The feature moves to
+`src/features/requests/queue/` behind dev's `/queue` destination, reads its
+title and subtitle from `DESTINATIONS.queue`, and counts In Processing over the
+new statuses. No shared component changes. See the second 2026-09-24 amendment
+in `spec.md` for what stays out of scope (chips, search, sort, pagination).
+
 ## UI and State Flow
 
-1. The existing shell and route guard admit only an Approver to `/approvals`.
-2. The page loads one snapshot through `ApprovalQueueSource`.
+1. The existing shell and route guard admit only an Admin to `/queue`.
+2. The page loads one snapshot through `QueueSource`.
 3. A pure projection filters pending rows and derives Pending approval and In Processing counts; Low stock alerts is copied from the source.
 4. Loading, failure, and successful empty states remain distinguishable.
 5. Review is a router link to `/requests/:id`; the queue performs no mutation.
@@ -184,11 +194,11 @@ specs/004-approver-pending-queue/
 ├── plan.md
 └── tasks.md
 
-src/features/requests/approvals/
-├── ApprovalsQueuePage.tsx
-├── approval-queue-model.ts
-├── approval-queue-types.ts
-└── seeded-approval-queue-source.ts
+src/features/requests/queue/
+├── QueuePage.tsx
+├── queue-model.ts
+├── queue-types.ts
+└── seeded-queue-source.ts
 
 src/shared/ui/actions/
 └── button-styles.ts            # added by the 2026-09-22 amendment above
@@ -200,7 +210,7 @@ src/shared/ui/data-display/
 ## Dependencies
 
 - BEN-38 / A6 shell dependency is complete.
-- Existing `/approvals` destination and Approver guard.
+- Existing `/queue` destination and Admin guard (spec 001 Phase 0, PR #40).
 - Existing shared `PageHeader`, `SummaryCard`, `TableCard`, `TableHead`, feedback, and action components.
 - BEN-45 owns the request-detail screen reached by Review and may still render its placeholder independently.
 - A published backend contract is not required for this fixture-backed read-only slice.
@@ -210,8 +220,8 @@ src/shared/ui/data-display/
 - `npm run lint`
 - `npm run build`
 - `npm run verify`
-- Inspect at Approver `/approvals` for populated and empty fixture projections.
-- Confirm Employee and Supply Admin direct access remains refused by the existing route guard.
+- Inspect as the Admin at `/queue` for populated and empty fixture projections.
+- Confirm Employee direct access remains refused by the existing route guard, and `/approvals` renders not-found.
 - Confirm Review changes only the location to `/requests/:id`.
 - Confirm no page-level horizontal overflow from 360px through 1440px.
 
@@ -219,12 +229,12 @@ No unit-test runner exists in this repository, so this feature will not add a ne
 
 ## Requirement Coverage
 
-- FR-001–FR-003: Existing destination and guard plus the Approver-only route replacement.
+- FR-001–FR-003: Existing destination and guard plus the Admin-only route replacement.
 - FR-004–FR-008: Snapshot model and pure projection.
 - FR-009–FR-010: Queue table and Review links.
 - FR-011: Navigation-only component boundary.
 - FR-012: Explicit loading, empty, and failure states with retry.
-- FR-013: The page reloads its snapshot on every mount and on Try Again; because `/approvals` and `/requests/:id` are separate route elements, returning from request detail remounts the page and shows current data. Against the static fixture source this reload is exercised but cannot reflect a decision — the row set never changes — so FR-013 is verifiable end-to-end only once the published source replaces the fixtures.
+- FR-013: The page reloads its snapshot on every mount and on Try Again; because `/queue` and `/requests/:id` are separate route elements, returning from request detail remounts the page and shows current data. Against the static fixture source this reload is exercised but cannot reflect a decision — the row set never changes — so FR-013 is verifiable end-to-end only once the published source replaces the fixtures.
 - FR-014: Keyboard operability comes from the Review action being a real `<a>`; the visible focus indicator is the design system's global `:focus-visible` rule in `src/styles/index.css`, which predates this feature and is intentionally not restated per control. Measured on the Review links, not only inspected.
 - FR-015–FR-016: Shared controls/tokens and contained responsive table.
 - FR-017–FR-018: Internal source seam with no HTTP or threshold logic.
@@ -233,18 +243,18 @@ All 18 requirements are covered.
 
 ## Constitution Compliance
 
-**Read against constitution 2.0.0**, which is what governed when this plan was
-written. Constitution **3.0.0** landed on `dev` on 2026-09-24, after the plan;
-the two rows it changes are marked below rather than quietly re-scored. The
-full record is the 2026-09-24 amendment in `spec.md`.
+**Re-read against constitution 3.0.0** after the realignment (second
+2026-09-24 amendment in `spec.md`). Rows II and IV were marked SUPERSEDED
+between the rebase and the realignment; what they said then is kept in the
+amendment, and they are scored against 3.0.0 now.
 
 
 | Principle | Status | Reason |
 |---|---|---|
 | I. Spec-Driven Development | PASS | `spec.md` is finalized before plan, tasks, and code, and the 2026-09-24 amendment records what changed underneath it. |
-| II. Two Distinct Human Roles | **SUPERSEDED** | This row read "II. Three Distinct Human Roles — PASS" when the plan was written against constitution 2.0.0. Constitution **3.0.0** merges Approver and Supply Admin into one **Admin** ([ADR-0005](../../docs/adr/0005-two-role-model.md)), so an Approver-only page no longer satisfies principle II. Owned by spec 001 Phase 0 (T000); see the 2026-09-24 amendment in `spec.md`. |
+| II. Two Distinct Human Roles | PASS | The page is reachable by the **Admin** only, through the shell's `/queue` guard ([ADR-0005](../../docs/adr/0005-two-role-model.md)). Before the realignment this row read SUPERSEDED: the page was Approver-only. |
 | III. Inventory Integrity | PASS | Read-only metrics perform no inventory mutation or threshold classification. |
-| IV. Explicit Request State Machine | PASS, on a superseded vocabulary | The queue filters status and performs no transition — but it filters `For Release` / `Released`, which constitution 3.0.0 retires for `For Delivery` / `For Pickup` ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)). Owned by spec 001 T000c. |
+| IV. Explicit Request State Machine | PASS | The queue filters status and performs no transition. In Processing reads `Approved` / `For Delivery` / `For Pickup` ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)); `For Release` / `Released` are gone. |
 | V. Notification Completeness | PASS | No transition or notification is implemented. |
 | VI. Independently Testable Increments | PASS | The queue can be demonstrated with the typed temporary source. |
 | VII. Typed Contracts | PASS | Internal view types are not represented as backend JSON; no REST contract is invented. |
@@ -270,7 +280,7 @@ full record is the 2026-09-24 amendment in `spec.md`.
 
 ### Queue absorbs request-decision behavior
 
-- **Early warning**: Approve/reject handlers, dialogs, or status writes appear under `approvals/`.
+- **Early warning**: Approve/reject handlers, dialogs, or status writes appear under `queue/`.
 - **Mitigation**: Review is a link only; BEN-45 remains the sole owner of decision actions.
 
 ## Known Risks

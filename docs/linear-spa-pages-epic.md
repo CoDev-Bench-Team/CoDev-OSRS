@@ -61,7 +61,7 @@ Folder names below are the **preferred parallel-safe layout**. If an older MVP t
 | Catalog | `src/features/catalog/*` *or* inventory Catalog page per plan | 1–2 lines in `src/app/routes.tsx` / `placeholders.tsx` |
 | Request submit drawer | `src/features/requests/create/*` | same |
 | My Requests | `src/features/requests/history/*` | same |
-| Approvals queue | `src/features/requests/approvals/*` | same |
+| Requests Queue | `src/features/requests/queue/*` | same |
 | Fulfillment | `src/features/requests/fulfillment/*` | same |
 | Request detail | `src/features/requests/detail/*` | same |
 | Inventory | `src/features/inventory/*` | same |

@@ -1,19 +1,21 @@
 import type {
-  ApprovalQueueRequest,
-  ApprovalQueueSnapshot,
-  ApprovalQueueViewModel,
-} from './approval-queue-types';
+  QueueRequest,
+  QueueSnapshot,
+  QueueViewModel,
+} from './queue-types';
 
 /** What a cell shows when the source gave nothing usable. Exported because the
  *  page has to recognise it — a placeholder is not worth a tooltip. */
 export const NO_VALUE = '—';
 
-const IN_PROCESSING = new Set<ApprovalQueueRequest['status']>(['Approved', 'For Release', 'Released']);
+/** Non-terminal and past approval: the three statuses an Admin still has to
+ *  hand over or complete (constitution 3.0.0 IV, ADR-0007). */
+const IN_PROCESSING = new Set<QueueRequest['status']>(['Approved', 'For Delivery', 'For Pickup']);
 
 /** Codev is Manila-based, so a UTC label reads a day early for anything
- *  submitted before 08:00 local — and SUBMITTED is the column an Approver uses
+ *  submitted before 08:00 local — and SUBMITTED is the column an Admin uses
  *  to judge how long a request has waited. Pinned rather than viewer-local so
- *  every Approver reads the same date whatever their machine is set to. */
+ *  every Admin reads the same date whatever their machine is set to. */
 const SUBMITTED_DATE = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
@@ -41,7 +43,7 @@ function summarizeItems(items: readonly string[]) {
   return `${named.slice(0, 3).join(', ')} + ${named.length - 3} more`;
 }
 
-export function buildApprovalQueueViewModel(snapshot: ApprovalQueueSnapshot): ApprovalQueueViewModel {
+export function buildQueueViewModel(snapshot: QueueSnapshot): QueueViewModel {
   /** One de-duplication pass before anything is counted: a malformed source
    *  must not inflate one metric while another absorbs the same repeat. */
   const seenIds = new Set<string>();
