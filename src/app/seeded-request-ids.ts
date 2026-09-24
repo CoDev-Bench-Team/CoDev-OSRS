@@ -20,9 +20,9 @@ const OWNED_BY: Record<string, readonly string[]> = {
   'maya.santos': ['REQ-2026-1847', 'REQ-2026-1842', 'REQ-2026-1805', 'REQ-2026-1760', 'REQ-2026-1733'],
 };
 
-/** Employees reach only their own requests; Approvers and Supply Admins reach
- *  any request regardless of status, with the actions on it still gated by
- *  status and role when those actions ship (D6, FR-009). */
+/** Employees reach only their own requests; an Admin reaches any request
+ *  regardless of status, with the actions on it still gated by status and role
+ *  when those actions ship (D6, FR-009). */
 export function mayViewRequest(user: User, requestId: string): boolean {
   if (user.role !== 'employee') return true;
   return (OWNED_BY[user.id] ?? []).includes(requestId);

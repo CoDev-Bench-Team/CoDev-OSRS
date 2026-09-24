@@ -37,14 +37,12 @@ const LIFETIME_MS = 12 * 60 * 60 * 1000;
 
 /** One seeded user per role, so SC-001 and SC-003 are exercisable.
  *
- *  Maya and Ethan are the design file's two identities, with its avatar colours.
- *  The Approver is a third identity the source never draws — the file merges
- *  Approver and Supply Admin into one "Admin" — so her avatar colour is an
- *  addition, logged in docs/design-system/additions.md.
+ *  Maya (Employee) and Ethan (Admin) are the design file's two identities, with
+ *  its avatar colours — two roles, two users (ADR-0005).
  *
- *  Offices: Maya's Davao is the design file's. Samantha's and Ethan's are
- *  non-production placeholders with no design source (constitution IX), kept
- *  distinct so each profile is tell-apart at a glance (spec 006 plan). */
+ *  Offices: Maya's Davao is the design file's. Ethan's is a non-production
+ *  placeholder with no design source (constitution IX), kept distinct so the
+ *  two profiles are tell-apart at a glance (spec 006 plan). */
 const SEEDED_USERS: Record<string, User> = {
   'maya.santos': {
     id: 'maya.santos',
@@ -55,21 +53,12 @@ const SEEDED_USERS: Record<string, User> = {
     avatarColor: 'var(--color-osrs-avatar-orange)',
     office: 'Davao',
   },
-  'samantha.reyes': {
-    id: 'samantha.reyes',
-    name: 'Samantha Reyes',
-    email: 'samanthar@codev.com',
-    initials: 'SR',
-    role: 'approver',
-    avatarColor: 'var(--color-osrs-blue-600)',
-    office: 'Makati',
-  },
   'ethan.cruz': {
     id: 'ethan.cruz',
     name: 'Ethan Cruz',
     email: 'ethanc@codev.com',
     initials: 'EC',
-    role: 'supply_admin',
+    role: 'admin',
     avatarColor: 'var(--color-osrs-avatar-green)',
     office: 'Cebu',
   },
@@ -79,8 +68,7 @@ const REFUSED_ACCOUNT = 'refused';
 
 const DEMO_ACCOUNTS: readonly DemoAccount[] = [
   { id: 'maya.santos', label: 'Maya Santos', detail: 'Employee' },
-  { id: 'samantha.reyes', label: 'Samantha Reyes', detail: 'Approver' },
-  { id: 'ethan.cruz', label: 'Ethan Cruz', detail: 'Supply Admin' },
+  { id: 'ethan.cruz', label: 'Ethan Cruz', detail: 'Admin' },
   { id: REFUSED_ACCOUNT, label: 'Refused account', detail: 'Sign-in fails', refuses: true },
 ];
 

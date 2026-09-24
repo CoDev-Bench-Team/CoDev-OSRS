@@ -22,24 +22,21 @@ const fail = (m) => {
 const pass = (m) => console.log(`  ✓ ${m}`);
 const check = (ok, m, detail = '') => (ok ? pass(m) : fail(`${m}${detail ? ` — ${detail}` : ''}`));
 
-// Navigation sets as amended on 2026-09-15: Profile left the bar for the
-// account cluster, History joined it for both admin roles.
+// Navigation sets as the 2026-09-22 design draws them (constitution 3.0.0 II,
+// ADR-0005): two roles, and Profile lives in the account cluster, not the bar.
 const ACCOUNTS = {
   employee: { account: 'maya.santos', name: 'Maya Santos', landing: '/catalog', nav: ['Catalog', 'My Requests'] },
-  approver: { account: 'samantha.reyes', name: 'Samantha Reyes', landing: '/approvals', nav: ['Requests Queue', 'History', 'Catalog'] },
-  supply_admin: { account: 'ethan.cruz', name: 'Ethan Cruz', landing: '/fulfillment', nav: ['Fulfillment', 'Inventory', 'History', 'Catalog'] },
+  admin: { account: 'ethan.cruz', name: 'Ethan Cruz', landing: '/queue', nav: ['Requests Queue', 'Assets', 'Inventory', 'History'] },
 };
 
 const PERMITTED = {
   employee: ['/catalog', '/requests', '/requests/REQ-2026-1847', '/profile'],
-  approver: ['/approvals', '/history', '/catalog', '/requests/REQ-2026-1847', '/profile'],
-  supply_admin: ['/fulfillment', '/inventory', '/history', '/catalog', '/requests/REQ-2026-1847', '/profile'],
+  admin: ['/queue', '/assets', '/inventory', '/history', '/catalog', '/requests/REQ-2026-1847', '/profile'],
 };
 
 const FORBIDDEN = {
-  employee: ['/approvals', '/fulfillment', '/inventory', '/history'],
-  approver: ['/requests', '/fulfillment', '/inventory'],
-  supply_admin: ['/requests', '/approvals'],
+  employee: ['/queue', '/assets', '/inventory', '/history'],
+  admin: ['/requests'],
 };
 
 const cdp = await connect();
@@ -332,13 +329,13 @@ try {
     // record at another account. The shell never reads this; it only re-resolves.
     const store = JSON.parse(localStorage.getItem('osrs.demo.sessions'));
     const token = JSON.parse(localStorage.getItem('osrs.session')).token;
-    store[token].account = 'samantha.reyes';
+    store[token].account = 'ethan.cruz';
     localStorage.setItem('osrs.demo.sessions', JSON.stringify(store));
   });
-  await cdp.waitFor(() => location.pathname === '/approvals', 8000, 'the first tab to follow the role change');
+  await cdp.waitFor(() => location.pathname === '/queue', 8000, 'the first tab to follow the role change');
   const afterRoleChange = await cdp.evaluate(shellState);
   check(
-    afterRoleChange.nav.join(',') === ACCOUNTS.approver.nav.join(','),
+    afterRoleChange.nav.join(',') === ACCOUNTS.admin.nav.join(','),
     'a role change mid-session re-evaluates navigation and moves the user to a screen the new role may use (FR-017b)',
     `nav ${afterRoleChange.nav.join(',')}`,
   );
@@ -369,10 +366,10 @@ check(resolved.path === '/catalog' && resolved.account, 'the destination then re
 
 // ---- T051 / T042: responsive and keyboard ----
 console.log('\nThe shell holds from 360 to 1440, with navigation and sign-out reachable (FR-022, FR-023, SC-006, SC-007)');
-await signIn('supply_admin'); // the widest navigation set
+await signIn('admin'); // the widest navigation set
 for (const width of [360, 768, 1024, 1440]) {
   await cdp.setViewport(width, 900);
-  await go(`/fulfillment`);
+  await go(`/queue`);
   await new Promise((r) => setTimeout(r, 350));
   const navVisible = await cdp.evaluate(
     () => [...document.querySelectorAll('header nav a')].filter((a) => a.getBoundingClientRect().width > 0).length,
@@ -423,7 +420,7 @@ for (const width of [360, 768, 1024, 1440]) {
 
 // Keyboard: every control in the chrome reachable, each with a visible indicator.
 await cdp.setViewport(1440, 1024);
-await go(`/fulfillment`);
+await go(`/queue`);
 const focusable = await cdp.evaluate(
   () =>
     [...document.querySelectorAll('header a[href], header button, main a[href], main button:not([disabled])')].filter(

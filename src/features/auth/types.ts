@@ -5,11 +5,13 @@
  *  the backend team. When the contract publishes, its shapes are mapped INTO
  *  these types by a new `SessionSource`; the shell keeps speaking this language. */
 
-/** Constitution II: three human roles, one per user. A closed union, so a
- *  combined or elevated role cannot be expressed anywhere in the SPA (FR-005). */
-export type Role = 'employee' | 'approver' | 'supply_admin';
+/** Constitution 3.0.0 II: two human roles, one per user (ADR-0005). The Admin
+ *  both decides a request and fulfils it; `approver` and `supply_admin` are
+ *  retired. A closed union, so an elevated or combined role cannot be
+ *  expressed anywhere in the SPA (FR-005). */
+export type Role = 'employee' | 'admin';
 
-export const ROLES: readonly Role[] = ['employee', 'approver', 'supply_admin'];
+export const ROLES: readonly Role[] = ['employee', 'admin'];
 
 /** A home office, in the published contract's own vocabulary — the current
  *  user's `location` enum, transcribed rather than invented (spec 006 D3). */
@@ -42,9 +44,8 @@ export type Session = {
 export type SessionStatus = 'unknown' | 'signed-out' | 'signed-in';
 
 /** Human-readable role names for the account cluster and navigation copy.
- *  The process flow's words, not invented ones (docs/process-flow.md). */
+ *  The design file's words — its account cluster reads "Ethan Cruz — Admin". */
 export const ROLE_LABEL: Record<Role, string> = {
   employee: 'Employee',
-  approver: 'Approver',
-  supply_admin: 'Supply Admin',
+  admin: 'Admin',
 };
