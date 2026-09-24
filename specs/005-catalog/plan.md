@@ -152,7 +152,7 @@ error code appears in this feature.
 | Build | `npm run build` |
 | Full gates | `npm run verify` (needs a dev server; see `scripts/verify.mjs`) |
 | Stock derivation | Exercised at all three boundaries incl. `onHand === lowQtyAlert` |
-| Role gating | Signed in as each of the three roles |
+| Role gating | Signed in as each seeded role |
 
 ## Implementation Sequence
 
@@ -179,7 +179,7 @@ error code appears in this feature.
 | Principle | Status | Note |
 |---|---|---|
 | I. Spec-Driven | PASS | Implements spec 005 only; decisions recorded there |
-| II. Three Roles | PASS | Action gated to Employee; read open to all three |
+| II. Two Roles (3.0.0) | PASS | Action gated to Employee; read open to every role. Gate is role-count agnostic — see spec's constitution note |
 | III. Inventory Integrity | PASS | Page never mutates stock; add does not deduct |
 | IV. State Machine | PASS | No transition occurs here |
 | V. Notifications | PASS | None emitted by this page |

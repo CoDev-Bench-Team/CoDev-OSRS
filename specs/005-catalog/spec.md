@@ -21,7 +21,7 @@ list drawer, its line-item editing, and submission are a separate feature
 
 ### User Story 1 — See what is in stock (Priority: P1)
 
-Any authenticated user — Employee, Approver, or Supply Admin — opens the catalog
+Any authenticated user, whatever their role, opens the catalog
 and sees each active item with its image, name, model, type, on-hand quantity,
 and a stock status. Nobody can edit stock from this page.
 
@@ -61,18 +61,18 @@ assert the visible set.
 ### User Story 3 — Employee starts a request (Priority: P1)
 
 An Employee chooses a quantity on an item and adds it to their request list.
-Approvers and Supply Admins see the same catalog without that action.
+Every non-requesting role sees the same catalog without that action.
 
 **Why this priority**: This is the only entry to the request pipeline, and
 constitution II requires the action to authorize against the owning role.
 
-**Independent Test**: Sign in as Employee and add an item; sign in as Approver
-and as Supply Admin and confirm the action is absent.
+**Independent Test**: Sign in as Employee and add an item; sign in as every
+other seeded role and confirm the action is absent.
 
 **Acceptance Scenarios**:
 
 1. **Given** an Employee and an item with on-hand quantity ≥ 1, **When** they view the card, **Then** an add-to-request-list action is present.
-2. **Given** an Approver or a Supply Admin, **When** they view the same card, **Then** the add action is absent and the rest of the card is unchanged.
+2. **Given** any non-Employee role, **When** they view the same card, **Then** the add action is absent and the rest of the card is unchanged.
 3. **Given** an Employee and an item with on-hand quantity 0, **When** they view the card, **Then** the add action is present but disabled and labelled as out of stock.
 4. **Given** an Employee on an item with on-hand quantity N, **When** they raise the requested quantity, **Then** it cannot exceed N and cannot fall below 1.
 5. **Given** an Employee adds an item, **When** the action completes, **Then** the item is recorded in their pending request list and the catalog's on-hand quantity is unchanged.
@@ -104,7 +104,7 @@ the pipeline itself.
 
 ### Functional Requirements
 
-- **FR-001**: System MUST show the catalog at `/catalog` to authenticated Employees, Approvers, and Supply Admins.
+- **FR-001**: System MUST show the catalog at `/catalog` to every authenticated role.
 - **FR-002**: System MUST display, per active item, the item's name, model, type, image, and current on-hand quantity.
 - **FR-003**: System MUST derive a stock status of `In Stock`, `Low Stock`, or `Out of Stock` from the item's on-hand quantity and its low-quantity threshold, and display it.
 - **FR-004**: System MUST NOT offer any control that changes stock on this page, for any role.
@@ -128,6 +128,7 @@ the pipeline itself.
 Recorded rather than asked, per the decisions in `## Clarifications`.
 
 - Any authenticated role may read the catalog; only Employee may start a request (ARCHITECT.md §7).
+- Role language here is deliberately written by *count-free* description — "every authenticated role", "non-Employee" — rather than by naming Approver and Supply Admin. See the note below.
 - The low-quantity threshold published as `lowQtyAlert` is the boundary for `Low Stock`.
 - Chips are derived from the `type` values present in the returned catalog rather than hard-coded, so a contract enum change does not strand the UI.
 - The catalog reflects API state after load or after a successful mutation; it is not a live socket feed (spec 001 assumption, unchanged).
@@ -143,7 +144,7 @@ Recorded rather than asked, per the decisions in `## Clarifications`.
 ## Success Criteria
 
 - **SC-001**: A tester signed in as an Employee can find an item by search and by type chip, set a quantity within stock, and add it to their request list, without stock changing.
-- **SC-002**: A tester signed in as an Approver and as a Supply Admin sees identical item facts and no add action.
+- **SC-002**: A tester signed in as each non-Employee role sees identical item facts and no add action.
 - **SC-003**: For items above, at, and below the low-quantity threshold, the three stock statuses render correctly, and a zero-quantity item's add action is disabled.
 - **SC-004**: Loading, empty-catalog, no-results, and failure states are each reachable and visually distinct.
 - **SC-005**: No field rendered on the catalog is absent from the published Assets contract.
@@ -185,3 +186,24 @@ published contract, resolved in the contract's favour as BEN-42 directs.
   model — not this page — is what needs revisiting.**
 - **D4 — `specs[]` unsurfaced.** The contract allows arbitrary key/value specs.
   The drawn card has no slot for them. Left off rather than invented.
+
+## Constitution 3.0.0 — role model
+
+This spec was written against constitution 2.0.0, which required three human
+roles. Constitution **3.0.0** (2026-09-22, [ADR-0005](../../docs/adr/0005-two-role-model.md))
+supersedes that with two: **Employee** and **Admin**.
+
+Nothing in this feature's behavior changes. The catalog has only ever asked one
+question — *is this the requesting Employee?* — and `employee` is a role in both
+models. The gate in `CatalogItemCard` is unchanged and forward-compatible.
+
+What changed is the wording: role references above now describe access by
+position ("every authenticated role", "non-Employee") instead of enumerating
+Approver and Supply Admin, so this spec stays true whichever model the SPA is
+running.
+
+**The SPA has not migrated yet.** `src/features/auth/types.ts` on `dev` still
+carries the three-role union, so at runtime the seeded roles remain Employee,
+Approver and Supply Admin, and that is what SC-002 was verified against. When
+the role migration lands, this feature needs no code change — only the seeded
+accounts it is tested against will differ.
