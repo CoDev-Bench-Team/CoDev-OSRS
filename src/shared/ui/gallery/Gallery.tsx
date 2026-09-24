@@ -27,9 +27,22 @@ import {
   SupplyCard,
   TableCard,
   TableHead,
+  tableColumnStyle,
   TopBar,
 } from '../index';
 import itemMonitor from '../../../assets/items/item-monitor.jpg';
+
+/** The gallery's request table sizes its row cells through the same
+ *  `tableColumnStyle` as its `TableHead`, so the reference the product is
+ *  ported FROM demonstrates the rule rather than hand-copying around it. */
+const REQUEST_COLUMNS = { id: '180px', requester: '200px', items: undefined, status: '160px' } as const;
+
+const REQUEST_COLS: [label: string, width?: string][] = [
+  ['Request ID', REQUEST_COLUMNS.id],
+  ['Requester', REQUEST_COLUMNS.requester],
+  ['Items', REQUEST_COLUMNS.items],
+  ['Status', REQUEST_COLUMNS.status],
+];
 
 const NAV = [
   { label: 'Catalog', current: true },
@@ -274,17 +287,17 @@ export function Gallery() {
           </Row>
           <Row label="Table">
             <TableCard className="w-full">
-              <TableHead cols={[['Request ID', '180px'], ['Requester', '200px'], ['Items'], ['Status', '160px']]} />
+              <TableHead cols={REQUEST_COLS} />
               {[
                 ['REQ-2026-1847', 'Maya Santos', 'Laptop, Keyboard + 1 more', 'Pending Approval'],
                 ['REQ-2026-1842', 'Daniel Santos', 'Monitor, Dock', 'For Pickup'],
                 ['REQ-2026-1760', 'Isabella Mendoza', 'Laptop Stand', 'Rejected'],
               ].map(([id, who, items, status]) => (
                 <div key={id} className="flex items-center border-t border-line-default px-20 py-18">
-                  <span className="w-[180px] shrink-0 type-ui-bold text-ink-primary">{id}</span>
-                  <span className="w-[200px] shrink-0 truncate type-ui text-ink-body">{who}</span>
-                  <span className="flex-1 truncate type-ui text-ink-body">{items}</span>
-                  <span className="w-[160px] shrink-0">
+                  <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">{id}</span>
+                  <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">{who}</span>
+                  <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">{items}</span>
+                  <span style={tableColumnStyle(REQUEST_COLUMNS.status)}>
                     <StatusPill status={status as (typeof REQUEST_STATUSES)[number]} />
                   </span>
                 </div>
@@ -367,12 +380,12 @@ export function Gallery() {
           </Row>
           <Row label="Table rows — overlong">
             <TableCard className="w-full">
-              <TableHead cols={[['Request ID', '180px'], ['Requester', '200px'], ['Items'], ['Status', '160px']]} />
+              <TableHead cols={REQUEST_COLS} />
               <div className="flex items-center border-t border-line-default px-20 py-18">
-                <span className="w-[180px] shrink-0 type-ui-bold text-ink-primary">REQ-2026-1847</span>
-                <span className="w-[200px] shrink-0 truncate type-ui text-ink-body">Maria Isabella Concepcion Mendoza-Villanueva</span>
-                <span className="flex-1 truncate type-ui text-ink-body">Laptop, Wireless Keyboard, USB-C Headset, Monitor, Dock, Laptop Stand, Ergonomic Mouse</span>
-                <span className="w-[160px] shrink-0"><StatusPill status="Pending Approval" /></span>
+                <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">REQ-2026-1847</span>
+                <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">Maria Isabella Concepcion Mendoza-Villanueva</span>
+                <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">Laptop, Wireless Keyboard, USB-C Headset, Monitor, Dock, Laptop Stand, Ergonomic Mouse</span>
+                <span style={tableColumnStyle(REQUEST_COLUMNS.status)}><StatusPill status="Pending Approval" /></span>
               </div>
             </TableCard>
           </Row>

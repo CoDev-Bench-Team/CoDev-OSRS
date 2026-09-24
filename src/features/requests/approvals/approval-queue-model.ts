@@ -25,9 +25,16 @@ function formatSubmitted(value: string) {
   return Number.isNaN(submittedAt.getTime()) ? '—' : SUBMITTED_DATE.format(submittedAt);
 }
 
+/** An absent or blank item list gets the same em dash as an unparseable date,
+ *  and for the same reason: a blank cell cannot be told apart from a rendering
+ *  fault, and both are shapes an unpublished source can hand us. Blank names
+ *  are dropped before the count so "+ N more" never promises rows that are not
+ *  there. */
 function summarizeItems(items: readonly string[]) {
-  if (items.length <= 3) return items.join(', ');
-  return `${items.slice(0, 3).join(', ')} + ${items.length - 3} more`;
+  const named = items.filter((item) => item.trim().length > 0);
+  if (named.length === 0) return '—';
+  if (named.length <= 3) return named.join(', ');
+  return `${named.slice(0, 3).join(', ')} + ${named.length - 3} more`;
 }
 
 export function buildApprovalQueueViewModel(snapshot: ApprovalQueueSnapshot): ApprovalQueueViewModel {

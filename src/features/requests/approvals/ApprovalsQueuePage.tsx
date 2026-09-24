@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import {
   BUTTON_SHAPE,
@@ -39,6 +39,20 @@ const COLUMNS = {
   action: '180px',
 } as const;
 
+/** `px-20` on both sides of the header and every row, and the floor the fluid
+ *  ITEMS column keeps before its content starts truncating. */
+const ROW_PADDING_X = 40;
+const MIN_ITEMS_WIDTH = 120;
+
+/** The width below which the table scrolls instead of compressing — derived
+ *  from COLUMNS, never restated. Hand-carrying this number is the same drift
+ *  `tableColumnStyle` exists to prevent, one layer out: widen a fixed column
+ *  against a fixed total and ITEMS silently absorbs it until it collapses. */
+const TABLE_MIN_WIDTH =
+  Object.values(COLUMNS).reduce((total, width) => total + (width ? Number.parseInt(width, 10) : 0), 0) +
+  ROW_PADDING_X +
+  MIN_ITEMS_WIDTH;
+
 /** What a screen reader is told as the queue settles. The count is the page's
  *  whole point, so the settled announcement carries it rather than saying only
  *  that something changed. Annotated `: string` with no `default`, so adding a
@@ -68,6 +82,11 @@ export function ApprovalsQueuePage({
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
 
+  /** Set only by Try Again, so a successful FIRST load never steals focus from
+   *  wherever the visitor already is. */
+  const retrying = useRef(false);
+  const loadedHeader = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     let active = true;
 
@@ -85,6 +104,16 @@ export function ApprovalsQueuePage({
     };
   }, [attempt, source]);
 
+  /** A successful retry unmounts the failure notice, and with it the button the
+   *  keyboard user was standing on — focus would fall to `<body>` and they
+   *  would have to tab in from the top of the document to reach the queue they
+   *  just asked for. Land them on the page heading instead. */
+  useEffect(() => {
+    if (state.kind !== 'loaded' || !retrying.current) return;
+    retrying.current = false;
+    loadedHeader.current?.focus();
+  }, [state]);
+
   /** Derived once here rather than inside the table, so the announcement and
    *  what is on screen are the same projection of the same snapshot. */
   const queue = state.kind === 'loaded' ? buildApprovalQueueViewModel(state.snapshot) : null;
@@ -95,7 +124,9 @@ export function ApprovalsQueuePage({
           screen it carries its own title heading, so rendering this header too
           would put two `<h1>`s in the document at once. */}
       {queue ? (
-        <PageHeader title={DESTINATIONS.approvals.title} subtitle={DESTINATIONS.approvals.purpose} />
+        <div ref={loadedHeader} tabIndex={-1}>
+          <PageHeader title={DESTINATIONS.approvals.title} subtitle={DESTINATIONS.approvals.purpose} />
+        </div>
       ) : null}
 
       {/* One region, mounted for the page's whole life, whose text changes as
@@ -124,6 +155,7 @@ export function ApprovalsQueuePage({
           actions={
             <Button
               onClick={() => {
+                retrying.current = true;
                 setState({ kind: 'loading' });
                 setAttempt((current) => current + 1);
               }}
@@ -153,69 +185,79 @@ function LoadedQueue({ queue }: { queue: ApprovalQueueViewModel }) {
           <SectionTitle className="scroll-mt-24">Pending Approval</SectionTitle>
         </div>
 
+        {/* The card's `shadow-card` is offset 5px down over an 18px blur, so it
+            paints ~4px above, ~14px below and ~9px either side of the card.
+            `overflow-x-auto` computes the block axis to `auto` as well, so a
+            scroll region wrapped tight around the card would clip that shadow
+            on three sides. The padding gives the shadow room and the matching
+            negative margins give the space back, keeping the card where the
+            layout puts it. 9px of horizontal bleed is well inside the shell's
+            32px gutter, so SC-006 still holds at 360px. */}
         <div
           role="region"
           aria-label="Pending requests table"
           tabIndex={0}
-          className="w-full min-w-0 overflow-x-auto rounded-10"
+          className="-mx-9 -mt-4 -mb-14 min-w-0 overflow-x-auto px-9 pt-4 pb-14"
         >
-          <TableCard className="min-w-[1090px]">
-            <TableHead
-              cols={[
-                ['REQUEST ID', COLUMNS.id],
-                ['REQUESTER', COLUMNS.requester],
-                ['ITEMS', COLUMNS.items],
-                ['STATUS', COLUMNS.status],
-                ['SUBMITTED', COLUMNS.submitted],
-                ['ACTION', COLUMNS.action],
-              ]}
-            />
+          <div style={{ minWidth: TABLE_MIN_WIDTH }}>
+            <TableCard>
+              <TableHead
+                cols={[
+                  ['REQUEST ID', COLUMNS.id],
+                  ['REQUESTER', COLUMNS.requester],
+                  ['ITEMS', COLUMNS.items],
+                  ['STATUS', COLUMNS.status],
+                  ['SUBMITTED', COLUMNS.submitted],
+                  ['ACTION', COLUMNS.action],
+                ]}
+              />
 
-            {queue.pendingRows.length === 0 ? (
-              <div className="flex min-h-row-height-request items-center border-t border-line-default px-20 py-18">
-                <p className="type-body text-ink-secondary">No requests are awaiting approval.</p>
-              </div>
-            ) : (
-              queue.pendingRows.map((request) => (
-                <div
-                  key={request.id}
-                  className="flex min-h-row-height-request items-center border-t border-line-default px-20 py-18"
-                >
-                  <span style={tableColumnStyle(COLUMNS.id)} className="type-ui-bold text-ink-primary">
-                    {request.id}
-                  </span>
-                  <span style={tableColumnStyle(COLUMNS.requester)} className="flex flex-col gap-1 pr-12">
-                    <span className="truncate type-ui text-ink-primary">{request.requestorName}</span>
-                    {request.requestorContext ? (
-                      <span className="truncate type-meta text-ink-secondary">{request.requestorContext}</span>
-                    ) : null}
-                  </span>
-                  <span
-                    style={tableColumnStyle(COLUMNS.items)}
-                    className="truncate pr-12 type-ui text-ink-primary"
-                    title={request.itemSummary}
-                  >
-                    {request.itemSummary}
-                  </span>
-                  <span style={tableColumnStyle(COLUMNS.status)} className="flex items-center">
-                    <StatusPill status={request.status} />
-                  </span>
-                  <span style={tableColumnStyle(COLUMNS.submitted)} className="type-ui text-ink-secondary">
-                    {request.submittedLabel}
-                  </span>
-                  <span style={tableColumnStyle(COLUMNS.action)} className="flex items-center">
-                    <Link
-                      to={requestDetailPath(request.id)}
-                      aria-label={`Review request ${request.id}`}
-                      className={`${BUTTON_SHAPE} ${BUTTON_VARIANT.primary}`}
-                    >
-                      Review
-                    </Link>
-                  </span>
+              {queue.pendingRows.length === 0 ? (
+                <div className="flex min-h-row-height-request items-center border-t border-line-default px-20 py-18">
+                  <p className="type-body text-ink-secondary">No requests are awaiting approval.</p>
                 </div>
-              ))
-            )}
-          </TableCard>
+              ) : (
+                queue.pendingRows.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex min-h-row-height-request items-center border-t border-line-default px-20 py-18"
+                  >
+                    <span style={tableColumnStyle(COLUMNS.id)} className="type-ui-bold text-ink-primary">
+                      {request.id}
+                    </span>
+                    <span style={tableColumnStyle(COLUMNS.requester)} className="flex flex-col gap-1 pr-12">
+                      <span className="truncate type-ui text-ink-primary">{request.requestorName}</span>
+                      {request.requestorContext ? (
+                        <span className="truncate type-meta text-ink-secondary">{request.requestorContext}</span>
+                      ) : null}
+                    </span>
+                    <span
+                      style={tableColumnStyle(COLUMNS.items)}
+                      className="truncate pr-12 type-ui text-ink-primary"
+                      title={request.itemSummary}
+                    >
+                      {request.itemSummary}
+                    </span>
+                    <span style={tableColumnStyle(COLUMNS.status)} className="flex items-center">
+                      <StatusPill status={request.status} />
+                    </span>
+                    <span style={tableColumnStyle(COLUMNS.submitted)} className="type-ui text-ink-secondary">
+                      {request.submittedLabel}
+                    </span>
+                    <span style={tableColumnStyle(COLUMNS.action)} className="flex items-center">
+                      <Link
+                        to={requestDetailPath(request.id)}
+                        aria-label={`Review request ${request.id}`}
+                        className={`${BUTTON_SHAPE} ${BUTTON_VARIANT.primary}`}
+                      >
+                        Review
+                      </Link>
+                    </span>
+                  </div>
+                ))
+              )}
+            </TableCard>
+          </div>
         </div>
       </section>
     </>

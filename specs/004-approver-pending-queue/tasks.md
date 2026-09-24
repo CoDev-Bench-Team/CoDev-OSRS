@@ -34,6 +34,7 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 - [x] T009 [BEN-75] Run lint, build, verify, scoped diff review, and PR delivery — `package.json`
 - [x] T010 [BEN-75] Share the button's class strings with the Review link instead of hand-copying them; see the 2026-09-22 amendment in `plan.md` — `src/shared/ui/actions/button-styles.ts`, `src/shared/ui/actions/Button.tsx`, `src/shared/ui/index.ts`
 - [x] T011 [BEN-75] Share `TableHead`'s column sizing with the queue's row cells instead of hand-copying it, type the row's identity fields off the request, and qualify FR-013/FR-014 coverage; see the 2026-09-24 amendment in `plan.md` — `src/shared/ui/data-display/table-columns.ts`, `src/shared/ui/data-display/cards.tsx`, `src/shared/ui/index.ts`, `src/features/requests/approvals/ApprovalsQueuePage.tsx`, `src/features/requests/approvals/approval-queue-types.ts`
+- [x] T012 [BEN-75] Derive the table's minimum width from `COLUMNS`, give the scroll region room for the card's shadow, restore keyboard focus after a successful retry, fall back to an em dash for an empty item list, and move the gallery's two tables onto `tableColumnStyle`; see the 2026-09-24 second-review amendment in `plan.md` — `src/features/requests/approvals/ApprovalsQueuePage.tsx`, `src/features/requests/approvals/approval-queue-model.ts`, `src/shared/ui/gallery/Gallery.tsx`
 
 ## Dependencies
 
@@ -44,6 +45,7 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 - T008 blocks T009.
 - T010 arose from review during T009 and touches no file T001–T008 owns.
 - T011 arose from a second review round during T009; its shared-UI change is output-preserving for every existing `TableHead` caller.
+- T012 arose from a third review round during T009. Its four feature changes touch files T004–T007 own and its gallery change is output-preserving; all five were measured rather than inspected (derived width, shadow room, SC-006 at four widths, the retry focus path driven end-to-end, and the model exercised against empty and blank item lists).
 
 ## Parallel Opportunities
 
@@ -51,4 +53,4 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 
 ## MVP Slice
 
-T001–T008. T009 is the required delivery gate; T010 and T011 were raised by review inside it.
+T001–T008. T009 is the required delivery gate; T010, T011 and T012 were raised by review inside it.

@@ -50,6 +50,53 @@ The resolution is the smallest one that removes the duplication: the class strin
 
 **Amendment — 2026-09-24.** Code review found the page's `column()` helper restated `TableHead`'s inline column-sizing expression by hand — and had already drifted from it (`minWidth: 0` on the fluid column, so `truncate` can take effect in cells). Same class of duplication as the 2026-09-22 amendment, one file over. The resolution is the same shape: the expression moves to `tableColumnStyle` in its own module, and both `TableHead` and the row cells call it. `TableHead`'s fluid heading now also carries `minWidth: 0`, which changes nothing visible for a short heading; no component gains a prop, and no other caller is touched.
 
+**Amendment — 2026-09-24 (second review round).** A further review raised five
+items, four of them in this feature and one in the shared gallery. None changes
+what the page does; all four are the same theme as the two amendments above —
+a value or a guarantee stated in two places instead of derived in one.
+
+- **The table's minimum width was hand-carried.** `min-w-[1090px]` was `COLUMNS`
+  added up by a person: 930px of fixed columns, 40px of row padding, and a
+  120px floor for the fluid ITEMS column. Widening a fixed column against a
+  fixed total silently squeezes ITEMS instead of widening the table. It is now
+  `TABLE_MIN_WIDTH`, reduced from `COLUMNS` at module scope. Measured: the
+  derived value is 1090px, so the change is output-preserving today and
+  drift-proof after.
+- **The scroll region clipped the card's shadow.** `overflow-x-auto` computes
+  the block axis to `auto` as well, so the region clipped `shadow-card`
+  (offset 5px, blur 18 — it paints ~4px above, ~14px below and ~9px either side
+  of the card) on three sides. The region now carries padding for the shadow and
+  matching negative margins that give the space back. The 9px of horizontal
+  bleed sits well inside the shell's 32px gutter; SC-006 was re-measured at 360,
+  768, 1024 and 1440px and no page-level overflow appears at any of them.
+- **A successful retry dropped keyboard focus.** The Try Again button unmounts
+  with the failure notice, leaving `document.activeElement` on `<body>` — the
+  visitor had to tab in from the top of the document to reach the queue they had
+  just asked for. Focus now moves to the page-heading wrapper, and only after a
+  retry, so a successful first load never steals focus. Verified end-to-end by
+  making the source fail and pressing the button.
+- **`summarizeItems` had no fallback where `formatSubmitted` has one.** An empty
+  or all-blank item list rendered a blank cell that cannot be told apart from a
+  rendering fault. It now returns the same em dash the date path returns, and
+  drops blank names before counting so "+ N more" never promises rows that are
+  not there. FR-009's item summary is unchanged for every well-formed input.
+- **`tableColumnStyle` was not yet the rule it claimed to be.** The 2026-09-24
+  amendment above describes it as the one column-sizing rule for OSRS tables,
+  but the repository's only other table rows — the two in
+  `src/shared/ui/gallery/Gallery.tsx`, which is the reference the product is
+  ported *from* — still hand-wrote `w-[180px] shrink-0` / `flex-1`. Both now
+  size their cells through `tableColumnStyle` against one shared
+  `REQUEST_COLUMNS`. Output-preserving (the fluid cell already carried
+  `truncate`, so its `min-width: auto` had resolved to 0 anyway); the fidelity
+  and pixel gates both still pass.
+
+The fifth item was a claim in the pull-request description, not in the code: it
+states that the loading and failure notices carry `role="status"` / `role="alert"`.
+`Notice` sets neither. What announces is this page's own persistent
+`role="status" aria-live="polite"` region, which is the better arrangement and
+is unchanged — but it means the failure is announced politely rather than
+assertively, and the description should say so.
+
 Approve, reject, and request-detail behavior remain owned by BEN-45.
 
 ## UI and State Flow
