@@ -55,8 +55,8 @@ in `additions.md`. The last five came from the 2026-09-15 `.fig` re-export
 | `--spacing-touch-target` | `44px` | The minimum touch target below the design width (spec 002 FR-012). The source has no mobile frames. |
 | `--color-osrs-pink-500` | `rgb(239,93,168)` | The "For Delivery" ink. No pink exists anywhere in the source palette; specified by the project owner, 2026-09-14 (additions.md §2b). |
 | `--color-osrs-pink-tint` | `rgba(239,93,168,0.1)` | Its 10% fill, following the `--osrs-*-tint` convention the source already uses for green and red. |
-| `--color-status-delivery-bg` / `-fg` | the pink pair | Semantic alias for the delivery handover label. |
-| `--color-status-pickup-bg` / `-fg` | `var(--color-osrs-blue-50)` / `var(--color-osrs-blue-700)` | Semantic alias only — **both values are source primitives**, unchanged. The source defines the blues but no component uses this pairing. |
+| `--color-status-delivery-bg` / `-fg` | the pink pair | Semantic alias for the delivery handover label. **Unused since ADR-0007**: `For Delivery` is a state in the green `ready` tone. Kept until the designer settles the pill's colours (drift-2026-09-22 §3, question 5). |
+| `--color-status-pickup-bg` / `-fg` | `var(--color-osrs-blue-50)` / `var(--color-osrs-blue-700)` | Semantic alias only — **both values are source primitives**, unchanged. The source defines the blues but no component uses this pairing. **Unused since ADR-0007**, as above. |
 | `--color-osrs-google-green` | `rgb(52,168,83)` | A Google brand colour. **Present in the `.fig`, absent from the export**: the mark's vector carries only the red in `fillPaints` and takes this from `vectorData.styleOverrideTable` (styleID 3), which `tokens/colors.css` never captured. Restored 2026-09-15 (additions.md §4.2). |
 | `--color-osrs-google-yellow` | `rgb(251,188,5)` | The same, styleID 4. |
 | `--color-osrs-purple-600` | `rgb(104,64,184)` | `Completed`'s ink in the 2026-09-15 export — the file's own `Status/Completed` colour style. Not in the vendored palette, which had `Completed` green. |
