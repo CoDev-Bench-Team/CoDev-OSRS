@@ -1,14 +1,16 @@
 # Architecture — Office Supplies Request System
 
 **Status**: Accepted for MVP  
-**Date**: 2026-09-11  
+**Date**: 2026-09-11 · **Last amended**: 2026-09-22 (design re-export; constitution 3.0.0)  
 **Companion docs**: [product](docs/product.md), [process flow](docs/process-flow.md), [ADRs](docs/adr/), [feature plan](specs/001-office-supplies-mvp/plan.md)
 
 This file is the cross-cutting HOW. Feature WHAT lives in specs. Do not duplicate user stories here.
 
 ## 1. System Context
 
-OSRS is an internal web application. Employees request encoded office supplies; Approvers accept or reject; Supply Admins pick, pack, and release; the System keeps inventory consistent and emails participants.
+OSRS is an internal web application. Employees browse a catalog of assets and request them; an Admin approves or rejects, hands over by delivery or pickup, and completes; the System keeps stock consistent and emails participants.
+
+Two human roles, not three — see [ADR-0005](docs/adr/0005-two-role-model.md). Stock is per office and expressed as Total / Available / Reserved — see [ADR-0006](docs/adr/0006-assets-and-inventory.md). The request ends when the Admin completes it — see [ADR-0007](docs/adr/0007-fulfilment-status-vocabulary.md).
 
 This repository is the **browser SPA**. All durable state, authorization, inventory math, and email sending live behind a **REST JSON API** that the SPA consumes. The API’s runtime, language, and storage are **undecided** and must not be assumed in this repo.
 
@@ -16,8 +18,8 @@ This repository is the **browser SPA**. All durable state, authorization, invent
 ┌─────────────┐                  ┌──────────────────┐
 │  Browser    │      HTTPS       │  Vite React SPA  │
 │  Employee / │◀────────────────▶│  (this repo)     │
-│  Approver / │                  └────────┬─────────┘
-│  Supply Adm │                           │ REST JSON
+│  Admin      │                  └────────┬─────────┘
+│             │                           │ REST JSON
                                   │                           │ (backend contract)
 └─────────────┘                           ▼
                                  ┌──────────────────┐
@@ -64,8 +66,11 @@ CoDev-OSRS/
 │   ├── assets/                # fonts, brand, photography
 │   ├── features/
 │   │   ├── auth/
-│   │   ├── inventory/
-│   │   └── requests/
+│   │   ├── catalog/           # employee-facing asset catalog
+│   │   ├── assets/            # admin: asset records + add/update panels
+│   │   ├── inventory/         # admin: stock levels + update-stocks panel
+│   │   ├── profile/
+│   │   └── requests/          # create drawer, history, queue, detail
 │   ├── styles/                # Tailwind @theme token layer
 │   └── shared/                # API client, types, ui/ component library
 ├── e2e/                       # Playwright (to be added)
@@ -79,76 +84,98 @@ Do not add an API implementation directory until an ADR names the stack. Configu
 | Module | Owns | Does not own |
 |--------|------|--------------|
 | Auth | Login, logout, current user | Role-specific business rules in the UI |
-| Users | Identity and role | Request workflow |
-| Inventory | Catalog, on-hand qty, encode/adjust by Supply Admin | Request status |
-| Requests | Request aggregate, line items, legal transitions | Email transport internals |
+| Users | Identity, role, home office | Request workflow |
+| Assets | Asset record: name, category, model, description, image, category-dependent specs | Quantities |
+| Inventory | Stock per (asset, office): Total / Available / Reserved, low-stock threshold | Request status |
+| Requests | Request aggregate, line items, legal transitions, reasons, pickup location | Email transport internals |
 | Notifications | Templates, recipients, send, send log | Whether a transition is allowed |
 
-**Atomicity (API):** submit, reject and cancel MUST change request status and on-hand quantity together. After a valid transition is committed, send the matching email. A notification failure MUST be recorded and MUST NOT undo a valid transition; the API SHOULD surface that the mail step failed.
+**Atomicity (API):** submit, reject, cancel and complete MUST change request status and stock quantities together, holding `Total = Available + Reserved`. After a valid transition is committed, send the matching email. A notification failure MUST be recorded and MUST NOT undo a valid transition; the API SHOULD surface that the mail step failed.
 
 ## 5. Request State Machine
 
 ```
-            submit                reject
-  [create] ───────► Pending Approval ──────► Rejected
+            submit                     reject (reason)
+  [create] ───────► Pending Approval ─────────────────► Rejected
                          │   │
-                         │   └── cancel (owning Employee) ──► Cancelled
-                         │ approve                              ▲
-                         ▼                                      │
-                      Approved ──── cancel (Supply Admin) ──────┤
-                         │                                      │
-                         │ prepare (Supply Admin)               │
-                         ▼                                      │
-                    For Release ─── cancel (Supply Admin) ──────┘
+                         │   └── cancel (owning Employee, reason) ──► Cancelled
+                         │ approve                                       ▲
+                         ▼                                               │
+                      Approved ──────── cancel (Admin, reason) ──────────┤
+                         │                                               │
+                         │ update status (Admin)                         │
+                         ▼                                               │
+              For Delivery │ For Pickup ── cancel (Admin, reason) ───────┘
+                    (peers, not a sequence;
+                     For Pickup records a location)
                          │
-                         │ release (Supply Admin)
-                         ▼
-                      Released
-                         │
-                         │ confirm receipt (Employee)
+                         │ complete (Admin)
                          ▼
                       Completed
 ```
 
 Guards (enforced by the API; SPA mirrors them in the UI):
 
-- Submit: authenticated Employee; every line qty ≥ 1; qty ≤ on-hand; items exist and are active.
-- Approve / Reject: Approver; request is `Pending Approval`; reject body includes non-empty reason.
-- Prepare: Supply Admin; request is `Approved`.
-- Release: Supply Admin; request is `For Release`; pickup location recorded.
-- Confirm: owning Employee; request is `Released`.
-- Cancel: owning Employee while `Pending Approval` (reason optional), or Supply Admin while `Approved` or `For Release` (reason required). Never once `Released`. Restores stock in the same transaction, exactly as reject does.
+- **Submit**: authenticated Employee; every line qty ≥ 1; qty ≤ `Available` at the requesting office; assets exist and are active.
+- **Approve / Reject**: Admin; request is `Pending Approval`; reject body includes a non-empty reason.
+- **Update status**: Admin; request is `Approved`, `For Delivery` or `For Pickup`; target is `For Delivery` or `For Pickup`; `For Pickup` records a pickup location.
+- **Complete**: Admin; request is `For Delivery` or `For Pickup`.
+- **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `For Pickup`. **A reason is required from whoever cancels.** Never once `Completed`. Releases the reservation in the same transaction, exactly as reject does.
 
-## 6. Inventory Coupling
+There is no confirm-receipt transition. `Completed` is an Admin action — see [ADR-0007](docs/adr/0007-fulfilment-status-vocabulary.md).
 
-| Event | Status after | On-hand qty |
-|-------|--------------|-------------|
-| Item encoded | — | Set by Supply Admin (≥ 0) |
-| Request submitted | Pending Approval | Decrement by requested qty |
-| Request rejected | Rejected | Increment by requested qty |
-| Request cancelled | Cancelled | Increment by requested qty |
-| Approved / For Release / Released / Completed | those statuses | No change (already deducted) |
+## 6. Stock Coupling
 
-Concurrent submits for the last units MUST serialize so on-hand never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract’s choice.
+Stock is held per **(asset, office)** as three numbers. `Total = Available + Reserved` is an invariant; none may be negative.
+
+| Event | Status after | Total | Available | Reserved |
+|-------|--------------|-------|-----------|----------|
+| Asset encoded / stock set | — | set by Admin (≥ 0) | = Total | 0 |
+| Request submitted | Pending Approval | — | −qty | +qty |
+| Request rejected | Rejected | — | +qty | −qty |
+| Request cancelled | Cancelled | — | +qty | −qty |
+| Approved | Approved | — | — | — |
+| For Delivery / For Pickup | those statuses | — | — | — |
+| Request completed | Completed | −qty | — | −qty |
+
+`Completed` is the only transition that reduces `Total`; the difference is what the Assets screen counts as *Deployed units*. Concurrent submits for the last units MUST serialize so `Available` never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract's choice.
+
+Each (asset, office) also carries a **low-stock threshold**, which drives the `In Stock` / `Low Stock` / `Out of Stock` pill and the chip counts on Assets and Inventory.
 
 ## 7. AuthZ Matrix (MVP)
 
-| Action | Employee | Approver | Supply Admin |
-|--------|----------|----------|--------------|
-| View catalog / stock | yes | yes | yes |
-| Encode / edit inventory | no | no | yes |
-| Create request | yes | no* | no* |
-| View own requests | yes | — | — |
-| View pending queue | no | yes | no |
-| Approve / reject | no | yes | no |
-| Prepare / release | no | no | yes |
-| Confirm receipt | own released request | no | no |
-| Cancel a request | own, while pending | no | any approved or for-release |
-| View resolved history | own only (My Requests) | yes (all requestors) | yes (all requestors) |
+| Action | Employee | Admin |
+|--------|----------|-------|
+| View catalog (assets + availability) | yes | yes |
+| Create / edit assets | no | yes |
+| Set stock (per office) and low-stock threshold | no | yes |
+| Create request | yes | no\* |
+| View own requests | yes | — |
+| View requests queue (all requestors) | no | yes |
+| Approve / reject | no | yes |
+| Set For Delivery / For Pickup | no | yes |
+| Complete a request | no | yes |
+| Cancel a request | own, while `Pending Approval`, reason required | any `Approved` / `For Delivery` / `For Pickup`, reason required |
+| View resolved history | own only (My Requests) | yes (History, all requestors) |
+| View own profile | yes | yes\*\* |
 
-\*A person may hold only one role in the MVP seed data. If a real user needs two jobs, that is a later change — do not invent a superuser.
+\*A person holds exactly one role in the MVP seed data. If a real user needs both jobs, that is a later change — do not invent a superuser.
 
-Approvers may review any pending request (small internal team). Supply Admins may prepare any approved request.
+\*\*Profile is drawn for the Employee only; the Admin variant is undesigned (see [drift-2026-09-22 §7](docs/design-system/drift-2026-09-22.md)).
+
+Any Admin may review any request and fulfil any approved one.
+
+### Routes
+
+| Route | Role | Screen |
+|-------|------|--------|
+| `/catalog` | Employee (Admin may view) | `02 - Catalog` + Request List drawer |
+| `/requests` | Employee | `04 - My Requests` + detail panel |
+| `/queue` | Admin | `02 - Requests Queue` + review / update-status / reject panels |
+| `/assets` | Admin | `03- Assets` + add / view / update panels |
+| `/inventory` | Admin | `03 - Inventory` + `03.4 - Update Stocks` panel |
+| `/history` | Admin | `04 - History` + read-only detail panel |
+| `/profile` | both | `05 - Profile` |
 
 ## 8. API Shape
 
@@ -176,14 +203,14 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 | Failure | User impact | Mitigation |
 |---------|-------------|------------|
 | API unreachable | Forms fail | Health check; clear SPA error; Vite proxy or CORS in deploy |
-| Concurrent submit of last unit | One succeeds, one 409/insufficient | API must not persist negative stock |
+| Concurrent submit of last unit | One succeeds, one 409/insufficient | API must not persist negative `Available` |
 | Mail gateway down | Status still changes | Notification log `failed`; ops follow up |
-| Approver inactive | Queue stalls | Manual; no auto-escalate in MVP |
+| No Admin acts | Queue stalls | Manual; no auto-escalate in MVP |
 
 ## 12. Testing Architecture
 
 - **Contract**: HTTP against the **backend-published** REST contract (not a file invented in this repo).
-- **E2E (Playwright)**: encoded stock → employee request → approver reject (stock restored) → new request → approve → prepare → release → confirm; assert notifications as the backend contract exposes them.
+- **E2E (Playwright)**: stock set → employee request → admin reject (reservation released) → new request → approve → For Delivery or For Pickup → complete (Total and Reserved fall); assert notifications as the backend contract exposes them.
 
 ## 13. Decisions
 
@@ -191,5 +218,8 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 |-----|----------|
 | [0001](docs/adr/0001-spa-rest-api.md) | SPA in this repo; REST API owned by backend team |
 | [0002](docs/adr/0002-deduct-inventory-on-submit.md) | Deduct stock on submit, not on approve |
-| [0003](docs/adr/0003-three-role-model.md) | Approver and Supply Admin are separate roles |
+| [0003](docs/adr/0003-three-role-model.md) | Approver and Supply Admin are separate roles — **superseded by 0005** |
 | [0004](docs/adr/0004-client-routing.md) | Client-side routing via React Router v7 |
+| [0005](docs/adr/0005-two-role-model.md) | Employee and Admin — two human roles |
+| [0006](docs/adr/0006-assets-and-inventory.md) | Assets and Inventory are separate; per-office Total/Available/Reserved stock |
+| [0007](docs/adr/0007-fulfilment-status-vocabulary.md) | One handover state (For Delivery / For Pickup), completed by the Admin |

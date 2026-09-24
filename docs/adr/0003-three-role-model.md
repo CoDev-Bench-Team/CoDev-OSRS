@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+**Superseded by [ADR-0005](0005-two-role-model.md)** (2026-09-22). The
+2026-09-22 design re-export draws one merged **Admin** doing both approval and
+fulfilment; the project owner accepted it. Kept for the record — the control
+point this ADR protected is named as a cost in ADR-0005.
+
+Was: Accepted
 
 ## Context
 

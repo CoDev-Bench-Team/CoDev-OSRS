@@ -33,8 +33,9 @@ be exercised:
 | Name | Role | Lands on |
 |------|------|----------|
 | Maya Santos · mayas@codev.com | `employee` | `/catalog` |
-| Samantha Reyes · samanthar@codev.com | `approver` | `/approvals` |
-| Ethan Cruz · ethanc@codev.com | `supply_admin` | `/fulfillment` |
+| Ethan Cruz · ethanc@codev.com | `admin` | `/queue` |
+
+> Constitution 3.0.0 retired `approver` and `supply_admin` ([ADR-0005](../../docs/adr/0005-two-role-model.md)). The shipped shell still seeds three identities; T000–T000b in `tasks.md` collapse them to the two above.
 
 Choose one on the sign-in screen before pressing the Google control — the
 chooser is the seeded source's stand-in for Google's account picker, and it
@@ -75,17 +76,19 @@ npx playwright test   # when e2e/ exists; API must be up
 
 Playwright MUST cover:
 
-1. Happy path to `Completed` with stock decremented once
-2. Reject path with stock restored and a new request
-3. Notifications as the backend contract exposes them
-4. Role cannot perform another role’s transition
+1. Happy path to `Completed`, with the reservation released and `Total` reduced once
+2. Reject path with the reservation released and a new request
+3. Cancel paths from both sides, each requiring a reason
+4. Notifications as the backend contract exposes them
+5. Role cannot perform the other role's transition
 
 ## Demo script (human)
 
-1. Supply Admin encodes pens (10) and notebooks (5)
-2. Employee requests 3 pens — stock 7, status Pending Approval, submitted notification
-3. Approver rejects “Duplicate of last week” — stock 10, rejected notification
-4. Employee submits 3 pens again — stock 7
-5. Approver approves — approved notifications to employee and supply
-6. Supply Admin prepare → For Release; release at “GS Counter”
-7. Employee confirms receipt — Completed; completed notifications to employee and approver
+1. Admin adds a Laptop asset, then sets Cebu stock to 10 — Total 10 / Available 10 / Reserved 0
+2. Employee (Cebu) adds 3 to the Request List and submits — Available 7 / Reserved 3, status Pending Approval, `Request received` email
+3. Admin rejects with reason “Duplicate of last week” — Available 10 / Reserved 0, `Request declined` email
+4. Employee submits 3 again — Available 7 / Reserved 3
+5. Admin approves — `Request approved` email; quantities unchanged
+6. Admin sets **For Pickup** at “GS Counter” — `Status changed` email carrying the location
+7. Admin presses **Complete** — Total 7 / Available 7 / Reserved 0, `Status changed` email
+8. Employee cancels a second pending request with a reason — reservation released, `Status changed` email

@@ -1,5 +1,12 @@
 # Feature Specification: Application Shell, Routing & Role Navigation
 
+> **Partly superseded by constitution 3.0.0 (2026-09-22).** This spec shipped
+> against three roles and the `For Release` / `Released` vocabulary, both of
+> which are retired. Kept as the historical record of what was built; the
+> realignment is Phase 0 of
+> [specs/001-office-supplies-mvp/tasks.md](../001-office-supplies-mvp/tasks.md).
+> See [drift-2026-09-22](../../docs/design-system/drift-2026-09-22.md).
+
 **Feature Branch**: `003-app-shell-routing`
 **Created**: 2026-09-12
 **Status**: Draft

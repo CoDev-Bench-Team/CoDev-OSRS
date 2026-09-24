@@ -1,5 +1,14 @@
 # Feature Specification: Profile
 
+> **Partly superseded by constitution 3.0.0 (2026-09-22).** This spec shipped
+> against three roles; `approver` and `supply_admin` are retired in favour of a
+> single **Admin** ([ADR-0005](../../docs/adr/0005-two-role-model.md)). D2, FR-001,
+> FR-012 and SC-005 all read "Approver and Supply Admin" where they now mean
+> "Admin" — the behaviour is unchanged, one page for every role, but the role
+> names are not. The realignment is Phase 0 of
+> [specs/001-office-supplies-mvp/tasks.md](../001-office-supplies-mvp/tasks.md).
+> See [drift-2026-09-22](../../docs/design-system/drift-2026-09-22.md).
+
 **Feature Branch**: `006-profile`
 **Created**: 2026-09-23
 **Status**: Draft
