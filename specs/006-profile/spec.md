@@ -3,7 +3,7 @@
 > **Amended for constitution 3.0.0 (2026-09-24, BEN-123).** This spec shipped
 > against three roles; `approver` and `supply_admin` are retired in favour of a
 > single **Admin** ([ADR-0005](../../docs/adr/0005-two-role-model.md)). D2, FR-001,
-> FR-012, SC-005 and the Known Gaps now say "Admin". The behaviour is
+> FR-012, SC-001, SC-005, Out of Scope and the Known Gaps now say "Admin". The behaviour is
 > unchanged — one page for every role. `plan.md` and `tasks.md` are left as the
 > record of what was built against three roles. See Phase 0 of
 > [specs/001-office-supplies-mvp/tasks.md](../001-office-supplies-mvp/tasks.md)
@@ -104,11 +104,11 @@ Below the identity block, under the heading `Currently Assigned`, the user sees 
 - Showing the Google profile photograph.
 - Role-specific Profile content for the Admin beyond the reused Employee layout.
 - Linking assigned items to requests, the catalog, or request history.
-- Reconciling the contract's role vocabulary with the three SPA roles. That mapping belongs to the shell's session boundary, not this page.
+- Reconciling the contract's role vocabulary with the SPA's two roles. That mapping belongs to the shell's session boundary, not this page.
 
 ## Success Criteria
 
-- **SC-001**: For each of the three seeded roles, a tester reaches Profile from the account cluster in one action and sees that user's name, email and office exactly as the session holds them.
+- **SC-001**: For each of the two seeded roles (Employee, Admin), a tester reaches Profile from the account cluster in one action and sees that user's name, email and office exactly as the session holds them.
 - **SC-002**: A search of the Profile feature, excluding its opt-in demo stub, finds no literal name, email, office, asset tag or date for any real or seeded user. *(Amended 2026-09-23.)*
 - **SC-003**: Against today's backend, Profile renders with no `Currently Assigned` section and no error.
 - **SC-004**: Against a stubbed source returning three items, Profile lists exactly those three, with name, tag and formatted date. Against a stubbed source returning none, it shows the empty state. Each outcome is verifiable in one run.

@@ -89,8 +89,8 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     id: 'inventory',
     path: '/inventory',
     navLabel: 'Inventory',
-    title: 'Inventory management',
-    purpose: 'Monitor stock levels, manage reservations, and keep office essentials ready for every team',
+    title: 'Inventory',
+    purpose: 'Monitor stock levels, manage reservations, and keep office essentials ready',
     roles: ['admin'],
   },
   history: {

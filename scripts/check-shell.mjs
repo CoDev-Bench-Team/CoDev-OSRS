@@ -124,7 +124,7 @@ for (const [role, expected] of Object.entries(ACCOUNTS)) {
   check(!s.nav.includes('Profile'), `${role}: Profile is not a navigation item`);
   await cdp.evaluate(() => {
     [...document.querySelectorAll('header button')]
-      .find((b) => b.textContent.includes('Santos') || b.textContent.includes('Reyes') || b.textContent.includes('Cruz'))
+      .find((b) => b.textContent.includes('Santos') || b.textContent.includes('Cruz'))
       .click();
   });
   await waitForPath('/profile', `${role} reaching profile from the account cluster`);
@@ -228,6 +228,16 @@ await go(`/definitely-not-a-screen`);
 const missingPath = await cdp.evaluate(shellState);
 check(missingPath.eyebrow === 'Not found', 'an unmatched path renders not-found', `eyebrow ${missingPath.eyebrow}`);
 check(missingPath.hasBar, 'not-found renders inside the shell, chrome intact');
+
+// The three-role addresses retired with constitution 3.0.0 (ADR-0005). A stale
+// bookmark must fail visibly, even for the Admin who inherited both jobs.
+await signIn('admin');
+for (const retired of ['/approvals', '/fulfillment']) {
+  await go(retired);
+  const state = await cdp.evaluate(shellState);
+  check(state.eyebrow === 'Not found', `retired ${retired} renders not-found for the Admin`, `eyebrow ${state.eyebrow}`);
+}
+await signIn('employee');
 
 await go(`/requests/REQ-2026-9999`);
 const missingRecord = await cdp.evaluate(shellState);

@@ -35,10 +35,13 @@ Grouped by how much judgement each required.
 > `For Delivery` and `For Pickup` are now request **states**, not labels on
 > `Released`, and both render in the green `ready` tone like every other moving
 > state. The pill no longer takes a `handover` prop. The pink and blue pairs
-> below stay in `theme.css`, unused, until the designer settles the pill
-> component's colours and its `Ready for Pickup` variant name
-> ([drift-2026-09-22 §3](drift-2026-09-22.md), question 5). Kept as the record
-> of what shipped before.
+> below stay in `theme.css`, unused. Green is ADR-0007's decision, not a
+> placeholder; the pairs are kept only because the design's `Request Status`
+> component still draws them, and question 5 of
+> [drift-2026-09-22 §3](drift-2026-09-22.md) (its `Ready for Pickup` variant
+> name and the misspelt `For Dellivery` symbol) is still open. Delete them if the
+> designer re-draws the component in green. Kept as the record of what shipped
+> before.
 
 A `Released` pill can read "Ready for Pickup" or "For Delivery" instead of
 `Released`. Both are presentational only — the request is `Released` either way,
@@ -329,7 +332,7 @@ from that check and are **not** additions but corrections:
 
 Below the card, a second small card lets a tester choose which seeded demo
 account signs in — the stand-in for Google's account chooser, and the only way
-to reach all three roles while the backend contract is unpublished. It is **not**
+to reach both roles while the backend contract is unpublished. It is **not**
 a role switcher (D5): it chooses who signs *in*, and changing role still means
 signing out and back in. It renders only while the active session source offers
 demo accounts, so it disappears by itself the day a real one replaces it.

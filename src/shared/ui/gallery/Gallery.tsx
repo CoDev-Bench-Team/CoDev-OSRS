@@ -190,7 +190,7 @@ export function Gallery() {
           </Row>
         </Section>
 
-        <Section id="status" title="Status" note="Amber waits on a human, green is moving, red is stopped by a decision, purple is closed and done, slate is stopped without one. Request status is the seven legal states — no other value can be expressed. For Delivery and For Pickup are peers, both moving, so both are green.">
+        <Section id="status" title="Status" note="Amber waits on a human, green is moving, red is stopped by a decision, purple is closed and done, slate is stopped without one. Request status is the seven legal states — no other value can be expressed. For Delivery and For Pickup are peers, both moving, so both are green — ADR-0007's decision, not a gap: the design's pink and blue pill variants are deliberately not used.">
           <Row label="Request — the seven legal states">
             {REQUEST_STATUSES.map((s) => (
               <StatusPill key={s} status={s} />
@@ -277,7 +277,7 @@ export function Gallery() {
               <TableHead cols={[['Request ID', '180px'], ['Requester', '200px'], ['Items'], ['Status', '160px']]} />
               {[
                 ['REQ-2026-1847', 'Maya Santos', 'Laptop, Keyboard + 1 more', 'Pending Approval'],
-                ['REQ-2026-1842', 'Samantha Reyes', 'Monitor, Dock', 'For Pickup'],
+                ['REQ-2026-1842', 'Daniel Santos', 'Monitor, Dock', 'For Pickup'],
                 ['REQ-2026-1760', 'Isabella Mendoza', 'Laptop Stand', 'Rejected'],
               ].map(([id, who, items, status]) => (
                 <div key={id} className="flex items-center border-t border-line-default px-20 py-18">

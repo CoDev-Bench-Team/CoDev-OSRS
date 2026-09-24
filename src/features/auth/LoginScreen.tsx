@@ -137,7 +137,7 @@ export function LoginScreen() {
 /** The seeded source's stand-in for Google's account chooser.
  *
  *  A source that authenticates nobody has to be told whom to sign in as, and a
- *  tester has to reach all three roles to exercise SC-001 and SC-003. This is
+ *  tester has to reach both roles to exercise SC-001 and SC-003. This is
  *  NOT part of the session boundary: it renders only while the active source
  *  exposes demo accounts, so it disappears by itself the day an implementation
  *  backed by the published contract replaces the seeded one.
@@ -157,6 +157,9 @@ function DemoAccountChooser({ source }: { source: DemoAccountSource }) {
       </div>
       <fieldset className="flex flex-col gap-8 border-none p-0">
         <legend className="sr-only">Seeded demo account</legend>
+        {/* The label is the 44px touch target, so the radio inside it opts out
+            of the base-layer minimum (index.css) and keeps its drawn 16px. At
+            44px it overflowed the 240px row and wrapped each label mid-phrase. */}
         {source.accounts().map((account) => (
           <label key={account.id} className="flex min-h-touch-target cursor-pointer items-center gap-8">
             <input
@@ -168,7 +171,7 @@ function DemoAccountChooser({ source }: { source: DemoAccountSource }) {
                 setSelected(account.id);
                 source.select(account.id);
               }}
-              className="h-16 w-16 accent-brand-primary"
+              className="h-16 min-h-0 w-16 min-w-0 shrink-0 accent-brand-primary"
             />
             <span className="type-ui-bold text-ink-primary">{account.label}</span>
             <span className="type-ui text-ink-secondary">{account.detail}</span>
