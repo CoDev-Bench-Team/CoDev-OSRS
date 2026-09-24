@@ -16,6 +16,7 @@ export { FilterChip } from './forms/FilterChip';
 export { TextField } from './forms/TextField';
 export { InputField } from './forms/InputField';
 export { Checkbox } from './forms/Checkbox';
+export { Field, FieldGroup, TextArea, TextInput, type FieldControl } from './forms/fields';
 
 // Data display
 export { StatusPill } from './data-display/StatusPill';

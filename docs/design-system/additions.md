@@ -377,8 +377,6 @@ the assigned units have a real source (constitution 4.0.0; ADR-0008).
 | **Identity line office** | `email • <Office> Office`, falling back to the email alone. Office comes from the session. The seeded Admin's `Cebu` is a placeholder; only Maya's `Davao` is from the file. | The frame draws `mayas@codev.com • Davao Office` only. |
 | **Identity and section-title sizes from the frame** | Name 24px medium; `Currently Assigned` 24px display medium; two-column grid of cards with 14px/20px gaps inside 1222px. | The UI kit's JSX carries the file's cached 13px / 14px sizes and a single 700px column, which drift §9 records as wrong. The rendered frame wins. |
 
----
-
 ## 3f. The Employee request panel (BEN-45, 2026-09-23)
 
 `SidePanel`, `StatusTimeline` and `TextField` are **drawn** (`04.1`, `04.2`,
@@ -497,6 +495,24 @@ fills what it leaves open.
 | **Chip counts** | Every chip carries its count over the current search matches, as the queue's do. | The frame draws a count on *All requests (238)* only. Decided by the project owner (spec 013). |
 | **Sort menu** | Newest First · Oldest First · Employee (A-Z), the queue's drawn menu (`02.1`); the date orders use the resolved date. | The frame draws the select closed. Decided by the project owner (spec 013). |
 | **Loading, empty and failure** | The shell's `LoadingState` in place of the table; the queue's empty state; a `Notice` with **Try again** on failure. | Not drawn; the queue's treatment (spec 004). |
+
+## 3k. Assets and Inventory (BEN-48, spec 014)
+
+`03- Assets`, `03.1 Add Asset - <category>`, `03.2- View Asset`, `03 - Inventory`
+(frame B) and `03.4 - Update Stocks` are drawn. The following are ours.
+
+| Addition | What was decided | Basis |
+|----------|------------------|-------|
+| **Office floor under each stepper** | Each office row on Update stocks reads `<n> reserved · <n> available` beneath the office name, and `−` is disabled at the reserved count. | Not drawn. A stepper that stops at 3 with no reason reads as a bug; the floor is what keeps `Total = Available + Reserved` (spec 014 D9). |
+| **Typeable stepper value** | The number between `−` and `+` is an input; a value below the floor is raised to it when the field is left. | Not drawn as editable. Setting 60 units one click at a time is not a workflow. |
+| **`+ Add Inventory` disabled** | Rendered as drawn, at 60% opacity, not clickable, with a screen-reader note that adding individual units is not part of the MVP. | It opens a per-unit form that constitution VIII puts out of scope (spec 014 D10). |
+| **Field error line** | A 12px line in rejected ink under the control, and the control's hairline turns rejected red. | The panels draw no error state. Same colours as the shell's refusals. |
+| **Custom specification rows** | On Update Asset: `Specification *` and `Value` side by side with `Remove`, and `+ Add specification` under the category rows. | The frame draws one free row with the placeholder `e.g. External Keyboard` and no add or remove control. |
+| **Monitor's form** | Headset's shape: Model required, no specifications. | No `03.1 Add Asset - Monitor` frame; Monitor is in the contract's category enum (spec 014 D4). |
+| **Table loading, failure and empty** | Loading: the shell's dots at the height of three rows. Failure: the shell's `Notice` with `Try again`. Empty: `No asset matches that search` / `No item matches that search` in a row. | None drawn. |
+| **Panel footer pinned** | Cancel / Save Changes sit in a footer under a hairline, outside the scrolling body. | The frames draw the pair at the foot of a panel that does not scroll; Add Asset - Laptop is taller than a 1024px viewport. |
+
+---
 
 ## 4. Defects found in the source — flagged, not fixed
 

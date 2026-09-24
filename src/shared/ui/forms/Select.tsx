@@ -27,6 +27,7 @@ export function Select({
   invalid,
   describedBy,
   className,
+  id: triggerId,
 }: {
   value?: string;
   options: string[];
@@ -43,6 +44,8 @@ export function Select({
   /** The id of the element that explains the current error, if any. */
   describedBy?: string;
   className?: string;
+  /** For a visible `<label htmlFor>` naming the control, as a form field has. */
+  id?: string;
 }) {
   // Disabled only when asked. A single option is not a reason to disable: the
   // control still opens and shows what is there, which is what a native select
@@ -214,6 +217,7 @@ export function Select({
     <div ref={rootRef} className={`relative w-full ${className ?? ''}`}>
       <button
         ref={triggerRef}
+        id={triggerId}
         type="button"
         role="combobox"
         aria-haspopup={isDisabled ? undefined : 'listbox'}
