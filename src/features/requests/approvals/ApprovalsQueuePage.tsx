@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Link } from 'react-router';
 import {
   BUTTON_SHAPE,
@@ -10,11 +10,14 @@ import {
   StatusPill,
   SummaryCard,
   TableCard,
+  TABLE_ROW_PADDING_CLASS,
+  TABLE_ROW_PADDING_X,
   TableHead,
   tableColumnStyle,
+  type ColumnWidth,
 } from '../../../shared/ui';
 import { DESTINATIONS, requestDetailPath } from '../../../app/destinations';
-import { buildApprovalQueueViewModel } from './approval-queue-model';
+import { buildApprovalQueueViewModel, NO_VALUE } from './approval-queue-model';
 import type {
   ApprovalQueueSnapshot,
   ApprovalQueueSource,
@@ -37,20 +40,21 @@ const COLUMNS = {
   status: '190px',
   submitted: '180px',
   action: '180px',
-} as const;
+} as const satisfies Record<string, ColumnWidth | undefined>;
 
-/** `px-20` on both sides of the header and every row, and the floor the fluid
- *  ITEMS column keeps before its content starts truncating. */
-const ROW_PADDING_X = 40;
+/** The floor the fluid ITEMS column keeps before its content starts
+ *  truncating. */
 const MIN_ITEMS_WIDTH = 120;
 
 /** The width below which the table scrolls instead of compressing — derived
- *  from COLUMNS, never restated. Hand-carrying this number is the same drift
- *  `tableColumnStyle` exists to prevent, one layer out: widen a fixed column
- *  against a fixed total and ITEMS silently absorbs it until it collapses. */
+ *  from COLUMNS and from the shared row gutter, never restated. Hand-carrying
+ *  this number is the same drift `tableColumnStyle` exists to prevent, one
+ *  layer out: widen a fixed column against a fixed total and ITEMS silently
+ *  absorbs it until it collapses. `ColumnWidth` guarantees every value is in
+ *  pixels, so parsing them is safe. */
 const TABLE_MIN_WIDTH =
   Object.values(COLUMNS).reduce((total, width) => total + (width ? Number.parseInt(width, 10) : 0), 0) +
-  ROW_PADDING_X +
+  TABLE_ROW_PADDING_X +
   MIN_ITEMS_WIDTH;
 
 /** What a screen reader is told as the queue settles. The count is the page's
@@ -85,7 +89,7 @@ export function ApprovalsQueuePage({
   /** Set only by Try Again, so a successful FIRST load never steals focus from
    *  wherever the visitor already is. */
   const retrying = useRef(false);
-  const loadedHeader = useRef<HTMLDivElement>(null);
+  const recoveredHeading = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -107,11 +111,17 @@ export function ApprovalsQueuePage({
   /** A successful retry unmounts the failure notice, and with it the button the
    *  keyboard user was standing on — focus would fall to `<body>` and they
    *  would have to tab in from the top of the document to reach the queue they
-   *  just asked for. Land them on the page heading instead. */
+   *  just asked for.
+   *
+   *  Focus goes to the "Pending Approval" heading rather than the page header:
+   *  the live region is already about to say how many requests are waiting, and
+   *  a page header carrying a title AND a subtitle would be read out on top of
+   *  that. The section heading is two words, it is the heading of the content
+   *  that just appeared, and it puts the visitor at the table. */
   useEffect(() => {
     if (state.kind !== 'loaded' || !retrying.current) return;
     retrying.current = false;
-    loadedHeader.current?.focus();
+    recoveredHeading.current?.focus();
   }, [state]);
 
   /** Derived once here rather than inside the table, so the announcement and
@@ -124,9 +134,7 @@ export function ApprovalsQueuePage({
           screen it carries its own title heading, so rendering this header too
           would put two `<h1>`s in the document at once. */}
       {queue ? (
-        <div ref={loadedHeader} tabIndex={-1}>
-          <PageHeader title={DESTINATIONS.approvals.title} subtitle={DESTINATIONS.approvals.purpose} />
-        </div>
+        <PageHeader title={DESTINATIONS.approvals.title} subtitle={DESTINATIONS.approvals.purpose} />
       ) : null}
 
       {/* One region, mounted for the page's whole life, whose text changes as
@@ -166,12 +174,19 @@ export function ApprovalsQueuePage({
         />
       ) : null}
 
-      {queue ? <LoadedQueue queue={queue} /> : null}
+      {queue ? <LoadedQueue queue={queue} headingRef={recoveredHeading} /> : null}
     </div>
   );
 }
 
-function LoadedQueue({ queue }: { queue: ApprovalQueueViewModel }) {
+function LoadedQueue({
+  queue,
+  headingRef,
+}: {
+  queue: ApprovalQueueViewModel;
+  /** Where focus lands when a retry succeeds; see the effect that uses it. */
+  headingRef: RefObject<HTMLDivElement | null>;
+}) {
   return (
     <>
       <section className="grid grid-cols-1 gap-16 md:grid-cols-3" aria-label="Approval workload summary">
@@ -181,7 +196,7 @@ function LoadedQueue({ queue }: { queue: ApprovalQueueViewModel }) {
       </section>
 
       <section className="flex min-w-0 flex-col gap-20" aria-labelledby="pending-approval-heading">
-        <div id="pending-approval-heading">
+        <div id="pending-approval-heading" ref={headingRef} tabIndex={-1}>
           <SectionTitle className="scroll-mt-24">Pending Approval</SectionTitle>
         </div>
 
@@ -213,14 +228,14 @@ function LoadedQueue({ queue }: { queue: ApprovalQueueViewModel }) {
               />
 
               {queue.pendingRows.length === 0 ? (
-                <div className="flex min-h-row-height-request items-center border-t border-line-default px-20 py-18">
+                <div className={`flex min-h-row-height-request items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
                   <p className="type-body text-ink-secondary">No requests are awaiting approval.</p>
                 </div>
               ) : (
                 queue.pendingRows.map((request) => (
                   <div
                     key={request.id}
-                    className="flex min-h-row-height-request items-center border-t border-line-default px-20 py-18"
+                    className={`flex min-h-row-height-request items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}
                   >
                     <span style={tableColumnStyle(COLUMNS.id)} className="type-ui-bold text-ink-primary">
                       {request.id}
@@ -234,7 +249,10 @@ function LoadedQueue({ queue }: { queue: ApprovalQueueViewModel }) {
                     <span
                       style={tableColumnStyle(COLUMNS.items)}
                       className="truncate pr-12 type-ui text-ink-primary"
-                      title={request.itemSummary}
+                      /* The full summary is worth a tooltip; the em dash that
+                         stands in for "no items" is not — it would hover the
+                         same character the cell already shows. */
+                      title={request.itemSummary === NO_VALUE ? undefined : request.itemSummary}
                     >
                       {request.itemSummary}
                     </span>

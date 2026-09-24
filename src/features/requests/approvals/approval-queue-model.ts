@@ -4,6 +4,10 @@ import type {
   ApprovalQueueViewModel,
 } from './approval-queue-types';
 
+/** What a cell shows when the source gave nothing usable. Exported because the
+ *  page has to recognise it — a placeholder is not worth a tooltip. */
+export const NO_VALUE = '—';
+
 const IN_PROCESSING = new Set<ApprovalQueueRequest['status']>(['Approved', 'For Release', 'Released']);
 
 /** Codev is Manila-based, so a UTC label reads a day early for anything
@@ -22,7 +26,7 @@ const SUBMITTED_DATE = new Intl.DateTimeFormat('en-US', {
  *  state and surface as the shell's generic error instead. */
 function formatSubmitted(value: string) {
   const submittedAt = new Date(value);
-  return Number.isNaN(submittedAt.getTime()) ? '—' : SUBMITTED_DATE.format(submittedAt);
+  return Number.isNaN(submittedAt.getTime()) ? NO_VALUE : SUBMITTED_DATE.format(submittedAt);
 }
 
 /** An absent or blank item list gets the same em dash as an unparseable date,
@@ -32,7 +36,7 @@ function formatSubmitted(value: string) {
  *  there. */
 function summarizeItems(items: readonly string[]) {
   const named = items.filter((item) => item.trim().length > 0);
-  if (named.length === 0) return '—';
+  if (named.length === 0) return NO_VALUE;
   if (named.length <= 3) return named.join(', ');
   return `${named.slice(0, 3).join(', ')} + ${named.length - 3} more`;
 }

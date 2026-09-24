@@ -3,7 +3,7 @@
 **Feature Branch**: `emmanuelr/ben-46-p2spa-approver-pending-queue`  
 **Created**: 2026-09-22  
 **Status**: Draft  
-**Sources**: BEN-46, BEN-72, `specs/001-office-supplies-mvp/spec.md`, `specs/003-app-shell-routing/spec.md`, vendored Figma re-export dated 2026-09-15
+**Sources**: BEN-46, BEN-72, `specs/001-office-supplies-mvp/spec.md`, `specs/003-app-shell-routing/spec.md`, vendored Figma re-export dated 2026-09-15 — **superseded**; see the 2026-09-24 amendment below
 
 ## Overview
 
@@ -131,6 +131,58 @@ An Approver can review the queue with keyboard controls and at every width suppo
 - Q: Does the pending table include a Status column? → A: Yes. Confirmed by the project owner after initial implementation; each row displays the canonical `Pending Approval` pill.
 - Q: Which timezone does the submitted date display in? → A: `Asia/Manila`. Codev is Manila-based, and a UTC label reads a day early for anything submitted before 08:00 local — misleading in the column an Approver uses to judge how long a request has waited. Pinned rather than viewer-local so every Approver reads the same date whatever their machine is set to. Revisit if the system ever serves more than one timezone.
 - Q: What does a row show when the source supplies an unusable submitted timestamp? → A: An em dash in that cell. Date formatting happens during render, so an unparseable value would otherwise escape the page's own failure state and surface as the shell's generic error — a worse outcome than one incomplete cell, and a regression against FR-012.
+
+### Session 2026-09-24 — Amendment: this spec predates constitution 3.0.0
+
+Raised by code review. Constitution I requires an instruction or a governing
+change that contradicts a resolved clarification to be recorded here rather than
+applied silently — and it applies just as much when the contradiction arrives
+from *underneath*, as this one did.
+
+**What happened.** This spec and its plan were written on 2026-09-22 against
+constitution **2.0.0**. On 2026-09-24 the project owner adopted the 2026-09-22
+design re-export as constitution **3.0.0**
+([drift-2026-09-22](../../docs/design-system/drift-2026-09-22.md)), and this
+branch was rebased onto it. Two of that amendment's changes cut directly across
+this feature:
+
+| This spec says | Constitution 3.0.0 says |
+|---|---|
+| Three roles; the page is **Approver-only** (FR-002) and MUST NOT merge Approver and Supply Admin (FR-003) | Two roles. Approver and Supply Admin are **one Admin** ([ADR-0005](../../docs/adr/0005-two-role-model.md)) |
+| In Processing counts `Approved`, **`For Release`**, **`Released`** (FR-006) | Those two statuses are retired in favour of **`For Delivery`** / **`For Pickup`** ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)) |
+| Fidelity is against the vendored **2026-09-15** re-export | The accepted baseline is the **2026-09-22** export; `design-system/` is two exports stale (spec 001 T000e) |
+
+**Resolution — recorded, not repaired here.** FR-002, FR-003 and FR-006 are
+**superseded** as written. They are left in place rather than rewritten, because
+rewriting them would make this spec claim a compliance it does not have: the
+code still reads `approver` and `For Release` / `Released` from
+`src/features/auth/types.ts` and `src/shared/ui/status.ts`, which
+`specs/001-office-supplies-mvp/tasks.md` **Phase 0** (T000–T000d) exists to
+replace and which it declares blocking for all downstream work.
+
+So this feature ships as a **pre-3.0.0 slice**, and Phase 0 owns its migration:
+
+- **T000** collapses `Role`, which retires FR-002 and FR-003. The page becomes
+  the Admin queue; `docs/process-flow.md` already titles it *Requests Queue* and
+  subtitles it *"Review, approve, and fulfill supply requests"*.
+- **T000c** replaces the status vocabulary, which retires FR-006. In Processing
+  becomes `Approved` | `For Delivery` | `For Pickup` — the same idea (non-terminal,
+  past approval) over the new names.
+- **T000e** re-vendors `design-system/`, after which this feature's fidelity
+  should be re-checked against the 2026-09-22 export rather than the 2026-09-15
+  one.
+
+**What this costs, said plainly.** Merging before Phase 0 means the repository
+briefly carries one more file-set built on a retired model. The alternative —
+holding this work until Phase 0 lands — was weighed and not taken, because the
+queue is navigation-only, changes no status and no stock, and its migration is
+a rename across two constants. The cost is recorded so that it is a decision and
+not a surprise, which is the same standard
+[drift-2026-09-22 §2](../../docs/design-system/drift-2026-09-22.md) sets for the
+role merge itself.
+
+`plan.md`'s Constitution Compliance table is corrected in the same change: its
+principle II row named a principle that 3.0.0 deleted.
 
 ## Validation
 

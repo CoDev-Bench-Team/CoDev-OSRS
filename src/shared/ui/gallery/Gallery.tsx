@@ -29,15 +29,21 @@ import {
   TableHead,
   tableColumnStyle,
   TopBar,
+  type ColumnWidth,
 } from '../index';
 import itemMonitor from '../../../assets/items/item-monitor.jpg';
 
 /** The gallery's request table sizes its row cells through the same
  *  `tableColumnStyle` as its `TableHead`, so the reference the product is
  *  ported FROM demonstrates the rule rather than hand-copying around it. */
-const REQUEST_COLUMNS = { id: '180px', requester: '200px', items: undefined, status: '160px' } as const;
+const REQUEST_COLUMNS = {
+  id: '180px',
+  requester: '200px',
+  items: undefined,
+  status: '160px',
+} as const satisfies Record<string, ColumnWidth | undefined>;
 
-const REQUEST_COLS: [label: string, width?: string][] = [
+const REQUEST_COLS: [label: string, width?: ColumnWidth][] = [
   ['Request ID', REQUEST_COLUMNS.id],
   ['Requester', REQUEST_COLUMNS.requester],
   ['Items', REQUEST_COLUMNS.items],

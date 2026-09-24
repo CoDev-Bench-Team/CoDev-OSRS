@@ -97,6 +97,38 @@ states that the loading and failure notices carry `role="status"` / `role="alert
 is unchanged — but it means the failure is announced politely rather than
 assertively, and the description should say so.
 
+**Amendment — 2026-09-24 (third review round).** A fourth review raised six
+items. The two documentary ones are carried by the 2026-09-24 amendment in
+`spec.md` and by the corrected Constitution Compliance table below. The four in
+code:
+
+- **`ColumnWidth`.** `tableColumnStyle` accepted any CSS length, but
+  `TABLE_MIN_WIDTH` has to *add the columns up*, and `Number.parseInt('12rem')`
+  is `12` — a silently wrong total. Column widths are now typed
+  `` `${number}px` ``, so a non-px unit is a compile error. It found a real
+  looseness on the first run: the gallery's `REQUEST_COLS` was annotated
+  `string` and no longer type-checks without the narrower type.
+- **The row gutter is shared.** `ROW_PADDING_X = 40` was a literal that had to
+  agree with the `px-20` class on `TableHead` and on the queue's rows. Both now
+  read `TABLE_ROW_PADDING_CLASS` from `table-columns.ts`, and the number is
+  parsed back out of that class, so the padding and the width calculation cannot
+  drift.
+- **The em dash no longer becomes a tooltip.** `NO_VALUE` is exported from the
+  model so the page can recognise the placeholder and omit `title` for it,
+  rather than hovering the same character the cell already shows.
+- **Retry focus lands on the section heading**, not the page header. The live
+  region is already about to announce the count; a page header carrying a title
+  *and* a subtitle would be read on top of it. "Pending Approval" is two words,
+  it heads the content that just appeared, and it puts the visitor at the table.
+
+**An approach that was tried and rejected.** Deriving the minimum width from CSS
+instead of arithmetic — `min-width: min-content` on the sizer with a floor on the
+fluid column — would have removed both the unit assumption and the padding
+coupling outright. Measured, it resolves to **1195px** rather than 1090px: the
+table would demand 105px more and scroll sooner, and the extra could not be
+accounted for cleanly from the column set. Rejected in favour of the explicit
+calculation, which is duller but is a number anyone can check.
+
 Approve, reject, and request-detail behavior remain owned by BEN-45.
 
 ## UI and State Flow
@@ -165,12 +197,18 @@ All 18 requirements are covered.
 
 ## Constitution Compliance
 
+**Read against constitution 2.0.0**, which is what governed when this plan was
+written. Constitution **3.0.0** landed on `dev` on 2026-09-24, after the plan;
+the two rows it changes are marked below rather than quietly re-scored. The
+full record is the 2026-09-24 amendment in `spec.md`.
+
+
 | Principle | Status | Reason |
 |---|---|---|
-| I. Spec-Driven Development | PASS | `spec.md` is finalized before plan, tasks, and code. |
-| II. Three Distinct Human Roles | PASS | The page is Approver-only and adds no combined Admin. |
+| I. Spec-Driven Development | PASS | `spec.md` is finalized before plan, tasks, and code, and the 2026-09-24 amendment records what changed underneath it. |
+| II. Two Distinct Human Roles | **SUPERSEDED** | This row read "II. Three Distinct Human Roles — PASS" when the plan was written against constitution 2.0.0. Constitution **3.0.0** merges Approver and Supply Admin into one **Admin** ([ADR-0005](../../docs/adr/0005-two-role-model.md)), so an Approver-only page no longer satisfies principle II. Owned by spec 001 Phase 0 (T000); see the 2026-09-24 amendment in `spec.md`. |
 | III. Inventory Integrity | PASS | Read-only metrics perform no inventory mutation or threshold classification. |
-| IV. Explicit Request State Machine | PASS | The queue filters status and performs no transition. |
+| IV. Explicit Request State Machine | PASS, on a superseded vocabulary | The queue filters status and performs no transition — but it filters `For Release` / `Released`, which constitution 3.0.0 retires for `For Delivery` / `For Pickup` ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)). Owned by spec 001 T000c. |
 | V. Notification Completeness | PASS | No transition or notification is implemented. |
 | VI. Independently Testable Increments | PASS | The queue can be demonstrated with the typed temporary source. |
 | VII. Typed Contracts | PASS | Internal view types are not represented as backend JSON; no REST contract is invented. |
