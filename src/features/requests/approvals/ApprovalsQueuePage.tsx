@@ -11,6 +11,7 @@ import {
   SummaryCard,
   TableCard,
   TableHead,
+  tableColumnStyle,
 } from '../../../shared/ui';
 import { DESTINATIONS, requestDetailPath } from '../../../app/destinations';
 import { buildApprovalQueueViewModel } from './approval-queue-model';
@@ -27,8 +28,8 @@ type LoadState =
   | { kind: 'loaded'; snapshot: ApprovalQueueSnapshot };
 
 /** One source of truth for the grid. The header and the row cells read the
- *  same widths through the same mechanism, so a column cannot be widened in
- *  one place and left behind in the other. */
+ *  same widths through the same `tableColumnStyle`, so a column cannot be
+ *  widened or sized differently in one place and left behind in the other. */
 const COLUMNS = {
   id: '200px',
   requester: '180px',
@@ -37,10 +38,6 @@ const COLUMNS = {
   submitted: '180px',
   action: '180px',
 } as const;
-
-/** Matches `TableHead`'s own sizing: a fixed column does not shrink, and the
- *  fluid one may shrink below its content so `truncate` can take effect. */
-const column = (width?: string) => (width ? { width, flexShrink: 0 } : { flex: 1, minWidth: 0 });
 
 /** What a screen reader is told as the queue settles. The count is the page's
  *  whole point, so the settled announcement carries it rather than saying only
@@ -184,29 +181,29 @@ function LoadedQueue({ queue }: { queue: ApprovalQueueViewModel }) {
                   key={request.id}
                   className="flex min-h-row-height-request items-center border-t border-line-default px-20 py-18"
                 >
-                  <span style={column(COLUMNS.id)} className="type-ui-bold text-ink-primary">
+                  <span style={tableColumnStyle(COLUMNS.id)} className="type-ui-bold text-ink-primary">
                     {request.id}
                   </span>
-                  <span style={column(COLUMNS.requester)} className="flex flex-col gap-1 pr-12">
+                  <span style={tableColumnStyle(COLUMNS.requester)} className="flex flex-col gap-1 pr-12">
                     <span className="truncate type-ui text-ink-primary">{request.requestorName}</span>
                     {request.requestorContext ? (
                       <span className="truncate type-meta text-ink-secondary">{request.requestorContext}</span>
                     ) : null}
                   </span>
                   <span
-                    style={column(COLUMNS.items)}
+                    style={tableColumnStyle(COLUMNS.items)}
                     className="truncate pr-12 type-ui text-ink-primary"
                     title={request.itemSummary}
                   >
                     {request.itemSummary}
                   </span>
-                  <span style={column(COLUMNS.status)} className="flex items-center">
+                  <span style={tableColumnStyle(COLUMNS.status)} className="flex items-center">
                     <StatusPill status={request.status} />
                   </span>
-                  <span style={column(COLUMNS.submitted)} className="type-ui text-ink-secondary">
+                  <span style={tableColumnStyle(COLUMNS.submitted)} className="type-ui text-ink-secondary">
                     {request.submittedLabel}
                   </span>
-                  <span style={column(COLUMNS.action)} className="flex items-center">
+                  <span style={tableColumnStyle(COLUMNS.action)} className="flex items-center">
                     <Link
                       to={requestDetailPath(request.id)}
                       aria-label={`Review request ${request.id}`}

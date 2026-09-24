@@ -20,10 +20,11 @@ export interface ApprovalQueueSource {
   load(): Promise<ApprovalQueueSnapshot>;
 }
 
-export interface ApprovalQueueRow {
-  id: string;
-  requestorName: string;
-  requestorContext?: string;
+/** A row is a projection of a request: the identity fields are carried over
+ *  as-is (typed off the source so they cannot drift), and the display-only
+ *  `items`/`submittedAt` are replaced by their rendered forms. */
+export interface ApprovalQueueRow
+  extends Pick<ApprovalQueueRequest, 'id' | 'requestorName' | 'requestorContext'> {
   itemSummary: string;
   submittedLabel: string;
   /** Carried so the row's pill states what the row IS, rather than repeating

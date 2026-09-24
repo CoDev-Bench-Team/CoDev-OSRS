@@ -42,10 +42,13 @@ The backend contract remains unpublished at `specs/001-office-supplies-mvp/contr
 - `src/features/requests/approvals/ApprovalsQueuePage.tsx` — loading, failure, empty, summaries, responsive table, and Review links.
 - `src/app/routes.tsx` — import the real page and replace only the `ApprovalsPlaceholder` route element, and drop that placeholder from `src/app/placeholders.tsx` once nothing references it.
 - `src/shared/ui/actions/button-styles.ts` — `BUTTON_SHAPE` and `BUTTON_VARIANT`, lifted out of `Button.tsx` (**amended 2026-09-22**, see below).
+- `src/shared/ui/data-display/table-columns.ts` — `tableColumnStyle`, the one column-sizing rule shared by `TableHead` and the queue's row cells (**amended 2026-09-24**, see below).
 
 **Amendment — 2026-09-22.** This section previously read "Shared components remain unchanged." Code review found the Review action had hand-copied eleven of `Button`'s twelve primary classes and dropped the semantic `min-w-touch-target`, which is the drift this plan's own red-team section warns about in a different form. The row's action must be an `<a>` so copy-link and middle-click keep working, so it cannot simply *be* a `<Button>`.
 
 The resolution is the smallest one that removes the duplication: the class strings move to their own module and both `Button` and the link consume them. `Button`'s rendered output is unchanged, no component gains a prop, and no other caller is touched. They live apart from `Button.tsx` because a component file that also exports constants loses Fast Refresh. Recorded here rather than applied silently, per constitution I.
+
+**Amendment — 2026-09-24.** Code review found the page's `column()` helper restated `TableHead`'s inline column-sizing expression by hand — and had already drifted from it (`minWidth: 0` on the fluid column, so `truncate` can take effect in cells). Same class of duplication as the 2026-09-22 amendment, one file over. The resolution is the same shape: the expression moves to `tableColumnStyle` in its own module, and both `TableHead` and the row cells call it. `TableHead`'s fluid heading now also carries `minWidth: 0`, which changes nothing visible for a short heading; no component gains a prop, and no other caller is touched.
 
 Approve, reject, and request-detail behavior remain owned by BEN-45.
 
@@ -74,6 +77,9 @@ src/features/requests/approvals/
 
 src/shared/ui/actions/
 └── button-styles.ts            # added by the 2026-09-22 amendment above
+
+src/shared/ui/data-display/
+└── table-columns.ts            # added by the 2026-09-24 amendment above
 ```
 
 ## Dependencies
@@ -102,8 +108,10 @@ No unit-test runner exists in this repository, so this feature will not add a ne
 - FR-004–FR-008: Snapshot model and pure projection.
 - FR-009–FR-010: Queue table and Review links.
 - FR-011: Navigation-only component boundary.
-- FR-012–FR-013: Explicit async page states and reload path.
-- FR-014–FR-016: Shared controls/tokens and contained responsive table.
+- FR-012: Explicit loading, empty, and failure states with retry.
+- FR-013: The page reloads its snapshot on every mount and on Try Again; because `/approvals` and `/requests/:id` are separate route elements, returning from request detail remounts the page and shows current data. Against the static fixture source this reload is exercised but cannot reflect a decision — the row set never changes — so FR-013 is verifiable end-to-end only once the published source replaces the fixtures.
+- FR-014: Keyboard operability comes from the Review action being a real `<a>`; the visible focus indicator is the design system's global `:focus-visible` rule in `src/styles/index.css`, which predates this feature and is intentionally not restated per control. Measured on the Review links, not only inspected.
+- FR-015–FR-016: Shared controls/tokens and contained responsive table.
 - FR-017–FR-018: Internal source seam with no HTTP or threshold logic.
 
 All 18 requirements are covered.

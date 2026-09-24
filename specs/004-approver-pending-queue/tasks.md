@@ -33,6 +33,7 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 - [x] T008 [BEN-74] Replace only the guarded `/approvals` placeholder with the real page, and retire the now-unreferenced placeholder — `src/app/routes.tsx`, `src/app/placeholders.tsx`
 - [x] T009 [BEN-75] Run lint, build, verify, scoped diff review, and PR delivery — `package.json`
 - [x] T010 [BEN-75] Share the button's class strings with the Review link instead of hand-copying them; see the 2026-09-22 amendment in `plan.md` — `src/shared/ui/actions/button-styles.ts`, `src/shared/ui/actions/Button.tsx`, `src/shared/ui/index.ts`
+- [x] T011 [BEN-75] Share `TableHead`'s column sizing with the queue's row cells instead of hand-copying it, type the row's identity fields off the request, and qualify FR-013/FR-014 coverage; see the 2026-09-24 amendment in `plan.md` — `src/shared/ui/data-display/table-columns.ts`, `src/shared/ui/data-display/cards.tsx`, `src/shared/ui/index.ts`, `src/features/requests/approvals/ApprovalsQueuePage.tsx`, `src/features/requests/approvals/approval-queue-types.ts`
 
 ## Dependencies
 
@@ -42,6 +43,7 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 - T004–T007 block T008.
 - T008 blocks T009.
 - T010 arose from review during T009 and touches no file T001–T008 owns.
+- T011 arose from a second review round during T009; its shared-UI change is output-preserving for every existing `TableHead` caller.
 
 ## Parallel Opportunities
 
@@ -49,4 +51,4 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 
 ## MVP Slice
 
-T001–T008. T009 is the required delivery gate; T010 was raised by review inside it.
+T001–T008. T009 is the required delivery gate; T010 and T011 were raised by review inside it.

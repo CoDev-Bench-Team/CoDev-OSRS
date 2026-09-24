@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { tableColumnStyle } from './table-columns';
 
 /** Promoted from the UI kit (spec 002 FR-006). The metric is the one place
  *  besides links and the active nav item where brand red carries data. */
@@ -22,16 +23,13 @@ export function TableCard({ children, className }: { children: ReactNode; classN
 }
 
 /** Column headings are ALL CAPS, 11px bold, on the cool header surface — the
- *  warm-page / cool-header pairing is the design system's signature. */
+ *  warm-page / cool-header pairing is the design system's signature. Size row
+ *  cells with the same `tableColumnStyle` so they line up under these. */
 export function TableHead({ cols }: { cols: [label: string, width?: string][] }) {
   return (
     <div className="flex bg-surface-table-header px-20 py-14">
       {cols.map(([label, width]) => (
-        <span
-          key={label}
-          className="type-eyebrow uppercase text-ink-secondary"
-          style={width ? { width, flexShrink: 0 } : { flex: 1 }}
-        >
+        <span key={label} className="type-eyebrow uppercase text-ink-secondary" style={tableColumnStyle(width)}>
           {label}
         </span>
       ))}

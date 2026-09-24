@@ -17,6 +17,7 @@ export { Select } from './forms/Select';
 export { StatusPill } from './data-display/StatusPill';
 export { SupplyCard } from './data-display/SupplyCard';
 export { SummaryCard, TableCard, TableHead } from './data-display/cards';
+export { tableColumnStyle } from './data-display/table-columns';
 
 // Overlay
 export { Backdrop } from './overlay/Backdrop';
