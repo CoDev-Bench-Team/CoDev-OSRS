@@ -11,9 +11,9 @@ import {
   SummaryCard,
   TableCard,
   TABLE_ROW_PADDING_CLASS,
-  TABLE_ROW_PADDING_X,
   TableHead,
   tableColumnStyle,
+  tableMinWidth,
   type ColumnWidth,
 } from '../../../shared/ui';
 import { DESTINATIONS, requestDetailPath } from '../../../app/destinations';
@@ -46,16 +46,9 @@ const COLUMNS = {
  *  truncating. */
 const MIN_ITEMS_WIDTH = 120;
 
-/** The width below which the table scrolls instead of compressing — derived
- *  from COLUMNS and from the shared row gutter, never restated. Hand-carrying
- *  this number is the same drift `tableColumnStyle` exists to prevent, one
- *  layer out: widen a fixed column against a fixed total and ITEMS silently
- *  absorbs it until it collapses. `ColumnWidth` guarantees every value is in
- *  pixels, so parsing them is safe. */
-const TABLE_MIN_WIDTH =
-  Object.values(COLUMNS).reduce((total, width) => total + (width ? Number.parseInt(width, 10) : 0), 0) +
-  TABLE_ROW_PADDING_X +
-  MIN_ITEMS_WIDTH;
+/** Derived from COLUMNS and the shared row gutter, never restated — see
+ *  `tableMinWidth`, which also rejects a width that is not a sane pixel length. */
+const TABLE_MIN_WIDTH = tableMinWidth(Object.values(COLUMNS), MIN_ITEMS_WIDTH);
 
 /** What a screen reader is told as the queue settles. The count is the page's
  *  whole point, so the settled announcement carries it rather than saying only

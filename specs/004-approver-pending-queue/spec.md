@@ -73,12 +73,18 @@ An Approver can review the queue with keyboard controls and at every width suppo
 
 ## Functional Requirements
 
+> Three requirements below are struck through and marked **SUPERSEDED**: they were
+> written against constitution 2.0.0 and no longer hold under 3.0.0. They are
+> kept rather than deleted so the amendment has something to point at. The
+> record, and which Phase 0 task owns each migration, is the
+> [2026-09-24 amendment](#session-2026-09-24--amendment-this-spec-predates-constitution-300).
+
 - **FR-001**: The page MUST be the Approver landing destination at `/approvals`.
-- **FR-002**: The page MUST remain accessible only to users whose single role is Approver.
-- **FR-003**: The page MUST NOT merge Approver and Supply Admin capabilities or identity.
+- **FR-002**: ~~The page MUST remain accessible only to users whose single role is Approver.~~ **SUPERSEDED** by constitution 3.0.0 — the role is **Admin**; see the 2026-09-24 amendment. Owned by spec 001 T000.
+- **FR-003**: ~~The page MUST NOT merge Approver and Supply Admin capabilities or identity.~~ **SUPERSEDED** by constitution 3.0.0 — the two roles *are* merged ([ADR-0005](../../docs/adr/0005-two-role-model.md)); see the 2026-09-24 amendment. Owned by spec 001 T000.
 - **FR-004**: The page MUST show three read-only summary cards labelled Pending approval, In Processing, and Low stock alerts.
 - **FR-005**: Pending approval MUST count requests whose current status is `Pending Approval`.
-- **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, `For Release`, and `Released`.
+- **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, ~~`For Release`, and `Released`~~ — those two statuses are **SUPERSEDED** by constitution 3.0.0 in favour of `For Delivery` / `For Pickup` ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)); see the 2026-09-24 amendment. Owned by spec 001 T000c.
 - **FR-007**: Low stock alerts MUST count inventory items classified as low stock by the system's data source; the SPA MUST NOT invent a threshold.
 - **FR-008**: The pending table MUST contain only requests currently in `Pending Approval`.
 - **FR-009**: Each pending row MUST show request id, requestor name, requestor organizational context when available, an item summary, submitted date, a `Pending Approval` status pill, and Review.

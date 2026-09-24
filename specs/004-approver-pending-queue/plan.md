@@ -129,6 +129,42 @@ table would demand 105px more and scroll sooner, and the extra could not be
 accounted for cleanly from the column set. Rejected in favour of the explicit
 calculation, which is duller but is a number anyone can check.
 
+**Amendment — 2026-09-24 (fourth review round).** The previous amendment added
+`ColumnWidth` so a non-pixel column width could not reach the width calculation
+as a silently wrong number. Review then found the constant *directly beneath it*
+carrying the same defect, and worse:
+
+`TABLE_ROW_PADDING_CLASS` was an untyped `'px-20'` whose number was parsed back
+out of the class. `px-touch-target` is a real utility in this system (44px). As a
+bare literal it compiled, rendered 44px of padding, and handed `NaN` to
+`TABLE_MIN_WIDTH` — which React drops without a warning. Measured at 700px, the
+result was not a small error: `min-width` vanished, the card fell from 1090px to
+621px, the ITEMS column collapsed to **0px**, and the table stopped scrolling.
+`tsc`, `oxlint` and all ten verify gates passed throughout.
+
+The resolution is the one the previous amendment should have applied to both
+constants: the class is typed `` `px-${number}` ``, so a named token is a compile
+error. Two further changes follow from it:
+
+- **The width arithmetic moves into `tableMinWidth`**, beside the type it
+  depends on, with guards for what `ColumnWidth` cannot express — the template
+  literal admits `-5px` and `1e3px`, and a negative addend would quietly shrink
+  the minimum. It throws rather than laying out wrongly.
+- **The gallery's two table rows move onto the shared gutter.** T013 introduced
+  `TABLE_ROW_PADDING_CLASS` as "the gutter shared by every OSRS table header and
+  row" and then left the gallery's rows on a literal `px-20` — the same
+  inconsistency T012 had just fixed for `tableColumnStyle`, one constant over.
+
+`spec.md`'s three superseded requirements are also marked **inline** rather than
+only in the amendment 70 lines below them, since the Functional Requirements
+section is what a developer implements from.
+
+**The lesson, recorded because it recurred three rounds running.** Each of
+T011, T012, T013 and T014 fixed a value stated in two places and introduced or
+left another one beside it. A type or a shared constant is only a guarantee for
+the values it actually covers; the neighbouring value is where the next defect
+lives.
+
 Approve, reject, and request-detail behavior remain owned by BEN-45.
 
 ## UI and State Flow

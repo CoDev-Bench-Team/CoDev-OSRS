@@ -36,6 +36,13 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 - [x] T011 [BEN-75] Share `TableHead`'s column sizing with the queue's row cells instead of hand-copying it, type the row's identity fields off the request, and qualify FR-013/FR-014 coverage; see the 2026-09-24 amendment in `plan.md` — `src/shared/ui/data-display/table-columns.ts`, `src/shared/ui/data-display/cards.tsx`, `src/shared/ui/index.ts`, `src/features/requests/approvals/ApprovalsQueuePage.tsx`, `src/features/requests/approvals/approval-queue-types.ts`
 - [x] T012 [BEN-75] Derive the table's minimum width from `COLUMNS`, give the scroll region room for the card's shadow, restore keyboard focus after a successful retry, fall back to an em dash for an empty item list, and move the gallery's two tables onto `tableColumnStyle`; see the 2026-09-24 second-review amendment in `plan.md` — `src/features/requests/approvals/ApprovalsQueuePage.tsx`, `src/features/requests/approvals/approval-queue-model.ts`, `src/shared/ui/gallery/Gallery.tsx`
 - [x] T013 [BEN-75] Type column widths as `ColumnWidth` so a non-px unit cannot compile, share the table row gutter, keep the em-dash placeholder out of the `title` tooltip, move retry focus to the section heading, and record the constitution-3.0.0 supersession in `spec.md` and the compliance table; see the 2026-09-24 third-review amendment in `plan.md` — `src/shared/ui/data-display/table-columns.ts`, `src/shared/ui/data-display/cards.tsx`, `src/shared/ui/index.ts`, `src/shared/ui/gallery/Gallery.tsx`, `src/features/requests/approvals/ApprovalsQueuePage.tsx`, `src/features/requests/approvals/approval-queue-model.ts`, `specs/004-approver-pending-queue/spec.md`
+- [x] T014 [BEN-75] Type the shared row-gutter class so a named token cannot hand `NaN` to the width calculation, move the width arithmetic into a guarded `tableMinWidth`, migrate the gallery's rows onto the shared gutter, and mark the superseded requirements inline in `spec.md`; see the 2026-09-24 fourth-review amendment in `plan.md` — `src/shared/ui/data-display/table-columns.ts`, `src/shared/ui/index.ts`, `src/shared/ui/gallery/Gallery.tsx`, `src/features/requests/approvals/ApprovalsQueuePage.tsx`, `specs/004-approver-pending-queue/spec.md`
+
+> **On the checkmarks.** T001–T013 are complete as written. Three of the
+> requirements they implement — FR-002, FR-003 and FR-006 — were superseded by
+> constitution 3.0.0 after this work was done, and are struck through in
+> `spec.md`. The tasks are not reopened: their migration belongs to spec 001
+> Phase 0 (T000, T000c), which owns the role and status vocabulary.
 
 ## Dependencies
 
@@ -46,6 +53,7 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 - T008 blocks T009.
 - T010 arose from review during T009 and touches no file T001–T008 owns.
 - T011 arose from a second review round during T009; its shared-UI change is output-preserving for every existing `TableHead` caller.
+- T014 arose from a fifth review round during T009, which found that T013's own gutter constant carried the very failure mode T013 added `ColumnWidth` to prevent: `px-touch-target` compiled, rendered 44px, and produced `NaN` — dropped silently by React, collapsing the table's minimum width and the ITEMS column with it.
 - T013 arose from a fourth review round during T009. It records the constitution-3.0.0 supersession that spec 001 Phase 0 owns, and closes four code findings; `ColumnWidth` is a narrowing, so it changes no rendered output but does reject a loose annotation in the gallery.
 - T012 arose from a third review round during T009. Its four feature changes touch files T004–T007 own and its gallery change is output-preserving; all five were measured rather than inspected (derived width, shadow room, SC-006 at four widths, the retry focus path driven end-to-end, and the model exercised against empty and blank item lists).
 
@@ -55,4 +63,4 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 
 ## MVP Slice
 
-T001–T008. T009 is the required delivery gate; T010–T013 were raised by review inside it.
+T001–T008. T009 is the required delivery gate; T010–T014 were raised by review inside it.

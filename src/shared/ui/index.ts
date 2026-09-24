@@ -19,6 +19,7 @@ export { SupplyCard } from './data-display/SupplyCard';
 export { SummaryCard, TableCard, TableHead } from './data-display/cards';
 export {
   tableColumnStyle,
+  tableMinWidth,
   TABLE_ROW_PADDING_CLASS,
   TABLE_ROW_PADDING_X,
   type ColumnWidth,

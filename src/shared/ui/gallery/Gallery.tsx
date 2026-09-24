@@ -27,6 +27,7 @@ import {
   SupplyCard,
   TableCard,
   TableHead,
+  TABLE_ROW_PADDING_CLASS,
   tableColumnStyle,
   TopBar,
   type ColumnWidth,
@@ -299,7 +300,7 @@ export function Gallery() {
                 ['REQ-2026-1842', 'Daniel Santos', 'Monitor, Dock', 'For Pickup'],
                 ['REQ-2026-1760', 'Isabella Mendoza', 'Laptop Stand', 'Rejected'],
               ].map(([id, who, items, status]) => (
-                <div key={id} className="flex items-center border-t border-line-default px-20 py-18">
+                <div key={id} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
                   <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">{id}</span>
                   <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">{who}</span>
                   <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">{items}</span>
@@ -387,7 +388,7 @@ export function Gallery() {
           <Row label="Table rows — overlong">
             <TableCard className="w-full">
               <TableHead cols={REQUEST_COLS} />
-              <div className="flex items-center border-t border-line-default px-20 py-18">
+              <div className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
                 <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">REQ-2026-1847</span>
                 <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">Maria Isabella Concepcion Mendoza-Villanueva</span>
                 <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">Laptop, Wireless Keyboard, USB-C Headset, Monitor, Dock, Laptop Stand, Ergonomic Mouse</span>
