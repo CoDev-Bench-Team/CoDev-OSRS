@@ -1,4 +1,4 @@
-import type { Handover, RequestStatus } from '../../../shared/ui';
+import type { RequestStatus } from '../../../shared/ui';
 import type { User } from '../../auth/types';
 
 /** The Employee's own view of a request — a feature-local read model, not a
@@ -19,10 +19,11 @@ export interface EmployeeRequest {
   lines: readonly RequestLine[];
   noteToApprover?: string;
   status: RequestStatus;
-  /** How released items reach the employee; presentation only (status.ts). */
-  handover?: Handover;
+  /** The handover state the request went through, kept once it is set so a
+   *  `Completed` request still names its route on the timeline (ADR-0007). */
+  handover?: 'For Delivery' | 'For Pickup';
   approvedAt?: string;
-  releasedAt?: string;
+  handedOverAt?: string;
   completedAt?: string;
   /** A stopped request carries why, and the panel reads it back (BEN-67,
    *  BEN-70). */

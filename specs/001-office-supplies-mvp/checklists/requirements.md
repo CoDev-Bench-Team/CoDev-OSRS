@@ -12,5 +12,5 @@ Checks whether **requirements are well-written**, not whether the product is imp
 - [ ] CHK008 Is the three-role model explicit so a combined Admin cannot satisfy the spec? [Consistency, Constitution II]
 - [ ] CHK009 Are out-of-scope items listed so purchasing/SSO cannot be treated as implied MVP work? [Completeness]
 - [ ] CHK010 Is “new request after reject” stated so reopen is not an implicit feature? [Clarity, FR-009]
-- [ ] CHK011 Is the actor who sets `Completed` specified — a Supply Admin, never the Employee? [Coverage, US5, FR-012a/b]
+- [ ] CHK011 Is the actor who sets `Completed` specified — an Admin, never the Employee? [Coverage, US5, FR-012, FR-012a]
 - [ ] CHK012 Is pickup location required at release, matching the email “[Location]” placeholder? [Dependencies, FR-011]

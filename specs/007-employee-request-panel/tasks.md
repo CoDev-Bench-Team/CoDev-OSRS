@@ -8,11 +8,11 @@ Linear lifecycle: BEN-65 (E0, spec) → BEN-66 (E1, plan/tasks) → BEN-67 (E2, 
 
 ## Phase 0: Spec amendments
 
-- [x] T001 [BEN-65] Amend spec 001: FR-009a reason required, FR-012 withdrawn, FR-012a and FR-012b added, US5 re-scoped, T015 and CHK011 withdrawn — `specs/001-office-supplies-mvp/`
-- [x] T002 [BEN-65] Record ADR-0007, the Supply Admin completes a request — `docs/adr/0007-admin-completes-requests.md`, `docs/adr/README.md`
-- [x] T003 [BEN-65] Amend spec 003: Request detail is Approver and Supply Admin only — `specs/003-app-shell-routing/spec.md`
+- [x] T001 [BEN-65] Amend spec 001: FR-009a reason required, FR-012 withdrawn, FR-012a added, US5 re-scoped, CHK011 — `specs/001-office-supplies-mvp/` *(superseded 2026-09-24: BEN-113 made the same amendment on `dev`; only CHK011 remains here)*
+- [x] T002 [BEN-65] Record that the Admin completes a request — *(superseded 2026-09-24: `dev`'s [ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md) records it; this branch's ADR is dropped)*
+- [x] T003 [BEN-65] Amend spec 003: Request detail is the Admin's only — `specs/003-app-shell-routing/spec.md`
 - [x] T004 [BEN-65] Remove confirm receipt from the cross-cutting docs — `ARCHITECT.md`, `docs/product.md`, `docs/process-flow.md`, `docs/linear-spa-pages-epic.md`
-- [x] T005 [BEN-65] Constitution 3.0.0 IV: every cancellation requires a reason — `specs/constitution.md`, `AGENTS.md` *(on PR #33, plan D3)*
+- [x] T005 [BEN-65] Constitution 3.0.0 IV: every cancellation requires a reason — *(done on `dev` by BEN-113, constitution 3.0.0 IV; plan D3)*
 
 ## Phase 1: Foundational
 
@@ -39,7 +39,7 @@ Linear lifecycle: BEN-65 (E0, spec) → BEN-66 (E1, plan/tasks) → BEN-67 (E2, 
 
 ## Final Phase: Checks and PR
 
-- [x] T017 [BEN-71] Log the panel's design additions (Rejected ending, For Release node, refusal note, stand-in list, REQ-2026-1838) — `docs/design-system/additions.md`
+- [x] T017 [BEN-71] Log the panel's design additions (Rejected ending, handover node, refusal note, stand-in list, REQ-2026-1838) — `docs/design-system/additions.md`
 - [x] T018 [BEN-71] Employee refused on `/requests/:id` for owned, unowned and missing ids — `scripts/check-shell.mjs`
 - [x] T019 [BEN-71] Request-detail gate for acceptance 1–5, wired into verify — `scripts/check-request-detail.mjs`, `scripts/verify.mjs`
 - [x] T020 [BEN-71] `npm run verify`, scoped diff review, and PR #38 against `dev`
@@ -48,7 +48,7 @@ Linear lifecycle: BEN-65 (E0, spec) → BEN-66 (E1, plan/tasks) → BEN-67 (E2, 
 
 ## Dependencies
 
-- T001–T004 block all code tasks (constitution I). T005 lands separately on PR #33.
+- T001–T004 block all code tasks (constitution I). T005 is satisfied by constitution 3.0.0 on `dev`.
 - T006 and T007 block T008–T012.
 - T011–T013 block T014–T016.
 - T014–T016 block T018–T020.

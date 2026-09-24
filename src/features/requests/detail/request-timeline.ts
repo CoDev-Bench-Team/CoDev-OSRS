@@ -1,21 +1,19 @@
-import { HANDOVER_LABEL, type RequestStatus, type TimelineNode, type TimelineNodeState } from '../../../shared/ui';
+import { type RequestStatus, type TimelineNode, type TimelineNodeState } from '../../../shared/ui';
 import { formatDateTime } from '../format';
 import type { EmployeeRequest } from './request-detail-types';
 
 /** The design's four drawn nodes, mapped onto the seven legal states.
  *
- *  The drawing reads Submitted → Approved → For Delivery/For Pickup → Complete;
- *  none of those but Approved is a state name, and `For Release` has no node.
- *  So `For Release` leaves the handover node Pending — the items are being
- *  prepared, not yet handed over — and the handover node names the route the
- *  items take once the request is `Released`, falling back to the drawn
- *  "For Delivery/For Pickup" while that route is not yet known.
+ *  The drawing reads Submitted → Approved → For Delivery/For Pickup → Complete,
+ *  which is the state machine itself (ADR-0007): the third node is reached when
+ *  the Admin sets `For Delivery` or `For Pickup`, and names whichever it was.
+ *  Before that it reads the drawn "For Delivery/For Pickup".
  *
  *  The stopped endings follow `04.2 - Cancelled`: the timeline collapses to
  *  Submitted and the ending. Rejected is not drawn and takes the same shape in
  *  red (docs/design-system/additions.md). */
-const APPROVED_OR_LATER = new Set<RequestStatus>(['Approved', 'For Release', 'Released', 'Completed']);
-const HANDED_OVER = new Set<RequestStatus>(['Released', 'Completed']);
+const APPROVED_OR_LATER = new Set<RequestStatus>(['Approved', 'For Delivery', 'For Pickup', 'Completed']);
+const HANDED_OVER = new Set<RequestStatus>(['For Delivery', 'For Pickup', 'Completed']);
 
 export function requestTimeline(request: EmployeeRequest): TimelineNode[] {
   const submitted: TimelineNode = {
@@ -32,7 +30,6 @@ export function requestTimeline(request: EmployeeRequest): TimelineNode[] {
   }
 
   const reached = (yes: boolean): TimelineNodeState => (yes ? 'reached' : 'pending');
-  const handoverLabel = request.handover ? HANDOVER_LABEL[request.handover].Released : undefined;
 
   return [
     submitted,
@@ -42,9 +39,9 @@ export function requestTimeline(request: EmployeeRequest): TimelineNode[] {
       when: formatDateTime(request.approvedAt),
     },
     {
-      label: handoverLabel ?? 'For Delivery/For Pickup',
+      label: request.handover ?? 'For Delivery/For Pickup',
       state: reached(HANDED_OVER.has(request.status)),
-      when: formatDateTime(request.releasedAt),
+      when: formatDateTime(request.handedOverAt),
     },
     {
       label: 'Complete',

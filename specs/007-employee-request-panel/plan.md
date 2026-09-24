@@ -21,10 +21,10 @@ Replace the `/requests` placeholder with a minimal My Requests table, and open a
 | # | Decision | Why |
 |---|----------|-----|
 | D1 | Ship a **minimal seeded My Requests table** with *View details*. It replaces `RequestsPlaceholder` and is marked as a stand-in for BEN-44. | BEN-44 isn't on `dev`, and the panel needs something to open it. |
-| D2 | Remove **`employee` only** from the `requestDetail` destination. Approver and Supply Admin keep `/requests/:id` until BEN-47. | PR #36 (BEN-46) links Approver rows to `/requests/:id`. Removing the route outright would break it. |
-| D3 | The constitution change goes into **PR #33's 3.0.0**, not a separate version bump. | Linear cites "constitution 3.0.0 IV". Two different 3.0.0s would conflict whichever PR merges second. |
+| D2 | Remove **`employee` only** from the `requestDetail` destination. The Admin keeps `/requests/:id` until BEN-47. | PR #36 (BEN-46) links queue rows to `/requests/:id`. Removing the route outright would break it. |
+| D3 | No constitution change on this branch. | Constitution 3.0.0 IV (BEN-113, on `dev`) already requires a reason from whoever cancels. *(Was: amend within PR #33's 3.0.0 — superseded 2026-09-24.)* |
 | D4 | The panel's open state lives **in component state**, not the address. | The ticket: "opens from View details and closes without navigating". Consistent with D2. |
-| D5 | Each drawn timeline node maps to states (table below). | The design's labels aren't state names, and `For Release` has no node. |
+| D5 | Each drawn timeline node maps to states (table below). | The nodes are the state machine, but the third one stands for two peer states. |
 | D6 | The reason is `trim()`med first, so whitespace counts as empty. | Acceptance criterion 3, made safe against whitespace. |
 
 ### Timeline mapping (D5)
@@ -32,8 +32,8 @@ Replace the `/requests` placeholder with a minimal My Requests table, and open a
 | Drawn node | Reached when status is… | Time |
 |------------|-------------------------|------|
 | Submitted | always | `submittedAt` |
-| Approved | `Approved`, `For Release`, `Released`, `Completed` | `approvedAt` |
-| Handover (*Ready for Pickup* / *For Delivery*; *For Delivery/For Pickup* while unknown) | `Released`, `Completed` (`For Release` leaves it pending) | `releasedAt` |
+| Approved | `Approved`, `For Delivery`, `For Pickup`, `Completed` | `approvedAt` |
+| Handover (*For Delivery* or *For Pickup*, the state taken; *For Delivery/For Pickup* before then) | `For Delivery`, `For Pickup`, `Completed` | `handedOverAt` |
 | Complete | `Completed` | `completedAt` |
 
 `Cancelled` collapses to **Submitted → Cancelled** in slate, as `04.2 - Cancelled` draws it. `Rejected` takes the same shape in red; it isn't drawn, so it is logged in `docs/design-system/additions.md` §3e.
@@ -43,7 +43,7 @@ Replace the `/requests` placeholder with a minimal My Requests table, and open a
 Feature-local read model, not a backend contract:
 
 - `RequestLine`: `name` (for the list summary), `description` (for the panel), `qty`.
-- `EmployeeRequest`: `id`, `submittedAt`, `lines`, optional `noteToApprover`, `status`, optional `handover`, optional `approvedAt` / `releasedAt` / `completedAt`, optional `rejection: { reason, at }` and `cancellation: { reason, at }`.
+- `EmployeeRequest`: `id`, `submittedAt`, `lines`, optional `noteToApprover`, `status`, optional `handover` (`For Delivery` \| `For Pickup`, kept once completed), optional `approvedAt` / `handedOverAt` / `completedAt`, optional `rejection: { reason, at }` and `cancellation: { reason, at }`.
 - `CancelResult`: `{ ok: true, request }` or `{ ok: false, refusal: 'status-changed' | 'reason-required' | 'unavailable' }`.
 - `EmployeeRequestSource`: `list(user)` returns only that Employee's requests; `cancel(user, id, reason)`.
 
@@ -62,7 +62,7 @@ The backend contract is linked from `specs/001-office-supplies-mvp/contracts/REA
 **Feature**
 
 - `src/features/requests/detail/request-detail-types.ts`: the read model and source interface above.
-- `src/features/requests/detail/seeded-employee-request-source.ts`: Maya's six requests from `04 - My Requests` (1847 Pending Approval, 1805 Approved, 1842 Ready for Pickup, 1838 For Delivery, 1760 Rejected, 1733 Completed), with items and note from `04.1`. The Rejected row carries a placeholder reason, since the frame draws none. `cancel` refuses anything outside the signed-in Employee's own requests, and anything not `Pending Approval`. Stock restore is the backend's job, and the file says so.
+- `src/features/requests/detail/seeded-employee-request-source.ts`: Maya's six requests from `04 - My Requests` (1847 Pending Approval, 1805 Approved, 1842 For Pickup, 1838 For Delivery, 1760 Rejected, 1733 Completed), with items and note from `04.1`. The Rejected row carries a placeholder reason, since the frame draws none. `cancel` refuses anything outside the signed-in Employee's own requests, and anything not `Pending Approval`. Stock restore is the backend's job, and the file says so.
 - `src/features/requests/detail/request-timeline.ts`: a pure mapping from request to timeline nodes (D5).
 - `src/features/requests/detail/RequestDetailPanel.tsx`: header and pill, Items Requested, Note to Approver, the stop reason (*Reason for cancellation* / *Reason for rejection*) in the same card style, Status timeline, and the cancel form. No confirm-receipt control.
 - `src/features/requests/history/MyRequestsPage.tsx`: the D1 stand-in. `PageHeader`, the five drawn columns, loading/empty/failure states, and the open panel.
@@ -71,7 +71,7 @@ The backend contract is linked from `specs/001-office-supplies-mvp/contracts/REA
 **App**
 
 - `src/app/routes.tsx`: `/requests` renders `MyRequestsPage`.
-- `src/app/destinations.ts`: `requestDetail.roles` becomes `['approver', 'supply_admin']` (D2).
+- `src/app/destinations.ts`: `requestDetail.roles` becomes `['admin']` (D2).
 - `src/app/seeded-request-ids.ts`: the Employee ownership branch no longer applies to the route; `mayViewRequest` stays for the other roles.
 
 ## UI and State Flow
@@ -112,16 +112,16 @@ scripts/check-request-detail.mjs
 ## Dependencies
 
 - BEN-38 / A6 shell (merged).
-- Spec 001 and spec 003 amendments of 2026-09-23 and ADR-0007, on this branch.
-- Constitution 3.0.0 IV amendment, on PR #33 (D3).
+- The spec 003 amendment of 2026-09-23, on this branch.
+- Constitution 3.0.0, spec 001 and ADR-0005/0007 on `dev` (BEN-113), and the two-role shell (BEN-114, PR #40).
 - BEN-44 replaces the stand-in list; BEN-47 owns the Admin panel and completion.
 
 ## Verification
 
 - `npm run dev`, then `npm run verify`: typecheck, lint, utilities/adherence, fidelity, pixels, a11y and responsive, shell, request detail, and build. Needs Node ≥ 22, because `scripts/cdp.mjs` uses the global `WebSocket`.
-- `scripts/check-shell.mjs`: an Employee on `/requests/:id` gets the role refusal for owned, unowned and missing ids; Approver deep links are unchanged.
+- `scripts/check-shell.mjs`: an Employee on `/requests/:id` gets the role refusal for owned, unowned and missing ids; the Admin's deep link is unchanged.
 - `scripts/check-request-detail.mjs` proves the five acceptance criteria: open and close without navigating; Cancel Request only on Pending Approval; empty and whitespace reasons refused; a valid reason gives Cancelled in the panel pill, timeline and row pill, and is read back; only the Rejected row shows a rejection reason; no receipt control in any of the six seeded states.
-- Manual: sign in as Maya and compare with Figma `04.1`, `04.2` and Cancelled at 1440px. Sign in as the Approver and confirm `/requests/REQ-2026-1847` still renders.
+- Manual: sign in as Maya and compare with Figma `04.1`, `04.2` and Cancelled at 1440px. Sign in as the Admin and confirm `/requests/REQ-2026-1847` still renders.
 
 No unit-test runner exists in this repository, so this feature adds no framework. The timeline mapping is a pure function, ready for unit coverage later.
 
@@ -145,7 +145,7 @@ All 15 requirements are covered.
 | I. Spec-Driven Development | PASS | Specs 001 and 003 were amended before code; this spec records the feature. |
 | II. Three Distinct Human Roles | PASS | The panel is Employee-only; the other roles keep their address. |
 | III. Inventory Integrity | PASS | No inventory is modelled; restore is the API's. |
-| IV. Explicit Request State Machine | PASS | Only `Pending Approval` → `Cancelled`, with a reason (3.0.0 IV as amended on PR #33). |
+| IV. Explicit Request State Machine | PASS | Only `Pending Approval` → `Cancelled`, with a reason (constitution 3.0.0 IV). |
 | V. Notification Completeness | PASS | The API emits Request Cancelled; the SPA sends nothing. |
 | VI. Independently Testable Increments | PASS | Demonstrable with the seeded source and the stand-in list. |
 | VII. Typed Contracts | PASS | Internal read model only; no invented REST shape. |
@@ -164,13 +164,12 @@ All 15 requirements are covered.
 - **Early warning**: HTTP-shaped names or status codes appear in the source types.
 - **Mitigation**: The types are named as a read model, and the source's comments say a real source maps the API into them.
 
-### Removing the Employee's route breaks Approver links
+### Removing the Employee's route breaks Admin links
 
 - **Early warning**: BEN-46's Review links land on a refusal.
-- **Mitigation**: D2 removes only `employee`; `check-shell.mjs` covers the Approver deep link.
+- **Mitigation**: D2 removes only `employee`; `check-shell.mjs` covers the Admin deep link.
 
 ## Known Risks
 
-- Constitution 3.0.0 IV lands with PR #33. If #38 merges first, `dev` briefly says the owner's reason is optional while the code requires it. The spec 001 amendment already on this branch is the tie-breaker.
 - The stop-reason card is not drawn in Figma. It reuses the Note to Approver card and is flagged to the designer.
 - E6 (BEN-71) says "PR base `main`". PR #38 targets `dev`, like every other P2 page PR (#35, #36, #37).

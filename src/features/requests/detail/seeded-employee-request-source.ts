@@ -6,7 +6,7 @@ import type { CancelResult, EmployeeRequest, EmployeeRequestSource } from './req
  *
  *  Maya's six requests are the rows of the design's `04 - My Requests` frame,
  *  in its order, one per status the list draws. The file gives REQ-2026-1842 to
- *  two rows — Ready for Pickup and For Delivery — so the delivery row carries
+ *  two rows — For Pickup and For Delivery — so the delivery row carries
  *  REQ-2026-1838 instead; an id is unique or it is not an id
  *  (docs/design-system/additions.md). REQ-2026-1847's lines and note are
  *  `04.1`'s. Times are Manila office hours, stored in UTC.
@@ -42,10 +42,10 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
         { name: 'Monitor', description: 'Monitor - Dell P2422H', qty: 1 },
         { name: 'Dock', description: 'USB-C Dock - Dell WD19S', qty: 1 },
       ],
-      status: 'Released',
-      handover: 'pickup',
+      status: 'For Pickup',
+      handover: 'For Pickup',
       approvedAt: '2026-09-08T03:30:00Z',
-      releasedAt: '2026-09-09T02:10:00Z',
+      handedOverAt: '2026-09-09T02:10:00Z',
     },
     {
       id: 'REQ-2026-1838',
@@ -55,10 +55,10 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
         { name: 'Dock', description: 'USB-C Dock - Dell WD19S', qty: 1 },
       ],
       noteToApprover: 'for the Cebu office',
-      status: 'Released',
-      handover: 'delivery',
+      status: 'For Delivery',
+      handover: 'For Delivery',
       approvedAt: '2026-09-08T03:32:00Z',
-      releasedAt: '2026-09-10T01:00:00Z',
+      handedOverAt: '2026-09-10T01:00:00Z',
     },
     {
       id: 'REQ-2026-1760',
@@ -77,9 +77,9 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
         { name: 'Mouse Pad', description: 'Mouse Pad - Logitech Studio', qty: 1 },
       ],
       status: 'Completed',
-      handover: 'pickup',
+      handover: 'For Pickup',
       approvedAt: '2026-07-28T06:15:00Z',
-      releasedAt: '2026-07-29T02:30:00Z',
+      handedOverAt: '2026-07-29T02:30:00Z',
       completedAt: '2026-07-29T08:45:00Z',
     },
   ],

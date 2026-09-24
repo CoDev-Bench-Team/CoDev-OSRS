@@ -39,9 +39,8 @@ export type Destination = {
   /** One sentence, no period. */
   purpose: string;
   /** Roles permitted to reach the address at all. `/requests/:id` is the
-   *  Approver's and the Supply Admin's only: an Employee's request detail is a
-   *  side panel on My Requests with no address of its own (spec 003,
-   *  2026-09-23; Linear BEN-45). */
+   *  Admin's only: an Employee's request detail is a side panel on My Requests
+   *  with no address of its own (spec 003, 2026-09-23; Linear BEN-45). */
   roles: readonly Role[];
 };
 
@@ -68,7 +67,7 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     navLabel: 'Request',
     title: 'Request detail',
     purpose: 'Everything recorded about one request',
-    roles: ['approver', 'supply_admin'],
+    roles: ['admin'],
   },
   queue: {
     id: 'queue',

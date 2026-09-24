@@ -3,13 +3,19 @@
 **Feature Branch**: `ruben/ben-45-p2spa-request-detail-employee-panel-cancel`  
 **Created**: 2026-09-23  
 **Status**: Draft  
-**Sources**: BEN-45, BEN-65, `specs/001-office-supplies-mvp/spec.md` (Session 2026-09-23), `specs/003-app-shell-routing/spec.md` (Session 2026-09-23), ADR-0007, Figma *Mockups* frames `04 - My Requests`, `04.1 - My Requests - View Request`, `04.2- My Requests - Cancel Request`, `04.2- My Requests - Cancelled`, component `Status Timeline`
+**Sources**: BEN-45, BEN-65, constitution 3.0.0, `specs/001-office-supplies-mvp/spec.md`, `specs/003-app-shell-routing/spec.md` (Session 2026-09-23), [ADR-0005](../../docs/adr/0005-two-role-model.md), [ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md), Figma *Mockups* frames `04 - My Requests`, `04.1 - My Requests - View Request`, `04.2- My Requests - Cancel Request`, `04.2- My Requests - Cancelled`, component `Status Timeline`
+
+> **Realigned 2026-09-24 to constitution 3.0.0 (BEN-114).** Written against
+> three roles and `For Release` / `Released`. Rebased onto BEN-114: the Admin is
+> the only other role, `For Delivery` / `For Pickup` are states, and this
+> branch's own ADR-0007 is dropped in favour of `dev`'s, which records the same
+> decision (the Admin completes; no confirm-receipt).
 
 ## Overview
 
-Give an Employee a read-back of one of their own requests without leaving My Requests. *View details* on a row opens a side panel with the request's items, note and status timeline. The panel offers one action, **Cancel Request**, and only while the request is `Pending Approval`. The Employee has no confirm-receipt step: a Supply Admin completes a request (ADR-0007).
+Give an Employee a read-back of one of their own requests without leaving My Requests. *View details* on a row opens a side panel with the request's items, note and status timeline. The panel offers one action, **Cancel Request**, and only while the request is `Pending Approval`. The Employee has no confirm-receipt step: an Admin completes a request (ADR-0007).
 
-This feature does not own the My Requests list (BEN-44), the Approver or Supply Admin review panel (BEN-47), or any backend behaviour. The product rules it relies on were settled by the 2026-09-23 amendments to specs 001 and 003. This spec cites them rather than restating them.
+This feature does not own the My Requests list (BEN-44), the Admin review panel (BEN-47), or any backend behaviour. The product rules it relies on were settled by the 2026-09-23 amendments to specs 001 and 003. This spec cites them rather than restating them.
 
 ## User Stories
 
@@ -56,30 +62,30 @@ An Employee is never offered a control to mark a request received or complete.
 - The request list cannot be loaded. The page shows a failure notice with *Try Again*, distinct from an empty list.
 - An Employee has no requests. The page says so rather than showing an empty table.
 - A request has no note. The Note to Approver block is not drawn.
-- A released request has no known handover route. The handover node reads the drawn *For Delivery/For Pickup*.
+- A request not yet handed over. The handover node reads the drawn *For Delivery/For Pickup*, pending.
 - The Employee backs out of the cancel form. The reason is cleared and the invalid state is reset.
 
 ## Functional Requirements
 
 - **FR-001**: The panel MUST open from *View details* on a My Requests row and MUST close without changing the address.
 - **FR-002**: The panel MUST close on ✕, Esc and a scrim click. It MUST hold focus while open and return focus to the control that opened it.
-- **FR-003**: The panel MUST show the request id, status pill (with handover route when known), Items Requested (description and quantity per line), Note to Approver when present, and the status timeline.
+- **FR-003**: The panel MUST show the request id, status pill, Items Requested (description and quantity per line), Note to Approver when present, and the status timeline.
 - **FR-003a**: A `Cancelled` request MUST read back its reason under *Reason for cancellation*, and a `Rejected` request under *Reason for rejection*.
-- **FR-004**: The timeline MUST map the seven states onto the drawn nodes as `plan.md` D5 specifies. `For Release` MUST leave the handover node pending.
+- **FR-004**: The timeline MUST map the seven states onto the drawn nodes as `plan.md` D5 specifies. The handover node MUST name the state the request took, `For Delivery` or `For Pickup`.
 - **FR-005**: Cancel Request MUST appear only when the status is `Pending Approval`.
 - **FR-006**: Confirm Cancellation MUST refuse a reason that is empty after trimming, without calling the source.
 - **FR-007**: A successful cancel MUST update the panel and the list row to `Cancelled`.
 - **FR-008**: A refused cancel MUST say that the request changed and show its current status.
 - **FR-009**: The panel MUST NOT offer a confirm-receipt or completion control in any state (spec 001 FR-012a).
-- **FR-010**: The Employee MUST NOT have a `/requests/:id` destination. Approver and Supply Admin keep it until BEN-47 (spec 003, amended 2026-09-23).
+- **FR-010**: The Employee MUST NOT have a `/requests/:id` destination. The Admin keeps it until BEN-47 (spec 003, amended 2026-09-23).
 - **FR-011**: The page MUST show distinct loading, empty and failure states.
 - **FR-012**: The panel and list MUST compose shared UI from `src/shared/ui` only.
 - **FR-013**: The SPA MUST NOT invent REST routes, payloads, response fields or error codes. Until the backend contract publishes, data MAY come from a typed, seeded, in-memory source behind an interface, as spec 004 FR-018 allows for the approval queue.
-- **FR-014**: Stock restore and the Request Cancelled email are the API's (constitution III and V). The SPA MUST NOT model inventory for them.
+- **FR-014**: Releasing the reservation and the `Status changed` email are the API's (constitution III and V). The SPA MUST NOT model inventory for them.
 
 ## Key Entities
 
-- **Employee request**: The Employee's own view of one request. Id, submitted time, lines, optional note, status, optional handover route, a timestamp per reached transition, and the reason and time when rejected or cancelled. It is a read model, not an API shape.
+- **Employee request**: The Employee's own view of one request. Id, submitted time, lines, optional note, status, the handover state it took (kept once `Completed`), a timestamp per reached transition, and the reason and time when rejected or cancelled. It is a read model, not an API shape.
 - **Request line**: A short name for the list summary, a description for the panel, and a quantity.
 - **Cancel result**: Either the updated request, or a refusal: `status-changed`, `reason-required` or `unavailable`.
 - **Timeline node**: A label, a state (reached, pending, cancelled, rejected) and a time.
@@ -106,9 +112,9 @@ An Employee is never offered a control to mark a request received or complete.
 
 Raised by the review of BEN-45 against the repo. Each was decided in favour of the Linear ticket, and the product specs were amended to match.
 
-- Q: Is the Employee's cancel reason optional (spec 001, 2026-09-15) or required (the drawn asterisk)? → A: **Required**, whoever cancels. Spec 001 FR-009a is amended. Constitution IV is amended within 3.0.0 on PR #33.
-- Q: Does the Employee confirm receipt (spec 001 FR-012)? → A: **No.** FR-012 is withdrawn, FR-012a forbids the control, FR-012b has the Supply Admin complete a released request. ADR-0007.
-- Q: Does the Employee keep `/requests/:id`? → A: **No.** Their detail is a panel on `/requests`. Approver and Supply Admin keep the address until BEN-47, so BEN-46's Review links still work.
+- Q: Is the Employee's cancel reason optional (spec 001, 2026-09-15) or required (the drawn asterisk)? → A: **Required**, whoever cancels. Spec 001 FR-009a and constitution 3.0.0 IV both say so.
+- Q: Does the Employee confirm receipt (spec 001 FR-012)? → A: **No.** Spec 001 FR-012 gives `Completed` to the Admin and FR-012a forbids a confirm-receipt control. ADR-0007.
+- Q: Does the Employee keep `/requests/:id`? → A: **No.** Their detail is a panel on `/requests`. The Admin keeps the address until BEN-47, so BEN-46's Review links still work.
 - Q: BEN-44 (My Requests) has not shipped. Where does *View details* live? → A: In a minimal stand-in table under `src/features/requests/history/`, the folder the epic guide gives BEN-44, which replaces it.
 - Q: Should the open panel be part of the address? → A: **No.** It is component state. The ticket says the panel "closes without navigating", and the Employee has no record address.
 - Q: The `04.2 - Cancelled` frame does not show the cancel reason, but BEN-67 and BEN-70 ask for it to be read back. Which wins? → A: **Linear.** The panel reads back the cancel or rejection reason (FR-003a), in the Note to Approver card style. Flagged to the designer.

@@ -8,7 +8,7 @@ import { requestTimeline } from './request-timeline';
  *
  *  It reads the request back and offers exactly one action: **Cancel Request**,
  *  and only while the request is `Pending Approval` (spec 001 FR-009a). There
- *  is no confirm-receipt control in any state — a Supply Admin completes a
+ *  is no confirm-receipt control in any state — an Admin completes a
  *  request (FR-012a, ADR-0007). A cancelled or rejected request reads back
  *  its reason. Ownership needs no check here: the page only
  *  ever holds the signed-in Employee's own requests. */
@@ -112,7 +112,7 @@ export function RequestDetailPanel({
       header={
         <>
           <h2 className="type-section-title truncate text-ink-heading">{request.id}</h2>
-          <StatusPill status={request.status} handover={request.handover} />
+          <StatusPill status={request.status} />
         </>
       }
       footer={footer}

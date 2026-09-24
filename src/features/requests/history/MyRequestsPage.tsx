@@ -103,7 +103,7 @@ export function MyRequestsPage({ source = seededEmployeeRequestSource }: { sourc
                     {summarizeItems(request.lines.map((l) => l.name))}
                   </span>
                   <span className="w-[160px] shrink-0">
-                    <StatusPill status={request.status} handover={request.handover} />
+                    <StatusPill status={request.status} />
                   </span>
                   <span className="w-[120px] shrink-0">
                     <button
