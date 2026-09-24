@@ -1,8 +1,8 @@
 # Product: Office Supplies Request System
 
 **Initiative**: Internal process improvement MVP (4 weeks)  
-**Audience**: Codev employees, approvers, and supply admins  
-**Source**: Linear initiative brief + process-flow diagram (2026-09-11)
+**Audience**: Codev employees and supply admins  
+**Source**: Linear initiative brief + process-flow diagram (2026-09-11), amended by the 2026-09-22 design re-export ([drift](design-system/drift-2026-09-22.md))
 
 ## Problem
 
@@ -16,18 +16,17 @@ A single platform with an automated four-stage pipeline, live stock numbers, and
 
 A **functional** end-to-end demo — not a perfect procurement suite — that shows Dev and QA shipping together:
 
-**Check Inventory → Create Request → Review & Approve (or Reject, then a new request) → Prepare Items → Release to Employee → Confirm Receipt → Completed**, with inventory updates and notifications on each transition.
+**Browse Catalog → Create Request → Review & Approve (or Reject, then a new request) → Hand over by Delivery or Pickup → Completed**, with stock movements and notifications on each transition.
 
 ## Who Uses It
 
 | Actor | Job |
 |-------|-----|
-| **Employee (Requestor)** | See stock, submit a request (items, qty, optional purpose), receive rejection reasons, confirm receipt, track status and history |
-| **Approver (Team Lead / Department Head)** | Review pending requests against stock and necessity; approve or reject (reason required) |
-| **Supply Admin (IT / General Services)** | Encode inventory; pick/pack approved requests; mark For Release; hand over and mark Released |
-| **System** | Show stock; decrement on submit; increment on reject; email at each defined step |
+| **Employee (Requestor)** | Browse the catalog by category and office, build a request list, submit with a note, see rejection and cancellation reasons, track status and history, cancel their own pending request |
+| **Admin** | Review the queue; approve or reject (reason required); set For Delivery or For Pickup; complete; cancel what cannot be fulfilled; own Assets and Inventory |
+| **System** | Show availability; reserve on submit; release on reject or cancel; consume on complete; email at each defined step |
 
-The process diagram splits the old combined “Admin” into **Approver** and **Supply Admin**. Permissions follow that split.
+The 2026-09-11 process diagram split the old combined “Admin” into **Approver** and **Supply Admin**. The 2026-09-22 design re-export merges them back into a single **Admin**, and permissions follow that merge — see [ADR-0005](adr/0005-two-role-model.md), which names the control point this gives up.
 
 ## Four-Week Execution
 
@@ -43,7 +42,7 @@ Stack (this repo): React + TypeScript + Vite + Tailwind. The SPA consumes a REST
 ## Expected Impact
 
 - Employees: simpler submit path and live status
-- Admins: one place to manage stock and fulfillment
+- Admins: one place to manage assets, stock and fulfillment
 - Codev: less manual tracking
 
 ## Explicit Non-Goals (MVP)
@@ -54,3 +53,5 @@ Stack (this repo): React + TypeScript + Vite + Tailwind. The SPA consumes a REST
 - Multi-level or delegated approval
 - Ingesting requests from email or chat
 - Multi-warehouse, forecasting, or automatic reorder
+- A per-unit asset register (serial numbers, assignment to a person, BitLocker escrow) — the design anticipates it; the MVP must not foreclose it
+- Requesting more information from a requester (the `Action required` email has a template but no drawn flow)

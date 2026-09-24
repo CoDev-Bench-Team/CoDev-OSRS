@@ -1,13 +1,22 @@
 # SPA Routing & Pages Epic — Linear Handoff
 
 **Created**: 2026-09-15  
-**Last reviewed**: 2026-09-19  
+**Last reviewed**: 2026-09-22  
 **Team**: BEN (Bench Synergy Project)  
 **Project**: [OSRS (Office Supplies Request System)](https://linear.app/bench-synergy-project/project/osrs-office-supplies-request-system-a2a70f69dfae)  
 **Labels**: Frontend + Feature  
 **Integration branch**: `dev` — every page PR targets `dev`, not `main` (confirmed 2026-09-23)  
-**Source**: Figma `Office Supplies Request System (OSRS).fig` → UI kit `OSRS Design System/ui_kits/osrs-web/` → `specs/003-app-shell-routing/`  
+**Source**: Figma `Office Supplies Request System (OSRS).fig` (**2026-09-22 export**) → `docs/design-system/drift-2026-09-22.md` → `specs/001-office-supplies-mvp/`  
 **Contract**: [Swagger](https://codev-osrs-backend.vercel.app/) — see `specs/001-office-supplies-mvp/contracts/README.md`
+
+> **Rewritten 2026-09-22.** The design re-export collapsed the role model to
+> **Employee + Admin**, merged the approvals and fulfilment queues into one
+> **Requests Queue**, split admin data into **Assets** and **Inventory**, and
+> replaced `For Release` / `Released` / employee-confirmed with
+> `For Delivery` / `For Pickup` / Admin-completed. Constitution **3.0.0** and
+> ADRs [0005](adr/0005-two-role-model.md)–[0007](adr/0007-fulfilment-status-vocabulary.md)
+> carry it. Parents F and G, and H, were re-scoped in place rather than
+> recreated — the issue ids below are unchanged, the jobs behind them are not.
 
 This document is the **canonical handoff map** for the Linear epic covering app shell, routing, and product pages. Each parent is an AI-SDD feature; each child is a runnable step (`create-spec` / `create-plan` / `create-tasks` / `execute` / `run-checks` / `create-pr`).
 
@@ -117,20 +126,31 @@ Linear `blocks` relations were created 2026-09-15 (64 relations). They include A
 
 ## Figma → SPA destination map
 
-| Figma / UI kit screen | SPA route | Who | Linear parent |
-|----------------------|-----------|-----|---------------|
-| Login | `/login` | signed-out | A (A6) |
-| Catalog | `/catalog` | all (Employee landing; only Employee starts request) | B |
-| Request List drawer | overlay on Catalog | Employee | C |
-| My Requests | `/requests` | Employee | D |
-| Review Request + Reject dialog | `/requests/:id` | role+status gated | E |
-| Requests Queue (drawn as “Admin”) | `/approvals` | Approver landing | F |
-| *(not drawn)* Fulfillment | `/fulfillment` | Supply Admin landing | G |
-| Inventory | `/inventory` | Supply Admin | H |
-| Profile | `/profile` | all | I |
-| *(not drawn)* Not found / Forbidden / Loading | shell feedback | all | A (A3) |
+Screens are the 2026-09-22 export. Routes follow `ARCHITECT.md` §7.
 
-**Constitution note:** Figma merges Approver + Supply Admin into one **Admin** and pins a “Viewing as” switcher. Spec 003 **splits** the three roles and **drops** the switcher. Do not rebuild the mockup’s Admin merge.
+| Figma screen | SPA route | Who | Linear parent |
+|--------------|-----------|-----|---------------|
+| `01 - Login` | `/login` | signed-out | A (A6) |
+| `02 - Catalog`, `02.1 - … View Specs` | `/catalog` | Employee landing; Admin may view | B |
+| `03 - Request List` drawer, `03.1 - … Request Submitted` | overlay on `/catalog` | Employee | C |
+| `04 - My Requests` | `/requests` | Employee | D |
+| `04.1 - … View Request`, `04.2 - … Cancel Request`, `04.2 - … Cancelled` | side panel on `/requests` | Employee (own) | E |
+| `02 - Requests Queue`, `02.1 - … Sort Menu` | `/queue` | **Admin landing** | F |
+| `02.2 - … Review`, `02.2.1 - … Approve`, `02.2.1 - … Update Status`, `02.2.2 - … Reject` | side panel on `/queue` | Admin | **G (re-scoped)** |
+| `03- Assets`, `03.1 Add Asset - <8>`, `03.2- View Asset` | `/assets` | Admin | H |
+| `03 - Inventory`, `03.4 - Update Stocks` | `/inventory` | Admin | H |
+| `05 - Profile` | `/profile` | both | I |
+| six email frames | n/a — backend templates | — | backend |
+| *(not drawn)* Not found / Forbidden / Loading / sign-out / collapsed nav | shell feedback | all | A (A3) |
+
+**Constitution note (rewritten 2026-09-22).** The file's merged **Admin** is now
+the model — constitution II, [ADR-0005](adr/0005-two-role-model.md). Do **not**
+rebuild the three-role split. The "Viewing as" switcher is still dropped
+(spec 003 D5): changing role means signing out.
+
+**There is no `/requests/:id` route.** Both detail views are side panels over
+their list — the employee's over My Requests, the admin's over the Requests
+Queue. Parent E and Parent G own one each.
 
 ---
 
@@ -142,10 +162,10 @@ Linear `blocks` relations were created 2026-09-15 (64 relations). They include A
 | **B** | [BEN-42](https://linear.app/bench-synergy-project/issue/BEN-42) Catalog page | High | New spec via AI-SDD; Figma CatalogScreen |
 | **C** | [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43) Request List drawer & submit | High | Blocked by Catalog B2 |
 | **D** | [BEN-44](https://linear.app/bench-synergy-project/issue/BEN-44) My Requests | Medium | `/requests` |
-| **E** | [BEN-45](https://linear.app/bench-synergy-project/issue/BEN-45) Request detail + role actions | High | Review + Reject; actions may split PRs |
-| **F** | [BEN-46](https://linear.app/bench-synergy-project/issue/BEN-46) Approver pending queue | High | ∥ with B/H after A6 |
-| **G** | [BEN-47](https://linear.app/bench-synergy-project/issue/BEN-47) Supply Admin fulfillment queue | High | **No Figma** — designer gap |
-| **H** | [BEN-48](https://linear.app/bench-synergy-project/issue/BEN-48) Inventory management | High | Related BEN-13 / BEN-7 / BEN-23 |
+| **E** | [BEN-45](https://linear.app/bench-synergy-project/issue/BEN-45) Request detail (Employee panel) + cancel | High | Side panel over My Requests; admin actions moved to G |
+| **F** | [BEN-46](https://linear.app/bench-synergy-project/issue/BEN-46) Requests Queue list | High | ∥ with B/H after A6 |
+| **G** | [BEN-47](https://linear.app/bench-synergy-project/issue/BEN-47) Request review panel + admin transitions | High | Re-scoped — the designer gap is closed |
+| **H** | [BEN-48](https://linear.app/bench-synergy-project/issue/BEN-48) Assets & Inventory | High | Two screens; blocked on 3 contract decisions |
 | **I** | [BEN-49](https://linear.app/bench-synergy-project/issue/BEN-49) Profile | Low | ∥ filler after A6 |
 | **J** | [BEN-50](https://linear.app/bench-synergy-project/issue/BEN-50) Playwright MVP + routing e2e | Medium | 001 T020 + 003 T054 |
 
@@ -216,57 +236,75 @@ Linear `blocks` relations were created 2026-09-15 (64 relations). They include A
 
 ---
 
-## Parent E — Request detail (BEN-45)
+## Parent E — Request detail, Employee side (BEN-45) — *re-scoped 2026-09-22*
+
+There is no `/requests/:id` route. The employee's detail is a **side panel** over
+My Requests (`04.1 - … View Request`), and its only action is **Cancel Request**.
+The admin's review panel and every admin transition moved to **Parent G**.
 
 | ID | Linear | Title | Depends on |
 |----|--------|-------|------------|
-| E0 | [BEN-65](https://linear.app/bench-synergy-project/issue/BEN-65) | Specify detail + role actions | A6 |
+| E0 | [BEN-65](https://linear.app/bench-synergy-project/issue/BEN-65) | Specify employee request panel + cancel | A6 + Phase 0 |
 | E1 | [BEN-66](https://linear.app/bench-synergy-project/issue/BEN-66) | Plan + tasks | E0 |
-| E2 | [BEN-67](https://linear.app/bench-synergy-project/issue/BEN-67) | Execute detail **read UI** (independent PR OK) | E1 |
-| E3 | [BEN-68](https://linear.app/bench-synergy-project/issue/BEN-68) | Approver approve/reject + Reject dialog | E2 + API |
-| E4 | [BEN-69](https://linear.app/bench-synergy-project/issue/BEN-69) | Supply Admin prepare/release + location | E2 (+ soft G for queue entry) |
-| E5 | [BEN-70](https://linear.app/bench-synergy-project/issue/BEN-70) | Employee confirm receipt | E2 |
-| E6 | [BEN-71](https://linear.app/bench-synergy-project/issue/BEN-71) | Run checks + PR | E2 min; E3–E5 as ready |
-
-**E3 / E4 / E5** may proceed in parallel after E2.
+| E2 | [BEN-67](https://linear.app/bench-synergy-project/issue/BEN-67) | Execute panel **read UI** — lines, note, status timeline | E1 |
+| E3 | [BEN-68](https://linear.app/bench-synergy-project/issue/BEN-68) | **Moved to G** — approve/reject and the Reject dialog are admin actions | — |
+| E4 | [BEN-69](https://linear.app/bench-synergy-project/issue/BEN-69) | **Moved to G** — Update Status (For Delivery / For Pickup + location) | — |
+| E5 | [BEN-70](https://linear.app/bench-synergy-project/issue/BEN-70) | **Withdrawn → Cancel Request** — there is no confirm-receipt step (ADR-0007); re-scoped to the employee cancel dialog with its required reason | E2 |
+| E6 | [BEN-71](https://linear.app/bench-synergy-project/issue/BEN-71) | Run checks + PR | E2 + E5 |
 
 ---
 
-## Parent F — Approvals queue (BEN-46)
+## Parent F — Requests Queue list (BEN-46) — *re-scoped 2026-09-22*
+
+Was "Approver pending queue". The queue is no longer approver-only: it is the
+single Admin queue, subtitled "Review, approve, and fulfill supply requests".
+**F now owns the list surface only**; the review panel and its actions moved to
+Parent G.
 
 | ID | Linear | Title | Depends on |
 |----|--------|-------|------------|
-| F0 | [BEN-72](https://linear.app/bench-synergy-project/issue/BEN-72) | Specify Approver-only queue | A6 |
+| F0 | [BEN-72](https://linear.app/bench-synergy-project/issue/BEN-72) | Specify Requests Queue (list, chips, search, sort, pagination) | A6 + Phase 0 |
 | F1 | [BEN-73](https://linear.app/bench-synergy-project/issue/BEN-73) | Plan + tasks | F0 |
 | F2 | [BEN-74](https://linear.app/bench-synergy-project/issue/BEN-74) | Execute queue UI | F1 |
 | F3 | [BEN-75](https://linear.app/bench-synergy-project/issue/BEN-75) | Run checks + PR | F2 |
 
-**∥ after A6 with** B, H, I, G. Review action links into Parent E.
+**∥ after A6 with** B, H, I. The **Review** action opens Parent G's panel.
 
 ---
 
-## Parent G — Fulfillment queue (BEN-47)
+## Parent G — Request review & status actions (BEN-47) — *re-scoped 2026-09-22*
+
+Was "Supply Admin fulfillment queue — no Figma screen, designer gap". **The gap
+is closed**, not by a new screen but by the role merge: fulfilment happens in
+the same review panel as approval. G now owns that panel and every transition
+it offers.
 
 | ID | Linear | Title | Depends on |
 |----|--------|-------|------------|
-| G0 | [BEN-76](https://linear.app/bench-synergy-project/issue/BEN-76) | Specify (document designer gap) | A6 |
+| G0 | [BEN-76](https://linear.app/bench-synergy-project/issue/BEN-76) | Specify review panel + all admin transitions | A6 + Phase 0 |
 | G1 | [BEN-77](https://linear.app/bench-synergy-project/issue/BEN-77) | Plan + tasks | G0 |
-| G2 | [BEN-78](https://linear.app/bench-synergy-project/issue/BEN-78) | Execute placeholder → minimal table | G1 |
-| G3 | [BEN-79](https://linear.app/bench-synergy-project/issue/BEN-79) | Run checks + PR | G2 |
+| G2 | [BEN-78](https://linear.app/bench-synergy-project/issue/BEN-78) | Execute review panel (read UI + approve/reject + reject dialog) | G1 |
+| G3 | [BEN-79](https://linear.app/bench-synergy-project/issue/BEN-79) | Execute Update Status (For Delivery / For Pickup + location) and Complete; run checks + PR | G2 |
 
-Prepare/release **actions** may live in **E4**. G itself is **not** blocked on E — only A6 is required to start.
+Depends on F2 for the entry point. Admin cancellation also lives here.
 
 ---
 
-## Parent H — Inventory (BEN-48)
+## Parent H — Assets & Inventory (BEN-48) — *re-scoped 2026-09-22*
+
+Was "Inventory management", one screen. The design now has **two** admin data
+destinations: `Assets` (requestable models, unit counts) and `Inventory` (stock
+levels per item, edited per office).
 
 | ID | Linear | Title | Depends on |
 |----|--------|-------|------------|
-| H0 | [BEN-80](https://linear.app/bench-synergy-project/issue/BEN-80) | Specify Inventory SPA | A6 |
+| H0 | [BEN-80](https://linear.app/bench-synergy-project/issue/BEN-80) | Specify Assets **and** Inventory | A6 + Phase 0 |
 | H1 | [BEN-81](https://linear.app/bench-synergy-project/issue/BEN-81) | Plan + tasks | H0 |
-| H2 | [BEN-82](https://linear.app/bench-synergy-project/issue/BEN-82) | Execute table + search | H1 |
-| H3 | [BEN-83](https://linear.app/bench-synergy-project/issue/BEN-83) | Execute Add item panel | H2 |
-| H4 | [BEN-84](https://linear.app/bench-synergy-project/issue/BEN-84) | Execute Update item panel | H2 |
+| H2 | [BEN-82](https://linear.app/bench-synergy-project/issue/BEN-82) | Execute Assets table + search + chips + pagination | H1 |
+| H3 | [BEN-83](https://linear.app/bench-synergy-project/issue/BEN-83) | Execute Add Asset panel (category-dependent fields) | H2 |
+| H4 | [BEN-84](https://linear.app/bench-synergy-project/issue/BEN-84) | Execute View Asset + Update Asset panels | H2 |
+| H6 | *new* | Execute Inventory table (Total / Available / Reserved / status) | H1 |
+| H7 | *new* | Execute Update stocks panel (threshold + per-office steppers) | H6 |
 | H5 | [BEN-85](https://linear.app/bench-synergy-project/issue/BEN-85) | Run checks + PR | H2+ |
 
 **Related existing Linear (do not duplicate blindly):**
@@ -275,12 +313,21 @@ Prepare/release **actions** may live in **E4**. G itself is **not** blocked on E
 |-------|----------------|
 | [BEN-13](https://linear.app/bench-synergy-project/issue/BEN-13) Admin – Inventory Page | Related — leave as-is; SPA work tracked here |
 | [BEN-7](https://linear.app/bench-synergy-project/issue/BEN-7) Admin – Add Catalog Item | Related (H3) |
-| [BEN-18](https://linear.app/bench-synergy-project/issue/BEN-18) Add Catalog item slide-out | Related (H3) — field list superseded by Assets DTO |
+| [BEN-18](https://linear.app/bench-synergy-project/issue/BEN-18) Add Catalog item slide-out | Related (H3) |
 | [BEN-23](https://linear.app/bench-synergy-project/issue/BEN-23) Admin – Update catalog item | Related (H4) |
 
-Consume the **published** backend assets contract only — no invented routes.
+> **Blocked on three backend decisions**, not on code:
+> `RESERVED / PENDING` as a real quantity; `Ortigas` vs `Pasig`; and
+> `location` / `quantity` / `lowQtyAlert` leaving the asset form for the Update
+> stocks panel. H3 and H4 **cannot** be built against the current
+> `CreateAssetDto` and the current design at the same time. See
+> [`contracts/README.md`](../specs/001-office-supplies-mvp/contracts/README.md).
+> `03 - Inventory` also exists as **two competing frames**; H6 assumes the
+> stock-levels one — see [drift §4d](design-system/drift-2026-09-22.md).
 
-**2026-09-19 field source-of-truth:** Latest Figma Asset/Inventory screens + `CreateAssetDto` / `UpdateAssetDto`: `imageBase64`, `name`, `model`, `type`, `location`, `specs[]`, `quantity`, `lowQtyAlert`. H3/H4 MUST surface BEN-98 validation errors under inputs via `pointer` → field mapping (same as C3).
+H3/H4 MUST surface BEN-98 validation errors under inputs via `pointer` → field
+mapping (shared parser, same as C3).
+
 ---
 
 ## Parent I — Profile (BEN-49)
@@ -293,7 +340,9 @@ Consume the **published** backend assets contract only — no invented routes.
 | I3 | [BEN-89](https://linear.app/bench-synergy-project/issue/BEN-89) | Run checks + PR (base `dev`) | I2 |
 | I4 | [BEN-112](https://linear.app/bench-synergy-project/issue/BEN-112) | Map contract `location` → session `office` | I2 + auth integration branch |
 
-Figma draws Employee profile only; Approver/Supply Admin undesigned — call out in spec. Spec: `specs/006-profile/`. `Currently Assigned` is list / empty / **hidden with no source**, which is the live state (spec 006 FR-007; BEN-49, BEN-88 and BEN-89 amended 2026-09-23).
+Figma draws the Employee profile only; the Admin variant is undesigned — call out in spec. Spec: `specs/006-profile/`. `Currently Assigned` is list / empty / **hidden with no source**, which is the live state (spec 006 FR-007; BEN-49, BEN-88 and BEN-89 amended 2026-09-23).
+
+**Shipped 2026-09-23**, before this export landed. The assigned list reads a per-unit register the MVP does not build, which is why "hidden with no source" is the right third state — see [drift §4e/§7](design-system/drift-2026-09-22.md). Profile is also the one page whose role gating survives the merge unchanged: it was always "both roles".
 
 ---
 
@@ -303,7 +352,7 @@ Figma draws Employee profile only; Approver/Supply Admin undesigned — call out
 |----|--------|-------|------------|
 | J0 | [BEN-90](https://linear.app/bench-synergy-project/issue/BEN-90) | Plan suite scope | A8 notes useful |
 | J1 | [BEN-91](https://linear.app/bench-synergy-project/issue/BEN-91) | Routing e2e (address + RBAC) | J0 + A6 |
-| J2 | [BEN-92](https://linear.app/bench-synergy-project/issue/BEN-92) | Happy-path + reject-path e2e | J0 + B/C/E/F (+G/H) |
+| J2 | [BEN-92](https://linear.app/bench-synergy-project/issue/BEN-92) | Happy-path + reject-path + cancel-path e2e | J0 + B/C/E/F/G (+H) |
 | J3 | [BEN-93](https://linear.app/bench-synergy-project/issue/BEN-93) | Wire CI + PR | J1 and/or J2 |
 
 Not a blocker for page feature PRs.
@@ -346,9 +395,10 @@ Cut parallel branches:
 
 Hard rules for every issue:
 
-- Three roles only: Employee, Approver, Supply Admin
-- Do not invent REST routes, payloads, or error codes
-- Inventory: decrement on submit, restore on reject, never negative (when product logic lands)
+- **Two roles only: Employee and Admin** (constitution 3.0.0 II, ADR-0005)
+- Do not invent REST routes, payloads, or error codes — and do **not** paper over the three open conflicts in `contracts/README.md`
+- Stock is per (asset, office) as Total / Available / Reserved: submit reserves, reject and cancel release, complete consumes; `Total = Available + Reserved`, never negative (ADR-0006)
+- `For Delivery` and `For Pickup` are peers; `Completed` is an **Admin** action; a cancellation reason is required from whoever cancels (ADR-0007)
 - SPA TypeScript strict; secrets stay out of git
 
 ---
@@ -412,3 +462,32 @@ Issues found and corrected in this revision:
 | Contract published | `specs/001-office-supplies-mvp/contracts/README.md` now points at Swagger |
 
 **Not amended:** A (Done), B3/B4, C0–C2/C4, D–G, H5, I, J — no field-model or validation-mapping change required.
+
+---
+
+## Review log (2026-09-22) — design re-export, constitution 3.0.0
+
+Source: `~/Downloads/Office Supplies Request System (OSRS).fig`, exported
+2026-09-22T03:18Z. Full diff: [drift-2026-09-22](design-system/drift-2026-09-22.md).
+
+**What changed in the epic**
+
+| Parent | Was | Now |
+|--------|-----|-----|
+| F (BEN-46) | Approver pending queue | Requests Queue **list** — one queue for the merged Admin |
+| G (BEN-47) | Fulfillment queue — *"no Figma screen, designer gap"* | Request **review panel** + every admin transition. The gap is closed by the role merge, not by a new screen |
+| H (BEN-48) | Inventory management, one screen | **Assets** *and* **Inventory**, two screens, two new subtasks |
+| E (BEN-45) | Request detail + role actions at `/requests/:id` | Employee's **side panel** over My Requests, plus cancel. Admin actions moved to G |
+| D (BEN-44) | My Requests history | unchanged in scope; status vocabulary changed |
+| B, C, I, J | — | field lists, categories and e2e paths updated |
+
+**New blocking work**: **Phase 0** in
+[`specs/001-office-supplies-mvp/tasks.md`](../specs/001-office-supplies-mvp/tasks.md)
+— the shipped shell names `approver` / `supply_admin` and
+`For Release` / `Released`, none of which exist any more. Nothing in this epic
+can be built on the current types.
+
+**New blocking decisions**: three backend contract conflicts
+([`contracts/README.md`](../specs/001-office-supplies-mvp/contracts/README.md))
+and ten designer questions
+([drift §10](design-system/drift-2026-09-22.md)).

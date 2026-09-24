@@ -42,9 +42,56 @@ From published `CreateAssetDto` / `UpdateAssetDto` (see Swagger). Catalog and In
 | `name` | Required on create |
 | `model` | Brand / model string |
 | `type` | Category enum (e.g. Laptop, Headset, Monitor, …) |
-| `location` | Office enum: Cebu, Bacolod, Makati, Pasig, Davao |
+| `location` | Office enum: Cebu, Bacolod, Makati, **Pasig**, Davao — see conflict 2 |
 | `specs` | Optional `{ key, value }[]` custom specs |
-| `quantity` | On-hand stock |
-| `lowQtyAlert` | Low-stock threshold |
+| `quantity` | On-hand stock — see conflict 1 |
+| `lowQtyAlert` | Low-stock threshold — see conflict 3 |
+
+## Open conflicts with the 2026-09-22 design (raised 2026-09-22)
+
+Constitution VII forbids the SPA papering over a gap between the design and the
+published contract. These three are **not UI preferences**; each needs a
+backend decision before the screens that depend on them can be built. Evidence:
+[drift-2026-09-22](../../../docs/design-system/drift-2026-09-22.md).
+
+### 1. Stock is three numbers, per office, and reserved on submit
+
+The design's Inventory screen shows **TOTAL STOCK · AVAILABLE QUANTITY ·
+RESERVED / PENDING** per item, and the arithmetic `TOTAL = AVAILABLE + RESERVED`
+holds in every drawn row. The Assets screen shows **AVAILABLE UNITS ·
+PENDING/RESERVED UNITS · DEPLOYED UNITS**. `03.4 - Update Stocks` edits a
+quantity **per office** (Cebu, Bacolod, Makati, Ortigas, Davao) with a single
+**Low-stock threshold**.
+
+So the pipeline **reserves** on submit and **consumes** on complete, rather than
+decrementing on submit ([ADR-0006](../../../docs/adr/0006-assets-and-inventory.md)).
+
+**Needed from the API:** per-(asset, office) `total` / `available` / `reserved`,
+atomic reserve / release / consume alongside the status change, and the
+invariant held server-side. A single scalar `quantity` cannot express it.
+
+### 2. `Ortigas` vs `Pasig`
+
+The design file's `Site Office Label` component has exactly five variants:
+Cebu, Bacolod, Makati, **Ortigas**, Davao. The DTO says **Pasig**.
+
+**Needed:** one spelling. The SPA will render whatever the contract exposes and
+MUST NOT map or invent a third.
+
+### 3. `location`, `quantity` and `lowQtyAlert` are no longer on the asset form
+
+The design's `03.1 Add Asset - <category>` and Update Asset panels carry only
+Image · Item Name · Category · Model · Description · Specifications. All three
+stock fields moved to `03.4 - Update Stocks`, where quantity is per office.
+
+**Needed:** either the asset endpoints drop them in favour of a stock resource,
+or the design is wrong. **BEN-83 / BEN-84 cannot be built against the current
+DTO and the current design at the same time.**
+
+### Also worth a word
+
+The design's emails print request ids as `REQ-10482`; every SPA screen prints
+`REQ-2026-1847`. Whichever the API returns is what the SPA shows — but the two
+should not both ship.
 
 Product behavior (roles, statuses, inventory rules) still lives in `spec.md` and `docs/process-flow.md`; those are domain requirements, not HTTP design.
