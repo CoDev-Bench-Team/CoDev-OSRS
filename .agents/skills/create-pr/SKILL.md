@@ -1,25 +1,25 @@
 ---
 name: create-pr
-description: Create a pull request to main with a description from the branch diff and spec/plan/tasks when present.
+description: Create a pull request to dev with a description from the branch diff and spec/plan/tasks when present.
 user-invocable: true
 ---
 
 # Create Pull Request
 
-Create a pull request to **`main`** from the current branch. Description comes from git history plus this repo’s spec artifacts — not an invented API contract and not a hardcoded tracker workspace.
+Create a pull request to **`dev`** (the integration branch) from the current branch. Description comes from git history plus this repo’s spec artifacts — not an invented API contract and not a hardcoded tracker workspace.
 
 ## Instructions
 
 1. **Gather git context** in parallel:
    - `git branch --show-current`
    - `git status -sb`
-   - `git log main..HEAD --oneline`
-   - `git diff main...HEAD --stat`
-   - `git log origin/main..HEAD` if `origin/main` exists
+   - `git fetch origin dev`
+   - `git log origin/dev..HEAD --oneline`
+   - `git diff origin/dev...HEAD --stat`
 
 2. **If there are uncommitted changes**, warn and ask whether to proceed (do not stage unless the user asked to commit).
 
-3. **If the branch has no commits ahead of `main`**, stop and say so.
+3. **If the branch has no commits ahead of `origin/dev`**, stop and say so. If it is not based on `origin/dev`, rebase or fast-forward onto it first.
 
 4. **Load product context** when present (do not invent HTTP):
    - `AGENTS.md` constitution
@@ -35,7 +35,7 @@ Create a pull request to **`main`** from the current branch. Description comes f
 7. **Create the PR**:
 
    ```bash
-   gh pr create --base main --title "TITLE" --body "BODY"
+   gh pr create --base dev --title "TITLE" --body "BODY"
    ```
 
    Body:
@@ -54,5 +54,5 @@ Create a pull request to **`main`** from the current branch. Description comes f
 
 ## Notes
 
-- Default base branch for this repository is `main`, not `dev`.
+- Feature PRs target `dev`, not `main` (decided by the project owner 2026-09-23).
 - Do not add a server, database, or REST `api.md` in the PR unless an ADR and the backend contract say so.

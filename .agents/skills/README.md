@@ -24,7 +24,7 @@ create-spec → create-plan → create-tasks → execute → create-pr → code-
 | 2 | `create-plan` | `plan.md` — HOW to build (stack, structure, constitution check) |
 | 3 | `create-tasks` | `tasks.md` — ordered, path-specific work |
 | 4 | `execute` | Organizes `specs/<slug>/`, implements tasks, then quality gate |
-| 5 | `create-pr` | Pull request against `main` |
+| 5 | `create-pr` | Pull request against `dev` |
 | 6 | `code-review` | Structured review of the PR vs spec/plan/tasks |
 | 6 | `code-reviewer` | Deeper quality/security review (checklist + report) |
 
@@ -53,7 +53,7 @@ Active product work already lives in `specs/001-office-supplies-mvp/`. New featu
 | `create-plan` | yes | Must not invent REST routes; consume the backend contract |
 | `create-tasks` | yes | ClickUp IDs are optional; skip unless the user asks |
 | `execute` | yes | Expects `specs/spec.md` + `plan.md` + `tasks.md` before organizing |
-| `create-pr` | yes | Base branch for this repo is **`main`** |
+| `create-pr` | yes | Base branch for feature PRs is **`dev`** (integration), not `main` |
 | `code-review` | yes | PR review vs spec/plan/tasks |
 | `code-reviewer` | yes | Report-style review; references under `code-reviewer/references/` |
 | `analyze` | yes | Supporting |
@@ -64,4 +64,4 @@ Active product work already lives in `specs/001-office-supplies-mvp/`. New featu
 - Constitution in `AGENTS.md`
 - Three roles only: Employee, Approver, Supply Admin
 - SPA only; no backend stack or invented API contract
-- Default git branch: `main`
+- Default git branch: `main`. Feature PRs target **`dev`**, the integration branch

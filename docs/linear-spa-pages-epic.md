@@ -5,7 +5,7 @@
 **Team**: BEN (Bench Synergy Project)  
 **Project**: [OSRS (Office Supplies Request System)](https://linear.app/bench-synergy-project/project/osrs-office-supplies-request-system-a2a70f69dfae)  
 **Labels**: Frontend + Feature  
-**Integration branch**: `dev` (current SPA default)  
+**Integration branch**: `dev` — every page PR targets `dev`, not `main` (confirmed 2026-09-23)  
 **Source**: Figma `Office Supplies Request System (OSRS).fig` → UI kit `OSRS Design System/ui_kits/osrs-web/` → `specs/003-app-shell-routing/`  
 **Contract**: [Swagger](https://codev-osrs-backend.vercel.app/) — see `specs/001-office-supplies-mvp/contracts/README.md`
 
@@ -290,9 +290,10 @@ Consume the **published** backend assets contract only — no invented routes.
 | I0 | [BEN-86](https://linear.app/bench-synergy-project/issue/BEN-86) | Specify Profile (all roles) | A6 |
 | I1 | [BEN-87](https://linear.app/bench-synergy-project/issue/BEN-87) | Plan + tasks | I0 |
 | I2 | [BEN-88](https://linear.app/bench-synergy-project/issue/BEN-88) | Execute Profile page | I1 |
-| I3 | [BEN-89](https://linear.app/bench-synergy-project/issue/BEN-89) | Run checks + PR | I2 |
+| I3 | [BEN-89](https://linear.app/bench-synergy-project/issue/BEN-89) | Run checks + PR (base `dev`) | I2 |
+| I4 | [BEN-112](https://linear.app/bench-synergy-project/issue/BEN-112) | Map contract `location` → session `office` | I2 + auth integration branch |
 
-Figma draws Employee profile only; Approver/Supply Admin undesigned — call out in spec.
+Figma draws Employee profile only; Approver/Supply Admin undesigned — call out in spec. Spec: `specs/006-profile/`. `Currently Assigned` is list / empty / **hidden with no source**, which is the live state (spec 006 FR-007; BEN-49, BEN-88 and BEN-89 amended 2026-09-23).
 
 ---
 
