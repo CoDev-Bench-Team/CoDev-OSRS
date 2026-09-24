@@ -24,6 +24,7 @@ export function Select({
   placeholder = 'Select',
   disabled,
   className,
+  id: triggerId,
 }: {
   value?: string;
   options: string[];
@@ -34,6 +35,8 @@ export function Select({
    *  one option opens and shows it, the way a native select does. */
   disabled?: boolean;
   className?: string;
+  /** For a visible `<label htmlFor>` naming the control, as a form field has. */
+  id?: string;
 }) {
   // Disabled only when asked. A single option is not a reason to disable: the
   // control still opens and shows what is there, which is what a native select
@@ -195,6 +198,7 @@ export function Select({
     <div ref={rootRef} className={`relative w-full ${className ?? ''}`}>
       <button
         ref={triggerRef}
+        id={triggerId}
         type="button"
         role="combobox"
         aria-haspopup={isDisabled ? undefined : 'listbox'}

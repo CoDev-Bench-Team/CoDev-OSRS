@@ -4,6 +4,8 @@ import { NotFoundScreen } from '../shared/ui';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { RequireAccess } from '../features/auth/RequireAccess';
 import { CatalogPage } from '../features/catalog/CatalogPage';
+import { AssetsPage } from '../features/assets/AssetsPage';
+import { InventoryPage } from '../features/inventory/InventoryPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
 import { MyRequestsPage } from '../features/requests/history/MyRequestsPage';
 import { useSession } from '../features/auth/session-context';
@@ -12,9 +14,7 @@ import { AppLayout } from './AppLayout';
 import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './destinations';
 import { NavButton } from './NavButton';
 import {
-  AssetsPlaceholder,
   HistoryPlaceholder,
-  InventoryPlaceholder,
   RequestDetailPlaceholder,
 } from './placeholders';
 
@@ -76,8 +76,8 @@ export function AppRoutes() {
           element={guarded('requestDetail', <RequestDetailPlaceholder />)}
         />
         <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
-        <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
-        <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />
+        <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPage />)} />
+        <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPage />)} />
         <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />
         <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePage />)} />
         <Route path="*" element={<NotFoundRoute />} />
