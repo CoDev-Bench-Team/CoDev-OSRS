@@ -26,7 +26,7 @@ renders the designed Google control and delegates to the **session boundary**,
 `src/features/auth/session-source.ts`.
 
 Until the backend contract publishes, that boundary is satisfied by
-`src/features/auth/seeded-source.ts`, which resolves one of these three seeded
+`src/features/auth/seeded-source.ts`, which resolves one of these two seeded
 identities — one per role, so every role's landing screen and every refusal can
 be exercised:
 
@@ -35,12 +35,10 @@ be exercised:
 | Maya Santos · mayas@codev.com | `employee` | `/catalog` |
 | Ethan Cruz · ethanc@codev.com | `admin` | `/queue` |
 
-> Constitution 3.0.0 retired `approver` and `supply_admin` ([ADR-0005](../../docs/adr/0005-two-role-model.md)). The shipped shell still seeds three identities; T000–T000b in `tasks.md` collapse them to the two above.
-
 Choose one on the sign-in screen before pressing the Google control — the
 chooser is the seeded source's stand-in for Google's account picker, and it
 disappears on its own once a source backed by the published contract replaces
-it. A fourth entry, **Refused account**, makes sign-in fail, so the refusal path
+it. A third entry, **Refused account**, makes sign-in fail, so the refusal path
 can be demonstrated.
 
 **There is no role switcher inside the application** (spec 003 D5). Changing role
