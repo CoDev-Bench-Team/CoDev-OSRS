@@ -130,9 +130,13 @@ export function buildQueueViewModel(snapshot: QueueSnapshot, query: QueueQuery):
   };
 }
 
-/** Every change except paging returns to page 1 (FR-022). One rule, in one
+/** Every real change except paging returns to page 1 (FR-022). A patch that
+ *  sets a field to the value it already has — pressing the chip that is
+ *  already selected — is not a change, so the page stays. One rule, in one
  *  place, rather than repeated in each control's handler. */
 export function updateQuery(query: QueueQuery, change: Partial<QueueQuery>): QueueQuery {
+  const keys = Object.keys(change) as (keyof QueueQuery)[];
+  if (keys.every((key) => change[key] === query[key])) return query;
   const next = { ...query, ...change };
-  return 'page' in change && Object.keys(change).length === 1 ? next : { ...next, page: 1 };
+  return keys.length === 1 && keys[0] === 'page' ? next : { ...next, page: 1 };
 }

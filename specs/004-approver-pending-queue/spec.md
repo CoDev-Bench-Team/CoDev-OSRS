@@ -37,7 +37,7 @@ An Admin narrows the live queue by status, search and sort, pages through it, id
 2. **Given** a request row, **When** the Admin activates Review, **Then** the application navigates to `/requests/:id` for that request.
 3. **Given** requests that are `Rejected`, `Cancelled` or `Completed`, **When** the table renders, **Then** they do not appear — resolved requests belong to History.
 4. **Given** the Admin returns from request detail after a decision changed the request status, **When** current data is shown, **Then** the row carries its new status (or is gone, if the new status is terminal) and the summary and chip counts reflect the current workload.
-5. **Given** the chips `All requests · Pending Approval · Approved · For Delivery · For Pickup`, **When** the Admin selects one, **Then** only requests in that status are listed and the chip's count equals the number of matching requests.
+5. **Given** the chips `All requests · Pending Approval · Approved · For Delivery · Ready for Pickup`, **When** the Admin selects one, **Then** only requests in that status are listed and the chip's count equals the number of matching requests.
 6. **Given** a search term, **When** it matches a request id, employee name, employee email or item name (case-insensitive), **Then** only matching requests are listed and every chip count is recomputed over the matches.
 7. **Given** the sort select, **When** the Admin picks Newest First, Oldest First or Employee (A-Z), **Then** the order changes and is kept while paging.
 8. **Given** more matching requests than the page size, **When** the Admin pages or changes Result per page, **Then** the range label reports the true range and total and the table shows that slice.
@@ -89,9 +89,9 @@ An Admin can review the queue with keyboard controls and at every width supporte
 - **FR-003**: ~~The page MUST NOT merge Approver and Supply Admin capabilities or identity.~~ **SUPERSEDED** by constitution 3.0.0 — the two roles *are* merged ([ADR-0005](../../docs/adr/0005-two-role-model.md)). **Now:** withdrawn; the one Admin both decides and fulfils, and this page links to both halves through Review.
 - **FR-004**: The page MUST show three read-only summary cards labelled Pending approval, In Processing, and Low stock alerts.
 - **FR-005**: Pending approval MUST count requests whose current status is `Pending Approval`.
-- **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, ~~`For Release`, and `Released`~~ — those two statuses are **SUPERSEDED** by constitution 3.0.0 ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)). **Now:** `Approved`, `For Delivery` and `For Pickup`.
+- **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, ~~`For Release`, and `Released`~~ — those two statuses are **SUPERSEDED** by constitution 3.0.0 ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)). **Now:** `Approved`, `For Delivery` and `Ready for Pickup`.
 - **FR-007**: Low stock alerts MUST count inventory items classified as low stock by the system's data source; the SPA MUST NOT invent a threshold.
-- **FR-008**: ~~The pending table MUST contain only requests currently in `Pending Approval`.~~ **SUPERSEDED** by the third 2026-09-24 amendment. **Now:** the table MUST contain every live request — `Pending Approval`, `Approved`, `For Delivery`, `For Pickup` — narrowed by the selected chip and the search term.
+- **FR-008**: ~~The pending table MUST contain only requests currently in `Pending Approval`.~~ **SUPERSEDED** by the third 2026-09-24 amendment. **Now:** the table MUST contain every live request — `Pending Approval`, `Approved`, `For Delivery`, `Ready for Pickup` — narrowed by the selected chip and the search term.
 - **FR-009**: Each row MUST show request id, requestor name, requestor organizational context when available, an item summary, the row's own status pill, submitted date, and Review.
 - **FR-010**: Review MUST navigate to the stable request-detail destination for that request.
 - **FR-011**: The queue MUST NOT approve, reject, cancel, prepare, release, or complete a request.
@@ -105,7 +105,7 @@ An Admin can review the queue with keyboard controls and at every width supporte
 - **FR-019**: The page MUST offer filter chips `All requests`, `Pending Approval`, `Approved`, `For Delivery`, `Ready for Pickup` (the file's chip says `For Pickup`; see amendment 4), each with its count; `All requests` MUST be selected by default and the selected chip MUST expose its pressed state.
 - **FR-020**: Search MUST match request id, employee name, employee email and item names, case-insensitively and ignoring surrounding whitespace; chip counts MUST be computed over the search matches, not over the current page.
 - **FR-021**: Sort MUST offer Newest First (default), Oldest First and Employee (A-Z). A request whose submitted timestamp is unusable sorts after every dated request under both date orders; Employee (A-Z) breaks ties newest first.
-- **FR-022**: The table MUST be paginated with a `first-last of total` range label, Back / numbered pages / Next, and a Result per page select defaulting to 50. Back and Next MUST be disabled at the ends. Changing the chip, search, sort or page size MUST return to page 1.
+- **FR-022**: The table MUST be paginated with a `first-last of total` range label, Back / numbered pages / Next, and a Result per page select defaulting to 50. Back and Next MUST be disabled at the ends. Changing the chip, search, sort or page size MUST return to page 1. Re-selecting the value already in effect — pressing the chip that is already selected — is not a change and MUST keep the page.
 - **FR-023**: Chip, search, sort and page MUST be one query state projected in one pure step, so the counts, range label and rows cannot disagree.
 
 ## Key Entities
@@ -119,7 +119,7 @@ An Admin can review the queue with keyboard controls and at every width supporte
 
 - Approve and reject mutations, including rejection-reason entry
 - Request-detail content and status actions
-- Fulfilment (For Delivery / For Pickup, Complete) and cancellation actions — the review panel's (BEN-47)
+- Fulfilment (For Delivery / Ready for Pickup, Complete) and cancellation actions — the review panel's (BEN-47)
 - Asset and inventory-management actions
 - Employee request history
 - Defining or publishing a REST contract
@@ -250,6 +250,7 @@ longer what blocks these frames.
 - Q: The review frames add a third card, *Low stock alerts*; the queue frame draws two. → A: Keep three (FR-004 unchanged); BEN-46 names it.
 - Q: The file's search placeholder has a double space after "ID,". → A: Transcribed with one. It is a typo, not copy.
 - Q: Does Review open the design's side panel? → A: Not yet. The panel is BEN-47's. Until it lands, Review keeps navigating to `/requests/:id` (FR-010). The row hands BEN-47 a single seam to replace.
+- Q: Review navigates away, so the chip, search, sort and page reset when the Admin comes back from request detail (Story 1 scenario 4). Hold the query above the route? → A: **No — acceptable until BEN-47.** Its side panel opens over the queue, so the page no longer unmounts and the query survives a review. URL persistence stays out of scope.
 - Q: The export adds a `Received` status and an Employee-signed completion. Do the chips or pills gain it? → A: **No.** It contradicts constitution 3.0.0 IV and ADR-0007 and waits for the project owner (drift §2). The queue keeps the four live statuses.
 
 The `Pending Approval` section heading that came from the retired approver
@@ -265,8 +266,9 @@ constitution 3.0.1; ADR-0007 amendment).
 - Q: The queue frame's chip says `For Pickup`, while its pills and the `Request Status` component say `Ready for Pickup`. → A: **`Ready for Pickup`**, chip included. Ignore the chip's label.
 - Q: Handover pills: ADR-0007's green, or the drawn colours? → A: **Drawn.** `For Delivery` is pink and `Ready for Pickup` is blue.
 
-Earlier amendments in this spec keep the name `For Pickup`, as they used it at
-the time.
+The live requirements, acceptance scenarios and Out of Scope list above are
+reworded in place (FR-006, FR-008, User Story 1 scenario 5). Earlier amendments
+in this spec keep the name `For Pickup`, as they used it at the time.
 
 ## Validation
 

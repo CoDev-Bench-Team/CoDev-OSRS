@@ -82,16 +82,26 @@ export function Pagination({
 
   return (
     <nav aria-label={label} className="flex flex-wrap items-center justify-between gap-16">
-      <p className="font-sans text-14 leading-tight text-osrs-neutral-800" aria-live="polite">
+      {/* Not a live region: the screen owning the table already announces its
+          result count, and a second region here would speak over it on every
+          keystroke of a search. */}
+      <p className="font-sans text-14 leading-tight text-osrs-neutral-800">
         {count(first)}-{count(last)} of {count(total)}
       </p>
 
       <div className="flex flex-wrap items-center gap-x-[48px] gap-y-12">
         <div className="flex flex-wrap items-center gap-6">
+          {/* `aria-disabled`, not `disabled`, on Back and Next: reaching the
+              last page disables the very button that was pressed, and a
+              `disabled` element drops keyboard focus to <body>. The global
+              `[aria-disabled='true']` rule dims it and blocks the pointer; the
+              guard blocks Enter and Space. */}
           <button
             type="button"
-            disabled={atStart}
-            onClick={() => onPageChange(page - 1)}
+            aria-disabled={atStart}
+            onClick={() => {
+              if (!atStart) onPageChange(page - 1);
+            }}
             className={`${atStart ? DISABLED : ENABLED} gap-4 px-12`}
           >
             <Chevron direction="left" />
@@ -109,7 +119,12 @@ export function Pagination({
                 type="button"
                 aria-label={`Page ${p}`}
                 aria-current={p === page ? 'page' : undefined}
-                onClick={() => onPageChange(p)}
+                /* The current page is not a navigation: calling back with the
+                   page already shown would make a caller that fetches on page
+                   change fetch again for nothing. */
+                onClick={() => {
+                  if (p !== page) onPageChange(p);
+                }}
                 className={
                   p === page
                     ? `${BOX} cursor-default bg-brand-primary-alt px-12 font-bold text-brand-on-primary`
@@ -123,8 +138,10 @@ export function Pagination({
 
           <button
             type="button"
-            disabled={atEnd}
-            onClick={() => onPageChange(page + 1)}
+            aria-disabled={atEnd}
+            onClick={() => {
+              if (!atEnd) onPageChange(page + 1);
+            }}
             className={`${atEnd ? DISABLED : ENABLED} gap-4 px-12`}
           >
             Next

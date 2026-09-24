@@ -189,7 +189,8 @@ The queue frames did not change after 09-22.
   page and slices it, all in that order in one function. The counts, the range
   label and the rows come from the same pass, so they cannot disagree (FR-023).
   A change to anything except the page returns to page 1. That rule lives in
-  one reducer-style helper, not in four handlers.
+  one reducer-style helper, not in four handlers. (Refined by the T020
+  amendment below: re-selecting the current value is not a change.)
 - **Two shared components, promoted rather than local.** `FilterChip`
   (`src/shared/ui/forms/FilterChip.tsx`) and `Pagination`
   (`src/shared/ui/data-display/Pagination.tsx`) are built to the file's
@@ -213,6 +214,37 @@ The queue frames did not change after 09-22.
 - **The `Pending Approval` section heading is removed.** The queue frame does
   not draw it. Retry focus moves to the chip group.
 - **Review stays a link** to `/requests/:id` until BEN-47's panel exists.
+
+**Amendment — 2026-09-24 (T020: review follow-ups).** Four review rounds after
+the full list surface landed, squashed into one commit.
+
+- **A no-op is not a change.** `updateQuery` returns the query unchanged when
+  every field in the patch already holds that value, so pressing the chip that
+  is already selected keeps the page (FR-022, clarified). Returning the same
+  object also lets React skip the state update.
+- **`Pagination` keeps focus at the ends.** Back and Next take `aria-disabled`
+  and a guarded handler instead of `disabled`. A `disabled` button drops
+  keyboard focus to `<body>` the moment the press that reached the last page
+  disables it. The global `[aria-disabled='true']` rule dims it and blocks the
+  pointer, and it stays in the tab order, as an `aria-disabled` control should.
+  The range label is **not** a live region: the screen owning the table
+  announces its own result count, and a second region would speak over it on
+  every keystroke. Pressing the current page does not call back. Assets,
+  Inventory and History inherit all three.
+- **`Search` has one focus indicator**, the input's own outline. Its left inset
+  is written as the sum of the three spacing tokens it depends on.
+- **The sort value is narrowed, not cast**, before it reaches the comparator
+  lookup.
+- **The projection is memoised** on the load state and the query, so it no
+  longer reruns on renders that change neither. At the seeded size this makes no
+  difference to speed; it matters at the design's "1-50 of 1,250" once a real
+  source arrives.
+- **`scripts/check-queue.mjs`** is the queue's own `npm run verify` gate:
+  FR-004–FR-008, FR-014 and FR-019–FR-023, driven through the same CDP client as
+  the other gates. It was mutation-tested: putting `disabled` back on Next, and
+  removing the page reset for chip changes, each fail only the assertion meant
+  to catch them. The chip reset is asserted through a return to All, because a
+  one-page chip shows page 1 through the clamp whether or not the query reset.
 
 ## UI and State Flow
 
@@ -241,7 +273,14 @@ src/shared/ui/actions/
 └── button-styles.ts            # added by the 2026-09-22 amendment above
 
 src/shared/ui/data-display/
+├── Pagination.tsx              # added by the third 2026-09-24 amendment
 └── table-columns.ts            # added by the 2026-09-24 amendment above
+
+src/shared/ui/forms/
+└── FilterChip.tsx              # added by the third 2026-09-24 amendment
+
+scripts/
+└── check-queue.mjs             # added by the T020 amendment; wired into verify.mjs
 ```
 
 ## Dependencies
@@ -256,7 +295,7 @@ src/shared/ui/data-display/
 
 - `npm run lint`
 - `npm run build`
-- `npm run verify`
+- `npm run verify`, which includes `scripts/check-queue.mjs` (T020): live statuses, cards, chips, search, sort, pagination and focus at the ends, all automated
 - Inspect as the Admin at `/queue` for populated and empty fixture projections.
 - Confirm Employee direct access remains refused by the existing route guard, and `/approvals` renders not-found.
 - Confirm Review changes only the location to `/requests/:id`.
@@ -292,9 +331,9 @@ amendment, and they are scored against 3.0.0 now.
 | I. Spec-Driven Development | PASS | `spec.md` is finalized before plan, tasks, and code, and the 2026-09-24 amendment records what changed underneath it. |
 | II. Two Distinct Human Roles | PASS | The page is reachable by the **Admin** only, through the shell's `/queue` guard ([ADR-0005](../../docs/adr/0005-two-role-model.md)). Before the realignment this row read SUPERSEDED: the page was Approver-only. |
 | III. Inventory Integrity | PASS | Read-only metrics perform no inventory mutation or threshold classification. |
-| IV. Explicit Request State Machine | PASS | The queue filters status and performs no transition. In Processing reads `Approved` / `For Delivery` / `For Pickup` ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)); `For Release` / `Released` are gone. |
+| IV. Explicit Request State Machine | PASS | The queue filters status and performs no transition. In Processing reads `Approved` / `For Delivery` / `Ready for Pickup` ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)); `For Release` / `Released` are gone. |
 | V. Notification Completeness | PASS | No transition or notification is implemented. |
-| VI. Independently Testable Increments | PASS | The queue can be demonstrated with the typed temporary source. |
+| VI. Independently Testable Increments | PASS | The queue can be demonstrated with the typed temporary source, and `check-queue.mjs` verifies its acceptance criteria in `npm run verify`. |
 | VII. Typed Contracts | PASS | Internal view types are not represented as backend JSON; no REST contract is invented. |
 | VIII. MVP Restraint | PASS | No new framework, package or mutation. Search, filter, sort and pagination are in spec 001 FR-016/FR-018 and in the design; they run client-side over the source's snapshot until the contract says where they run. |
 | IX. Secrets and Internal Data | PASS | Fixtures are non-production placeholders and contain no credentials. |

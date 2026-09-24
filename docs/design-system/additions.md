@@ -31,6 +31,15 @@ Grouped by how much judgement each required.
 
 ## 2b. The two handover labels on `Released` — superseded
 
+> **Current, 2026-09-24 (constitution 3.0.1, BEN-46).** The pink and blue pairs
+> below are **in use** again, now as the tones of two request *states*:
+> `For Delivery` → `delivery` (pink) and `Ready for Pickup` → `pickup` (blue) in
+> `REQUEST_TONE`. The pickup state is named `Ready for Pickup`, as the design's
+> `Request Status` component names it. The project owner chose the drawn
+> colours over ADR-0007's green — see
+> [drift-2026-09-24 §6](drift-2026-09-24.md) and the ADR-0007 amendment. The
+> note below is the record of the green interval between 09-22 and 09-24.
+
 > **Superseded 2026-09-24 (BEN-121) by [ADR-0007](../adr/0007-fulfilment-status-vocabulary.md).**
 > `For Delivery` and `For Pickup` are now request **states**, not labels on
 > `Released`, and both render in the green `ready` tone like every other moving

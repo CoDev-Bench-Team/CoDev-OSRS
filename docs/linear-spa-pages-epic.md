@@ -398,7 +398,7 @@ Hard rules for every issue:
 - **Two roles only: Employee and Admin** (constitution 3.0.0 II, ADR-0005)
 - Do not invent REST routes, payloads, or error codes — and do **not** paper over the three open conflicts in `contracts/README.md`
 - Stock is per (asset, office) as Total / Available / Reserved: submit reserves, reject and cancel release, complete consumes; `Total = Available + Reserved`, never negative (ADR-0006)
-- `For Delivery` and `For Pickup` are peers; `Completed` is an **Admin** action; a cancellation reason is required from whoever cancels (ADR-0007)
+- `For Delivery` and `Ready for Pickup` are peers; `Completed` is an **Admin** action; a cancellation reason is required from whoever cancels (ADR-0007, constitution 3.0.1)
 - SPA TypeScript strict; secrets stay out of git
 
 ---

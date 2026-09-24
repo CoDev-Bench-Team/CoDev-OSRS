@@ -222,4 +222,4 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 | [0004](docs/adr/0004-client-routing.md) | Client-side routing via React Router v7 |
 | [0005](docs/adr/0005-two-role-model.md) | Employee and Admin — two human roles |
 | [0006](docs/adr/0006-assets-and-inventory.md) | Assets and Inventory are separate; per-office Total/Available/Reserved stock |
-| [0007](docs/adr/0007-fulfilment-status-vocabulary.md) | One handover state (For Delivery / For Pickup), completed by the Admin |
+| [0007](docs/adr/0007-fulfilment-status-vocabulary.md) | One handover state (For Delivery / For Pickup), completed by the Admin — amended 2026-09-24: `Ready for Pickup`, drawn pink/blue pills |

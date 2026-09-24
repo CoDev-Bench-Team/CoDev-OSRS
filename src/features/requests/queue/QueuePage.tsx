@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link } from 'react-router';
 import {
   BUTTON_SHAPE,
@@ -58,6 +58,10 @@ const MIN_ITEMS_WIDTH = 120;
 /** Derived from COLUMNS and the shared row gutter, never restated — see
  *  `tableMinWidth`, which also rejects a width that is not a sane pixel length. */
 const TABLE_MIN_WIDTH = tableMinWidth(Object.values(COLUMNS), MIN_ITEMS_WIDTH);
+
+/** `Select` hands back a plain string. Narrowed rather than cast, so a value
+ *  outside QUEUE_SORTS can never reach the projection's comparator lookup. */
+const isQueueSort = (value: string): value is QueueSort => (QUEUE_SORTS as readonly string[]).includes(value);
 
 /** What a screen reader is told as the queue settles. The count is the page's
  *  whole point, so the settled announcement carries it rather than saying only
@@ -129,8 +133,13 @@ export function QueuePage({
   }, [state]);
 
   /** Derived once here rather than inside the table, so the announcement and
-   *  what is on screen are the same projection of the same snapshot. */
-  const queue = state.kind === 'loaded' ? buildQueueViewModel(state.snapshot, query) : null;
+   *  what is on screen are the same projection of the same snapshot. Memoised
+   *  on the load state and the query, the projection's only inputs, so a render
+   *  that changes neither does not re-sort a large snapshot. */
+  const queue = useMemo(
+    () => (state.kind === 'loaded' ? buildQueueViewModel(state.snapshot, query) : null),
+    [state, query],
+  );
   const change = (next: Partial<QueueQuery>) => setQuery((current) => updateQuery(current, next));
 
   return (
@@ -223,7 +232,9 @@ function LoadedQueue({
           label="Sort requests"
           value={query.sort}
           options={[...QUEUE_SORTS]}
-          onChange={(sort) => onChange({ sort: sort as QueueSort })}
+          onChange={(sort) => {
+            if (isQueueSort(sort)) onChange({ sort });
+          }}
         />
       </div>
 

@@ -68,7 +68,7 @@ Depends on backend auth/session resources.
 
 **Goal**: Admin queue; reject requires a reason.
 
-- [ ] T014 [US3] Requests Queue: summary cards, chips, search, sort, table, pagination — `src/features/requests/queue/QueuePage.tsx`
+- [x] T014 [US3] Requests Queue: summary cards, chips, search, sort, table, pagination — `src/features/requests/queue/QueuePage.tsx`
 - [ ] T015 [US3] Review panel: requester, lines with current inventory, note, timeline, Approve / Reject — `src/features/requests/queue/ReviewPanel.tsx`
 - [ ] T016 [US3] Reject dialog with required reason; rejected read-back state — `src/features/requests/queue/RejectDialog.tsx`
 
