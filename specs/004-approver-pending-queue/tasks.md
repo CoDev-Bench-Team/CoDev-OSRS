@@ -1,4 +1,4 @@
-# Tasks: Requests Queue — Pending Approval list
+# Tasks: Requests Queue — list, filters, search, sort
 
 **Spec**: `specs/004-approver-pending-queue/spec.md`  
 **Plan**: `specs/004-approver-pending-queue/plan.md`  
@@ -39,6 +39,11 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 - [x] T014 [BEN-75] Type the shared row-gutter class so a named token cannot hand `NaN` to the width calculation, move the width arithmetic into a guarded `tableMinWidth`, migrate the gallery's rows onto the shared gutter, and mark the superseded requirements inline in `spec.md`; see the 2026-09-24 fourth-review amendment in `plan.md` — `src/shared/ui/data-display/table-columns.ts`, `src/shared/ui/index.ts`, `src/shared/ui/gallery/Gallery.tsx`, `src/features/requests/approvals/ApprovalsQueuePage.tsx`, `specs/004-approver-pending-queue/spec.md`
 
 - [x] T015 [BEN-75] Realign to constitution 3.0.0 after the rebase onto spec 001 Phase 0: mount the page on the Admin's `/queue`, take title and subtitle from `DESTINATIONS.queue`, count In Processing over `Approved` / `For Delivery` / `For Pickup`, move the feature to `src/features/requests/queue/`, and reseed with the new statuses; see the second 2026-09-24 amendment in `spec.md` — `src/app/routes.tsx`, `src/app/placeholders.tsx`, `src/features/requests/queue/*`, `specs/004-approver-pending-queue/*`
+- [x] T016 [BEN-74] Record the 2026-09-24 export as `drift-2026-09-24.md` and amend spec 004 (FR-008 superseded; FR-019–FR-023) and plan — `docs/design-system/drift-2026-09-24.md`, `specs/004-approver-pending-queue/*`
+- [x] T017 [P] [BEN-74] Shared `FilterChip` and `Pagination`, plus the four pagination primitives — `src/shared/ui/forms/FilterChip.tsx`, `src/shared/ui/data-display/Pagination.tsx`, `src/styles/theme.css`, `docs/design-system/token-map.md`, `src/shared/ui/index.ts`; `SummaryCard` neutral tone and `Search` focus outline — `src/shared/ui/data-display/cards.tsx`, `src/shared/ui/forms/Search.tsx`
+- [x] T018 [BEN-74] `QueueQuery` and the single projection: live statuses, search, chip counts, sort, page clamp and slice — `src/features/requests/queue/queue-types.ts`, `src/features/requests/queue/queue-model.ts`
+- [x] T019 [BEN-74] Toolbar, chips, all-status table with Review on every row, pagination, and the no-match empty state; drop the `Pending Approval` heading; reseed with emails and enough rows to page — `src/features/requests/queue/QueuePage.tsx`, `src/features/requests/queue/seeded-queue-source.ts`
+
 > **On the checkmarks.** T001–T013 are complete as written. Three of the
 > requirements they implement — FR-002, FR-003 and FR-006 — were superseded by
 > constitution 3.0.0 after this work was done, and are struck through in
@@ -54,6 +59,7 @@ Linear lifecycle: BEN-72 (spec) → BEN-73 (plan/tasks) → BEN-74 (execute) →
 - T008 blocks T009.
 - T010 arose from review during T009 and touches no file T001–T008 owns.
 - T011 arose from a second review round during T009; its shared-UI change is output-preserving for every existing `TableHead` caller.
+- T016–T019 arose from the 2026-09-24 re-export and BEN-46's re-scope. T016 blocks T017–T019; T017 and T018 are parallel; both block T019.
 - T015 arose from the rebase onto `dev` after spec 001 Phase 0 (PR #40) merged: the page no longer compiled, and the Admin's `/queue` landing rendered the shell's error boundary.
 - T014 arose from a fifth review round during T009, which found that T013's own gutter constant carried the very failure mode T013 added `ColumnWidth` to prevent: `px-touch-target` compiled, rendered 44px, and produced `NaN` — dropped silently by React, collapsing the table's minimum width and the ITEMS column with it.
 - T013 arose from a fourth review round during T009. It records the constitution-3.0.0 supersession that spec 001 Phase 0 owns, and closes four code findings; `ColumnWidth` is a narrowing, so it changes no rendered output but does reject a loose annotation in the gallery.

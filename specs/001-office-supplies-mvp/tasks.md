@@ -74,9 +74,9 @@ Depends on backend auth/session resources.
 
 ## Phase 6: User Story 4 + 5 — Handover and complete (P1)
 
-**Goal**: Admin sets For Delivery / For Pickup, then completes.
+**Goal**: Admin sets For Delivery / Ready for Pickup, then completes.
 
-- [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when For Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx`
+- [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx`
 - [ ] T018 [US5] Complete action and its confirmation — `src/features/requests/queue/UpdateStatusPanel.tsx`
 
 ## Phase 7: User Story 6 + 7 — History and cancel (P2)

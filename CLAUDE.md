@@ -1,6 +1,6 @@
 # CoDev-OSRS — Agent Instructions
 
-Office Supplies Request System (OSRS). Internal Codev MVP that replaces chat/email supply requests with a four-stage pipeline: **Browse Catalog & Create Request → Review & Approve → Hand over (For Delivery / For Pickup) → Complete**.
+Office Supplies Request System (OSRS). Internal Codev MVP that replaces chat/email supply requests with a four-stage pipeline: **Browse Catalog & Create Request → Review & Approve → Hand over (For Delivery / Ready for Pickup) → Complete**.
 
 This file is the always-loaded entry point. Keep it short. Load the pointed files when the work needs them.
 
@@ -60,7 +60,7 @@ Do not introduce a new frontend framework or UI kit without an ADR in `docs/adr/
 
 - Honor AGENTS.md constitution. MUST violations without a documented exception are errors.
 - Two roles only: **Employee** and **Admin** (ADR-0005). Do not reintroduce `approver` / `supply_admin`.
-- Request status transitions MUST follow `docs/process-flow.md`. No skipped states. `For Delivery` and `For Pickup` are peers; `Completed` is set by an **Admin**, not by the requester.
+- Request status transitions MUST follow `docs/process-flow.md`. No skipped states. `For Delivery` and `Ready for Pickup` are peers; `Completed` is set by an **Admin**, not by the requester.
 - Stock is per **(asset, office)** as **Total / Available / Reserved** (ADR-0006). Submit reserves; reject and cancel release; complete consumes. `Total = Available + Reserved`; never negative.
 - A cancellation reason is required from whoever cancels.
 - Email notification on every defined transition, using the four templates in `docs/process-flow.md`. Missing a notification is a bug (API responsibility; SPA surfaces status).

@@ -1,4 +1,4 @@
-# Implementation Plan: Requests Queue — Pending Approval list
+# Implementation Plan: Requests Queue — list, filters, search, sort
 
 **Date**: 2026-09-22  
 **Spec**: `specs/004-approver-pending-queue/spec.md`  
@@ -23,7 +23,8 @@ Feature-local view data, not a backend contract:
 
 - `QueueRequest`: request id, requestor name, optional organizational context, item names, submitted timestamp, and canonical request status.
 - `QueueSnapshot`: requests plus a source-provided low-stock alert count.
-- `QueueViewModel`: three summary metrics and rows filtered to `Pending Approval`.
+- `QueueViewModel`: three summary metrics, per-chip counts, the range label's numbers, and the current page of rows (**amended — third 2026-09-24 amendment**; was rows filtered to `Pending Approval`).
+- `QueueQuery`: chip, search term, sort, page and page size — one value, projected with the snapshot in one pure step.
 - `QueueSource`: asynchronous read boundary returning one snapshot.
 
 The temporary source owns fixture values. The view model may count canonical request statuses but must not classify inventory or define a low-stock threshold.
@@ -177,11 +178,47 @@ title and subtitle from `DESTINATIONS.queue`, and counts In Processing over the
 new statuses. No shared component changes. See the second 2026-09-24 amendment
 in `spec.md` for what stays out of scope (chips, search, sort, pagination).
 
+**Amendment — 2026-09-24 (third: the full list surface).** Spec 004's third
+amendment brings chips, search, sort and pagination into scope from the
+2026-09-24 export ([drift §7](../../docs/design-system/drift-2026-09-24.md)).
+The queue frames did not change after 09-22.
+
+- **One query, one projection.** `QueueQuery` holds chip, search, sort, page and
+  page size. `buildQueueViewModel(snapshot, query)` de-duplicates, drops terminal
+  statuses, applies search, counts per chip, filters by chip, sorts, clamps the
+  page and slices it, all in that order in one function. The counts, the range
+  label and the rows come from the same pass, so they cannot disagree (FR-023).
+  A change to anything except the page returns to page 1. That rule lives in
+  one reducer-style helper, not in four handlers.
+- **Two shared components, promoted rather than local.** `FilterChip`
+  (`src/shared/ui/forms/FilterChip.tsx`) and `Pagination`
+  (`src/shared/ui/data-display/Pagination.tsx`) are built to the file's
+  `Category` chip and `pagination control` / `page` / `result per page`
+  components. BEN-73 requires Assets, Inventory and History to reuse the same
+  pagination, and Catalog's category chips share the chip's geometry. The
+  result-per-page control is a styled native `<select>`. The shared `Select`
+  trigger is the 46px, r10 form control, and the file draws this one at 36px,
+  r4.
+- **Four primitives added** for the pagination greys the source draws and the
+  token layer lacks: `#e9e9e9` (ring), `#f4f4f4` (hover), `#313131` (ink),
+  `#939393` (open ring). They are recorded in `token-map.md`.
+- **Two shared components change, both output-preserving for existing
+  callers.** `SummaryCard` gains `tone="neutral"` and `size="compact"`: the
+  queue binds only *Pending approval* to red and the other values to `Ink-900`,
+  and draws its cards 262x75 with 8px vertical padding, not the UI kit's
+  103px card. Both defaults are unchanged. `Search`'s input now spans the field so the global focus outline
+  lands on the focused element. The shell's keyboard gate failed on `/queue`
+  without it. Its 226px default is kept as a minimum, and the fidelity and
+  pixel gates still pass.
+- **The `Pending Approval` section heading is removed.** The queue frame does
+  not draw it. Retry focus moves to the chip group.
+- **Review stays a link** to `/requests/:id` until BEN-47's panel exists.
+
 ## UI and State Flow
 
 1. The existing shell and route guard admit only an Admin to `/queue`.
 2. The page loads one snapshot through `QueueSource`.
-3. A pure projection filters pending rows and derives Pending approval and In Processing counts; Low stock alerts is copied from the source.
+3. A pure projection applies the query — search, chip counts, chip filter, sort, page — and derives Pending approval and In Processing over the whole snapshot; Low stock alerts is copied from the source.
 4. Loading, failure, and successful empty states remain distinguishable.
 5. Review is a router link to `/requests/:id`; the queue performs no mutation.
 6. The table uses a contained horizontal overflow region at narrow widths so the application page itself does not overflow.
@@ -238,8 +275,9 @@ No unit-test runner exists in this repository, so this feature will not add a ne
 - FR-014: Keyboard operability comes from the Review action being a real `<a>`; the visible focus indicator is the design system's global `:focus-visible` rule in `src/styles/index.css`, which predates this feature and is intentionally not restated per control. Measured on the Review links, not only inspected.
 - FR-015–FR-016: Shared controls/tokens and contained responsive table.
 - FR-017–FR-018: Internal source seam with no HTTP or threshold logic.
+- FR-019–FR-023: `QueueQuery` and its single projection; `FilterChip`, `Search`, `Select` and `Pagination` render it.
 
-All 18 requirements are covered.
+All 23 requirements are covered.
 
 ## Constitution Compliance
 
@@ -258,7 +296,7 @@ amendment, and they are scored against 3.0.0 now.
 | V. Notification Completeness | PASS | No transition or notification is implemented. |
 | VI. Independently Testable Increments | PASS | The queue can be demonstrated with the typed temporary source. |
 | VII. Typed Contracts | PASS | Internal view types are not represented as backend JSON; no REST contract is invented. |
-| VIII. MVP Restraint | PASS | No new framework, package, mutation, search, filter, pagination, or sorting. |
+| VIII. MVP Restraint | PASS | No new framework, package or mutation. Search, filter, sort and pagination are in spec 001 FR-016/FR-018 and in the design; they run client-side over the source's snapshot until the contract says where they run. |
 | IX. Secrets and Internal Data | PASS | Fixtures are non-production placeholders and contain no credentials. |
 
 ## Red-Team Analysis
@@ -285,7 +323,7 @@ amendment, and they are scored against 3.0.0 now.
 
 ## Known Risks
 
-All identified plan risks are mitigated. The remaining accepted limitation is that the live Figma node could not be read in this agent session; implementation fidelity is based on the vendored 2026-09-15 re-export.
+All identified plan risks are mitigated. The remaining accepted limitation is that the live Figma node could not be read in this agent session; implementation fidelity was based on the vendored 2026-09-15 re-export until the third 2026-09-24 amendment, and is now read from the 2026-09-24 `.fig` directly (drift-2026-09-24 §7).
 
 ## Strengthened Position
 

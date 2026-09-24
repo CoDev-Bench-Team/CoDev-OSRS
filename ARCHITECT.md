@@ -105,9 +105,9 @@ Do not add an API implementation directory until an ADR names the stack. Configu
                          │                                               │
                          │ update status (Admin)                         │
                          ▼                                               │
-              For Delivery │ For Pickup ── cancel (Admin, reason) ───────┘
+        For Delivery │ Ready for Pickup ── cancel (Admin, reason) ───────┘
                     (peers, not a sequence;
-                     For Pickup records a location)
+                     Ready for Pickup records a location)
                          │
                          │ complete (Admin)
                          ▼
@@ -118,9 +118,9 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 
 - **Submit**: authenticated Employee; every line qty ≥ 1; qty ≤ `Available` at the requesting office; assets exist and are active.
 - **Approve / Reject**: Admin; request is `Pending Approval`; reject body includes a non-empty reason.
-- **Update status**: Admin; request is `Approved`, `For Delivery` or `For Pickup`; target is `For Delivery` or `For Pickup`; `For Pickup` records a pickup location.
-- **Complete**: Admin; request is `For Delivery` or `For Pickup`.
-- **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `For Pickup`. **A reason is required from whoever cancels.** Never once `Completed`. Releases the reservation in the same transaction, exactly as reject does.
+- **Update status**: Admin; request is `Approved`, `For Delivery` or `Ready for Pickup`; target is `For Delivery` or `Ready for Pickup`; `Ready for Pickup` records a pickup location.
+- **Complete**: Admin; request is `For Delivery` or `Ready for Pickup`.
+- **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `Ready for Pickup`. **A reason is required from whoever cancels.** Never once `Completed`. Releases the reservation in the same transaction, exactly as reject does.
 
 There is no confirm-receipt transition. `Completed` is an Admin action — see [ADR-0007](docs/adr/0007-fulfilment-status-vocabulary.md).
 
@@ -135,7 +135,7 @@ Stock is held per **(asset, office)** as three numbers. `Total = Available + Res
 | Request rejected | Rejected | — | +qty | −qty |
 | Request cancelled | Cancelled | — | +qty | −qty |
 | Approved | Approved | — | — | — |
-| For Delivery / For Pickup | those statuses | — | — | — |
+| For Delivery / Ready for Pickup | those statuses | — | — | — |
 | Request completed | Completed | −qty | — | −qty |
 
 `Completed` is the only transition that reduces `Total`; the difference is what the Assets screen counts as *Deployed units*. Concurrent submits for the last units MUST serialize so `Available` never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract's choice.
@@ -153,9 +153,9 @@ Each (asset, office) also carries a **low-stock threshold**, which drives the `I
 | View own requests | yes | — |
 | View requests queue (all requestors) | no | yes |
 | Approve / reject | no | yes |
-| Set For Delivery / For Pickup | no | yes |
+| Set For Delivery / Ready for Pickup | no | yes |
 | Complete a request | no | yes |
-| Cancel a request | own, while `Pending Approval`, reason required | any `Approved` / `For Delivery` / `For Pickup`, reason required |
+| Cancel a request | own, while `Pending Approval`, reason required | any `Approved` / `For Delivery` / `Ready for Pickup`, reason required |
 | View resolved history | own only (My Requests) | yes (History, all requestors) |
 | View own profile | yes | yes\*\* |
 
@@ -210,7 +210,7 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 ## 12. Testing Architecture
 
 - **Contract**: HTTP against the **backend-published** REST contract (not a file invented in this repo).
-- **E2E (Playwright)**: stock set → employee request → admin reject (reservation released) → new request → approve → For Delivery or For Pickup → complete (Total and Reserved fall); assert notifications as the backend contract exposes them.
+- **E2E (Playwright)**: stock set → employee request → admin reject (reservation released) → new request → approve → For Delivery or Ready for Pickup → complete (Total and Reserved fall); assert notifications as the backend contract exposes them.
 
 ## 13. Decisions
 

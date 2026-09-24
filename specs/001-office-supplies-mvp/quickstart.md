@@ -87,6 +87,6 @@ Playwright MUST cover:
 3. Admin rejects with reason “Duplicate of last week” — Available 10 / Reserved 0, `Request declined` email
 4. Employee submits 3 again — Available 7 / Reserved 3
 5. Admin approves — `Request approved` email; quantities unchanged
-6. Admin sets **For Pickup** at “GS Counter” — `Status changed` email carrying the location
+6. Admin sets **Ready for Pickup** at “GS Counter” — `Status changed` email carrying the location
 7. Admin presses **Complete** — Total 7 / Available 7 / Reserved 0, `Status changed` email
 8. Employee cancels a second pending request with a reason — reservation released, `Status changed` email

@@ -55,14 +55,18 @@ in `additions.md`. The last five came from the 2026-09-15 `.fig` re-export
 | `--spacing-touch-target` | `44px` | The minimum touch target below the design width (spec 002 FR-012). The source has no mobile frames. |
 | `--color-osrs-pink-500` | `rgb(239,93,168)` | The "For Delivery" ink. No pink exists anywhere in the source palette; specified by the project owner, 2026-09-14 (additions.md §2b). |
 | `--color-osrs-pink-tint` | `rgba(239,93,168,0.1)` | Its 10% fill, following the `--osrs-*-tint` convention the source already uses for green and red. |
-| `--color-status-delivery-bg` / `-fg` | the pink pair | Semantic alias for the delivery handover label. **Unused since ADR-0007**: `For Delivery` is a state in the green `ready` tone. Green is ADR-0007's decision; the pair is kept only because the design's `Request Status` component still draws it, pending that component's rework (drift-2026-09-22 §3, question 5). |
-| `--color-status-pickup-bg` / `-fg` | `var(--color-osrs-blue-50)` / `var(--color-osrs-blue-700)` | Semantic alias only — **both values are source primitives**, unchanged. The source defines the blues but no component uses this pairing. **Unused since ADR-0007**, as above. |
+| `--color-status-delivery-bg` / `-fg` | the pink pair | `For Delivery`'s pill, the `delivery` tone. Unused from ADR-0007 until 2026-09-24, when the project owner adopted the design's pink over ADR-0007's green (drift-2026-09-24 §6). |
+| `--color-status-pickup-bg` / `-fg` | `var(--color-osrs-blue-50)` / `var(--color-osrs-blue-700)` | `Ready for Pickup`'s pill, the `pickup` tone — both values are source primitives, and the pair is the one every drawn `Ready for Pickup` pill uses. Back in use since 2026-09-24, as above. |
 | `--color-osrs-google-green` | `rgb(52,168,83)` | A Google brand colour. **Present in the `.fig`, absent from the export**: the mark's vector carries only the red in `fillPaints` and takes this from `vectorData.styleOverrideTable` (styleID 3), which `tokens/colors.css` never captured. Restored 2026-09-15 (additions.md §4.2). |
 | `--color-osrs-google-yellow` | `rgb(251,188,5)` | The same, styleID 4. |
 | `--color-osrs-purple-600` | `rgb(104,64,184)` | `Completed`'s ink in the 2026-09-15 export — the file's own `Status/Completed` colour style. Not in the vendored palette, which had `Completed` green. |
 | `--color-osrs-purple-50` | `rgb(241,236,255)` | Its fill, taken from the rendered pill on `04.1 - My Requests - View Request`. Slightly bluer than a flat 10% tint of the ink, so it is transcribed rather than computed. |
 | `--color-osrs-ink-tint` | `rgba(75,80,99,0.1)` | `Cancelled`'s fill. The file gives the ink (`Status/Cancelled` = `rgb(75,80,99)`, already `--osrs-ink-700`) but draws no chip, so the fill follows the `--osrs-*-tint` convention the source uses for red, green, blue and pink. |
 | `--color-status-completed-bg` / `-fg` | the purple pair | Semantic alias for `Completed`. |
+| `--color-osrs-neutral-100` | `rgb(244,244,244)` | The `pagination *` components' hover fill. Those components are in the `.fig` (unchanged since 09-22) and not in the 2026-09-12 vendored export. Added 2026-09-24 for the Requests Queue ([drift-2026-09-24 §7](drift-2026-09-24.md)). |
+| `--color-osrs-neutral-200` | `rgb(233,233,233)` | Their 1px ring. Warmer and lighter than `--osrs-border`; transcribed, not substituted. |
+| `--color-osrs-neutral-400` | `rgb(147,147,147)` | `pagination result per page`'s `state=active` ring (the open select). |
+| `--color-osrs-neutral-800` | `rgb(49,49,49)` | The pagination ink and the range label (`1-50 of 1,250`). |
 | `--color-status-cancelled-bg` / `-fg` | `var(--color-osrs-ink-tint)` / `var(--color-osrs-ink-700)` | Semantic alias for `Cancelled`. |
 
 ## Every token

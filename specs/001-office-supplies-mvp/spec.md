@@ -9,7 +9,7 @@
 
 Replace Codev's chat/email office-supplies process with a centralized system where employees request assets from a catalog, an Admin approves or rejects and then hands the items over by delivery or pickup, and the system keeps stock and email notifications aligned with each status change.
 
-Amended 2026-09-22 to the design re-export: two roles instead of three, per-office `Total / Available / Reserved` stock instead of a single on-hand number, and `For Delivery` / `For Pickup` / Admin-completed instead of `For Release` / `Released` / employee-confirmed. See the Clarifications section and [ADR-0005](../../docs/adr/0005-two-role-model.md)–[0007](../../docs/adr/0007-fulfilment-status-vocabulary.md).
+Amended 2026-09-22 to the design re-export: two roles instead of three, per-office `Total / Available / Reserved` stock instead of a single on-hand number, and `For Delivery` / `Ready for Pickup` / Admin-completed instead of `For Release` / `Released` / employee-confirmed. See the Clarifications section and [ADR-0005](../../docs/adr/0005-two-role-model.md)–[0007](../../docs/adr/0007-fulfilment-status-vocabulary.md).
 
 ## User Scenarios & Testing
 
@@ -55,26 +55,26 @@ An Admin opens the **Requests Queue**, filters or searches, and reviews a reques
 
 ### User Story 4 - Hand over by delivery or pickup (Priority: P1)
 
-An Admin opens an approved request and uses **Update Status** to set **For Delivery** or **For Pickup**. Choosing `For Pickup` records a pickup location. The Employee is notified with a **Status changed** email carrying the previous and new status, and the location when there is one. Quantities do not change.
+An Admin opens an approved request and uses **Update Status** to set **For Delivery** or **Ready for Pickup**. Choosing `Ready for Pickup` records a pickup location. The Employee is notified with a **Status changed** email carrying the previous and new status, and the location when there is one. Quantities do not change.
 
 **Why this priority**: Required for the MVP demo fulfillment path.
-**Independent Test**: Move an approved request to `For Pickup` with a location; assert the email and unchanged quantities.
+**Independent Test**: Move an approved request to `Ready for Pickup` with a location; assert the email and unchanged quantities.
 **Acceptance Scenarios**:
 
 1. **Given** an `Approved` request, **When** an Admin sets `For Delivery`, **Then** status is `For Delivery` and quantities are unchanged.
-2. **Given** an `Approved` request, **When** an Admin sets `For Pickup` with location "GS Counter", **Then** status is `For Pickup`, the location is stored, and the `Status changed` email carries it in its Pickup row.
+2. **Given** an `Approved` request, **When** an Admin sets `Ready for Pickup` with location "GS Counter", **Then** status is `Ready for Pickup`, the location is stored, and the `Status changed` email carries it in its Pickup row.
 3. **Given** a `Pending Approval` request, **When** an Admin attempts Update Status, **Then** the system refuses.
-4. **Given** a `For Delivery` request, **When** an Admin sets `For Pickup`, **Then** the change is allowed — they are peers, not a sequence.
+4. **Given** a `For Delivery` request, **When** an Admin sets `Ready for Pickup`, **Then** the change is allowed — they are peers, not a sequence.
 
 ### User Story 5 - Complete a request (Priority: P1)
 
 An Admin marks a handed-over request **Complete**. Status becomes **Completed**, and this is when the stock actually leaves: `Total` and `Reserved` both fall by the requested quantity. The Employee receives a **Status changed** email.
 
 **Why this priority**: Closes the documented pipeline and is the only transition that consumes stock.
-**Independent Test**: Complete a `For Pickup` request; assert the quantities and that an Employee cannot complete.
+**Independent Test**: Complete a `Ready for Pickup` request; assert the quantities and that an Employee cannot complete.
 **Acceptance Scenarios**:
 
-1. **Given** a `For Pickup` request for qty 3 on an asset at Total 10 / Available 7 / Reserved 3, **When** an Admin completes it, **Then** status is `Completed` and the asset shows Total 7 / Available 7 / Reserved 0.
+1. **Given** a `Ready for Pickup` request for qty 3 on an asset at Total 10 / Available 7 / Reserved 3, **When** an Admin completes it, **Then** status is `Completed` and the asset shows Total 7 / Available 7 / Reserved 0.
 2. **Given** a `For Delivery` request, **When** the owning Employee attempts to complete it, **Then** the system refuses — completion is an Admin action.
 3. **Given** a `Completed` request, **When** anyone attempts any transition, **Then** the system refuses.
 
@@ -92,7 +92,7 @@ An Employee sees status and history for their own requests in **My Requests**, a
 
 ### User Story 7 - Cancel a request (Priority: P2)
 
-The owning Employee stops their own request while it is `Pending Approval`; an Admin stops an `Approved`, `For Delivery` or `For Pickup` request that cannot be fulfilled. Either way a reason is required and the reservation is released.
+The owning Employee stops their own request while it is `Pending Approval`; an Admin stops an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled. Either way a reason is required and the reservation is released.
 
 **Why this priority**: The compensating path for requests that are never decided.
 **Independent Test**: Cancel as Employee with a reason and assert the reservation is released; attempt it on an approved request as the Employee and be refused.
@@ -126,7 +126,7 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - Employee attempts to cancel a request that has already been approved: refused — after a decision, only an Admin may cancel.
 - Cancellation submitted with an empty reason, by either role: refused.
 - Two actors cancel the same request at once: the reservation is released once, never twice.
-- `For Delivery` changed to `For Pickup` (or back) before completion: allowed; a `Status changed` email is sent for each move.
+- `For Delivery` changed to `Ready for Pickup` (or back) before completion: allowed; a `Status changed` email is sent for each move.
 - Email delivery fails after a valid transition: request status remains; failure is recorded for that notification.
 
 ## Requirements
@@ -146,18 +146,18 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - **FR-009**: System MUST allow Admins to reject a `Pending Approval` request only when a non-empty reason is provided, moving it to `Rejected` and returning each line quantity from `Reserved` to `Available` in one atomic operation.
 - **FR-010**: System MUST NOT reopen a rejected or cancelled request; the Employee MUST create a new request if they still need the items.
 - **FR-010a**: System MUST allow the owning Employee to cancel their own request while it is `Pending Approval`, **only when a non-empty reason is provided**, with the same atomic status change and reservation release.
-- **FR-010b**: System MUST allow an Admin to cancel an `Approved`, `For Delivery` or `For Pickup` request that cannot be fulfilled, only when a non-empty reason is provided, with the same atomic status change and reservation release.
+- **FR-010b**: System MUST allow an Admin to cancel an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled, only when a non-empty reason is provided, with the same atomic status change and reservation release.
 - **FR-010c**: System MUST refuse cancellation of a `Completed`, `Rejected` or already-`Cancelled` request.
-- **FR-011**: System MUST allow Admins to move an `Approved`, `For Delivery` or `For Pickup` request to `For Delivery` or `For Pickup` without changing any quantity. The two are peers, not a sequence.
-- **FR-011a**: System MUST record a pickup location when the target status is `For Pickup`, and MUST carry it in the resulting notification.
-- **FR-012**: System MUST allow Admins to move a `For Delivery` or `For Pickup` request to `Completed`, decreasing `Total` and `Reserved` by each line quantity in one atomic operation.
+- **FR-011**: System MUST allow Admins to move an `Approved`, `For Delivery` or `Ready for Pickup` request to `For Delivery` or `Ready for Pickup` without changing any quantity. The two are peers, not a sequence.
+- **FR-011a**: System MUST record a pickup location when the target status is `Ready for Pickup`, and MUST carry it in the resulting notification.
+- **FR-012**: System MUST allow Admins to move a `For Delivery` or `Ready for Pickup` request to `Completed`, decreasing `Total` and `Reserved` by each line quantity in one atomic operation.
 - **FR-012a**: System MUST NOT offer any actor a confirm-receipt action. `Completed` is an Admin transition.
 - **FR-013**: System MUST refuse illegal status transitions and actions not allowed for the caller's role.
-- **FR-014**: System MUST send an email on every defined transition using the design's templates: **Request received** on submit (Employee); **Request approved** on approve (Employee); **Request declined** on reject (Employee); **Status changed** on every other transition — `For Delivery`, `For Pickup`, `Completed`, `Cancelled` — carrying previous status, new status, and the pickup location when there is one.
+- **FR-014**: System MUST send an email on every defined transition using the design's templates: **Request received** on submit (Employee); **Request approved** on approve (Employee); **Request declined** on reject (Employee); **Status changed** on every other transition — `For Delivery`, `Ready for Pickup`, `Completed`, `Cancelled` — carrying previous status, new status, and the pickup location when there is one.
 - **FR-014a**: System MAY send the **Welcome** template on account creation. It is not a transition.
 - **FR-014b**: System MUST NOT implement the **Action required** template until a request-for-information flow is specified; the design provides the template and no flow.
 - **FR-015**: System MUST persist notification attempts (sent or failed) tied to the request and template.
-- **FR-016**: System MUST show Employees **My Requests** (their own requests, any status) and Admins the **Requests Queue** (all requestors, live statuses) with filter chips `All requests · Pending Approval · Approved · For Delivery · For Pickup`, search by request id / employee name / email / item, and sort by Newest First / Oldest First / Employee (A-Z).
+- **FR-016**: System MUST show Employees **My Requests** (their own requests, any status) and Admins the **Requests Queue** (all requestors, live statuses) with filter chips `All requests · Pending Approval · Approved · For Delivery · Ready for Pickup`, search by request id / employee name / email / item, and sort by Newest First / Oldest First / Employee (A-Z).
 - **FR-016a**: System MUST show Admins a **History** of resolved requests across all requestors — `Completed`, `Rejected` and `Cancelled` — with request id, requestor, items, status, the date it was resolved, and a read-only detail panel carrying the stored rejection or cancellation reason.
 - **FR-017**: System MUST show a signed-in user their **Profile**: name, email, home office, and the equipment currently assigned to them where the contract exposes it, with an empty state otherwise.
 - **FR-018**: System MUST paginate the Assets, Inventory, Requests Queue and History tables, showing the result range, page controls and a results-per-page control.
@@ -176,7 +176,7 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - Internal Codev use only; demo uses seeded users (one Employee, one Admin).
 - Any Admin may review any request and fulfil any approved one.
 - The requesting office is the Employee's own office, shown as the catalog's office selector; the MVP does not support requesting stock held at another office.
-- Pickup location is entered when the Admin chooses `For Pickup`, matching the "Pickup" row in the `Status changed` email.
+- Pickup location is entered when the Admin chooses `Ready for Pickup`, matching the "Pickup" row in the `Status changed` email.
 - "Real-time status" means the UI shows API state after refresh or after a successful mutation, not a live websocket (unless later specified).
 - A notification is emitted and recorded on each defined transition. Delivery transport is an API concern (inbox, SMTP, or logged stub).
 - The office set is the five the design defines. `Ortigas` vs the contract's `Pasig` is unresolved; the SPA uses whatever the contract exposes.
@@ -197,7 +197,7 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 
 ### Measurable Outcomes
 
-- **SC-001**: A tester can complete the documented happy path (encode asset → set stock → request → approve → For Pickup → complete) in one sitting using only the UI, ending in `Completed` with `Total` reduced by the requested quantity and `Reserved` back to its pre-submit value.
+- **SC-001**: A tester can complete the documented happy path (encode asset → set stock → request → approve → Ready for Pickup → complete) in one sitting using only the UI, ending in `Completed` with `Total` reduced by the requested quantity and `Reserved` back to its pre-submit value.
 - **SC-002**: A tester can complete the reject path and observe the reservation released — `Available` back to the pre-submit quantity — plus a visible rejection reason, then submit a new request for the same asset.
 - **SC-002a**: A tester can complete the cancel path from both sides: as the Employee while `Pending Approval`, and as the Admin on an `Approved` request; both require a reason and both release the reservation.
 - **SC-003**: For each of the four transactional templates, a test run produces a recorded notification to the specified recipients with request id and item facts; `Status changed` carries a previous/new status pair.
@@ -216,6 +216,18 @@ Resolved from the Linear brief and process diagram with MVP defaults (no blockin
 - Q: Resubmit after reject? → A: New request, not reopen.
 - Q: Who can approve? → A: ~~Any user with Approver role~~ **any Admin** (small internal team).
 - Q: Auth for MVP? → A: ~~Username/password (email + password) with seeded demo users; SSO later.~~ **Superseded 2026-09-12 — see Session 2026-09-12 below.**
+
+### Session 2026-09-24 — Amendment
+
+Raised by the 2026-09-24 `.fig` re-export
+([drift-2026-09-24 §6](../../docs/design-system/drift-2026-09-24.md)) and decided
+by the project owner.
+
+- Q: The `Request Status` component and every screen drawn since 09-22 name the pickup state **Ready for Pickup** and paint the handover pills pink (For Delivery) and blue (Ready for Pickup). The queue chip says `For Pickup`, and ADR-0007 made both pills green. Which wins? → A: **The component.** The state is `Ready for Pickup` everywhere, the chip included, and the pills take the drawn colours.
+
+Constitution **3.0.1** (PATCH: IV renames a state and redefines none). The
+requirements above are reworded in place, and the 2026-09-22 session below keeps
+the name it used at the time.
 
 ### Session 2026-09-22 — Amendment
 

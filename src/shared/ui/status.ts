@@ -1,11 +1,14 @@
 /** The request and stock status vocabulary.
  *
- *  `RequestStatus` is exactly the states constitution 3.0.0 IV admits and
+ *  `RequestStatus` is exactly the states constitution 3.0.1 IV admits and
  *  nothing else: an illegal state is unrepresentable.
  *
- *  After `Approved` the Admin sets either `For Delivery` or `For Pickup`. They
- *  are peers, not a sequence — the Requests Queue filters by each, and a filter
- *  counts a stored value, not a label — and the Admin then sets `Completed`.
+ *  After `Approved` the Admin sets either `For Delivery` or `Ready for Pickup`.
+ *  They are peers, not a sequence — the Requests Queue filters by each, and a
+ *  filter counts a stored value, not a label — and the Admin then sets
+ *  `Completed`. The pickup state is named as the design's `Request Status`
+ *  component names it, not as the queue's `For Pickup` chip does; the project
+ *  owner chose the component (drift-2026-09-24 §6, constitution 3.0.1).
  *  `For Release` and `Released` are retired, and so is the employee's
  *  confirm-receipt step (ADR-0007).
  *
@@ -20,7 +23,7 @@ export const REQUEST_STATUSES = [
   'Approved',
   'Rejected',
   'For Delivery',
-  'For Pickup',
+  'Ready for Pickup',
   'Completed',
   'Cancelled',
 ] as const;
@@ -34,22 +37,27 @@ export const AVAILABILITIES = ['available', 'unavailable'] as const;
 export type Availability = (typeof AVAILABILITIES)[number];
 
 /** Colour meaning: amber = waiting on a human · green = moving · red = stopped
- *  by a decision · purple = closed, done · slate = stopped without a decision.
+ *  by a decision · purple = closed, done · slate = stopped without a decision ·
+ *  pink / blue = handed over, by delivery / for pickup.
  *
  *  The first three were the whole vocabulary until the 2026-09-15 re-export.
  *  The designer then gave `Completed` a purple of its own — it is no longer
  *  "green, moving or done" but an end state — and `Cancelled` the neutral slate
  *  the file already carries as `Status/Cancelled`. Both are recorded in
- *  docs/design-system/drift-2026-09-15.md. `For Delivery` and `For Pickup` are
- *  moving, so both are green — ADR-0007 adds no colour for them. */
-export type StatusTone = 'pending' | 'ready' | 'rejected' | 'completed' | 'cancelled';
+ *  docs/design-system/drift-2026-09-15.md.
+ *
+ *  ADR-0007 first put both handover states in green. Every screen drawn since,
+ *  and the `Request Status` component, paint `For Delivery` pink and
+ *  `Ready for Pickup` blue, and the project owner adopted the drawn pairs on
+ *  2026-09-24 (drift-2026-09-24 §6). */
+export type StatusTone = 'pending' | 'ready' | 'rejected' | 'completed' | 'cancelled' | 'delivery' | 'pickup';
 
 export const REQUEST_TONE: Record<RequestStatus, StatusTone> = {
   'Pending Approval': 'pending',
   Approved: 'ready',
   Rejected: 'rejected',
-  'For Delivery': 'ready',
-  'For Pickup': 'ready',
+  'For Delivery': 'delivery',
+  'Ready for Pickup': 'pickup',
   Completed: 'completed',
   Cancelled: 'cancelled',
 };

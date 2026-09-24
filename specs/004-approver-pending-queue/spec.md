@@ -1,13 +1,13 @@
-# Feature Specification: Requests Queue — Pending Approval list
+# Feature Specification: Requests Queue — list, filters, search, sort
 
 **Feature Branch**: `emmanuelr/ben-46-p2spa-approver-pending-queue`  
 **Created**: 2026-09-22  
 **Status**: Draft  
-**Sources**: BEN-46, BEN-72, `specs/001-office-supplies-mvp/spec.md`, `specs/003-app-shell-routing/spec.md`, vendored Figma re-export dated 2026-09-15 — **superseded**; realigned to the 2026-09-22 export ([drift](../../docs/design-system/drift-2026-09-22.md)) by the second 2026-09-24 amendment below
+**Sources**: BEN-46, BEN-72, `specs/001-office-supplies-mvp/spec.md`, `specs/003-app-shell-routing/spec.md`, vendored Figma re-export dated 2026-09-15 — **superseded**; realigned to the 2026-09-22 export ([drift](../../docs/design-system/drift-2026-09-22.md)) by the second 2026-09-24 amendment below, and extended to the full list surface from the 2026-09-24 export ([drift](../../docs/design-system/drift-2026-09-24.md)) by the third
 
 ## Overview
 
-Give an Admin a focused landing page — the **Requests Queue** — that summarizes request workload and lists every request awaiting an approval decision. Each row leads to the existing request-detail destination where review actions belong.
+Give an Admin a focused landing page — the **Requests Queue** — that summarizes request workload and lists every live request, filterable by status, searchable, sortable and paginated. Each row leads to the existing request-detail destination where review actions belong.
 
 This feature is the list slice of the merged Admin queue the design source draws (constitution 3.0.0 II, [ADR-0005](../../docs/adr/0005-two-role-model.md)). It does not implement approval, rejection, handover or completion actions; those belong to the review panel (BEN-47).
 
@@ -25,18 +25,22 @@ An Admin opens their landing page and sees current workload totals before review
 2. **Given** the summary and queue are based on the same current state, **When** the page renders, **Then** the Pending approval total equals the number of requests eligible for review.
 3. **Given** inventory items have been classified as low stock by the system's data source, **When** the page renders, **Then** Low stock alerts shows that count without defining a new low-stock threshold in the SPA.
 
-### Story 2 — Find and open a pending request (Priority: P1)
+### Story 2 — Find and open a request (Priority: P1)
 
-An Admin scans pending requests, identifies the requestor and requested items, and opens a request for review.
+An Admin narrows the live queue by status, search and sort, pages through it, identifies the requestor and requested items, and opens a request for review.
 
 **Why this priority**: Moving from the queue to request detail is the feature's core task.
 
 **Acceptance Criteria**:
 
-1. **Given** pending requests exist, **When** the queue renders, **Then** each row shows request id, requestor identity and organizational context, item summary, submitted date, a `Pending Approval` status pill, and a Review action.
-2. **Given** a pending request row, **When** the Admin activates Review, **Then** the application navigates to `/requests/:id` for that request.
-3. **Given** requests in statuses other than `Pending Approval`, **When** the pending table renders, **Then** those requests do not appear as reviewable rows.
-4. **Given** the Admin returns from request detail after a decision changed the request status, **When** current data is shown, **Then** the decided request is no longer in the pending table and the summary reflects the current workload.
+1. **Given** live requests exist, **When** the queue renders, **Then** each row shows request id, requestor identity and organizational context, item summary, its own status pill, submitted date, and a Review action.
+2. **Given** a request row, **When** the Admin activates Review, **Then** the application navigates to `/requests/:id` for that request.
+3. **Given** requests that are `Rejected`, `Cancelled` or `Completed`, **When** the table renders, **Then** they do not appear — resolved requests belong to History.
+4. **Given** the Admin returns from request detail after a decision changed the request status, **When** current data is shown, **Then** the row carries its new status (or is gone, if the new status is terminal) and the summary and chip counts reflect the current workload.
+5. **Given** the chips `All requests · Pending Approval · Approved · For Delivery · For Pickup`, **When** the Admin selects one, **Then** only requests in that status are listed and the chip's count equals the number of matching requests.
+6. **Given** a search term, **When** it matches a request id, employee name, employee email or item name (case-insensitive), **Then** only matching requests are listed and every chip count is recomputed over the matches.
+7. **Given** the sort select, **When** the Admin picks Newest First, Oldest First or Employee (A-Z), **Then** the order changes and is kept while paging.
+8. **Given** more matching requests than the page size, **When** the Admin pages or changes Result per page, **Then** the range label reports the true range and total and the table shows that slice.
 
 ### Story 3 — Understand non-success states (Priority: P1)
 
@@ -47,7 +51,7 @@ An Admin receives a clear, usable page while data is loading, when no requests a
 **Acceptance Criteria**:
 
 1. **Given** queue data is still being determined, **When** the page renders, **Then** a deliberate loading state appears without stale request rows.
-2. **Given** no requests are pending, **When** loading succeeds, **Then** the page states that there are no requests awaiting approval while preserving the workload summary.
+2. **Given** no live requests, or none matching the chip and search, **When** loading succeeds, **Then** the table states which of the two it is while preserving the workload summary and the controls.
 3. **Given** queue data cannot be loaded, **When** the failure is shown, **Then** the page distinguishes the failure from an empty queue and offers a retry when retry is supported.
 
 ### Story 4 — Use the queue safely across supported devices (Priority: P2)
@@ -60,7 +64,7 @@ An Admin can review the queue with keyboard controls and at every width supporte
 
 1. **Given** keyboard-only use, **When** focus moves through Review actions, **Then** every action has a visible focus indicator and can be activated.
 2. **Given** a viewport from 360px through 1440px, **When** the queue renders, **Then** content remains reachable without causing page-level horizontal overflow.
-3. **Given** the 1440px design viewport, **When** the page renders, **Then** its hierarchy matches the source: page header, three summary cards, Pending Approval section, and request table.
+3. **Given** the 1440px design viewport, **When** the page renders, **Then** its hierarchy matches the source: page header beside the summary cards, search and sort, filter chips, request table, and pagination.
 
 ## Edge Cases
 
@@ -87,22 +91,28 @@ An Admin can review the queue with keyboard controls and at every width supporte
 - **FR-005**: Pending approval MUST count requests whose current status is `Pending Approval`.
 - **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, ~~`For Release`, and `Released`~~ — those two statuses are **SUPERSEDED** by constitution 3.0.0 ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)). **Now:** `Approved`, `For Delivery` and `For Pickup`.
 - **FR-007**: Low stock alerts MUST count inventory items classified as low stock by the system's data source; the SPA MUST NOT invent a threshold.
-- **FR-008**: The pending table MUST contain only requests currently in `Pending Approval`.
-- **FR-009**: Each pending row MUST show request id, requestor name, requestor organizational context when available, an item summary, submitted date, a `Pending Approval` status pill, and Review.
+- **FR-008**: ~~The pending table MUST contain only requests currently in `Pending Approval`.~~ **SUPERSEDED** by the third 2026-09-24 amendment. **Now:** the table MUST contain every live request — `Pending Approval`, `Approved`, `For Delivery`, `For Pickup` — narrowed by the selected chip and the search term.
+- **FR-009**: Each row MUST show request id, requestor name, requestor organizational context when available, an item summary, the row's own status pill, submitted date, and Review.
 - **FR-010**: Review MUST navigate to the stable request-detail destination for that request.
 - **FR-011**: The queue MUST NOT approve, reject, cancel, prepare, release, or complete a request.
 - **FR-012**: The page MUST show distinct loading, empty, and failure states.
-- **FR-013**: A successful refresh after a request leaves `Pending Approval` MUST remove it from the table and update affected metrics.
+- **FR-013**: A successful refresh after a request changes status MUST show its new status, remove it when that status is terminal, and update affected metrics and chip counts.
 - **FR-014**: Interactive controls MUST be keyboard operable and show a visible focus indicator.
 - **FR-015**: The page MUST remain usable from 360px through 1440px without page-level horizontal overflow.
 - **FR-016**: The page MUST use the established design vocabulary and shared shell rather than introduce a second Admin layout.
 - **FR-017**: The SPA MUST NOT invent REST routes, payloads, response fields, error codes, or low-stock thresholds.
 - **FR-018**: Until the backend contract is published, demonstrable queue data MAY come from a typed temporary source that preserves these product semantics.
+- **FR-019**: The page MUST offer filter chips `All requests`, `Pending Approval`, `Approved`, `For Delivery`, `Ready for Pickup` (the file's chip says `For Pickup`; see amendment 4), each with its count; `All requests` MUST be selected by default and the selected chip MUST expose its pressed state.
+- **FR-020**: Search MUST match request id, employee name, employee email and item names, case-insensitively and ignoring surrounding whitespace; chip counts MUST be computed over the search matches, not over the current page.
+- **FR-021**: Sort MUST offer Newest First (default), Oldest First and Employee (A-Z). A request whose submitted timestamp is unusable sorts after every dated request under both date orders; Employee (A-Z) breaks ties newest first.
+- **FR-022**: The table MUST be paginated with a `first-last of total` range label, Back / numbered pages / Next, and a Result per page select defaulting to 50. Back and Next MUST be disabled at the ends. Changing the chip, search, sort or page size MUST return to page 1.
+- **FR-023**: Chip, search, sort and page MUST be one query state projected in one pure step, so the counts, range label and rows cannot disagree.
 
 ## Key Entities
 
-- **Approval queue**: The current set of requests awaiting an Admin decision.
-- **Queue row**: A concise projection of one pending request for navigation to detail.
+- **Requests queue**: The current set of live requests — awaiting a decision, or approved and not yet completed.
+- **Queue query**: The selected chip, search term, sort order, page and page size, held as one value.
+- **Queue row**: A concise projection of one live request for navigation to detail.
 - **Workload metric**: A read-only count for pending approval, in-processing requests, or low-stock items.
 
 ## Out of Scope
@@ -114,7 +124,8 @@ An Admin can review the queue with keyboard controls and at every width supporte
 - Employee request history
 - Defining or publishing a REST contract
 - Defining the low-stock threshold
-- Pagination, search, filtering, and unverified sort-menu behavior
+- Persisting chip, search, sort or page in the address bar
+- The new `Received` status, the Employee's accountability form, and the Admin's new-request email ([drift-2026-09-24 §2–§3](../../docs/design-system/drift-2026-09-24.md)) — not adopted by the constitution
 - Email notification behavior
 
 ## Success Criteria
@@ -220,6 +231,42 @@ queue filter chips (`All requests · Pending Approval · Approved · For Deliver
 They stay under Out of Scope here and wait for a spec amendment and a re-vendor.
 Review still links to `/requests/:id`; the design's review side panel belongs
 to BEN-47.
+
+### Session 2026-09-24 — Amendment 3: the full list surface
+
+Raised by the 2026-09-24 `.fig` re-export
+([drift-2026-09-24](../../docs/design-system/drift-2026-09-24.md)). Amendment 2
+kept chips, search, sort and pagination out because the vendored
+`design-system/` did not draw them. That reason no longer holds.
+`02 - Requests Queue` and its sort menu have **not changed** since the
+2026-09-22 export, which the project owner accepted as the baseline. Drift §7
+reads their geometry, copy and colours directly from the file, the same way the
+09-22 drift was read. Re-vendoring (spec 001 T000e) is still deferred. It is no
+longer what blocks these frames.
+
+- Q: Does the table stay pending-only? → A: **No.** The queue frame lists mixed statuses with Review on every row, and its chips filter by the four live statuses. FR-008 is superseded; terminal requests belong to History (spec 001 FR-016a).
+- Q: Do chip counts follow the search term? → A: **Yes.** A count is the number of rows that chip would show, so it counts the search matches. Otherwise selecting a chip labelled `(7)` could list two rows.
+- Q: Which page sizes does Result per page offer? → A: 10, 25, 50 (default) and 100. The file draws only the 50 state. The other values are ours, and none of them changes what the default shows.
+- Q: The review frames add a third card, *Low stock alerts*; the queue frame draws two. → A: Keep three (FR-004 unchanged); BEN-46 names it.
+- Q: The file's search placeholder has a double space after "ID,". → A: Transcribed with one. It is a typo, not copy.
+- Q: Does Review open the design's side panel? → A: Not yet. The panel is BEN-47's. Until it lands, Review keeps navigating to `/requests/:id` (FR-010). The row hands BEN-47 a single seam to replace.
+- Q: The export adds a `Received` status and an Employee-signed completion. Do the chips or pills gain it? → A: **No.** It contradicts constitution 3.0.0 IV and ADR-0007 and waits for the project owner (drift §2). The queue keeps the four live statuses.
+
+The `Pending Approval` section heading that came from the retired approver
+screen is removed. The queue frame does not draw it. The retry-focus target
+moves to the filter chips' group, which is the first control of the content
+that appears.
+
+### Session 2026-09-24 — Amendment 4: `Ready for Pickup` and the drawn pill colours
+
+Decided by the project owner ([drift-2026-09-24 §6](../../docs/design-system/drift-2026-09-24.md);
+constitution 3.0.1; ADR-0007 amendment).
+
+- Q: The queue frame's chip says `For Pickup`, while its pills and the `Request Status` component say `Ready for Pickup`. → A: **`Ready for Pickup`**, chip included. Ignore the chip's label.
+- Q: Handover pills: ADR-0007's green, or the drawn colours? → A: **Drawn.** `For Delivery` is pink and `Ready for Pickup` is blue.
+
+Earlier amendments in this spec keep the name `For Pickup`, as they used it at
+the time.
 
 ## Validation
 

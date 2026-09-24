@@ -6,7 +6,7 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 3.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-22
+**Version**: 3.0.1 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-24
 
 ### I. Spec-Driven Development
 
@@ -26,17 +26,17 @@ An Asset MUST exist and MUST hold stock before it can be requested. Stock is hel
 
 `Total = Available + Reserved` MUST hold at all times, and no quantity MUST EVER be negative.
 
-Submitting a request MUST move the requested quantity from Available to Reserved in the same transaction as the status change to `Pending Approval`. Rejecting or cancelling MUST move it back in the same transaction as the status change. Approving and moving to `For Delivery` or `For Pickup` MUST NOT change any quantity. Completing MUST decrease Total and Reserved by the requested quantity, because that is when the items leave the store.
+Submitting a request MUST move the requested quantity from Available to Reserved in the same transaction as the status change to `Pending Approval`. Rejecting or cancelling MUST move it back in the same transaction as the status change. Approving and moving to `For Delivery` or `Ready for Pickup` MUST NOT change any quantity. Completing MUST decrease Total and Reserved by the requested quantity, because that is when the items leave the store.
 
 A request quantity MUST NOT exceed Available at the requesting office at submit time.
 
 ### IV. Explicit Request State Machine
 
-A request MUST move only through the documented statuses: `Pending Approval` → (`Approved` | `Rejected`); `Approved` → (`For Delivery` | `For Pickup`) → `Completed`; with `Cancelled` reachable from `Pending Approval`, `Approved`, `For Delivery` and `For Pickup`. `For Delivery` and `For Pickup` are peers, not a sequence. Illegal transitions MUST be rejected by the API.
+A request MUST move only through the documented statuses: `Pending Approval` → (`Approved` | `Rejected`); `Approved` → (`For Delivery` | `Ready for Pickup`) → `Completed`; with `Cancelled` reachable from `Pending Approval`, `Approved`, `For Delivery` and `Ready for Pickup`. `For Delivery` and `Ready for Pickup` are peers, not a sequence. Illegal transitions MUST be rejected by the API.
 
 Rejection MUST require a reason, and is the Admin's decision on a request awaiting one.
 
-Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`. An Admin MAY cancel an `Approved`, `For Delivery` or `For Pickup` request that cannot be fulfilled. **A cancellation MUST require a reason, from whoever cancels.** A `Completed` request MUST NOT be cancelled.
+Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`. An Admin MAY cancel an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled. **A cancellation MUST require a reason, from whoever cancels.** A `Completed` request MUST NOT be cancelled.
 
 `Completed` MUST be set by an Admin. The system does not ask the requester to confirm receipt.
 
@@ -50,7 +50,7 @@ Every defined transition MUST send an email. The system MUST provide the templat
 
 ### VI. Independently Testable Increments
 
-Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — browse catalog → request → approve/reject → set For Delivery or For Pickup → complete — MUST have an end-to-end test.
+Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — browse catalog → request → approve/reject → set For Delivery or Ready for Pickup → complete — MUST have an end-to-end test.
 
 ### VII. Typed Contracts
 

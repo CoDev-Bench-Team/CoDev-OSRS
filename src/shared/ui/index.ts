@@ -12,11 +12,13 @@ export { ButtonTemplate, ButtonWithIcon, SignInButton } from './actions/imported
 // Forms
 export { Search } from './forms/Search';
 export { Select } from './forms/Select';
+export { FilterChip } from './forms/FilterChip';
 
 // Data display
 export { StatusPill } from './data-display/StatusPill';
 export { SupplyCard } from './data-display/SupplyCard';
 export { SummaryCard, TableCard, TableHead } from './data-display/cards';
+export { Pagination } from './data-display/Pagination';
 export {
   tableColumnStyle,
   tableMinWidth,

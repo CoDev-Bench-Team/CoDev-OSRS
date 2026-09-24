@@ -1,12 +1,35 @@
 import type { ReactNode } from 'react';
 import { tableColumnStyle, TABLE_ROW_PADDING_CLASS, type ColumnWidth } from './table-columns';
 
+const METRIC_TONE = { brand: 'text-brand-primary', neutral: 'text-osrs-ink-800' } as const;
+
+/** `regular` is the UI kit's 103px card, 22px all round. `compact` is the
+ *  262x75 card `02 - Requests Queue` draws beside its header: the same 22px
+ *  sides and 7px gap, but 8px top and bottom (drift-2026-09-24 §7). The 75px
+ *  floor restates the file's height: its text boxes carry taller line-heights
+ *  than the shared type styles, which other screens depend on. */
+const CARD_SIZE = { regular: 'min-h-[103px] p-22', compact: 'min-h-[75px] px-22 py-8' } as const;
+
 /** Promoted from the UI kit (spec 002 FR-006). The metric is the one place
- *  besides links and the active nav item where brand red carries data. */
-export function SummaryCard({ value, label }: { value: ReactNode; label: string }) {
+ *  besides links and the active nav item where brand red carries data.
+ *
+ *  `neutral` sets the value in ink rather than red. `02 - Requests Queue`
+ *  reserves red for the metric that asks for action (Pending approval) and
+ *  binds the others to the `Ink-900` style. */
+export function SummaryCard({
+  value,
+  label,
+  tone = 'brand',
+  size = 'regular',
+}: {
+  value: ReactNode;
+  label: string;
+  tone?: 'brand' | 'neutral';
+  size?: 'regular' | 'compact';
+}) {
   return (
-    <div className="flex min-h-[103px] flex-1 flex-col items-start gap-7 rounded-10 bg-surface-card p-22 shadow-card">
-      <span className="type-metric text-brand-primary">{value}</span>
+    <div className={`flex flex-1 flex-col items-start gap-7 rounded-10 bg-surface-card shadow-card ${CARD_SIZE[size]}`}>
+      <span className={`type-metric ${METRIC_TONE[tone]}`}>{value}</span>
       <span className="font-sans text-13 leading-tight text-ink-secondary">{label}</span>
     </div>
   );
