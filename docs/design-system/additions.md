@@ -29,7 +29,16 @@ Grouped by how much judgement each required.
 | **Fixed quantity slot** (`SupplyCard` stepper) | The number sits in a slot fixed at three tabular digits (`min-w-[3ch] tabular-nums`), so 1 → 10 → 100 moves nothing; it grows only past 999. | Requested by the project owner, 2026-09-14: the source draws only "1" at natural width, so the stepper widened and the button shrank with every added digit. Stock bounds a request, so three digits cover the range. Recorded as a named exception in `compare-pixels.mjs`. |
 | **Stepper signs centred and paired** (`SupplyCard`) | The `-` / `+` buttons are 22px squares, not the source's glyph-plus-padding boxes (22.5 and 25.4 wide). Two pixels of bottom padding lift the sign to the optical centre: Inter puts the baseline at 16.06px in a 22px box and the signs' ink centres 4.04px above it, so an unpadded centred line box paints them 1px low. The decrement is the minus sign U+2212, which matches `+` in width (9.42px) and axis; the source's hyphen is a 6.5px dash on the x-height axis. Gap between sign and number is 4px, not 8, because the three-digit slot already supplies slack. Net: stepper 82×26 at 1440 against the source's 74×26; the primary button keeps its 304px. | Requested by the project owner, 2026-09-14: the signs read as off-centre and the number as over-spaced. Every figure above was measured with canvas `measureText`, not judged by eye. Recorded as a named text exception in `compare-fidelity.mjs` and in the `SupplyCard` pixel allowance. |
 
-## 2b. The two handover labels on `Released`
+## 2b. The two handover labels on `Released` — superseded
+
+> **Superseded 2026-09-24 (BEN-121) by [ADR-0007](../adr/0007-fulfilment-status-vocabulary.md).**
+> `For Delivery` and `For Pickup` are now request **states**, not labels on
+> `Released`, and both render in the green `ready` tone like every other moving
+> state. The pill no longer takes a `handover` prop. The pink and blue pairs
+> below stay in `theme.css`, unused, until the designer settles the pill
+> component's colours and its `Ready for Pickup` variant name
+> ([drift-2026-09-22 §3](drift-2026-09-22.md), question 5). Kept as the record
+> of what shipped before.
 
 A `Released` pill can read "Ready for Pickup" or "For Delivery" instead of
 `Released`. Both are presentational only — the request is `Released` either way,
@@ -172,9 +181,10 @@ scrim explicitly dismisses any open popover when it mounts
 
 Everything in this section is new design. The source draws **screens**, not an
 application: it has no loading, empty, error, not-found or forbidden state
-anywhere, no sign-out control, no narrow-width navigation, and it merges
-Approver and Supply Admin into a single "Admin" identity that constitution II
-forbids. The shell could not be built without inventing all of it. Nothing here
+anywhere, no sign-out control and no narrow-width navigation. The shell could
+not be built without inventing all of it. (It also merged Approver and Supply
+Admin into a single "Admin", which constitution 2.0.0 forbade; constitution
+3.0.0 adopted the merge — see the navigation section below.) Nothing here
 introduces a colour, type size, radius or shadow that is not already a token
 (spec 003 FR-021, SC-008).
 
@@ -207,23 +217,20 @@ end of the top bar, as the system's `ghost` button. Its placement, its label
 ("Sign Out", Title Case per the content conventions) and its very existence are
 ours.
 
-### Three navigation sets, not the source's one
+### Navigation sets — no longer invented (2026-09-24)
 
-The file draws `[Catalog, My Requests]` for the Employee and
-`[Requests Queue, History, Inventory]` for a merged "Admin". Constitution II
-forbids that merge, so navigation is derived per role from the `ARCHITECT.md` §7
-authorization matrix:
+Until constitution 3.0.0 this section recorded three invented navigation sets,
+because constitution 2.0.0 forbade the file's merged "Admin". ADR-0005 adopted
+the merge, and BEN-118 moved the shell to the bars the 2026-09-22 file draws:
 
 | Role | Navigation |
 |------|-----------|
-| Employee | Catalog · My Requests (as drawn) |
-| Approver | Requests Queue · History · Catalog |
-| Supply Admin | Fulfillment · Inventory · History · Catalog |
+| Employee | Catalog · My Requests |
+| Admin | Requests Queue · Assets · Inventory · History |
 
-The Approver and Supply Admin sets are **undesigned**, and "Fulfillment" names a
-queue the file never draws at all. **Catalog is kept for all three**, which the
-drawn Admin bar omits: the authorization matrix gives every role the catalog,
-and that bar is already overridden.
+Both are as drawn, so there is nothing here for the designer to ratify. The
+Admin can still open `/catalog` by address (ARCHITECT.md §7), but the drawn bar
+does not offer it, so the nav does not either.
 
 ### Profile left the navigation (2026-09-15)
 
@@ -268,12 +275,6 @@ the same grid. The source reaches its 1344 of content from an **asymmetric**
 pair of gutters (32 left, 64 right, measured from the frame); a symmetric flow
 layout cannot reproduce that, so the content runs 1376 wide instead. The
 designer should confirm the symmetric gutter.
-
-### A third avatar colour
-
-The file designs two identities — Maya Santos (orange) and Ethan Cruz (green).
-The seeded Approver, Samantha Reyes, needs a third and uses the source's
-`--osrs-blue-600`. A palette colour, a new use.
 
 ### The sign-in card, composed in flow
 
@@ -342,12 +343,12 @@ below is ours.
 
 | Addition | What was decided | Basis |
 |----------|------------------|-------|
-| **Approver and Supply Admin profile** | The Employee layout, unchanged. Nothing on the page varies by role. | Only the Employee's is drawn (spec 006 D2). |
+| **Admin profile** | The Employee layout, unchanged. Nothing on the page varies by role. | Only the Employee's is drawn (spec 006 D2). |
 | **`Currently Assigned` hidden with no source** | When the backend exposes no assigned equipment, which is the case today, the section is not rendered at all: no heading and no gap. | The list reads a per-unit register the MVP does not build (spec 006 D1, FR-007c). An empty state would claim "nothing assigned" when the truth is "unknown". |
 | **Empty state** | A card at half the grid's width: `Nothing is assigned to you` (subhead) over `Equipment issued to you will appear here` (body, secondary). Shown only when a source answers with no items. | Not drawn. Uses the assigned card's own treatment, so it reads as the list's absence rather than a notice. |
 | **Loading and failure** | Inline under the heading. `Loading assigned equipment` (body, secondary, `role="status"`), and `Couldn't load your assigned equipment` (body, rejected ink, `role="alert"`) with no retry control. The identity block always renders. | Not drawn. The shell's `LoadingState` and `Notice` are full-screen surfaces, which would bury the identity block for a failure in one section. |
 | **Missing assigned date** | The date line reads `Assignment date not available` (body, secondary) when the backend sends no date or one that does not format. The line is never dropped, so every card is the same height. Added 2026-09-23 after design review. | Not drawn; every drawn card has a date. Omitting the line left a shorter card beside full ones. The copy states the absence and invents no date. |
-| **Identity line office** | `email • <Office> Office`, falling back to the email alone. Office comes from the session. The seeded Approver's `Makati` and Supply Admin's `Cebu` are placeholders; only Maya's `Davao` is from the file. | The frame draws `mayas@codev.com • Davao Office` only. |
+| **Identity line office** | `email • <Office> Office`, falling back to the email alone. Office comes from the session. The seeded Admin's `Cebu` is a placeholder; only Maya's `Davao` is from the file. | The frame draws `mayas@codev.com • Davao Office` only. |
 | **Identity and section-title sizes from the frame** | Name 24px medium; `Currently Assigned` 24px display medium; two-column grid of cards with 14px/20px gaps inside 1222px. | The UI kit's JSX carries the file's cached 13px / 14px sizes and a single 700px column, which drift §9 records as wrong. The rendered frame wins. |
 
 ---
@@ -438,17 +439,17 @@ the mark red.
 7. Adopt the token names in [token-map.md](token-map.md) as Figma Variables — the
    source defines only two, so the whole palette and type scale are currently
    raw values in frames.
-8. Design the gaps that block later work: the Supply Admin's prepare/release
-   screen, the five notification emails, and loading / empty / error states.
+8. Design the gaps that block later work: loading / empty / error states.
+   (The prepare/release screen and the emails arrived with the 2026-09-22
+   export.)
 9. Ratify the application shell in §3d: the five feedback surfaces and their use
-   of the status tints, the sign-out control, the Approver and Supply Admin
-   navigation sets, the collapsed navigation, the symmetric 32px gutter, and the
-   third avatar colour.
+   of the status tints, the sign-out control, the collapsed navigation and the
+   symmetric 32px gutter.
 10. Settle the 2026-09-15 re-export in [drift-2026-09-15.md](drift-2026-09-15.md)
     — the new `Cancelled` status (which needs a constitution amendment, not a
     design decision), `Completed`'s new purple, the notification bell, and how
     Profile is reached now that it is not a navigation item.
-11. Ratify Profile in §3e: the reuse for Approver and Supply Admin, and the
+11. Ratify Profile in §3e: the reuse for the Admin, and the
     hidden / empty / loading / failure treatments of `Currently Assigned`, and
     the `Assignment date not available` line for a card with no date. Decide
     whether the per-unit register behind the drawn asset tags is ever in scope.
