@@ -1,11 +1,14 @@
 # Feature Specification: Application Shell, Routing & Role Navigation
 
-> **Partly superseded by constitution 3.0.0 (2026-09-22).** This spec shipped
-> against three roles and the `For Release` / `Released` vocabulary, both of
-> which are retired. Kept as the historical record of what was built; the
-> realignment is Phase 0 of
-> [specs/001-office-supplies-mvp/tasks.md](../001-office-supplies-mvp/tasks.md).
-> See [drift-2026-09-22](../../docs/design-system/drift-2026-09-22.md).
+> **Amended for constitution 3.0.0 (2026-09-24, BEN-114).** This spec shipped
+> against three roles; `approver` and `supply_admin` are retired in favour of a
+> single **Admin** ([ADR-0005](../../docs/adr/0005-two-role-model.md)). Stories 1,
+> 2 and 4, FR-006, FR-007, FR-009, the Destination Set, SC-001, D1, D6 and the
+> Known Gaps now describe two roles, as the 2026-09-22 design draws them. The
+> earlier clarification sessions are left as the record of what was decided
+> then. See Session 2026-09-24 below, Phase 0 of
+> [specs/001-office-supplies-mvp/tasks.md](../001-office-supplies-mvp/tasks.md)
+> and [drift-2026-09-22](../../docs/design-system/drift-2026-09-22.md).
 
 **Feature Branch**: `003-app-shell-routing`
 **Created**: 2026-09-12
@@ -22,7 +25,7 @@ Build the frame every OSRS screen lives inside: sign-in, a durable session, addr
 
 ### Story 1 — Sign in and land on your own work (Priority: P1)
 
-A Codev staff member opens the application, signs in, and arrives directly at the screen their job starts from — an Employee at the catalog, an Approver at their pending queue, a Supply Admin at their fulfillment queue. They never see another role's landing screen.
+A Codev staff member opens the application, signs in, and arrives directly at the screen their job starts from — an Employee at the catalog, an Admin at the Requests Queue. They never see another role's landing screen.
 
 **Why this priority**: Nothing else in the product is reachable until a session exists and a role is known.
 
@@ -30,8 +33,8 @@ A Codev staff member opens the application, signs in, and arrives directly at th
 
 1. **Given** a signed-out visitor, **When** they open any address in the application, **Then** they are sent to sign-in and no product screen is rendered.
 2. **Given** valid credentials for an Employee, **When** they sign in, **Then** they land on the catalog.
-3. **Given** valid credentials for an Approver, **When** they sign in, **Then** they land on the pending-requests queue.
-4. **Given** valid credentials for a Supply Admin, **When** they sign in, **Then** they land on the fulfillment queue.
+3. **Given** valid credentials for an Admin, **When** they sign in, **Then** they land on the Requests Queue.
+4. ~~Supply Admin lands on the fulfillment queue.~~ *Withdrawn 2026-09-24 — one Admin, one queue.*
 5. **Given** the sign-in screen, **When** it renders, **Then** it is the login card as drawn — the product lockup, the welcome line, the Google sign-in control, and the copyright line, over the full-bleed photograph.
 6. **Given** sign-in is attempted and refused, **When** the refusal returns, **Then** a clear failure message appears, no session is created, and the visitor stays on sign-in.
 7. **Given** a signed-out visitor who requested a specific destination, **When** they sign in successfully and their role permits that destination, **Then** they arrive at it rather than at their default landing screen.
@@ -40,15 +43,15 @@ A Codev staff member opens the application, signs in, and arrives directly at th
 
 ### Story 2 — Navigation shows only what your role may do (Priority: P1)
 
-Each of the three roles sees a navigation set derived from the authorization matrix. An Employee never sees Inventory. An Approver never sees fulfillment actions. A Supply Admin never sees another employee's request history.
+Each of the two roles sees the navigation set the design draws for it. An Employee never sees the Requests Queue, Assets, Inventory or History. An Admin never sees an Employee's own My Requests.
 
 **Why this priority**: Role separation is the product's founding constraint (constitution II); navigation is where a user first perceives it.
 
 **Acceptance Criteria**:
 
-1. **Given** a signed-in Employee, **When** the shell renders, **Then** navigation offers the catalog, their own requests, and their profile — and nothing else.
-2. **Given** a signed-in Approver, **When** the shell renders, **Then** navigation offers the pending-requests queue, the catalog, and their profile — and nothing else.
-3. **Given** a signed-in Supply Admin, **When** the shell renders, **Then** navigation offers the fulfillment queue, inventory management, the catalog, and their profile — and nothing else.
+1. **Given** a signed-in Employee, **When** the shell renders, **Then** navigation offers the catalog and their own requests — and nothing else; Profile is reached from the account cluster (FR-006a).
+2. **Given** a signed-in Admin, **When** the shell renders, **Then** navigation offers the Requests Queue, Assets, Inventory and History — and nothing else.
+3. ~~Supply Admin navigation set.~~ *Withdrawn 2026-09-24 — merged into criterion 2.*
 4. **Given** any signed-in user, **When** they are on a destination, **Then** exactly one navigation item is marked current, in the brand accent.
 5. **Given** any signed-in user, **When** they view the catalog, **Then** they can see stock but only an Employee is offered the action that starts a request.
 
@@ -72,16 +75,16 @@ A user can bookmark a screen, reload it, share a link to a specific request, and
 
 ### Story 4 — A role cannot reach another role's screens (Priority: P1)
 
-An Employee who types the inventory address, or an Approver who opens a fulfillment address, is refused. Guessing a URL is not a way around the authorization matrix.
+An Employee who types the inventory address, or an Admin who opens an Employee's My Requests address, is refused. Guessing a URL is not a way around the authorization matrix.
 
 **Why this priority**: Spec 001's SC-005 requires that a user in one role cannot complete another role's action through the UI; hiding a nav item is not enough.
 
 **Acceptance Criteria**:
 
 1. **Given** a signed-in Employee, **When** they open the inventory-management address directly, **Then** access is refused and they are not shown inventory controls.
-2. **Given** a signed-in Approver, **When** they open a fulfillment address directly, **Then** access is refused.
+2. **Given** a signed-in Admin, **When** they open the My Requests address directly, **Then** access is refused.
 3. **Given** a signed-in Employee, **When** they open a request detail belonging to a different employee, **Then** the response is identical to the one for a request that does not exist.
-4. **Given** a signed-in Approver or Supply Admin, **When** they open any request detail by address, **Then** it renders regardless of the request's current status; the actions offered on it remain gated by status and role.
+4. **Given** a signed-in Admin, **When** they open any request detail by address, **Then** it renders regardless of the request's current status; the actions offered on it remain gated by status and role.
 5. **Given** any refusal, **When** it occurs, **Then** the user sees an explanation and a route back to a screen they may use — not a blank page or a silent redirect loop.
 6. **Given** the shell's guards, **When** any protected destination is reached, **Then** authorization is checked against the signed-in role every time, not only on first entry.
 
@@ -166,11 +169,11 @@ The shell remains usable from a phone up to the 1440px design width, carrying fo
 - **FR-003b**: A refused sign-in MUST leave the visitor on the sign-in screen with a clear message and no session.
 - **FR-004**: The SPA MUST NOT invent routes, payloads, fields or error codes that the backend contract does not expose.
 - **FR-005**: Every user MUST hold exactly one role; the shell MUST NOT support a combined or elevated role, and MUST NOT offer any control that changes the acting role without a full sign-out and sign-in.
-- **FR-006**: Navigation offered to a user MUST be derived from their role using the authorization matrix in `ARCHITECT.md` §7 — Employee: catalog, own requests; Approver: pending queue, history, catalog; Supply Admin: fulfillment queue, inventory, history, catalog. *(Amended 2026-09-15: profile left the navigation, history joined it. See Session 2026-09-15.)*
+- **FR-006**: Navigation offered to a user MUST be derived from their role — Employee: Catalog, My Requests; Admin: Requests Queue, Assets, Inventory, History — which are the bars the 2026-09-22 design draws. *(Amended 2026-09-15: profile left the navigation, history joined it. Amended 2026-09-24: two roles (ADR-0005); the Admin bar does not offer Catalog, though the Admin may still open it by address per `ARCHITECT.md` §7. See Session 2026-09-24.)*
 - **FR-006a**: Profile MUST be reachable from the account cluster rather than from navigation.
-- **FR-007**: Each role MUST have a defined landing destination reached on sign-in: Employee the catalog, Approver the pending queue, Supply Admin the fulfillment queue.
+- **FR-007**: Each role MUST have a defined landing destination reached on sign-in: Employee the catalog, Admin the Requests Queue. *(Amended 2026-09-24.)*
 - **FR-008**: Every destination MUST have a stable, shareable address that survives reload and supports browser back and forward.
-- **FR-009**: Request detail MUST be addressable by request identifier. An Employee MUST reach only their own requests; an Approver or Supply Admin MUST reach any request regardless of status, with the actions offered on it still gated by status and role.
+- **FR-009**: Request detail MUST be addressable by request identifier. An Employee MUST reach only their own requests; an Admin MUST reach any request regardless of status, with the actions offered on it still gated by status and role.
 - **FR-010**: Every protected destination MUST authorize against the signed-in role on every entry, independently of whether its navigation item is visible.
 - **FR-011**: A refused destination MUST produce an explanation and a route to a permitted screen — never a blank screen, a silent redirect loop, or a partially rendered forbidden screen.
 - **FR-012**: An address matching no destination MUST produce a not-found screen inside the shell, distinguishable from a refusal, so that a mistyped address is diagnosable.
@@ -195,20 +198,22 @@ The shell remains usable from a phone up to the 1440px design width, carrying fo
 
 The complete set of addressable destinations and the roles permitted to reach each. SC-002 and SC-003 are checked against this table.
 
-| Destination | Employee | Approver | Supply Admin | Notes |
-|-------------|----------|----------|--------------|-------|
-| Sign-in | signed-out only | signed-out only | signed-out only | No shell chrome |
-| Catalog | yes | yes | yes | Only an Employee is offered the action that starts a request |
-| My requests | yes | no | no | The signed-in Employee's own history |
-| Request detail | own only | any request | any request | Actions gated by status and role; FR-012a applies |
-| Pending-requests queue | no | yes | no | Approver landing destination |
-| Fulfillment queue | no | no | yes | Supply Admin landing destination |
-| Inventory management | no | no | yes | |
-| History | no | yes | yes | Resolved requests across all requestors — completed, rejected, cancelled (added 2026-09-15) |
-| Profile | yes | yes | yes | The signed-in user's own; reached from the account cluster, not from navigation |
-| Not found | any signed-in | any signed-in | any signed-in | Reached by an unmatched address |
+*Amended 2026-09-24 to the two-role route table in `ARCHITECT.md` §7.*
 
-Landing destinations: Employee → catalog; Approver → pending-requests queue; Supply Admin → fulfillment queue.
+| Destination | Employee | Admin | Notes |
+|-------------|----------|-------|-------|
+| Sign-in | signed-out only | signed-out only | No shell chrome |
+| Catalog | yes | yes (by address; not in the Admin bar) | Only an Employee is offered the action that starts a request |
+| My requests | yes | no | The signed-in Employee's own history |
+| Request detail | own only | any request | Actions gated by status and role; FR-012a applies |
+| Requests Queue | no | yes | Admin landing destination — review, approve, and fulfill (replaces the pending-requests and fulfillment queues) |
+| Assets | no | yes | Added 2026-09-24 |
+| Inventory | no | yes | |
+| History | no | yes | Resolved requests across all requestors — completed, rejected, cancelled (added 2026-09-15) |
+| Profile | yes | yes | The signed-in user's own; reached from the account cluster, not from navigation |
+| Not found | any signed-in | any signed-in | Reached by an unmatched address |
+
+Landing destinations: Employee → catalog; Admin → Requests Queue.
 
 Every destination except sign-in and not-found ships in this feature as a placeholder (FR-020); their contents belong to later features.
 
@@ -233,7 +238,7 @@ Every destination except sign-in and not-found ships in this feature as a placeh
 
 ## Success Criteria
 
-- **SC-001**: A tester can sign in as each of the three seeded roles and land on that role's correct screen, seeing only that role's navigation.
+- **SC-001**: A tester can sign in as each of the two seeded roles (Employee, Admin) and land on that role's correct screen, seeing only that role's navigation.
 - **SC-002**: For each role, every destination its navigation offers can be opened directly by address, reloaded, and returned to with browser back.
 - **SC-003**: For each role, every destination outside its authorization is refused when opened directly by address, with an explanation and a working route back.
 - **SC-004**: A Playwright test reaches any destination by address in a single navigation, without replaying the pipeline that would normally lead there.
@@ -248,12 +253,12 @@ Made by the project owner before drafting; `plan.md` implements them.
 
 | # | Decision | Consequence |
 |---|----------|-------------|
-| D1 | Navigation is derived per role from the `ARCHITECT.md` §7 authorization matrix — three distinct navigation sets, not the mockup's two surfaces. | Honors constitution II and ADR-0003. Diverges from the drawn UI kit, which merges Approver and Supply Admin into one "Admin". The Approver and Supply Admin navigation sets are new design and MUST be flagged to the designer. |
+| D1 | Navigation is derived per role from a constant table — two navigation sets, the Employee's and the Admin's, exactly as the 2026-09-22 design draws them. | *Amended 2026-09-24.* Originally three invented sets under constitution 2.0.0 II and ADR-0003; constitution 3.0.0 II and ADR-0005 adopt the design's merged Admin, so nothing here is invented any more. |
 | D2 | Destinations are real addresses served by a routing library, accepted as a new dependency under an ADR. | Deep links, refresh-safety, browser history, and direct Playwright targeting. Costs one ADR under `docs/adr/`. |
 | D3 | The shell reaches session state through a defined boundary, satisfied now by seeded demo users and later by the published backend contract. | Unblocks all page work without inventing a REST contract, per ARCHITECT.md §8 and constitution VII. |
 | D4 | Sign-in presents the Google control as drawn and delegates to the session boundary; the SPA implements no authentication itself. | Contradicts spec 001's clarification, which fixed email + password — **requires an amendment** (see below). `docs/product.md`'s SSO non-goal is unaffected, because this repo ships no SSO. |
 | D5 | No role switcher. Changing role requires sign-out and sign-in. | Keeps constitution II absolute and exercises the real auth path in the demo. Diverges from the UI kit, which pins a "Viewing as" switcher bottom-left. |
-| D6 | Employees reach only their own request details; Approvers and Supply Admins reach any request regardless of status. | Matches ARCHITECT.md's note that any Approver may act on any pending request on a small internal team, and keeps request history reachable after a decision. Acting remains gated by status and role. |
+| D6 | Employees reach only their own request details; an Admin reaches any request regardless of status. | Matches ARCHITECT.md's note that any Admin may review any request and fulfil any approved one, and keeps request history reachable after a decision. Acting remains gated by status and role. |
 
 ## Required Amendments
 
@@ -269,11 +274,11 @@ No constitution version bump is required — no principle changes. `docs/product
 
 | Gap | Impact |
 |-----|--------|
-| The UI kit merges Approver and Supply Admin into one **"Admin"** identity with nav `[Requests Queue, History, Inventory]`. | Constitution II forbids it. D1 splits them, so the Approver and Supply Admin navigation sets are undesigned. |
+| ~~The UI kit merges Approver and Supply Admin into one "Admin".~~ | **Closed 2026-09-24** — constitution 3.0.0 II adopts the merge (ADR-0005); both navigation sets are drawn. |
 | **No affordance is drawn for reaching Profile** now that it has left the navigation. | The account cluster was made the route in. Ours, not the designer's. |
 | **The notification bell opens nothing** — no panel, list or destination is drawn. | It ships as a marker with a count (FR-014a). What it should open is undesigned. |
-| **No designed fulfillment queue** for the Supply Admin's Prepare / Release step. | Supply Admin's landing destination has no visual source; ships as a placeholder. |
-| **No designed Profile screen for Approver or Supply Admin** — only the Employee's. | Profile appears in all three navigation sets under D1. |
+| ~~No designed fulfillment queue.~~ | **Closed 2026-09-24** — fulfilment folded into the Requests Queue (drift-2026-09-22 §2). |
+| **No designed Profile screen for the Admin** — only the Employee's. | Profile is reachable by both roles from the account cluster; the Admin reuses the Employee layout (spec 006 D2). |
 | **No loading, error, not-found, or forbidden screens** designed anywhere. | Stories 4 and 7 require all four; each is invented and needs ratification. |
 | **No sign-out control** is drawn in the account cluster. | Story 6 requires one; its placement is invented. |
 | The UI kit pins a **"Viewing as" role switcher** bottom-left. | Dropped under D5. The demo changes role by signing out and back in. |
@@ -284,6 +289,17 @@ No constitution version bump is required — no principle changes. `docs/product
 None dismissed. One consistency defect (CHK007, not-found versus record-existence leakage) and three gaps (CHK001, CHK002, CHK003) were found and all four resolved into requirements above.
 
 ## Clarifications
+
+### Session 2026-09-24 — Amendment
+
+Raised by constitution 3.0.0 and the 2026-09-22 `.fig` re-export
+([drift-2026-09-22](../../docs/design-system/drift-2026-09-22.md) §2), carried
+by [ADR-0005](../../docs/adr/0005-two-role-model.md) and implemented as Phase 0
+of spec 001 (BEN-114). Recorded here because the shipped shell's code and
+gates cite this spec's FR-006, FR-007, FR-009, D1, D6 and SC-001.
+
+- Q: Constitution 3.0.0 retires Approver and Supply Admin for one Admin. What navigation and landing does the shell carry? → A: **The drawn bars.** Employee: Catalog · My Requests, landing on the catalog. Admin: Requests Queue · Assets · Inventory · History, landing on `/queue`. `/approvals` and `/fulfillment` are removed; `/assets` is added as a placeholder.
+- Q: The drawn Admin bar has no Catalog, which Session 2026-09-15 overrode. Keep the override? → A: **No.** The override rested on D1, which is withdrawn. The Admin may still open the catalog by address (`ARCHITECT.md` §7), but the bar does not offer it.
 
 ### Session 2026-09-15 — Amendment
 

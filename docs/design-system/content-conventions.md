@@ -8,8 +8,8 @@ identity as its colours, and page authors are expected to follow them
 
 | Tier | Used for | Examples |
 |------|----------|----------|
-| **Sentence case** | Page titles, even multi-word ones | "Inventory management", "Supply Catalog", "Requests Queue", "My Requests" |
-| **Title Case** | Buttons, status pills, nav items | "Add to Request List", "Confirm Rejection", "Pending Approval", "Ready for Pickup" |
+| **Sentence case** | Page titles, even multi-word ones | "Supply Catalog", "Requests Queue", "My Requests" |
+| **Title Case** | Buttons, status pills, nav items | "Add to Request List", "Confirm Rejection", "Pending Approval", "For Pickup" |
 | **ALL CAPS** | Table column headings, card eyebrows | "REQUEST ID", "REQUESTER", "ITEMS", "TOTAL STOCK", "DEVICES" |
 
 Exception worth knowing: "Update stock" is sentence case because it is a link,
@@ -23,7 +23,7 @@ and gets out of the way. It never sells, never apologises, never jokes.
 **Subtitles are one sentence, no period.** They state what you can do here:
 
 > Review, approve, and fulfill supply requests
-> Monitor stock levels, manage reservations, and keep office essentials ready for every team
+> Monitor stock levels, manage reservations, and keep office essentials ready
 > Your details and currently assigned supplies
 
 **Buttons are imperative verb phrases naming the object**: "Add to Request

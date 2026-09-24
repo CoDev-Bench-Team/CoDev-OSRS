@@ -11,18 +11,19 @@ import { ROLES, type Role } from '../features/auth/types';
  *  Case, page titles sentence case, subtitles one sentence with no period. The
  *  titles the design file draws are used verbatim.
  *
- *  `history` arrived with the 2026-09-15 design export, which puts it in the
- *  Admin bar and draws the screen: resolved requests across all requestors,
- *  with a REQUESTER column and a RESOLVED date. Under the three-role split
- *  (D1) that is the Approver's and the Supply Admin's, never the Employee's —
- *  an Employee's own history is My Requests. */
+ *  Addresses and owners follow the route table in ARCHITECT.md §7, which is
+ *  the 2026-09-22 design export's: one Admin reviews, fulfils and owns Assets
+ *  and Inventory (constitution 3.0.0 II, ADR-0005), so there is one queue —
+ *  `/queue` — and no separate fulfilment destination. `history` is resolved
+ *  requests across all requestors and is the Admin's; an Employee's own
+ *  history is My Requests. */
 
 export type DestinationId =
   | 'catalog'
   | 'requests'
   | 'requestDetail'
-  | 'approvals'
-  | 'fulfillment'
+  | 'queue'
+  | 'assets'
   | 'inventory'
   | 'history'
   | 'profile';
@@ -68,29 +69,29 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     purpose: 'Everything recorded about one request',
     roles: ROLES,
   },
-  approvals: {
-    id: 'approvals',
-    path: '/approvals',
+  queue: {
+    id: 'queue',
+    path: '/queue',
     navLabel: 'Requests Queue',
     title: 'Requests Queue',
-    purpose: 'Review and decide on pending supply requests',
-    roles: ['approver'],
+    purpose: 'Review, approve, and fulfill supply requests',
+    roles: ['admin'],
   },
-  fulfillment: {
-    id: 'fulfillment',
-    path: '/fulfillment',
-    navLabel: 'Fulfillment',
-    title: 'Fulfillment queue',
-    purpose: 'Prepare and release approved requests',
-    roles: ['supply_admin'],
+  assets: {
+    id: 'assets',
+    path: '/assets',
+    navLabel: 'Assets',
+    title: 'Assets',
+    purpose: 'Deployed and available units',
+    roles: ['admin'],
   },
   inventory: {
     id: 'inventory',
     path: '/inventory',
     navLabel: 'Inventory',
-    title: 'Inventory management',
-    purpose: 'Monitor stock levels, manage reservations, and keep office essentials ready for every team',
-    roles: ['supply_admin'],
+    title: 'Inventory',
+    purpose: 'Monitor stock levels, manage reservations, and keep office essentials ready',
+    roles: ['admin'],
   },
   history: {
     id: 'history',
@@ -98,7 +99,7 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     navLabel: 'History',
     title: 'History',
     purpose: 'Every resolved request — completed, rejected and cancelled — across all requestors',
-    roles: ['approver', 'supply_admin'],
+    roles: ['admin'],
   },
   profile: {
     id: 'profile',
@@ -115,8 +116,7 @@ export const SIGN_IN_PATH = '/login';
 /** FR-007. Each role starts where its job starts. */
 export const LANDING: Record<Role, DestinationId> = {
   employee: 'catalog',
-  approver: 'approvals',
-  supply_admin: 'fulfillment',
+  admin: 'queue',
 };
 
 export function landingPath(role: Role): string {

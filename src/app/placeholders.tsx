@@ -41,8 +41,8 @@ export function CatalogPlaceholder() {
 }
 
 export const RequestsPlaceholder = () => screen('requests');
-export const ApprovalsPlaceholder = () => screen('approvals');
-export const FulfillmentPlaceholder = () => screen('fulfillment');
+export const QueuePlaceholder = () => screen('queue');
+export const AssetsPlaceholder = () => screen('assets');
 export const InventoryPlaceholder = () => screen('inventory');
 export const HistoryPlaceholder = () => screen('history');
 

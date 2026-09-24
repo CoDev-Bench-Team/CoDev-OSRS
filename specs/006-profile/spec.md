@@ -1,13 +1,13 @@
 # Feature Specification: Profile
 
-> **Partly superseded by constitution 3.0.0 (2026-09-22).** This spec shipped
+> **Amended for constitution 3.0.0 (2026-09-24, BEN-123).** This spec shipped
 > against three roles; `approver` and `supply_admin` are retired in favour of a
 > single **Admin** ([ADR-0005](../../docs/adr/0005-two-role-model.md)). D2, FR-001,
-> FR-012 and SC-005 all read "Approver and Supply Admin" where they now mean
-> "Admin" — the behaviour is unchanged, one page for every role, but the role
-> names are not. The realignment is Phase 0 of
-> [specs/001-office-supplies-mvp/tasks.md](../001-office-supplies-mvp/tasks.md).
-> See [drift-2026-09-22](../../docs/design-system/drift-2026-09-22.md).
+> FR-012, SC-001, SC-005, Out of Scope and the Known Gaps now say "Admin". The behaviour is
+> unchanged — one page for every role. `plan.md` and `tasks.md` are left as the
+> record of what was built against three roles. See Phase 0 of
+> [specs/001-office-supplies-mvp/tasks.md](../001-office-supplies-mvp/tasks.md)
+> and [drift-2026-09-22](../../docs/design-system/drift-2026-09-22.md).
 
 **Feature Branch**: `006-profile`
 **Created**: 2026-09-23
@@ -26,7 +26,7 @@ Give every signed-in user a Profile: who they are, which office they belong to, 
 | # | Decision | Consequence |
 |---|----------|-------------|
 | D1 | **The assigned list reads a register the MVP does not build.** The drawn tags (`CDV-MS-00087`, `CDV-PH-00231`) identify individual units, which belong to a per-unit asset register (serials, assignment to a person) that is out of scope under constitution VIII. The page renders whatever the backend exposes for "equipment assigned to me" and invents nothing. | `Currently Assigned` is a conditional section with three states (FR-007). No rows are fabricated, and no units are modelled to fill it. |
-| D2 | **The Approver and Supply Admin Profile is undesigned.** The file draws only the Employee's. Reusing the Employee layout unchanged for both is **our invention**, not the designer's. | One page for all three roles. Flagged to the designer below. |
+| D2 | **The Admin Profile is undesigned.** The file draws only the Employee's. Reusing the Employee layout unchanged for the Admin is **our invention**, not the designer's. | One page for both roles. Flagged to the designer below. |
 | D3 | The identity block comes entirely from the session. Nothing on the page is hard-coded. | The session must carry the user's home office. Today it carries name, email, initials, avatar colour and role — **office is a new session fact** (see Dependencies). |
 
 ## User Stories
@@ -43,7 +43,7 @@ A signed-in user opens the account cluster in the top bar and lands on their Pro
 1. **Given** a signed-in Employee, **When** they choose Profile in the account cluster, **Then** the Profile destination opens with the header `Profile` / `Your details and currently assigned supplies`.
 2. **Given** a signed-in user whose session names them Maya Santos, `mayas@codev.com`, office Davao, initials `MS`, **When** Profile renders, **Then** the identity block shows `MS` on their avatar colour, `Maya Santos`, and `mayas@codev.com • Davao Office`.
 3. **Given** two different signed-in users, **When** each opens Profile, **Then** each sees only their own identity. Nothing from another user or a fixture appears.
-4. **Given** a signed-in Approver or Supply Admin, **When** they open Profile, **Then** it renders with the same layout as the Employee's (D2).
+4. **Given** a signed-in Admin, **When** they open Profile, **Then** it renders with the same layout as the Employee's (D2).
 5. **Given** any signed-in user, **When** Profile renders, **Then** no navigation item is marked current, because Profile is not a navigation destination (spec 003 FR-006a).
 
 ### Story 2 — See equipment currently assigned to me (Priority: P2)
@@ -73,7 +73,7 @@ Below the identity block, under the heading `Currently Assigned`, the user sees 
 
 ## Functional Requirements
 
-- **FR-001**: Profile MUST be reachable by every signed-in role — Employee, Approver, Supply Admin — from the account cluster, and MUST NOT appear as a navigation item (spec 003 FR-006a).
+- **FR-001**: Profile MUST be reachable by every signed-in role — Employee and Admin — from the account cluster, and MUST NOT appear as a navigation item (spec 003 FR-006a).
 - **FR-002**: Profile MUST render the header `Profile` with the supporting line `Your details and currently assigned supplies`.
 - **FR-003**: Profile MUST show the signed-in user's avatar as initials on a flat colour chip, never a photograph (spec 003 Story 3, criterion 4), even though the backend's user record carries a photo URL.
 - **FR-004**: Profile MUST show the signed-in user's full name, and a line of their email and home office in the form `<email> • <Office> Office`.
@@ -87,38 +87,38 @@ Below the identity block, under the heading `Currently Assigned`, the user sees 
 - **FR-009**: Each assigned item MUST show the item name, its asset tag as a tag chip, and `Assigned` followed by the assignment date in the form `Mon D, YYYY`, using only values the backend supplied. When the date is missing or does not parse, the date line reads `Assignment date not available` instead of being dropped; no date value is ever invented.
 - **FR-010**: Profile MUST NOT fabricate, sample or seed assigned-equipment rows on a normal visit, and MUST NOT model individual units to produce them (D1, constitution VIII). An opt-in demo stub whose rows are visibly synthetic MAY be selected with `?assigned=` on `/profile` in every build (local, deploy preview and production), solely to exercise FR-007a/b, loading and failure. It MUST be loaded only when that parameter is present, as its own chunk that a normal visit never downloads. *(Amended 2026-09-23; second amendment the same day.)*
 - **FR-011**: While a source exists, the `Currently Assigned` section MUST show distinct loading and error states. A failure there MUST NOT prevent the identity block from rendering.
-- **FR-012**: Profile MUST render the same layout for Approver and Supply Admin as for Employee (D2), and MUST NOT show role-specific content the design does not draw.
+- **FR-012**: Profile MUST render the same layout for Admin as for Employee (D2), and MUST NOT show role-specific content the design does not draw.
 - **FR-013**: Profile MUST offer no editing. Every fact on it is read-only.
 
 ## Dependencies
 
 - **Spec 003 shell** (A6 merged): the account cluster route to Profile and the `/profile` destination exist.
-- **Session carries home office (D3)**: the session's user today has no office. The published contract's current-user resource carries an office `location` (one of Cebu, Bacolod, Makati, Pasig, Davao). Mapping it into the session, and giving the seeded demo users an office value, is a change to the shell's session boundary that `plan.md` must scope. The Employee's office (Davao) comes from the design; any office given to the seeded Approver and Supply Admin is a non-production placeholder under constitution IX.
+- **Session carries home office (D3)**: the session's user today has no office. The published contract's current-user resource carries an office `location` (one of Cebu, Bacolod, Makati, Pasig, Davao). Mapping it into the session, and giving the seeded demo users an office value, is a change to the shell's session boundary that `plan.md` must scope. The Employee's office (Davao) comes from the design; any office given to the seeded Admin is a non-production placeholder under constitution IX.
 - **Assigned-equipment source**: the published contract exposes none today, so state (c) is the live state (FR-007). States (a) and (b) are exercised against a stubbed source until the backend publishes one. This feature does not request, design or name that endpoint (constitution VII).
 
 ## Out of Scope
 
 - The per-unit asset register: serial numbers, asset-tag issuance, assignment and unassignment of units to people, BitLocker or other escrow (D1, constitution VIII).
 - Editing name, email, office or avatar colour.
-- Viewing another user's Profile, including by Approvers or Supply Admins.
+- Viewing another user's Profile, including by an Admin.
 - Showing the Google profile photograph.
-- Role-specific Profile content for Approver or Supply Admin beyond the reused Employee layout.
+- Role-specific Profile content for the Admin beyond the reused Employee layout.
 - Linking assigned items to requests, the catalog, or request history.
-- Reconciling the contract's role vocabulary with the three SPA roles. That mapping belongs to the shell's session boundary, not this page.
+- Reconciling the contract's role vocabulary with the SPA's two roles. That mapping belongs to the shell's session boundary, not this page.
 
 ## Success Criteria
 
-- **SC-001**: For each of the three seeded roles, a tester reaches Profile from the account cluster in one action and sees that user's name, email and office exactly as the session holds them.
+- **SC-001**: For each of the two seeded roles (Employee, Admin), a tester reaches Profile from the account cluster in one action and sees that user's name, email and office exactly as the session holds them.
 - **SC-002**: A search of the Profile feature, excluding its opt-in demo stub, finds no literal name, email, office, asset tag or date for any real or seeded user. *(Amended 2026-09-23.)*
 - **SC-003**: Against today's backend, Profile renders with no `Currently Assigned` section and no error.
 - **SC-004**: Against a stubbed source returning three items, Profile lists exactly those three, with name, tag and formatted date. Against a stubbed source returning none, it shows the empty state. Each outcome is verifiable in one run.
-- **SC-005**: An Approver's and a Supply Admin's Profile match the Employee's layout in a side-by-side visual check against `05 - Profile`.
+- **SC-005**: An Admin's Profile matches the Employee's layout in a side-by-side visual check against `05 - Profile`.
 
 ## Known Gaps — flag to the designer
 
 | Gap | Impact |
 |-----|--------|
-| **No Profile screen for Approver or Supply Admin.** Only the Employee's is drawn. | D2 reuses the Employee layout. **Ours, not the designer's.** |
+| **No Profile screen for the Admin.** Only the Employee's is drawn. | D2 reuses the Employee layout. **Ours, not the designer's.** |
 | **No empty state for `Currently Assigned`** is drawn. | Its copy and presentation are invented. |
 | **No loading or error state for `Currently Assigned`** is drawn. | Both are invented (FR-011). |
 | **The drawn list implies a per-unit asset register** the MVP does not build. | The section is conditional (FR-007) and hidden against today's backend. |
@@ -129,7 +129,7 @@ Below the identity block, under the heading `Currently Assigned`, the user sees 
 | Source | Says | This spec |
 |--------|------|-----------|
 | BEN-49 acceptance 2 | "With no assigned-equipment data, `Currently Assigned` renders its empty state." | Holds when a source exists and returns nothing (FR-007b). With **no source at all** — today's backend — the section is hidden (FR-007c), per the owner's decision below. Verify BEN-49 acceptance 2 against a stubbed empty source. |
-| BEN-49 acceptance 3 | "The page renders for **both** roles." | Three roles, not two: Employee, Approver and Supply Admin (constitution II). "The Admin variant" means Approver and Supply Admin. |
+| BEN-49 acceptance 3 | "The page renders for **both** roles." | Employee and Admin (constitution 3.0.0 II). As first written this read "three roles, not two"; ADR-0005 made Linear right. |
 | BEN-87 plan constraint 2 | data → list, no data → empty state, no endpoint → hidden | Adopted as FR-007. |
 | BEN-88 checklist | "Empty state when the contract exposes no assigned equipment" | **Amended in Linear 2026-09-23** to the three states of FR-007. |
 | BEN-89 checklist | "Empty state renders when there is no assigned-equipment data"; "PR base `main`" | **Amended in Linear 2026-09-23**: empty state checked with `?assigned=empty`, section hidden with no source; PR base `dev`. |

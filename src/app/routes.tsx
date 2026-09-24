@@ -9,11 +9,11 @@ import { AppLayout } from './AppLayout';
 import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './destinations';
 import { NavButton } from './NavButton';
 import {
-  ApprovalsPlaceholder,
+  AssetsPlaceholder,
   CatalogPlaceholder,
-  FulfillmentPlaceholder,
   HistoryPlaceholder,
   InventoryPlaceholder,
+  QueuePlaceholder,
   RequestDetailPlaceholder,
   RequestsPlaceholder,
 } from './placeholders';
@@ -75,8 +75,8 @@ export function AppRoutes() {
           path={DESTINATIONS.requestDetail.path}
           element={guarded('requestDetail', <RequestDetailPlaceholder />)}
         />
-        <Route path={DESTINATIONS.approvals.path} element={guarded('approvals', <ApprovalsPlaceholder />)} />
-        <Route path={DESTINATIONS.fulfillment.path} element={guarded('fulfillment', <FulfillmentPlaceholder />)} />
+        <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePlaceholder />)} />
+        <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />
         <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />
         <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePage />)} />

@@ -1,6 +1,6 @@
 /** Spec 006 — Profile's own verification.
  *
- *  Asserts the identity block for all three seeded roles and every state of
+ *  Asserts the identity block for both seeded roles and every state of
  *  `Currently Assigned` through the opt-in `?assigned=` demo stub:
  *  hidden (no source), empty, list, loading and failure. Runs through the same
  *  CDP client as the other gates; Playwright (BEN-50) can lift these
@@ -23,8 +23,7 @@ const check = (ok, m, detail = '') => {
 // The seeded session's facts, as spec 006 expects them rendered (FR-004).
 const ACCOUNTS = [
   { account: 'maya.santos', landing: '/catalog', name: 'Maya Santos', line: 'mayas@codev.com • Davao Office' },
-  { account: 'samantha.reyes', landing: '/approvals', name: 'Samantha Reyes', line: 'samanthar@codev.com • Makati Office' },
-  { account: 'ethan.cruz', landing: '/fulfillment', name: 'Ethan Cruz', line: 'ethanc@codev.com • Cebu Office' },
+  { account: 'ethan.cruz', landing: '/queue', name: 'Ethan Cruz', line: 'ethanc@codev.com • Cebu Office' },
 ];
 
 const cdp = await connect();

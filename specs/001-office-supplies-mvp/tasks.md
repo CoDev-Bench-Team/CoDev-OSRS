@@ -21,13 +21,14 @@ current types.
 enum, which is the right call under constitution VII. Conflict 2 in
 `contracts/README.md` tracks it.
 
-- [ ] T000 Collapse `Role` to `'employee' | 'admin'`; drop `approver` / `supply_admin` — `src/features/auth/types.ts`
-- [ ] T000a Rework navigation sets and role home for two roles: Employee → Catalog · My Requests; Admin → Requests Queue · Assets · Inventory · History — `src/features/auth/navigation.ts`, `src/app/destinations.ts`
-- [ ] T000b Reseed demo identities to one Employee + one Admin — `src/features/auth/seeded-source.ts`
-- [ ] T000c Replace `For Release` / `Released` with `For Delivery` / `For Pickup` in `REQUEST_STATUSES` and `REQUEST_TONE`; delete `Handover` / `HANDOVER_LABEL` (they are states now, not labels) — `src/shared/ui/status.ts`
-- [ ] T000d Update `StatusPill` and the gallery's status section to the new vocabulary — `src/shared/ui/data-display/StatusPill.tsx`, `src/shared/ui/gallery/Gallery.tsx`
+- [x] T000 Collapse `Role` to `'employee' | 'admin'`; drop `approver` / `supply_admin` — `src/features/auth/types.ts`
+- [x] T000a Rework navigation sets and role home for two roles: Employee → Catalog · My Requests; Admin → Requests Queue · Assets · Inventory · History — `src/features/auth/navigation.ts`, `src/app/destinations.ts`
+- [x] T000b Reseed demo identities to one Employee + one Admin — `src/features/auth/seeded-source.ts`
+- [x] T000c Replace `For Release` / `Released` with `For Delivery` / `For Pickup` in `REQUEST_STATUSES` and `REQUEST_TONE`; delete `Handover` / `HANDOVER_LABEL` (they are states now, not labels) — `src/shared/ui/status.ts`
+- [x] T000d Update `StatusPill` and the gallery's status section to the new vocabulary — `src/shared/ui/data-display/StatusPill.tsx`, `src/shared/ui/gallery/Gallery.tsx`
 - [ ] T000e Re-vendor `design-system/` from the 2026-09-22 export (two exports stale; token layer included) — `design-system/`
-- [ ] T000f Reconcile the **shipped Profile** (spec 006, merged 2026-09-23): `ROLE_LABEL`, the D2 "Approver and Supply Admin reuse" rationale, and the role copy in `ProfilePage.tsx` all name retired roles — `specs/006-profile/*`, `src/features/profile/ProfilePage.tsx`, `docs/design-system/additions.md`
+  - **Deferred (2026-09-24, BEN-122).** There is no skill-folder export of the 2026-09-22 `.fig` to vendor — the 09-15 and 09-22 drifts were read from the `.fig` directly. Waiting on a fresh export from the designer.
+- [x] T000f Reconcile the **shipped Profile** (spec 006, merged 2026-09-23): `ROLE_LABEL`, the D2 "Approver and Supply Admin reuse" rationale, and the role copy in `ProfilePage.tsx` all name retired roles — `specs/006-profile/*`, `src/features/profile/ProfilePage.tsx`, `docs/design-system/additions.md`
 
 ## Phase 1: Setup (SPA)
 

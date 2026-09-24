@@ -7,8 +7,8 @@ import { IdentityBlock } from './IdentityBlock';
 /** `/profile` — the signed-in user's own details (spec 006).
  *
  *  One page for every role. The design draws only the Employee's; reusing it
- *  unchanged for Approver and Supply Admin is our invention (D2), so nothing
- *  here branches on role. Read-only: no inputs or edit controls (FR-013). */
+ *  unchanged for the Admin is our invention (D2), so nothing here branches on
+ *  role. Read-only: no inputs or edit controls (FR-013). */
 export function ProfilePage() {
   const { session } = useSession();
   const { search } = useLocation();
