@@ -18,20 +18,22 @@ import { RequestDetailPanel } from '../detail/RequestDetailPanel';
 import type { CancelResult, EmployeeRequest, EmployeeRequestSource } from '../detail/request-detail-types';
 import { employeeRequestSource } from '../detail/employee-request-source';
 import { formatDate, summarizeItems } from '../format';
+import { newestFirst } from './order';
 
-/** My Requests — a STAND-IN for BEN-44.
+/** My Requests — `04 - My Requests` (spec 009, BEN-44).
  *
- *  BEN-45's panel opens from a row's *View details*, and the list that carries
- *  that link (BEN-44) has not shipped. This is the `04 - My Requests` frame at
- *  its plainest — the five drawn columns over the seeded source — so the panel
- *  has somewhere to open from. BEN-44 replaces this file; the panel and the
- *  source are BEN-45's and stay (docs/design-system/additions.md).
+ *  The signed-in Employee's own requests, newest first, each with its live
+ *  status pill and a *View details* that opens BEN-45's panel (spec 007). The
+ *  source answers for the signed-in Employee only; the page sorts, so a
+ *  source need not promise an order (spec 009 D2, D4). No filters, search or
+ *  pagination: the frame draws none (D3).
  *
  *  The open request is component state, not an address: the panel "opens from
  *  View details and closes without navigating" (spec 003, 2026-09-23). */
-// Header and row cells are both sized through `tableColumnStyle`, so a column
-// cannot drift out from under its heading.
-const WIDTH = { id: '180px', date: '160px', status: '160px', action: '120px' } as const satisfies Record<
+// The frame's column widths (200 / 180 / fill / 190 / 90 inside the 20px
+// gutter). Header and row cells are both sized through `tableColumnStyle`, so a
+// column cannot drift out from under its heading.
+const WIDTH = { id: '200px', date: '180px', status: '190px', action: '90px' } as const satisfies Record<
   string,
   ColumnWidth
 >;
@@ -42,6 +44,18 @@ const COLS: [string, ColumnWidth?][] = [
   ['Status', WIDTH.status],
   ['Action', WIDTH.action],
 ];
+
+/** The frame's `arrow-right`: a 7px arrow inset 2.5px in a 12px box, a 1px
+ *  round-capped stroke. The file strokes it in `brand-primary` while the label
+ *  beside it binds `Codev Red` (`brand-primary-alt`) — the two reds
+ *  drift-2026-09-22 §9 leaves open — so each keeps its own. */
+function ArrowRight() {
+  return (
+    <svg viewBox="0 0 12 12" fill="none" aria-hidden="true" className="h-12 w-12 shrink-0 text-brand-primary">
+      <path d="M2.5 6h7M9.5 6 6 2.5M9.5 6 6 9.5" stroke="currentColor" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 type Load = { state: 'loading' } | { state: 'failed' } | { state: 'ready'; requests: readonly EmployeeRequest[] };
 
@@ -110,11 +124,13 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   };
 
   const { title, purpose } = DESTINATIONS.requests;
-  const requests = load.state === 'ready' ? load.requests : [];
+  const requests = useMemo(() => (load.state === 'ready' ? newestFirst(load.requests) : []), [load]);
   const open = requests.find((r) => r.id === openId);
 
   return (
-    <div className="flex flex-col gap-24 py-32">
+    // The frame sets the title 34px under the bar and the table 40px under the
+    // subtitle.
+    <div className="flex flex-col gap-[40px] pt-[34px] pb-32">
       <PageHeader title={title} subtitle={purpose} />
 
       {load.state === 'loading' ? <LoadingState label="Loading your requests" /> : null}
@@ -133,7 +149,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
         <TableCard className="w-full">
           <TableHead cols={COLS} />
           {requests.length === 0 ? (
-            <p className={`border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18 type-body text-ink-secondary`}>
+            <p className={`${TABLE_ROW_PADDING_CLASS} py-18 type-body text-ink-secondary`}>
               You have not submitted any requests yet
             </p>
           ) : (
@@ -141,7 +157,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
               {requests.map((request) => (
                 <li
                   key={request.id}
-                  className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}
+                  className={`flex items-center border-b border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}
                 >
                   <span style={tableColumnStyle(WIDTH.id)} className="type-ui-bold text-ink-primary">
                     {request.id}
@@ -149,7 +165,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
                   <span style={tableColumnStyle(WIDTH.date)} className="type-ui text-ink-secondary">
                     {formatDate(request.submittedAt)}
                   </span>
-                  <span style={tableColumnStyle()} className="truncate type-ui text-ink-body">
+                  <span style={tableColumnStyle()} className="truncate pr-16 type-ui text-ink-primary">
                     {summarizeItems(
                       request.lines.map((l) => l.name),
                       2,
@@ -163,9 +179,10 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
                       type="button"
                       onClick={() => setOpenId(request.id)}
                       aria-label={`View details of ${request.id}`}
-                      className="inline-flex cursor-pointer items-center gap-4 border-none bg-transparent p-0 type-ui-bold text-ink-link transition-osrs hover:text-brand-primary-alt"
+                      className="inline-flex cursor-pointer items-center gap-7 border-none bg-transparent p-0 font-sans text-12 leading-tight font-bold whitespace-nowrap text-brand-primary-alt transition-osrs hover:text-brand-primary"
                     >
-                      View details <span aria-hidden="true">→</span>
+                      View details
+                      <ArrowRight />
                     </button>
                   </span>
                 </li>

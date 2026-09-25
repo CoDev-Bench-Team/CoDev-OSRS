@@ -1,7 +1,7 @@
 /** Every gate in one place — spec 002's design-system checks, spec 003's
  *  application-shell checks, spec 004's Requests Queue checks, spec 005's
- *  Catalog checks, spec 006's Profile checks and spec 007's request panel
- *  (BEN-45). Order matters:
+ *  Catalog checks, spec 006's Profile checks, spec 007's request panel
+ *  (BEN-45) and spec 009's My Requests (BEN-44). Order matters:
  *  `check-profile-build` scans `dist/`, so it runs after `build`. Needs
  *  `npm run dev`; headless Chrome is started for you. Set OSRS_DEV_ORIGIN when the dev server took a port other than
  *  5173 (a worktree usually does). */
@@ -18,6 +18,7 @@ const steps = [
   ['catalog (spec 005)', 'node', ['scripts/check-catalog.mjs']],
   ['profile (spec 006)', 'node', ['scripts/check-profile.mjs']],
   ['request panel (BEN-45)', 'node', ['scripts/check-request-detail.mjs']],
+  ['my requests (spec 009)', 'node', ['scripts/check-my-requests.mjs']],
   ['build', 'npm', ['run', 'build']],
   ['profile build: lazy stub + SPA fallback (FR-010)', 'node', ['scripts/check-profile-build.mjs']],
 ];

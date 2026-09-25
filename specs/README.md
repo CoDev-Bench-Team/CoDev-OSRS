@@ -7,6 +7,7 @@ AI-SDD feature folders. Do not put application code here.
 | [001-office-supplies-mvp](001-office-supplies-mvp/spec.md) | Office Supplies Request System MVP | Draft |
 | [005-catalog](005-catalog/spec.md) | Catalog page (view stock + start request) | Draft |
 | [006-profile](006-profile/spec.md) | Profile (all roles) | Draft |
+| [009-my-requests](009-my-requests/spec.md) | My Requests (Employee history) | Draft |
 | [constitution.md](constitution.md) | Governing principles (also in AGENTS.md) | 1.2.0 |
 
 When starting a new feature: copy the lifecycle in `docs/ai-sdd.md`, create `specs/00N-slug/` with `spec.md` first, then plan and tasks. Do not invent a REST `contracts/api.md` — the backend team owns HTTP.
