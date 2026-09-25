@@ -38,9 +38,9 @@ export type Destination = {
   title: string;
   /** One sentence, no period. */
   purpose: string;
-  /** Roles permitted to reach the address at all. An Employee reaches
-   *  `/requests/:id` only for their own requests; that decision needs a request
-   *  before it can be made, so it lives on the screen (FR-012a), not here. */
+  /** Roles permitted to reach the address at all. `/requests/:id` is the
+   *  Admin's only: an Employee's request detail is a side panel on My Requests
+   *  with no address of its own (spec 003, 2026-09-23; Linear BEN-45). */
   roles: readonly Role[];
 };
 
@@ -58,7 +58,7 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     path: '/requests',
     navLabel: 'My Requests',
     title: 'My Requests',
-    purpose: 'Track every request you have submitted and its current status',
+    purpose: 'Track every request from submission through pickup and completion',
     roles: ['employee'],
   },
   requestDetail: {
@@ -67,7 +67,7 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     navLabel: 'Request',
     title: 'Request detail',
     purpose: 'Everything recorded about one request',
-    roles: ROLES,
+    roles: ['admin'],
   },
   queue: {
     id: 'queue',

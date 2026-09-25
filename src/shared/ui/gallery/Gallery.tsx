@@ -21,14 +21,17 @@ import {
   STOCK_STATUSES,
   Search,
   Select,
+  SidePanel,
   SignInButton,
   StatusPill,
+  StatusTimeline,
   SummaryCard,
   SupplyCard,
   TableCard,
   TableHead,
   TABLE_ROW_PADDING_CLASS,
   tableColumnStyle,
+  TextField,
   TopBar,
   type ColumnWidth,
 } from '../index';
@@ -66,6 +69,7 @@ const SIZES = [
   ['text-11', '11px', 'caption, eyebrow'],
   ['text-11-5', '11.5px', 'availability chip'],
   ['text-12', '12px', 'metadata, pills'],
+  ['text-12-5', '12.5px', 'status timeline label'],
   ['text-13', '13px', 'UI rows — the dominant size'],
   ['text-14', '14px', 'body'],
   ['text-15', '15px', 'subhead'],
@@ -113,6 +117,7 @@ export function Gallery() {
   const [qty, setQty] = useState(1);
   const [model, setModel] = useState(LAPTOP_MODELS[0]);
   const [scrim, setScrim] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const [reason, setReason] = useState(REASONS[0]);
 
   return (
@@ -268,9 +273,50 @@ export function Gallery() {
               <Select label="Model" value={model} options={LAPTOP_MODELS} disabled />
             </div>
           </Row>
+          <Row label="Text field, danger — required, then refused empty (04.2 cancel form)">
+            <div className="flex w-[420px] max-w-full flex-col gap-12">
+              <TextField tone="danger" label="Reason for cancellation" required placeholder="e.g duplicate request..." />
+              <TextField
+                tone="danger"
+                label="Reason for cancellation"
+                required
+                invalid
+                message="Enter a reason for cancelling this request."
+                placeholder="e.g duplicate request..."
+              />
+            </div>
+          </Row>
+          <Row label="Text field, neutral — the default, then refused empty">
+            <div className="flex w-[420px] max-w-full flex-col gap-12">
+              <TextField label="Label" required placeholder="Placeholder" />
+              <TextField label="Label" required invalid message="Say what is missing." placeholder="Placeholder" />
+            </div>
+          </Row>
         </Section>
 
         <Section id="data" title="Data display">
+          <Row label="Status timeline — in progress, cancelled, rejected">
+            <StatusTimeline
+              nodes={[
+                { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
+                { label: 'Approved', state: 'reached', when: 'Sep 11, 2026, 1:05 PM' },
+                { label: 'For Delivery/For Pickup', state: 'pending' },
+                { label: 'Complete', state: 'pending' },
+              ]}
+            />
+            <StatusTimeline
+              nodes={[
+                { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
+                { label: 'Cancelled', state: 'cancelled', when: 'Sep 11, 2026, 9:58 AM' },
+              ]}
+            />
+            <StatusTimeline
+              nodes={[
+                { label: 'Submitted', state: 'reached', when: 'Aug 14, 2026, 11:05 AM' },
+                { label: 'Rejected', state: 'rejected', when: 'Aug 15, 2026, 9:20 AM' },
+              ]}
+            />
+          </Row>
           <Row label="Summary cards">
             <SummaryCard value="12" label="Pending approval" />
             <SummaryCard value="108" label="Available units" />
@@ -371,6 +417,32 @@ export function Gallery() {
                 <Button onClick={() => setScrim(false)}>Close</Button>
               </div>
             </Backdrop>
+          )}
+          <Row label="Side panel — a 400px sheet from the right over the same scrim; Esc, the ✕ or a scrim click closes it">
+            <Button variant="ghost" onClick={() => setSheet(true)}>
+              Show the side panel
+            </Button>
+          </Row>
+          {sheet && (
+            <SidePanel
+              title="Request REQ-2026-1847"
+              onClose={() => setSheet(false)}
+              header={
+                <>
+                  <h2 className="type-section-title truncate text-ink-heading">REQ-2026-1847</h2>
+                  <StatusPill status="Pending Approval" />
+                </>
+              }
+              footer={
+                <Button variant="ghost" className="w-full" onClick={() => setSheet(false)}>
+                  Close
+                </Button>
+              }
+            >
+              <p className="type-body text-ink-body">
+                Focus moves in on open, is held here, and returns to the button that opened it.
+              </p>
+            </SidePanel>
           )}
         </Section>
 

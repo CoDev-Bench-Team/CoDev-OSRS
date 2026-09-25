@@ -8,10 +8,11 @@ import {
   type QueueSnapshot,
   type QueueViewModel,
 } from './queue-types';
+import { formatDate, NO_VALUE, summarizeItems } from '../format';
 
-/** What a cell shows when the source gave nothing usable. Exported because the
- *  page has to recognise it — a placeholder is not worth a tooltip. */
-export const NO_VALUE = '—';
+/** Re-exported for the page, which has to recognise a placeholder — it is not
+ *  worth a tooltip. */
+export { NO_VALUE };
 
 /** Non-terminal and past approval: the three statuses an Admin still has to
  *  hand over or complete (constitution 3.0.1 IV, ADR-0007). */
@@ -20,39 +21,10 @@ const IN_PROCESSING = new Set<QueueRequest['status']>(['Approved', 'For Delivery
 const LIVE = new Set<QueueRequest['status']>(LIVE_STATUSES);
 const isLive = (request: QueueRequest): request is QueueRequest & { status: LiveStatus } => LIVE.has(request.status);
 
-/** Codev is Manila-based, so a UTC label reads a day early for anything
- *  submitted before 08:00 local — and SUBMITTED is the column an Admin uses
- *  to judge how long a request has waited. Pinned rather than viewer-local so
- *  every Admin reads the same date whatever their machine is set to. */
-const SUBMITTED_DATE = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  timeZone: 'Asia/Manila',
-});
-
-/** `NaN` for an unparseable value, so callers decide what that means. */
+/** `NaN` for an unparseable value, so callers decide what that means. Sorting
+ *  needs the number; the SUBMITTED label comes from the shared `formatDate`,
+ *  pinned to Manila so every Admin reads the same date. */
 const submittedTime = (value: string) => new Date(value).getTime();
-
-/** `Intl` throws `RangeError` on an unparseable date, and this runs during
- *  render — one bad timestamp would otherwise escape the page's own failure
- *  state and surface as the shell's generic error instead. */
-function formatSubmitted(value: string) {
-  const time = submittedTime(value);
-  return Number.isNaN(time) ? NO_VALUE : SUBMITTED_DATE.format(time);
-}
-
-/** An absent or blank item list gets the same em dash as an unparseable date,
- *  and for the same reason: a blank cell cannot be told apart from a rendering
- *  fault, and both are shapes an unpublished source can hand us. Blank names
- *  are dropped before the count so "+ N more" never promises rows that are not
- *  there. */
-function summarizeItems(items: readonly string[]) {
-  const named = items.filter((item) => item.trim().length > 0);
-  if (named.length === 0) return NO_VALUE;
-  if (named.length <= 3) return named.join(', ');
-  return `${named.slice(0, 3).join(', ')} + ${named.length - 3} more`;
-}
 
 /** FR-020: id, name, email and item names, case-insensitive, trimmed. */
 function matchesSearch(request: QueueRequest, term: string) {
@@ -123,8 +95,8 @@ export function buildQueueViewModel(snapshot: QueueSnapshot, query: QueueQuery):
       id: request.id,
       requestorName: request.requestorName,
       requestorContext: request.requestorContext,
-      itemSummary: summarizeItems(request.items),
-      submittedLabel: formatSubmitted(request.submittedAt),
+      itemSummary: summarizeItems(request.items, 3),
+      submittedLabel: formatDate(request.submittedAt),
       status: request.status,
     })),
   };

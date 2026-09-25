@@ -38,7 +38,7 @@ The backend contract remains unpublished at `specs/001-office-supplies-mvp/contr
 ## Component / Module Breakdown
 
 - `src/features/requests/queue/queue-types.ts` — feature-local request, snapshot, source, and view-model types.
-- `src/features/requests/queue/queue-model.ts` — pure derivation of pending, in-processing, and pending-row projections.
+- `src/features/requests/queue/queue-model.ts` — pure derivation of pending, in-processing, and pending-row projections. Its date label, item summary and `NO_VALUE` come from `../format.ts`, shared with My Requests since spec 007 (#38); the entries below that name `formatSubmitted` or a model-local `summarizeItems` describe the code as it was then.
 - `src/features/requests/queue/seeded-queue-source.ts` — explicit temporary fixture source; supplies low-stock count rather than a threshold.
 - `src/features/requests/queue/QueuePage.tsx` — loading, failure, empty, summaries, responsive table, and Review links.
 - `src/app/routes.tsx` — import the real page and replace only the `QueuePlaceholder` route element (was `ApprovalsPlaceholder` before the 3.0.0 realignment), and drop that placeholder from `src/app/placeholders.tsx` once nothing references it.

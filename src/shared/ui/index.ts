@@ -13,6 +13,7 @@ export { ButtonTemplate, ButtonWithIcon, SignInButton } from './actions/imported
 export { Search } from './forms/Search';
 export { Select } from './forms/Select';
 export { FilterChip } from './forms/FilterChip';
+export { TextField } from './forms/TextField';
 
 // Data display
 export { StatusPill } from './data-display/StatusPill';
@@ -26,9 +27,11 @@ export {
   TABLE_ROW_PADDING_X,
   type ColumnWidth,
 } from './data-display/table-columns';
+export { StatusTimeline, type TimelineNode, type TimelineNodeState } from './data-display/StatusTimeline';
 
 // Overlay
 export { Backdrop } from './overlay/Backdrop';
+export { SidePanel } from './overlay/SidePanel';
 
 // Layout
 export { TopBar, type NavItem } from './layout/TopBar';

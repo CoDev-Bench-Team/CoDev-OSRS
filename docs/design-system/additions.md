@@ -365,6 +365,31 @@ below is ours.
 
 ---
 
+## 3f. The Employee request panel (BEN-45, 2026-09-23)
+
+`SidePanel`, `StatusTimeline` and `TextField` are **drawn** (`04.1`, `04.2`,
+`Status Timeline`); what follows is only what the frames leave open.
+
+| Addition | What was decided | Basis |
+|----------|------------------|-------|
+| **Panel behaviour** | Esc and a scrim click close it; focus moves in on open, is held there, and returns to the row's *View details* on close. Closing never navigates. It slides in from the right over a fading scrim (`--motion-base`) and back out (`--motion-fast`) before it unmounts; reduced motion makes both instant. | A sheet over a scrim is a modal in everything but position. The frames draw only the ✕ and no motion; design feedback 2026-09-25 asked for one, and it uses the source's recorded curve and durations. |
+| **Rejected timeline ending** | Collapses to Submitted → Rejected, the ending in `status-rejected-fg` red. | `04.2 - Cancelled` draws the Cancelled collapse in slate; Rejected is not drawn, so it takes the same shape in its own status colour. |
+| **The handover node** | Reads the drawn *For Delivery/For Pickup* until the Admin sets one, then names the state taken — and keeps naming it once `Completed`. | The drawing labels one node for two peer states (ADR-0007); the request knows which it took. *(Realigned 2026-09-24; it was a `For Release` / `Released` mapping.)* |
+| **Refused cancel** | An inline red note above the items: the request changed while the panel was open, and the panel shows its current status. | The file draws no failure. The copy follows the Notice voice. |
+| **Reason field** | *(Redrawn 2026-09-25.)* `TextField tone="danger"`. The pink block — `status-rejected-bg`, a `red-500` outline and label — is the field's resting look, not its error state. Inside it, a 58px white box with the placeholder at the top: a one-row textarea that grows with a long reason, up to 160px, then scrolls. Enter submits, Shift+Enter breaks the line. | The redrawn `04.2 - Cancel Request` frame. The textarea is read from the top-set placeholder; the frame does not say what Enter does, so it keeps the one-line field's behaviour. The pink block marks a destructive step, so it is a tone, not the component's default: `neutral` is a plain white card that turns pink only when invalid, and nothing in the file draws it yet. |
+| **Empty reason** | The inner box takes the `red-600` ring, plus one line saying why — announced through `aria-describedby`. | The pink block no longer marks an error, and the asterisk alone does not tell a screen-reader user what went wrong. Whitespace counts as empty. |
+| **Timeline type** | *(Design feedback 2026-09-25.)* The *Status* heading is 14px bold; each node label 12.5px bold (`text-12-5`, new to the scale), its date or *Pending* 12px medium, 4px below it; nodes 14px apart; dots 12×12. | Design review of the `04.1` panel. The *Items Requested* heading keeps the 11px eyebrow until the designer says otherwise. |
+| **Stand-in My Requests table** | The `04 - My Requests` frame's five columns over the seeded source, so the panel has a *View details* to open from. Replaced by BEN-44. | BEN-44 had not shipped when BEN-45 was built. |
+| **REQ-2026-1791** | A seeded `Cancelled` row, the seventh. | `04 - My Requests` draws no cancelled row, but `04.2 - Cancelled` draws the panel for one; the seed carries one so it opens without cancelling first. Its reason is placeholder copy. |
+| **Struck-through Cancelled pill** | The `Cancelled` pill's label is struck through, everywhere the pill appears. | `04.2 - Cancelled` draws it so. The pill is shared, but today it renders only on My Requests, this panel and the gallery: the Requests Queue lists live statuses only (spec 004), so it never shows a Cancelled pill. The Admin's History, which lists resolved requests, will pick it up. |
+| **REQ-2026-1838** | The For Delivery row's id. | The frame gives REQ-2026-1842 to both the Ready for Pickup and the For Delivery row; an id must be unique. **Flagged to the designer.** |
+
+**Reason read-back.** A cancelled request shows its reason under *Reason for
+cancellation*, and a rejected one under *Reason for rejection*, in the same card
+as *Note to Approver*, above the timeline. `04.2 - Cancelled` does not draw it;
+Linear BEN-67 and BEN-70 ask for it, and spec 001's Request entity stores both
+reasons. **Flagged to the designer** to draw it.
+
 ## 4. Defects found in the source — flagged, not fixed
 
 Per FR-011a, a source value that fails a threshold is reported rather than
