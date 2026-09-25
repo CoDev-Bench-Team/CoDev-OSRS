@@ -141,6 +141,25 @@ the one part still open.
 `lowQtyAlert` and the design's Update Asset panel (`STOCKS · Low-stock
 threshold`) agree ([drift-2026-09-26 §4](../../../docs/design-system/drift-2026-09-26.md#q3--asset-fields)).
 
+### 4. Request submit: no success body, no insufficient-stock refusal (raised 2026-09-25)
+
+`POST /requests` is published with `CreateRequestDto` — `purpose` (optional;
+the design's **Note to Approver**) and `items[]` of `{ assetId, quantity }`,
+with no office field. Only its `400` validation response is documented.
+
+**Needed from the API:**
+
+- the **success** response: at least the display id (`REQ-…`), status,
+  submitted time and the created lines, which the `03.1 - Request List -
+  Request Submitted` confirmation reads back;
+- the **insufficient-stock** refusal: its status code and body, so the SPA can
+  show the API's own message without inventing a code;
+- confirmation that submit is all-or-nothing across lines and reserves at the
+  requester's home office.
+
+Until then spec 008 submits through a seeded source behind a seam (spec 008,
+Clarifications 2026-09-25). Linear: [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43).
+
 ### Also worth a word
 
 The design's emails print request ids as `REQ-10482`; every SPA screen prints
