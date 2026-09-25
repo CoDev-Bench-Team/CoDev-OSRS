@@ -4,8 +4,11 @@ import type { CancelResult, EmployeeRequest, EmployeeRequestSource } from './req
 /** Non-production demo data, used only until the backend team publishes the
  *  request contract (constitution IX permits seeded placeholders).
  *
- *  Maya's six requests are the rows of the design's `04 - My Requests` frame,
- *  in its order, one per status the list draws. The file gives REQ-2026-1842 to
+ *  Maya's first six requests are the rows of the design's `04 - My Requests`
+ *  frame, in its order, one per status the list draws. The seventh,
+ *  REQ-2026-1791, is `Cancelled`: the list draws no cancelled row, but
+ *  `04.2 - Cancelled` draws the panel for one, so the seed carries one to open
+ *  it from without cancelling first. The file gives REQ-2026-1842 to
  *  two rows — Ready for Pickup and For Delivery — so the delivery row carries
  *  REQ-2026-1838 instead; an id is unique or it is not an id
  *  (docs/design-system/additions.md). REQ-2026-1847's lines and note are
@@ -81,6 +84,18 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
       approvedAt: '2026-07-28T06:15:00Z',
       handedOverAt: '2026-07-29T02:30:00Z',
       completedAt: '2026-07-29T08:45:00Z',
+    },
+    {
+      id: 'REQ-2026-1791',
+      submittedAt: '2026-08-20T02:15:00Z',
+      lines: [
+        { name: 'Webcam', description: 'Webcam - Logitech C920', qty: 1 },
+        { name: 'Headset', description: 'USB-C Headset - A4Tech Hu-10', qty: 1 },
+      ],
+      noteToApprover: 'for client calls',
+      status: 'Cancelled',
+      // The frame draws no reason; this one is placeholder copy.
+      cancellation: { reason: 'IT lent me a spare webcam and headset', at: '2026-08-20T02:40:00Z' },
     },
   ],
 };

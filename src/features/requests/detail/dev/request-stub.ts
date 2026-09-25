@@ -3,7 +3,7 @@ import type { EmployeeRequest, EmployeeRequestSource } from '../request-detail-t
 /** DEV-ONLY STUB — reached only through `employee-request-source.ts`, behind
  *  `import.meta.env.DEV`, so a production build drops it.
  *
- *  The seed answers at once, always has Maya's six requests, and never refuses
+ *  The seed answers at once, always has Maya's seven requests, and never refuses
  *  a cancel for a changed status or fails a reload. `?requests=<mode>` on
  *  `/requests` reaches what it cannot:
  *

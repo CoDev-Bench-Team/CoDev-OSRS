@@ -6,7 +6,7 @@
  *  OSRS_DEV_ORIGIN when the dev server took a port other than 5173.
  *
  *  Every run starts from a fresh document, so the seeded source's in-memory
- *  store is back to its six drawn requests. */
+ *  store is back to its seven seeded requests. */
 import { connect } from './cdp.mjs';
 
 const ORIGIN = process.env.OSRS_DEV_ORIGIN ?? 'http://localhost:5173';
@@ -97,7 +97,12 @@ await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View deta
 
 const initial = await cdp.evaluate(rows);
 console.log('\nMy Requests lists the seeded requests with a View details on each (stand-in for BEN-44)');
-check(initial.length === 6, 'six requests, one per drawn status', `got ${initial.length}`);
+check(initial.length === 7, 'seven requests, one per status', `got ${initial.length}`);
+check(
+  new Set(initial.map((r) => r.pill)).size === 7,
+  'every one of the seven statuses has a row, Cancelled included',
+  initial.map((r) => r.pill).join(', '),
+);
 check(new Set(initial.map((r) => r.id)).size === initial.length, 'every request id is unique');
 
 // ---- AC1: opens from View details, closes without navigating ----
@@ -144,9 +149,18 @@ for (const row of initial) {
   check(p.timeline.length > 0 && p.timeline[0][1] === 'Submitted', `${row.id}: the status timeline starts at Submitted`);
   // BEN-67: a stopped request reads back its reason; no other state shows one.
   check(
-    /Reason for rejection/.test(p.text) === (row.pill === 'Rejected') && !/Reason for cancellation/.test(p.text),
-    `${row.id}: ${row.pill === 'Rejected' ? 'reads back its rejection reason' : 'shows no stop reason'}`,
+    /Reason for rejection/.test(p.text) === (row.pill === 'Rejected') &&
+      /Reason for cancellation/.test(p.text) === (row.pill === 'Cancelled'),
+    `${row.id}: ${row.pill === 'Rejected' ? 'reads back its rejection reason' : row.pill === 'Cancelled' ? 'reads back its cancellation reason' : 'shows no stop reason'}`,
   );
+  if (row.pill === 'Cancelled') {
+    // `04.2 - Cancelled`: the timeline collapses to Submitted → Cancelled.
+    check(
+      JSON.stringify(p.timeline) === JSON.stringify([['reached', 'Submitted'], ['cancelled', 'Cancelled']]),
+      `${row.id}: the timeline collapses to Submitted → Cancelled`,
+      JSON.stringify(p.timeline),
+    );
+  }
   await cdp.evaluate(() => document.querySelector('[role="dialog"] button[aria-label="Close"]').click());
   await closed();
 }
@@ -277,7 +291,7 @@ let l = await cdp.evaluate(listState);
 check(l.loading && !l.rows && !l.empty && !l.failed, 'while loading it says so, and shows no table, empty state or failure', JSON.stringify(l));
 await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the rows after loading');
 l = await cdp.evaluate(listState);
-check(!l.loading && l.rows === 6, 'then the rows replace it', JSON.stringify(l));
+check(!l.loading && l.rows === 7, 'then the rows replace it', JSON.stringify(l));
 
 await go('/requests?requests=empty');
 await cdp.waitFor(() => document.body.textContent.includes('You have not submitted any requests yet'), 5000, 'the empty state');

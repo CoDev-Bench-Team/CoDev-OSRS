@@ -12,7 +12,8 @@ const TONE: Record<StatusTone, string> = {
   ready: 'bg-status-ready-bg text-status-ready-fg',
   rejected: 'bg-status-rejected-bg text-status-rejected-fg',
   completed: 'bg-status-completed-bg text-status-completed-fg',
-  cancelled: 'bg-status-cancelled-bg text-status-cancelled-fg',
+  // Struck through, as the design's `Status/Cancelled` pill draws it.
+  cancelled: 'bg-status-cancelled-bg text-status-cancelled-fg line-through',
   delivery: 'bg-status-delivery-bg text-status-delivery-fg',
   pickup: 'bg-status-pickup-bg text-status-pickup-fg',
 };

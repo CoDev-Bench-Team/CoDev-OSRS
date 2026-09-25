@@ -17,7 +17,7 @@ import type { User } from '../features/auth/types';
  *  re-verify FR-012a against real identifiers before trusting it (plan 003,
  *  Known Risks). */
 const OWNED_BY: Record<string, readonly string[]> = {
-  'maya.santos': ['REQ-2026-1847', 'REQ-2026-1842', 'REQ-2026-1838', 'REQ-2026-1805', 'REQ-2026-1760', 'REQ-2026-1733'],
+  'maya.santos': ['REQ-2026-1847', 'REQ-2026-1842', 'REQ-2026-1838', 'REQ-2026-1805', 'REQ-2026-1760', 'REQ-2026-1733', 'REQ-2026-1791'],
 };
 
 /** Since 2026-09-23 an Employee never reaches `/requests/:id` — the route's
