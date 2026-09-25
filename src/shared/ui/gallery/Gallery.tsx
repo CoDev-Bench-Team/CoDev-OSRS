@@ -19,6 +19,7 @@ import {
   PageHeader,
   REQUEST_STATUSES,
   STOCK_STATUSES,
+  INVENTORY_STATUSES,
   Search,
   Select,
   SidePanel,
@@ -229,6 +230,11 @@ export function Gallery() {
           <Row label="Availability — the squarer 8px chip at 11.5px">
             <StatusPill availability="available" />
             <StatusPill availability="unavailable" />
+          </Row>
+          <Row label="Inventory status — the catalog's stock band, same chip">
+            {INVENTORY_STATUSES.map((s) => (
+              <StatusPill key={s} inventory={s} />
+            ))}
           </Row>
         </Section>
 

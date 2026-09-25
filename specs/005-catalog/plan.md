@@ -2,7 +2,7 @@
 
 **Branch**: `rockyc/ben-42-p2spa-catalog-page-view-stock-start-request`
 **Date**: 2026-09-22 | **Spec**: [spec.md](spec.md) | **Linear**: [BEN-42](https://linear.app/bench-synergy-project/issue/BEN-42)
-**Status**: Draft
+**Status**: Draft · **Amended**: 2026-09-25 — see spec Session 2026-09-25
 
 ## Summary
 
@@ -37,23 +37,28 @@ Assets contract exposes.
 | Field | Source | Notes |
 |---|---|---|
 | `id` | contract | Stable identifier |
-| `name` | `name` | Required |
-| `model` | `model` | Brand / model string |
-| `type` | `type` | Drives the chips (spec D2) |
+| `name` | `name` | The specific item — one card per asset (D5) |
+| `category` | `category` | Contract enum; drives the chips (D6) |
+| `model` | `model` | Brand / model string; a View Specs row |
+| `description` | `description` | Optional; a View Specs row |
 | `image` | `imageBase64` | Optional; card falls back to a neutral tile |
-| `onHand` | `quantity` | The number FR-002 requires |
-| `lowQtyAlert` | `lowQtyAlert` | Threshold for `Low Stock` |
+| `specs` | `ram`, `storage`, `processor`, `graphics`, `operatingSystem` | Optional; rows chosen by category (FR-015) |
+| `available` | `location`-scoped availability | Available at the selected office (FR-014) |
+| `lowQtyAlert` | `lowQtyAlert` | Threshold for `Low in Stock` |
 
-`location` and `specs[]` are deliberately not modelled — see spec D3 / D4.
+*(Amended 2026-09-25.)* The published assets list now takes a `location`
+parameter that scopes availability to one office, and publishes `category` and
+the spec fields as top-level properties. The 09-22 table above replaces the
+`type` / `quantity` one.
 
 ### Stock status derivation
 
 Single pure function, the only place the rule lives:
 
 ```
-onHand <= 0                 -> 'Out of Stock'
-onHand <= lowQtyAlert       -> 'Low Stock'
-otherwise                   -> 'In Stock'
+available <= 0              -> 'Out of Stock'
+available <= lowQtyAlert    -> 'Low in Stock'
+otherwise                   -> 'Available'
 ```
 
 `StockStatus` and its tones already exist in `src/shared/ui/status.ts` (spec
@@ -67,9 +72,9 @@ Mirrors `SessionSource` (spec 003 D3). The page never learns there is HTTP.
 
 ```ts
 export interface CatalogSource {
-  /** Every active item with its current on-hand quantity. Rejects on failure —
-   *  an empty catalog and an unreachable one are different outcomes. */
-  items(): Promise<CatalogItem[]>;
+  /** Every active item, with availability at that office. Rejects on
+   *  failure — an empty catalog and an unreachable one are different outcomes. */
+  items(office: CatalogOffice): Promise<CatalogItem[]>;
 }
 ```
 
@@ -108,10 +113,14 @@ Owned — `src/features/catalog/`:
 | `seeded-source.ts` | Demo data behind the boundary |
 | `CatalogProvider.tsx` | Load, loading / error / empty state |
 | `useCatalogFilters.ts` | Search + type chip state, combined |
-| `CategoryChip.tsx` | The chip control |
+| ~~`CategoryChip.tsx`~~ | Replaced by the shared `FilterChip` (spec 004), 2026-09-25 |
 | `CatalogGrid.tsx` | The grid and its empty-results state |
 | `CatalogItemCard.tsx` | Wraps `SupplyCard`; owns the Employee gate and stock bounds |
-| `CatalogPage.tsx` | Composition: heading, search, chips, grid |
+| `CatalogPage.tsx` | Composition: heading, search + office, chips, grid |
+| `OfficeSelect.tsx` | The office selector (shared `Select`) |
+| `request-action.ts` | The Employee / home-office / stock gate, shared by card and panel |
+| `specs.ts` | Category → View Specs rows (FR-002a) |
+| `ViewSpecsPanel.tsx` | `02.1 - Catalog - View Specs` on the shared `SidePanel` |
 
 Shared touch — kept to the minimum BEN-42 allows:
 
@@ -119,6 +128,13 @@ Shared touch — kept to the minimum BEN-42 allows:
 |---|---|
 | `src/app/routes.tsx` | Swap `CatalogPlaceholder` for `CatalogPage` (1 import + 1 element) |
 | `src/app/placeholders.tsx` | Remove the now-dead `CatalogPlaceholder` |
+
+### Shared `SidePanel` (2026-09-25)
+
+`src/shared/ui/overlay/SidePanel.tsx`, its export and its slide/fade utilities
+in `src/styles/utilities.css` are taken **byte-for-byte** from PR #38 (BEN-45),
+not re-implemented, so the two screens share one sheet and the two branches
+merge without a real conflict. Whichever lands second sees identical content.
 
 ### One justified exception to folder ownership
 
@@ -132,6 +148,7 @@ It is taken deliberately because:
 - `SupplyCard`'s own docstring says it *is* the catalog tile — it exists for this page and has no other caller.
 - `StatusPill` already accepts `stock`, so the change is additive plumbing, not new design.
 - The additions are optional props; every existing call keeps its current behavior.
+- 2026-09-25: `model={null}` hides the model block (D5), `onViewSpecs` draws the `View specs >` link, and `actionLabel={null}` now removes the stepper along with the action. The on-hand count prop is removed; nothing else used it.
 - The alternative — a second card inside the feature — forks the design system, which constitution VIII forbids more seriously than a one-file overlap.
 
 Inventory (Parent H) renders a table, not cards, so the collision risk with the
