@@ -36,6 +36,7 @@ const rows = () =>
     .filter((li) => li.querySelector('button[aria-label^="View details"]'))
     .map((li) => ({
       id: li.querySelector('span').textContent.trim(),
+      items: li.querySelectorAll('span')[2]?.textContent.trim(),
       pill: li.querySelectorAll('span')[3]?.textContent.trim(),
     }));
 
@@ -69,6 +70,14 @@ const clickInPanel = (label) =>
     [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent.trim() === l).click();
   }, label);
 const closed = () => cdp.waitFor(() => !document.querySelector('[role="dialog"]'), 5000, 'the panel to close');
+// Review of #38: closing the cancel form unmounts the focused control, and
+// focus must neither sit on <body> nor Tab out to the page behind the scrim.
+const focusInDialog = () => cdp.evaluate(() => !!document.querySelector('[role="dialog"]')?.contains(document.activeElement));
+const pressTab = async () => {
+  for (const type of ['keyDown', 'keyUp']) {
+    await cdp.send('Input.dispatchKeyEvent', { type, key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+  }
+};
 const typeReason = async (text) => {
   await cdp.evaluate(() => document.querySelector('[role="dialog"] textarea').focus());
   await cdp.send('Input.insertText', { text });
@@ -160,6 +169,9 @@ check(p.invalid && p.pill === 'Pending Approval', 'a reason of only spaces is re
 await clickInPanel('Cancel');
 p = await cdp.evaluate(panel);
 check(p.buttons.includes('Cancel Request') && !p.buttons.includes('Confirm Cancellation'), 'Cancel backs out of the form');
+check(await focusInDialog(), 'backing out leaves focus inside the panel, not on the page (FR-002)');
+await pressTab();
+check(await focusInDialog(), 'and the next Tab stays inside the panel');
 
 // ---- AC4: success cancels, and the row follows ----
 console.log('\nAC4 — a reason cancels the request, and the row’s pill follows');
@@ -180,6 +192,9 @@ check(
   JSON.stringify(p.timeline),
 );
 check(!p.buttons.includes('Cancel Request'), 'Cancel Request is gone once cancelled');
+check(await focusInDialog(), 'focus stays inside the panel after a successful cancel (FR-002)');
+await pressTab();
+check(await focusInDialog(), 'and the next Tab stays inside the panel');
 check(
   p.text.includes('Reason for cancellation') && p.text.includes('duplicate request'),
   'the stored reason is read back under Reason for cancellation (BEN-70)',
@@ -187,6 +202,105 @@ check(
 const after = await cdp.evaluate(rows);
 check(after.find((r) => r.id === 'REQ-2026-1847')?.pill === 'Cancelled', 'the row’s pill reads Cancelled');
 check((await cdp.evaluate(() => location.pathname)) === '/requests', 'and nothing navigated');
+
+// ---- Story 2 AC5 / FR-008: the request changed while the panel was open ----
+// The seed never changes a request on its own, so the dev-only stub
+// (`?requests=changes`) approves it the moment the Employee confirms. A fresh
+// document also resets the in-memory seed, so REQ-2026-1847 is pending again.
+console.log('\nStory 2 AC5 / FR-008 — a cancel refused because the request changed says so and shows its current status');
+await go('/requests?requests=changes');
+await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the request rows');
+await openRow('REQ-2026-1847');
+await clickInPanel('Cancel Request');
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
+await typeReason('duplicate request');
+await clickInPanel('Confirm Cancellation');
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal note');
+p = await cdp.evaluate(panel);
+check(p.text.includes('can no longer be cancelled'), 'the panel says the request changed and can no longer be cancelled');
+check(p.pill === 'Approved', 'and shows its current status', `pill ${p.pill}`);
+check(!p.buttons.includes('Cancel Request') && !p.buttons.includes('Confirm Cancellation'), 'and offers no cancel any more');
+check((await cdp.evaluate(rows)).find((r) => r.id === 'REQ-2026-1847')?.pill === 'Approved', 'the row follows');
+check(await focusInDialog(), 'focus stays inside the panel');
+
+// ---- review of #38: the reload after a successful cancel fails ----
+console.log('\nA cancel that went through survives a failed reload');
+await go('/requests?requests=refresh-fails');
+await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the request rows');
+await openRow('REQ-2026-1847');
+await clickInPanel('Cancel Request');
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
+await typeReason('  duplicate request  ');
+await clickInPanel('Confirm Cancellation');
+await cdp.waitFor(
+  () => document.querySelector('[role="dialog"] h2')?.nextElementSibling?.textContent.trim() === 'Cancelled',
+  5000,
+  'the panel to show Cancelled',
+);
+p = await cdp.evaluate(panel);
+pass('the panel stays open and reads Cancelled');
+check(p.text.includes('duplicate request') && !p.text.includes('  duplicate'), 'the reason is read back, trimmed');
+check((await cdp.evaluate(rows)).find((r) => r.id === 'REQ-2026-1847')?.pill === 'Cancelled', 'the row reads Cancelled');
+check(
+  !(await cdp.evaluate(() => document.body.textContent.includes('could not be loaded'))),
+  'the list is not swapped for the failure notice',
+);
+check(await focusInDialog(), 'focus stays inside the panel');
+
+// ---- second review: refused, and the reload fails too ----
+console.log('\nA refused cancel whose reload fails does not claim to show a current status');
+await go('/requests?requests=changes-reload-fails');
+await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the request rows');
+await openRow('REQ-2026-1847');
+await clickInPanel('Cancel Request');
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
+await typeReason('duplicate request');
+await clickInPanel('Confirm Cancellation');
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal note');
+p = await cdp.evaluate(panel);
+check(p.text.includes('could not be cancelled') && !p.text.includes('shown above'), 'the note says it could not be cancelled, and nothing about a current status');
+check(p.pill === 'Pending Approval', 'the panel stays open on the status it last knew', `pill ${p.pill}`);
+check(await focusInDialog(), 'focus stays inside the panel');
+
+// ---- FR-011: distinct loading, empty and failure states ----
+console.log('\nFR-011 — My Requests has distinct loading, empty and failure states');
+const listState = () => ({
+  rows: document.querySelectorAll('button[aria-label^="View details"]').length,
+  loading: document.body.textContent.includes('Loading your requests'),
+  empty: document.body.textContent.includes('You have not submitted any requests yet'),
+  failed: document.body.textContent.includes('Your requests could not be loaded'),
+  tryAgain: [...document.querySelectorAll('main button')].some((b) => b.textContent.trim() === 'Try Again'),
+});
+
+await go('/requests?requests=loading');
+let l = await cdp.evaluate(listState);
+check(l.loading && !l.rows && !l.empty && !l.failed, 'while loading it says so, and shows no table, empty state or failure', JSON.stringify(l));
+await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the rows after loading');
+l = await cdp.evaluate(listState);
+check(!l.loading && l.rows === 6, 'then the rows replace it', JSON.stringify(l));
+
+await go('/requests?requests=empty');
+await cdp.waitFor(() => document.body.textContent.includes('You have not submitted any requests yet'), 5000, 'the empty state');
+l = await cdp.evaluate(listState);
+check(l.empty && !l.rows && !l.failed && !l.loading, 'no requests reads as empty, not as a failure', JSON.stringify(l));
+
+await go('/requests?requests=failing');
+await cdp.waitFor(() => document.body.textContent.includes('Your requests could not be loaded'), 5000, 'the failure notice');
+l = await cdp.evaluate(listState);
+check(l.failed && l.tryAgain && !l.rows && !l.empty, 'a failed load shows the notice with Try Again, not an empty list', JSON.stringify(l));
+await cdp.evaluate(() => [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === 'Try Again').click());
+await new Promise((r) => setTimeout(r, 300));
+l = await cdp.evaluate(listState);
+check(l.failed && l.tryAgain && !l.empty, 'Try Again retries, and a second failure still reads as a failure', JSON.stringify(l));
+
+// ---- the shared item summary guards blank and missing names ----
+console.log('\nThe Items cell drops blank names and shows a dash for none (shared summarizeItems)');
+await go('/requests?requests=blank-items');
+await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the request rows');
+const blanks = await cdp.evaluate(rows);
+const itemsOf = (id) => blanks.find((r) => r.id === id)?.items;
+check(itemsOf('REQ-2026-1805') === '—', 'a request with no item names shows the em dash, not an empty cell', `got "${itemsOf('REQ-2026-1805')}"`);
+check(itemsOf('REQ-2026-1842') === 'Monitor, Dock', 'a blank name is dropped before the summary and its count', `got "${itemsOf('REQ-2026-1842')}"`);
 
 cdp.close();
 console.log(failures ? `\n${failures} check(s) failed` : '\nall request-panel checks pass');

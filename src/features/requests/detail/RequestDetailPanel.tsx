@@ -1,5 +1,16 @@
-import { useState, type FormEvent } from 'react';
-import { Button, SidePanel, StatusPill, StatusTimeline, TableCard, TableHead, TextField } from '../../../shared/ui';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  Button,
+  SidePanel,
+  StatusPill,
+  StatusTimeline,
+  TABLE_ROW_PADDING_CLASS,
+  TableCard,
+  TableHead,
+  tableColumnStyle,
+  TextField,
+  type ColumnWidth,
+} from '../../../shared/ui';
 import type { CancelResult, EmployeeRequest } from './request-detail-types';
 import { requestTimeline } from './request-timeline';
 
@@ -19,6 +30,8 @@ const REFUSAL_COPY: Record<Exclude<CancelResult, { ok: true }>['refusal'], strin
   unavailable: 'This request could not be cancelled. Close the panel and try again.',
 };
 
+const QTY_WIDTH: ColumnWidth = '48px';
+
 export function RequestDetailPanel({
   request,
   onClose,
@@ -34,6 +47,17 @@ export function RequestDetailPanel({
   const [invalid, setInvalid] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
+  // Closing the cancel form unmounts the control that held focus. Put focus
+  // back on the panel's heading rather than leaving it on <body>, so a
+  // screen-reader user stays inside the dialog (FR-002).
+  const heading = useRef<HTMLHeadingElement>(null);
+  const refocus = useRef(false);
+  useEffect(() => {
+    if (!refocus.current) return;
+    refocus.current = false;
+    const active = document.activeElement;
+    if (!active || active === document.body) heading.current?.focus();
+  });
 
   const cancellable = request.status === 'Pending Approval';
   // BEN-67 / BEN-70: a stopped request reads back why. The `04.2 - Cancelled`
@@ -46,6 +70,7 @@ export function RequestDetailPanel({
         : null;
 
   const backOut = () => {
+    refocus.current = true;
     setConfirming(false);
     setReason('');
     setInvalid(false);
@@ -61,7 +86,8 @@ export function RequestDetailPanel({
     }
     setSubmitting(true);
     setRefusal(null);
-    const result = await onCancel(request.id, reason);
+    // Sent trimmed (plan D6), so no source has to trim it again.
+    const result = await onCancel(request.id, reason.trim());
     setSubmitting(false);
     if (result.ok) {
       backOut();
@@ -79,6 +105,7 @@ export function RequestDetailPanel({
     <form onSubmit={confirm} className="flex flex-col gap-12" noValidate>
       <TextField
         label="Reason for cancellation"
+        tone="danger"
         required
         autoFocus
         placeholder="e.g duplicate request..."
@@ -111,7 +138,9 @@ export function RequestDetailPanel({
       onClose={onClose}
       header={
         <>
-          <h2 className="type-section-title truncate text-ink-heading">{request.id}</h2>
+          <h2 ref={heading} tabIndex={-1} className="type-section-title truncate text-ink-heading outline-none">
+            {request.id}
+          </h2>
           <StatusPill status={request.status} />
         </>
       }
@@ -128,12 +157,18 @@ export function RequestDetailPanel({
           Items Requested
         </h3>
         <TableCard>
-          <TableHead cols={[['Item'], ['Qty', '48px']]} />
+          <TableHead cols={[['Item'], ['Qty', QTY_WIDTH]]} />
           <ul>
-            {request.lines.map((line) => (
-              <li key={line.description} className="flex items-center border-t border-line-default px-20 py-18">
-                <span className="flex-1 type-ui-bold text-ink-primary">{line.description}</span>
-                <span className="w-[48px] shrink-0 type-ui-bold tabular-nums text-ink-primary">{line.qty}</span>
+            {request.lines.map((line, i) => (
+              // Lines carry no id of their own, and a description need not be
+              // unique; the list never reorders, so position is stable.
+              <li key={i} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
+                <span style={tableColumnStyle()} className="type-ui-bold text-ink-primary">
+                  {line.description}
+                </span>
+                <span style={tableColumnStyle(QTY_WIDTH)} className="type-ui-bold tabular-nums text-ink-primary">
+                  {line.qty}
+                </span>
               </li>
             ))}
           </ul>

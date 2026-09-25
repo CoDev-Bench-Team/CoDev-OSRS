@@ -21,7 +21,7 @@ export interface EmployeeRequest {
   status: RequestStatus;
   /** The handover state the request went through, kept once it is set so a
    *  `Completed` request still names its route on the timeline (ADR-0007). */
-  handover?: 'For Delivery' | 'For Pickup';
+  handover?: 'For Delivery' | 'Ready for Pickup';
   approvedAt?: string;
   handedOverAt?: string;
   completedAt?: string;

@@ -32,8 +32,8 @@ Replace the `/requests` placeholder with a minimal My Requests table, and open a
 | Drawn node | Reached when status is… | Time |
 |------------|-------------------------|------|
 | Submitted | always | `submittedAt` |
-| Approved | `Approved`, `For Delivery`, `For Pickup`, `Completed` | `approvedAt` |
-| Handover (*For Delivery* or *For Pickup*, the state taken; *For Delivery/For Pickup* before then) | `For Delivery`, `For Pickup`, `Completed` | `handedOverAt` |
+| Approved | `Approved`, `For Delivery`, `Ready for Pickup`, `Completed` | `approvedAt` |
+| Handover (*For Delivery* or *Ready for Pickup*, the state taken; the drawn *For Delivery/For Pickup* before then) | `For Delivery`, `Ready for Pickup`, `Completed` | `handedOverAt` |
 | Complete | `Completed` | `completedAt` |
 
 `Cancelled` collapses to **Submitted → Cancelled** in slate, as `04.2 - Cancelled` draws it. `Rejected` takes the same shape in red; it isn't drawn, so it is logged in `docs/design-system/additions.md` §3e.
@@ -43,7 +43,7 @@ Replace the `/requests` placeholder with a minimal My Requests table, and open a
 Feature-local read model, not a backend contract:
 
 - `RequestLine`: `name` (for the list summary), `description` (for the panel), `qty`.
-- `EmployeeRequest`: `id`, `submittedAt`, `lines`, optional `noteToApprover`, `status`, optional `handover` (`For Delivery` \| `For Pickup`, kept once completed), optional `approvedAt` / `handedOverAt` / `completedAt`, optional `rejection: { reason, at }` and `cancellation: { reason, at }`.
+- `EmployeeRequest`: `id`, `submittedAt`, `lines`, optional `noteToApprover`, `status`, optional `handover` (`For Delivery` \| `Ready for Pickup`, kept once completed), optional `approvedAt` / `handedOverAt` / `completedAt`, optional `rejection: { reason, at }` and `cancellation: { reason, at }`.
 - `CancelResult`: `{ ok: true, request }` or `{ ok: false, refusal: 'status-changed' | 'reason-required' | 'unavailable' }`.
 - `EmployeeRequestSource`: `list(user)` returns only that Employee's requests; `cancel(user, id, reason)`.
 
@@ -57,16 +57,17 @@ The backend contract is linked from `specs/001-office-supplies-mvp/contracts/REA
 
 - `overlay/SidePanel.tsx`: a right-hand sheet over the existing `Backdrop` scrim, with a header slot and ✕. Closes on Esc and scrim click; traps focus and returns it on close.
 - `data-display/StatusTimeline.tsx`: the Figma `Status Timeline`. Nodes are reached, pending, cancelled (slate) or rejected (red), each with a time.
-- `forms/TextField.tsx`: the labelled input from the cancel form, with a required asterisk, placeholder, and invalid state announced through `aria-describedby`.
+- `forms/TextField.tsx`: a labelled one-row textarea — a long reason wraps; Enter submits, Shift+Enter breaks the line — with a required asterisk, placeholder, and invalid state announced through `aria-describedby`. `tone="danger"` is the cancel form's drawn pink block (redrawn 2026-09-25); the default `neutral` tone is a plain card, so a later non-destructive field does not inherit it.
 
 **Feature**
 
 - `src/features/requests/detail/request-detail-types.ts`: the read model and source interface above.
-- `src/features/requests/detail/seeded-employee-request-source.ts`: Maya's six requests from `04 - My Requests` (1847 Pending Approval, 1805 Approved, 1842 For Pickup, 1838 For Delivery, 1760 Rejected, 1733 Completed), with items and note from `04.1`. The Rejected row carries a placeholder reason, since the frame draws none. `cancel` refuses anything outside the signed-in Employee's own requests, and anything not `Pending Approval`. Stock restore is the backend's job, and the file says so.
+- `src/features/requests/detail/employee-request-source.ts`: picks the page's source — the seeded one today, a contract-backed one later. On the dev server only, `?requests=loading|empty|failing|blank-items|changes|refresh-fails|changes-reload-fails` wraps it in `dev/request-stub.ts`, which reaches the list's loading, empty and failure states (FR-011) and the refused-cancel (FR-008) and failed-reload paths the seed cannot. `import.meta.env.DEV` drops both from a production build.
+- `src/features/requests/detail/seeded-employee-request-source.ts`: Maya's six requests from `04 - My Requests` (1847 Pending Approval, 1805 Approved, 1842 Ready for Pickup, 1838 For Delivery, 1760 Rejected, 1733 Completed), with items and note from `04.1`. The Rejected row carries a placeholder reason, since the frame draws none. `cancel` refuses anything outside the signed-in Employee's own requests, and anything not `Pending Approval`. Stock restore is the backend's job, and the file says so.
 - `src/features/requests/detail/request-timeline.ts`: a pure mapping from request to timeline nodes (D5).
 - `src/features/requests/detail/RequestDetailPanel.tsx`: header and pill, Items Requested, Note to Approver, the stop reason (*Reason for cancellation* / *Reason for rejection*) in the same card style, Status timeline, and the cancel form. No confirm-receipt control.
 - `src/features/requests/history/MyRequestsPage.tsx`: the D1 stand-in. `PageHeader`, the five drawn columns, loading/empty/failure states, and the open panel.
-- `src/features/requests/format.ts`: date formatting and the item summary ("Laptop, Keyboard + 1 more"). The summary copies BEN-46's helper; dedupe once #36 merges.
+- `src/features/requests/format.ts`: date formatting, `NO_VALUE`, and the item summary ("Laptop, Keyboard + 1 more"). Since #36 merged, `summarizeItems(names, shown)` is the one helper for both screens: My Requests passes 2 and the Requests Queue 3, as each frame draws (`shown` is typed `2 | 3`). `formatDate` is shared the same way: the queue's SUBMITTED label uses it. It drops blank names and shows `NO_VALUE` for an empty list, the guard the queue's copy had.
 
 **App**
 
@@ -80,7 +81,7 @@ The backend contract is linked from `specs/001-office-supplies-mvp/contracts/REA
 2. The page loads the Employee's requests through `EmployeeRequestSource.list`.
 3. *View details* sets the open id in component state; the panel renders that request.
 4. Cancel Request opens the inline form. Confirm trims the reason; if empty, the form goes invalid and nothing is sent.
-5. Otherwise the page calls `source.cancel`, then reloads the list whether it succeeded or not, so both the panel and the row show the current status.
+5. Otherwise the page calls `source.cancel` with the trimmed reason, then reloads the list whether it succeeded or not, so both the panel and the row show the current status. If that reload fails, the page keeps the list it had — with the cancelled request in it when the cancel worked — so the panel stays open rather than being swapped for the failure notice. A `status-changed` refusal whose reload fails is reported as `unavailable`, because the panel cannot show the current status that refusal's copy promises.
 6. A refusal shows an inline note above the items.
 
 ## Project Structure
@@ -120,7 +121,7 @@ scripts/check-request-detail.mjs
 
 - `npm run dev`, then `npm run verify`: typecheck, lint, utilities/adherence, fidelity, pixels, a11y and responsive, shell, request detail, and build. Needs Node ≥ 22, because `scripts/cdp.mjs` uses the global `WebSocket`.
 - `scripts/check-shell.mjs`: an Employee on `/requests/:id` gets the role refusal for owned, unowned and missing ids; the Admin's deep link is unchanged.
-- `scripts/check-request-detail.mjs` proves the five acceptance criteria: open and close without navigating; Cancel Request only on Pending Approval; empty and whitespace reasons refused; a valid reason gives Cancelled in the panel pill, timeline and row pill, and is read back; only the Rejected row shows a rejection reason; no receipt control in any of the six seeded states.
+- `scripts/check-request-detail.mjs` proves the list's loading, empty and failure states (FR-011) through `?requests=loading|empty|failing`; the shared item summary's blank-name guard through `?requests=blank-items`; Story 2 AC5 (FR-008) through `?requests=changes`; that a cancel survives a failed reload through `?requests=refresh-fails`; and that a refusal whose reload fails does not claim a current status through `?requests=changes-reload-fails`. It also proves the five acceptance criteria: open and close without navigating; Cancel Request only on Pending Approval; empty and whitespace reasons refused; a valid reason gives Cancelled in the panel pill, timeline and row pill, and is read back; only the Rejected row shows a rejection reason; no receipt control in any of the six seeded states.
 - Manual: sign in as Maya and compare with Figma `04.1`, `04.2` and Cancelled at 1440px. Sign in as the Admin and confirm `/requests/REQ-2026-1847` still renders.
 
 No unit-test runner exists in this repository, so this feature adds no framework. The timeline mapping is a pure function, ready for unit coverage later.

@@ -45,6 +45,10 @@ Linear lifecycle: BEN-65 (E0, spec) → BEN-66 (E1, plan/tasks) → BEN-67 (E2, 
 - [x] T020 [BEN-71] `npm run verify`, scoped diff review, and PR #38 against `dev`
 - [x] T021 [BEN-65] [BEN-66] Record this feature's spec, plan and tasks — `specs/007-employee-request-panel/`
 - [x] T022 [US1] [US2] [BEN-67] [BEN-70] Read back the cancel or rejection reason on a stopped request, and check it — `src/features/requests/detail/`, `scripts/check-request-detail.mjs`, `docs/design-system/additions.md`
+- [x] T023 [US2] [BEN-70] Review of #38: keep the panel open when the reload after a cancel fails; send the reason trimmed; `TextField` gains `tone` (danger for the cancel form, neutral by default); a dev-only stub reaches FR-008 and the failed reload, and the gate checks both — `src/features/requests/`, `src/shared/ui/forms/TextField.tsx`, `src/shared/ui/gallery/Gallery.tsx`, `scripts/check-request-detail.mjs`
+- [x] T024 [US1] [US2] [BEN-70] Second review of #38: a gate for FR-011 (loading, empty, failure) through the dev-only stub, renamed `dev/request-stub.ts` with `?requests=`; a refusal whose reload fails reads as `unavailable`; the reason box grows with its text; `SidePanel` documents that `onClose` must unmount it — `src/features/requests/`, `src/shared/ui/forms/TextField.tsx`, `src/shared/ui/overlay/SidePanel.tsx`, `scripts/check-request-detail.mjs`
+- [x] T026 [BEN-71] Third review of #38: one `summarizeItems(names, shown)` and one `NO_VALUE` for My Requests and the Requests Queue (plan's dedupe after #36) — `src/features/requests/format.ts`, `src/features/requests/queue/queue-model.ts`, `src/features/requests/history/MyRequestsPage.tsx`
+- [x] T027 [BEN-71] Final review of #38: the queue's SUBMITTED label uses the shared `formatDate`; `summarizeItems` takes `shown: 2 | 3`; `?requests=blank-items` checks the summary guard on My Requests — `src/features/requests/format.ts`, `src/features/requests/queue/queue-model.ts`, `src/features/requests/detail/dev/request-stub.ts`, `scripts/check-request-detail.mjs`
 
 ## Dependencies
 
@@ -52,7 +56,7 @@ Linear lifecycle: BEN-65 (E0, spec) → BEN-66 (E1, plan/tasks) → BEN-67 (E2, 
 - T006 and T007 block T008–T012.
 - T011–T013 block T014–T016.
 - T014–T016 block T018–T020.
-- T021 and T022 were added after T020, when the sub-issues' descriptions were checked against the branch. T022 reopens files from T008, T009, T012 and T019.
+- T021 and T022 were added after T020, when the sub-issues' descriptions were checked against the branch. T022 reopens files from T008, T009, T012 and T019. T023 follows the review of #38 and reopens T006, T011, T012, T014 and T019; T024 follows the second review and reopens the same files.
 
 ## Parallel Opportunities
 

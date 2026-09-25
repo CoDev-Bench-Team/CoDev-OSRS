@@ -7,7 +7,8 @@
 
 > **Realigned 2026-09-24 to constitution 3.0.0 (BEN-114).** Written against
 > three roles and `For Release` / `Released`. Rebased onto BEN-114: the Admin is
-> the only other role, `For Delivery` / `For Pickup` are states, and this
+> the only other role, `For Delivery` / `For Pickup` are states (named
+> `For Delivery` / `Ready for Pickup` since constitution 3.0.1), and this
 > branch's own ADR-0007 is dropped in favour of `dev`'s, which records the same
 > decision (the Admin completes; no confirm-receipt).
 
@@ -71,7 +72,7 @@ An Employee is never offered a control to mark a request received or complete.
 - **FR-002**: The panel MUST close on ✕, Esc and a scrim click. It MUST hold focus while open and return focus to the control that opened it.
 - **FR-003**: The panel MUST show the request id, status pill, Items Requested (description and quantity per line), Note to Approver when present, and the status timeline.
 - **FR-003a**: A `Cancelled` request MUST read back its reason under *Reason for cancellation*, and a `Rejected` request under *Reason for rejection*.
-- **FR-004**: The timeline MUST map the seven states onto the drawn nodes as `plan.md` D5 specifies. The handover node MUST name the state the request took, `For Delivery` or `For Pickup`.
+- **FR-004**: The timeline MUST map the seven states onto the drawn nodes as `plan.md` D5 specifies. The handover node MUST name the state the request took, `For Delivery` or `Ready for Pickup` (constitution 3.0.1).
 - **FR-005**: Cancel Request MUST appear only when the status is `Pending Approval`.
 - **FR-006**: Confirm Cancellation MUST refuse a reason that is empty after trimming, without calling the source.
 - **FR-007**: A successful cancel MUST update the panel and the list row to `Cancelled`.

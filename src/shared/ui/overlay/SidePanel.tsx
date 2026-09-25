@@ -12,6 +12,10 @@ import { dismissPopovers } from './popover-layer';
  *
  *  It slides in from the right over a fading scrim and slides back out before
  *  `onClose` runs, so the caller unmounts it only once it has left the screen. */
+/** Well past the longest exit animation (`--motion-fast`, 120ms). Raise it if a
+ *  motion token ever outgrows it. */
+const EXIT_BACKSTOP_MS = 400;
+
 export function SidePanel({
   title,
   header,
@@ -19,10 +23,13 @@ export function SidePanel({
   children,
   footer,
 }: {
-  /** Accessible name, and the id the heading is labelled by. */
+  /** The dialog's accessible name, applied as `aria-label`. */
   title: string;
   /** What sits beside the close button — the request id and its pill. */
   header: ReactNode;
+  /** Called once the exit animation has ended. The caller MUST unmount the
+   *  panel here: until it does, the off-screen dialog still holds focus and
+   *  answers Esc and Tab. */
   onClose: () => void;
   children: ReactNode;
   /** Pinned to the bottom of the sheet, outside the scrolling body. */
@@ -52,7 +59,7 @@ export function SidePanel({
   });
   useEffect(() => {
     if (!leaving) return;
-    const backstop = window.setTimeout(finish, 400);
+    const backstop = window.setTimeout(finish, EXIT_BACKSTOP_MS);
     return () => window.clearTimeout(backstop);
   }, [leaving]);
 
@@ -76,10 +83,16 @@ export function SidePanel({
       if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) {
+      // Focus can leave the panel without a Tab: a focused control that
+      // unmounts drops it to <body>. Treat anywhere outside the panel like the
+      // panel itself, so the next Tab comes back in rather than reaching the
+      // page behind the scrim (aria-modal, FR-002).
+      const active = document.activeElement;
+      const outside = active === panel.current || !panel.current.contains(active);
+      if (e.shiftKey && (active === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (active === last || outside)) {
         e.preventDefault();
         first.focus();
       }

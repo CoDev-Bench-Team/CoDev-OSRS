@@ -6,14 +6,15 @@ import type { EmployeeRequest } from './request-detail-types';
  *
  *  The drawing reads Submitted → Approved → For Delivery/For Pickup → Complete,
  *  which is the state machine itself (ADR-0007): the third node is reached when
- *  the Admin sets `For Delivery` or `For Pickup`, and names whichever it was.
- *  Before that it reads the drawn "For Delivery/For Pickup".
+ *  the Admin sets `For Delivery` or `Ready for Pickup`, and names whichever it
+ *  was (constitution 3.0.1). Before that it reads the drawn "For Delivery/For
+ *  Pickup".
  *
  *  The stopped endings follow `04.2 - Cancelled`: the timeline collapses to
  *  Submitted and the ending. Rejected is not drawn and takes the same shape in
  *  red (docs/design-system/additions.md). */
-const APPROVED_OR_LATER = new Set<RequestStatus>(['Approved', 'For Delivery', 'For Pickup', 'Completed']);
-const HANDED_OVER = new Set<RequestStatus>(['For Delivery', 'For Pickup', 'Completed']);
+const APPROVED_OR_LATER = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup', 'Completed']);
+const HANDED_OVER = new Set<RequestStatus>(['For Delivery', 'Ready for Pickup', 'Completed']);
 
 export function requestTimeline(request: EmployeeRequest): TimelineNode[] {
   const submitted: TimelineNode = {
