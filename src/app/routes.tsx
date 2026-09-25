@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { NotFoundScreen } from '../shared/ui';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { RequireAccess } from '../features/auth/RequireAccess';
+import { CatalogPage } from '../features/catalog/CatalogPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
 import { MyRequestsPage } from '../features/requests/history/MyRequestsPage';
 import { useSession } from '../features/auth/session-context';
@@ -12,7 +13,6 @@ import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './d
 import { NavButton } from './NavButton';
 import {
   AssetsPlaceholder,
-  CatalogPlaceholder,
   HistoryPlaceholder,
   InventoryPlaceholder,
   RequestDetailPlaceholder,
@@ -69,7 +69,7 @@ export function AppRoutes() {
         }
       >
         <Route index element={<LandingRedirect />} />
-        <Route path={DESTINATIONS.catalog.path} element={guarded('catalog', <CatalogPlaceholder />)} />
+        <Route path={DESTINATIONS.catalog.path} element={guarded('catalog', <CatalogPage />)} />
         <Route path={DESTINATIONS.requests.path} element={guarded('requests', <MyRequestsPage />)} />
         <Route
           path={DESTINATIONS.requestDetail.path}

@@ -36,6 +36,20 @@ export type StockStatus = (typeof STOCK_STATUSES)[number];
 export const AVAILABILITIES = ['available', 'unavailable'] as const;
 export type Availability = (typeof AVAILABILITIES)[number];
 
+/** The design's `Inventory Status` component as the catalog uses it (2026-09-24
+ *  export): the stock band of one asset at one office, drawn on the squarer
+ *  8px chip. `02 - Catalog` and `02.1 - Catalog - View Specs` use it, and it
+ *  replaced the `In Stock` label with `Available`.
+ *
+ *  The same component also carries per-unit states — `Assigned`,
+ *  `In Storage`, `Reserved`, `Inactive` — for the unit register, which is out
+ *  of scope for the MVP (constitution VIII). They are not modelled here.
+ *
+ *  `StockStatus` above is a different vocabulary on a different pill, and the
+ *  Assets screen's chips still use it ("In stock / Low stock / Out of stock"). */
+export const INVENTORY_STATUSES = ['Available', 'Low in Stock', 'Out of Stock'] as const;
+export type InventoryStatus = (typeof INVENTORY_STATUSES)[number];
+
 /** Colour meaning: amber = waiting on a human · green = moving · red = stopped
  *  by a decision · purple = closed, done · slate = stopped without a decision ·
  *  pink / blue = handed over, by delivery / for pickup.

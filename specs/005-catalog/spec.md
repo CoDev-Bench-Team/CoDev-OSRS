@@ -1,0 +1,263 @@
+# Feature Specification: Catalog page (view stock + start request)
+
+**Feature Branch**: `rockyc/ben-42-p2spa-catalog-page-view-stock-start-request`
+**Linear**: [BEN-42](https://linear.app/bench-synergy-project/issue/BEN-42) (B0 = [BEN-51](https://linear.app/bench-synergy-project/issue/BEN-51))
+**Created**: 2026-09-22
+**Status**: Draft · **Amended**: 2026-09-25 (2026-09-22 design — see Session 2026-09-25)
+**Sources**: `02 - Catalog` and `02.1 - Catalog - View Specs` (2026-09-22 `.fig`; unchanged in the 2026-09-24 export), published Assets contract (`specs/001-office-supplies-mvp/contracts/README.md`), spec 001 US1/US2, `docs/process-flow.md`
+
+## Overview
+
+The Catalog is where every authenticated user sees what office supplies exist and
+how many are on hand, and where an Employee begins a request. It is the entry
+point to the pipeline described in `docs/process-flow.md`: nothing can be
+requested that is not encoded and in stock.
+
+This spec covers **reading** the catalog and **starting** a request. The request
+list drawer, its line-item editing, and submission are a separate feature
+(Parent C / BEN-43) and are out of scope here.
+
+## User Scenarios & Testing
+
+### User Story 1 — See what is in stock (Priority: P1)
+
+Any authenticated user, whatever their role, opens the catalog
+and sees each active item with its image, name, model, type, on-hand quantity,
+and a stock status. Nobody can edit stock from this page.
+
+**Why this priority**: Spec 001 FR-003 requires on-hand quantity to be visible
+before a request is submitted; every later story reads from this view.
+
+**Independent Test**: Sign in as each role, open the catalog, confirm the same
+item facts render and that no role sees an edit affordance.
+
+**Acceptance Scenarios**:
+
+1. **Given** encoded active items exist, **When** any authenticated user opens the catalog, **Then** each item shows its category, name, image and the stock status for the selected office.
+2. **Given** an item whose on-hand quantity is above its low-quantity threshold, **When** it renders, **Then** its stock status reads `Available`.
+3. **Given** an item whose on-hand quantity is at or below its low-quantity threshold but above zero, **When** it renders, **Then** its stock status reads `Low in Stock`.
+4. **Given** an item whose on-hand quantity is zero, **When** it renders, **Then** its stock status reads `Out of Stock`.
+5. **Given** any role, **When** the catalog renders, **Then** no control to change stock is present.
+
+### User Story 2 — Find an item (Priority: P1)
+
+A user narrows a long catalog by typing a search term and by selecting a type
+chip. The two filters combine.
+
+**Why this priority**: The catalog is the only route to a request; an unusable
+list blocks the pipeline.
+
+**Independent Test**: With several items encoded, search and chip-filter and
+assert the visible set.
+
+**Acceptance Scenarios**:
+
+1. **Given** items exist, **When** a user types a term matching an item name or model, **Then** only matching items remain visible.
+2. **Given** items of more than one type, **When** a user selects a type chip, **Then** only items of that type remain visible.
+3. **Given** a search term and a type chip are both active, **When** the list renders, **Then** only items satisfying both remain visible.
+4. **Given** an active filter combination that matches nothing, **When** the list renders, **Then** an empty state explains that no items match and offers to clear the filters.
+5. **Given** a chip is selected, **When** the user selects the all-items chip, **Then** the type filter is cleared and the search term is preserved.
+
+### User Story 3 — Employee starts a request (Priority: P1)
+
+An Employee chooses a quantity on an item and adds it to their request list.
+Every non-requesting role sees the same catalog without that action.
+
+**Why this priority**: This is the only entry to the request pipeline, and
+constitution II requires the action to authorize against the owning role.
+
+**Independent Test**: Sign in as Employee and add an item; sign in as every
+other seeded role and confirm the action is absent.
+
+**Acceptance Scenarios**:
+
+1. **Given** an Employee and an item with on-hand quantity ≥ 1, **When** they view the card, **Then** an add-to-request-list action is present.
+2. **Given** any non-Employee role, **When** they view the same card, **Then** the add action and its quantity stepper are absent and the rest of the card is unchanged. *(Amended 2026-09-25: a stepper with no action to count toward is removed with it.)*
+3. **Given** an Employee and an item with on-hand quantity 0, **When** they view the card, **Then** the add action is present but disabled and labelled as out of stock.
+4. **Given** an Employee on an item with on-hand quantity N, **When** they raise the requested quantity, **Then** it cannot exceed N and cannot fall below 1.
+5. **Given** an Employee adds an item, **When** the action completes, **Then** the item is recorded in their pending request list and the catalog's on-hand quantity is unchanged.
+
+### User Story 4 — Know when the catalog cannot be shown (Priority: P2)
+
+The page distinguishes loading, empty, and failed states rather than showing a
+blank grid.
+
+**Why this priority**: Required for a demonstrable page, but it does not block
+the pipeline itself.
+
+**Acceptance Scenarios**:
+
+1. **Given** the catalog is being fetched, **When** the page renders, **Then** a loading state is shown.
+2. **Given** no active items are encoded at all, **When** the page renders, **Then** an empty state explains that no supplies have been encoded yet.
+3. **Given** the catalog cannot be retrieved, **When** the page renders, **Then** an error state is shown with a way to retry, and no partial or stale grid is presented as current.
+
+### Edge Cases
+
+- An item's on-hand quantity drops to zero while an Employee has it open: the add action must reflect the refreshed quantity once the page reloads or the add is refused; the catalog never presents a stale count as current.
+- An item has no image: the card still renders with a neutral placeholder.
+- An item's name or model is long enough to overflow the card: text is clamped, not allowed to break the grid.
+- An inactive item exists: it does not appear in the catalog at all.
+- A type value appears in the data that has no chip: the item is still reachable via search and via the all-items chip.
+- A user without a session reaches `/catalog` directly: the existing route guard governs; this feature adds no new access path.
+
+## Requirements
+
+### Functional Requirements
+
+- **FR-001**: System MUST show the catalog at `/catalog` to every authenticated role.
+- **FR-002**: System MUST display, per active item, the item's category, name, image and stock status for the selected office. *(Amended 2026-09-25: the on-hand number and model are no longer drawn on the card — D1, D5.)*
+- **FR-003**: System MUST derive a stock status of `Available`, `Low in Stock`, or `Out of Stock` from the item's **Available** quantity at the selected office and its low-stock threshold, and display it on the design's `Inventory Status` chip (D10).
+- **FR-004**: System MUST NOT offer any control that changes stock on this page, for any role.
+- **FR-005**: System MUST filter the visible items by a free-text search over item name, model and category.
+- **FR-006**: System MUST filter the visible items by category, offered as a fixed chip row — `All supplies` then every value of the contract's category enum, in its order (D6).
+- **FR-007**: System MUST apply search and type filters together.
+- **FR-008**: System MUST present the add-to-request-list action only to users in the Employee role.
+- **FR-009**: System MUST disable the add action for an item with zero Available at the selected office.
+- **FR-010**: System MUST bound the requested quantity for an item between 1 and its Available quantity at the selected office.
+- **FR-011**: System MUST distinguish loading, empty-catalog, no-results, and retrieval-failure states.
+- **FR-012**: System MUST NOT display or require any item field the published Assets contract does not expose, and MUST NOT invent routes, payloads, or error codes.
+- **FR-013**: System MUST leave stock unchanged when an item is added to a request list; stock moves only on submit, per `docs/process-flow.md`.
+- **FR-014**: System MUST offer an office selector beside the search field, opening on the signed-in user's home office, and MUST re-read availability when it changes. An Employee's add action is offered only while their own office is selected; other offices are browsable read-only (spec 001 Out of Scope: requesting another office's stock).
+- **FR-015**: System MUST open a **View Specs** side panel from each card's `View specs >`, showing Item Name with its stock pill, only the specification rows the item's category defines (spec 001 FR-002a) and has values for, Description when present, and the selected Office. For an Employee the panel carries the card's own add action and quantity.
+
+### Key Entities
+
+- **Catalog item**: An active asset with name, category, model, description, image, category-dependent specs (RAM, Storage, Processor, Graphics, Operating System), Available at the selected office, and a low-stock threshold, as published by the Assets contract.
+- **Request list entry**: An item plus a requested quantity, held for the Employee until the request is submitted. Owned by Parent C; this feature only appends to it.
+
+## Assumptions
+
+Recorded rather than asked, per the decisions in `## Clarifications`.
+
+- Any authenticated role may read the catalog; only Employee may start a request (ARCHITECT.md §7).
+- Role language here is deliberately written by *count-free* description — "every authenticated role", "non-Employee" — rather than by naming Approver and Supply Admin. See the note below.
+- The low-stock threshold published as `lowQtyAlert` is the boundary for `Low in Stock`.
+- The chip row is the contract's category enum, not the categories present in the returned items (D6).
+- The catalog reflects API state after load or after a successful mutation; it is not a live socket feed (spec 001 assumption, unchanged).
+
+## Out of Scope
+
+- The request list drawer, its editing, and request submission (Parent C / BEN-43).
+- Inventory encoding and editing (Parent H / BEN-48).
+- Requesting another office's stock (spec 001 Out of Scope). The selector browses it; it does not request it.
+- Any write to inventory.
+
+## Success Criteria
+
+- **SC-001**: A tester signed in as an Employee can find an item by search and by type chip, set a quantity within stock, and add it to their request list, without stock changing.
+- **SC-002**: A tester signed in as each non-Employee role sees identical item facts and no add action.
+- **SC-003**: For items above, at, and below the low-quantity threshold, the three stock statuses render correctly, and a zero-quantity item's add action is disabled.
+- **SC-004**: Loading, empty-catalog, no-results, and failure states are each reachable and visually distinct.
+- **SC-005**: No field rendered on the catalog is absent from the published Assets contract.
+
+## Clarifications
+
+### Session 2026-09-25 — Amendment
+
+The page shipped in PR #35 was built against the pre-2026-09-22 UI kit. The
+project owner asked for it to follow `02 - Catalog` and `02.1 - Catalog - View
+Specs` as the 2026-09-22 export draws them — already diffed in
+[drift-2026-09-22 §4c, §8, §9](../../docs/design-system/drift-2026-09-22.md) and
+unchanged in the 2026-09-24 re-export (neither frame was edited after 09-18).
+Constitution I requires the change to be recorded here, not applied silently.
+
+- Q: Keep a generic card with a model select? → A: **No.** One card is one asset; the name is the specific item and there is no model control (D5).
+- Q: Office selector beside the search? → A: **Yes**, per the design and BEN-42's acceptance; stock is per office (constitution 3.0.0 III). D3 is withdrawn.
+- Q: Which chips? → A: The full design row, which is the contract's category enum (D6). D2 is withdrawn.
+- Q: `View specs >` panel? → A: **Yes**, on the shared `SidePanel` from PR #38 (BEN-45) rather than a second sheet.
+- Q: Header spacing and subtitle? → A: As drawn: 34px below the top bar, and the two-sentence subtitle (D9).
+- Q: The 2026-09-24 export relabels the card's pill `Available` (was `In Stock`). Follow it? → A: **Yes** (D10, [drift-2026-09-24](../../docs/design-system/drift-2026-09-24.md)).
+- **Decided here, flagged for the owner:** an Employee browsing an office other than their own sees that office's stock read-only — the action reads `Your office only`. Spec 001 puts requesting another office's stock out of scope, and the design draws no rule for it (FR-014).
+
+### Session 2026-09-22
+
+> **Partly superseded by Session 2026-09-25.** The first two answers below (on-hand number; chips from `type`) no longer hold.
+
+
+Four decisions were put to the project owner, who directed the work to proceed
+on the recommended option in each case. Recorded here because constitution I
+requires decisions that shape behavior to live in the spec, not in chat.
+
+- Q: The card shows a binary Available/Unavailable pill, but FR-003 requires the on-hand number and the contract ships `quantity` + `lowQtyAlert`. What should it show? → A: **The on-hand number plus the three-state stock status** (`In Stock` / `Low Stock` / `Out of Stock`) already defined in spec 002, derived from quantity against the threshold. See drift note D1.
+- Q: The chips filter by the mock's `category`, which no contract exposes. What drives them? → A: **The contract's `type` values.** `category` is dropped as stale UI-kit drift, per BEN-42's own instruction. See drift note D2.
+- Q: New spec slug, or extend spec 001 US1/US2? → A: **New slug `specs/005-catalog/`**, matching 002/003/004 and keeping the parallel page PRs independent.
+- Q: Base the branch on `dev`, where `contracts/README.md` still reads "pending"? → A: **Stack on the contract commit** so the spec's cited source-of-truth exists for reviewers.
+
+## Design drift — raised for the designer
+
+> **Status 2026-09-25.** D1–D4 were written against the pre-09-22 kit. D1's
+> on-hand number is withdrawn — the 09-22 card draws the pill only, and the
+> stepper still bounds the quantity to what is available. D2 and D3 are
+> withdrawn: the contract now publishes `category` (with the design's enum) and
+> a `location`-scoped availability read. D4 is superseded by D8. D5–D9 are new.
+
+Consistent with `docs/design-system/drift-2026-09-15.md`. None of these are
+invented behavior; each is a conflict between the checked-in mock and the
+published contract, resolved in the contract's favour as BEN-42 directs.
+
+- **D1 — Availability pill → stock status.** The drawn card carries a two-state
+  `available` / `unavailable` pill and no on-hand number. Spec 001 FR-003
+  requires the number, and the contract publishes `quantity` and `lowQtyAlert`,
+  which is exactly the three-state `StockStatus` vocabulary spec 002 already
+  shipped. The card gains the count and the three-state pill. **Needs designer
+  confirmation of the drawn treatment.**
+- **D2 — `category` → `type`.** The mock groups by four invented categories
+  (Office Supplies, Devices, Accessories, Audio). The contract has no
+  `category`; it has `type`. Rendering `category` would invent a field, which
+  constitution VII forbids. Chips now derive from `type`. **The Figma chip row
+  should be re-exported against the contract's type values.**
+- **D3 — `location` unsurfaced.** The contract carries an office enum (Cebu,
+  Bacolod, Makati, Pasig, Davao) that the catalog screen never draws, and
+  multi-warehouse is a product non-goal. The catalog therefore shows a single
+  pooled quantity. **If stock is genuinely per-office, the MVP's inventory
+  model — not this page — is what needs revisiting.**
+- **D4 — `specs[]` unsurfaced.** The contract allows arbitrary key/value specs.
+  The drawn card has no slot for them. Left off rather than invented.
+- **D5 — the card is the option.** Every card in `02 - Catalog` overrides the
+  `Model` label and select to hidden and names the specific item ("Dell
+  Latitude 5440"). `SupplyCard` gains `model={null}` for this; its default
+  render (the gallery's and the fidelity gates') is unchanged.
+- **D6 — `WiFI` vs `Wifi`.** The design's chip reads `WiFI`; the contract's
+  category enum says `Wifi`. The SPA renders the contract's value. **Flagged.**
+- **D7 — `Ortigas`.** The contract's `location` enum now says `Ortigas`,
+  matching the design, so the catalog's office list does too. The shell's
+  `Office` type (`src/features/auth/types.ts`) still says `Pasig`. A user whose
+  home office is `Pasig`, or who has none, opens on the first office and is
+  offered no request action anywhere: the gate fails closed rather than opening
+  every office (FR-014). Contract conflict 2 in
+  `specs/001-office-supplies-mvp/contracts/README.md` is closed on the contract
+  side as of 2026-09-25; the shell's type still has to follow.
+- **D8 — Monitor spec rows.** FR-002a gives no rule for Monitor (no Add Asset
+  frame draws it). The card draws a model for it, so it is treated like
+  Headset: Model only.
+- **D9 — two-sentence subtitle.** The design's subtitle is two sentences with a
+  period; `PageHeader`'s convention is one sentence with none. The design is
+  followed on this page; the shell's shorter `purpose` for `/catalog` is left
+  as it is. The design's `View specs >` link is drawn in the `Link` style
+  (`#2d5fa3`) the text resolves to, not the cached black (drift §9).
+- **D10 — `Available`, not `In Stock`.** The 2026-09-24 export relabels the
+  `Inventory Status` component the card and panel instance: `Available` /
+  `Low in Stock` / `Out of Stock`, on the 8px chip rather than the round pill.
+  The SPA adds that vocabulary alongside `StockStatus`, which the Assets chips
+  still use. See [drift-2026-09-24 §9](../../docs/design-system/drift-2026-09-24.md).
+  The remaining differences in drift-2026-09-24 §9 (two reds, eyebrow and
+  `Ink-900` colours) wait on the designer or the re-vendor.
+
+## Constitution 3.0.0 — role model
+
+This spec was written against constitution 2.0.0, which required three human
+roles. Constitution **3.0.0** (2026-09-22, [ADR-0005](../../docs/adr/0005-two-role-model.md))
+supersedes that with two: **Employee** and **Admin**.
+
+Nothing in this feature's behavior changes. The catalog has only ever asked one
+question — *is this the requesting Employee?* — and `employee` is a role in both
+models. The gate in `CatalogItemCard` is unchanged and forward-compatible.
+
+What changed is the wording: role references above now describe access by
+position ("every authenticated role", "non-Employee") instead of enumerating
+Approver and Supply Admin, so this spec stays true whichever model the SPA is
+running.
+
+**The SPA has migrated** (BEN-114, merged to `dev` 2026-09-24): the seeded
+roles are now Employee and Admin, and SC-002 was re-verified against the Admin.
+The feature needed no code change for it.

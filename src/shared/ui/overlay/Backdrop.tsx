@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { dismissPopovers } from './popover-layer';
+import { useScrollLock } from './scroll-lock';
 
 /** The modal scrim — 50% black, the only transparency in the file besides the
  *  card shadow and the four status tints. No blur: the source never uses
@@ -9,6 +10,7 @@ import { dismissPopovers } from './popover-layer';
  *  Dismisses any open popover on mount, so a dropdown left open elsewhere does
  *  not hover over the tint. */
 export function Backdrop({ children, className }: { children?: ReactNode; className?: string }) {
+  useScrollLock();
   useEffect(() => {
     dismissPopovers();
   }, []);

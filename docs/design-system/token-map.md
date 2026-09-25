@@ -44,10 +44,11 @@ source name could not survive the port intact.
 
 ## Additions
 
-Thirteen tokens exist that the vendored source does not define. All are recorded
-in `additions.md`. The last five came from the 2026-09-15 `.fig` re-export
-(`drift-2026-09-15.md`), which gave `Completed` a purple of its own and added
-`Cancelled`.
+Twenty-five tokens exist that the vendored source does not define. Five came
+from the 2026-09-15 `.fig` re-export (`drift-2026-09-15.md`), which gave
+`Completed` a purple of its own and added `Cancelled`; four from the Requests
+Queue's pagination (drift-2026-09-24 §7); and four from the Catalog's
+`Low in Stock` pill (drift-2026-09-24 §9).
 
 | Token | Value | Why |
 |-------|-------|-----|
@@ -68,6 +69,9 @@ in `additions.md`. The last five came from the 2026-09-15 `.fig` re-export
 | `--color-osrs-neutral-400` | `rgb(147,147,147)` | `pagination result per page`'s `state=active` ring (the open select). |
 | `--color-osrs-neutral-800` | `rgb(49,49,49)` | The pagination ink and the range label (`1-50 of 1,250`). |
 | `--color-status-cancelled-bg` / `-fg` | `var(--color-osrs-ink-tint)` / `var(--color-osrs-ink-700)` | Semantic alias for `Cancelled`. |
+| `--color-osrs-amber-600` | `rgb(180,116,14)` | The file's `Status/Pending Approval` colour style (`#b4740e`), bound by `Inventory Status / Low in stock`'s label. Distinct from the vendored `--osrs-amber-700` (`#a15c00`), which the round stock pill keeps. Added 2026-09-25 for the Catalog ([drift-2026-09-24 §9](drift-2026-09-24.md)). **Fails AA on its tint (3.44)** — additions.md §4.1. |
+| `--color-osrs-amber-tint` | `rgba(180,116,14,0.1)` | Its 10% fill, following the `--osrs-*-tint` convention. |
+| `--color-status-low-bg` / `-fg` | the amber pair | Semantic alias for `Low in Stock` on the `Inventory Status` chip. |
 
 ## Every token
 

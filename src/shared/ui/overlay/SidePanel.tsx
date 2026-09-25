@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { dismissPopovers } from './popover-layer';
+import { useScrollLock } from './scroll-lock';
 
 /** The right-hand sheet the design draws over My Requests (`04.1`, `04.2`):
  *  full height, white, on the same 50% scrim as a modal.
@@ -36,6 +37,8 @@ export function SidePanel({
   footer?: ReactNode;
 }) {
   const panel = useRef<HTMLDivElement>(null);
+  // The page behind the scrim stays put while the panel is open.
+  useScrollLock();
   // The latest handler, read by the listeners below; they are installed once,
   // so focus is taken and returned exactly once per opening.
   const close = useRef(onClose);
