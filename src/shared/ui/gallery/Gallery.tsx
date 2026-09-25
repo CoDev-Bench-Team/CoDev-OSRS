@@ -68,6 +68,7 @@ const SIZES = [
   ['text-11', '11px', 'caption, eyebrow'],
   ['text-11-5', '11.5px', 'availability chip'],
   ['text-12', '12px', 'metadata, pills'],
+  ['text-12-5', '12.5px', 'status timeline label'],
   ['text-13', '13px', 'UI rows — the dominant size'],
   ['text-14', '14px', 'body'],
   ['text-15', '15px', 'subhead'],

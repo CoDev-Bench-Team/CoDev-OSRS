@@ -49,7 +49,7 @@ const panel = () => {
     buttons,
     text: d.textContent,
     timeline: [...d.querySelectorAll('ol li')].map((li) => [li.dataset.state, li.querySelector('span span')?.textContent.trim()]),
-    invalid: d.querySelector('input')?.getAttribute('aria-invalid') === 'true',
+    invalid: d.querySelector('textarea')?.getAttribute('aria-invalid') === 'true',
     focusInside: d.contains(document.activeElement),
   };
 };
@@ -70,7 +70,7 @@ const clickInPanel = (label) =>
   }, label);
 const closed = () => cdp.waitFor(() => !document.querySelector('[role="dialog"]'), 5000, 'the panel to close');
 const typeReason = async (text) => {
-  await cdp.evaluate(() => document.querySelector('[role="dialog"] input').focus());
+  await cdp.evaluate(() => document.querySelector('[role="dialog"] textarea').focus());
   await cdp.send('Input.insertText', { text });
 };
 
@@ -146,7 +146,7 @@ for (const row of initial) {
 console.log('\nAC3 — Confirm Cancellation is refused with an empty reason');
 await openRow('REQ-2026-1847');
 await clickInPanel('Cancel Request');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] input'), 5000, 'the cancel form');
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
 await clickInPanel('Confirm Cancellation');
 p = await cdp.evaluate(panel);
 check(p.invalid, 'an empty reason is marked invalid');
@@ -164,7 +164,7 @@ check(p.buttons.includes('Cancel Request') && !p.buttons.includes('Confirm Cance
 // ---- AC4: success cancels, and the row follows ----
 console.log('\nAC4 — a reason cancels the request, and the row’s pill follows');
 await clickInPanel('Cancel Request');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] input'), 5000, 'the cancel form');
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
 await typeReason('duplicate request');
 await clickInPanel('Confirm Cancellation');
 await cdp.waitFor(

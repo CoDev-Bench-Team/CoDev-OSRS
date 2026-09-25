@@ -27,14 +27,14 @@ export function StatusTimeline({ nodes }: { nodes: readonly TimelineNode[] }) {
       {nodes.map((node, i) => {
         const reached = node.state !== 'pending';
         return (
-          <li key={node.label} className="relative flex gap-12 pb-16 last:pb-0" data-state={node.state}>
+          <li key={node.label} className="relative flex gap-12 pb-14 last:pb-0" data-state={node.state}>
             {i < nodes.length - 1 ? (
               <span className="absolute top-14 bottom-0 left-[5px] w-1 bg-line-default" aria-hidden="true" />
             ) : null}
             <span className={`relative mt-2 h-12 w-12 shrink-0 rounded-circle ${DOT[node.state]}`} aria-hidden="true" />
-            <span className="flex flex-col gap-5">
-              <span className={`type-ui-bold ${reached ? 'text-ink-primary' : 'text-ink-muted'}`}>{node.label}</span>
-              <span className="type-meta text-ink-secondary">{reached ? (node.when ?? '—') : 'Pending'}</span>
+            <span className="flex flex-col gap-4">
+              <span className={`font-sans text-12-5 font-bold leading-tight ${reached ? 'text-ink-primary' : 'text-ink-muted'}`}>{node.label}</span>
+              <span className="font-sans text-12 font-medium leading-tight text-ink-secondary">{reached ? (node.when ?? '—') : 'Pending'}</span>
             </span>
           </li>
         );

@@ -131,7 +131,7 @@ export function RequestDetailPanel({
           <TableHead cols={[['Item'], ['Qty', '48px']]} />
           <ul>
             {request.lines.map((line) => (
-              <li key={line.description} className="flex items-center border-t border-line-default px-20 py-14">
+              <li key={line.description} className="flex items-center border-t border-line-default px-20 py-18">
                 <span className="flex-1 type-ui-bold text-ink-primary">{line.description}</span>
                 <span className="w-[48px] shrink-0 type-ui-bold tabular-nums text-ink-primary">{line.qty}</span>
               </li>
@@ -141,21 +141,21 @@ export function RequestDetailPanel({
       </section>
 
       {request.noteToApprover ? (
-        <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-14 shadow-card">
+        <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-20 shadow-card">
           <h3 className="type-ui-bold text-ink-primary">Note to Approver</h3>
           <p className="type-meta text-ink-body">{request.noteToApprover}</p>
         </section>
       ) : null}
 
       {stopped ? (
-        <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-14 shadow-card">
+        <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-20 shadow-card">
           <h3 className="type-ui-bold text-ink-primary">{stopped.label}</h3>
           <p className="type-meta text-ink-body">{stopped.reason}</p>
         </section>
       ) : null}
 
-      <section className="flex flex-col gap-12" aria-labelledby="request-status">
-        <h3 id="request-status" className="type-eyebrow uppercase text-ink-secondary">
+      <section className="flex flex-col gap-18" aria-labelledby="request-status">
+        <h3 id="request-status" className="font-sans text-14 font-bold leading-tight uppercase text-ink-secondary">
           Status
         </h3>
         <StatusTimeline nodes={requestTimeline(request)} />

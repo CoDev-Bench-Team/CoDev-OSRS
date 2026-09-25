@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { dismissPopovers } from './popover-layer';
 
 /** The right-hand sheet the design draws over My Requests (`04.1`, `04.2`):
@@ -8,7 +8,10 @@ import { dismissPopovers } from './popover-layer';
  *  moves in on open and is held there, Esc and a click on the scrim close it,
  *  and on close focus returns to whatever opened it — the row's View details
  *  link — so a keyboard user lands back where they were. Closing never
- *  navigates: the panel has no address of its own (spec 003, 2026-09-23). */
+ *  navigates: the panel has no address of its own (spec 003, 2026-09-23).
+ *
+ *  It slides in from the right over a fading scrim and slides back out before
+ *  `onClose` runs, so the caller unmounts it only once it has left the screen. */
 export function SidePanel({
   title,
   header,
@@ -33,6 +36,26 @@ export function SidePanel({
     close.current = onClose;
   });
 
+  // Every way of closing — ✕, Esc, the scrim — starts the exit animation;
+  // `onClose` runs when it ends. The timer is a backstop in case no
+  // `animationend` arrives, so the panel can never get stuck open.
+  const [leaving, setLeaving] = useState(false);
+  const leave = useRef(() => {});
+  const done = useRef(false);
+  const finish = () => {
+    if (done.current) return;
+    done.current = true;
+    close.current();
+  };
+  useLayoutEffect(() => {
+    leave.current = () => setLeaving(true);
+  });
+  useEffect(() => {
+    if (!leaving) return;
+    const backstop = window.setTimeout(finish, 400);
+    return () => window.clearTimeout(backstop);
+  }, [leaving]);
+
   useEffect(() => {
     dismissPopovers();
     const opener = document.activeElement as HTMLElement | null;
@@ -41,7 +64,7 @@ export function SidePanel({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        close.current();
+        leave.current();
         return;
       }
       if (e.key !== 'Tab' || !panel.current) return;
@@ -70,21 +93,28 @@ export function SidePanel({
 
   return (
     <div className="fixed inset-0 z-backdrop">
-      <div className="absolute inset-0 bg-backdrop" aria-hidden="true" onClick={() => close.current()} />
+      <div
+        className={`absolute inset-0 bg-backdrop ${leaving ? 'animate-fade-out pointer-events-none' : 'animate-fade-in'}`}
+        aria-hidden="true"
+        onClick={() => leave.current()}
+      />
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="absolute inset-y-0 right-0 z-dialog flex w-full max-w-[400px] flex-col bg-surface-card outline-none"
+        onAnimationEnd={(e) => {
+          if (leaving && e.target === e.currentTarget) finish();
+        }}
+        className={`absolute inset-y-0 right-0 z-dialog flex w-full max-w-[400px] flex-col bg-surface-card outline-none ${leaving ? 'animate-sheet-out' : 'animate-sheet-in'}`}
       >
         <div className="flex items-center gap-12 border-b border-line-default px-20 py-18">
           <div className="flex min-w-0 flex-1 items-center gap-10">{header}</div>
           <button
             type="button"
             aria-label="Close"
-            onClick={() => close.current()}
+            onClick={() => leave.current()}
             className="inline-flex h-touch-target w-touch-target shrink-0 cursor-pointer items-center justify-center rounded-8 border-none bg-transparent text-ink-strong transition-osrs hover:text-ink-secondary"
           >
             <svg viewBox="0 0 24 24" className="h-20 w-20" aria-hidden="true">

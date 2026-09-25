@@ -1,19 +1,23 @@
-import { useId, type InputHTMLAttributes } from 'react';
+import { useId, type KeyboardEvent, type TextareaHTMLAttributes } from 'react';
 
-/** The labelled input from the cancel form (`04.2 - Cancel Request`).
+/** The labelled reason box from the cancel form (`04.2 - Cancel Request`).
  *
- *  `required` draws the asterisk the file uses; `invalid` is the pink block the
- *  file draws around the field, plus the message that says why, announced to a
- *  screen reader through `aria-describedby`. Validation itself is the caller's —
- *  this only shows the result. */
+ *  The file draws it as a pink block — red label, red outline — around a white
+ *  box whose placeholder sits at the top, so the box is a textarea that wraps a
+ *  long reason. Enter still submits the form, as a one-line field would;
+ *  Shift+Enter breaks the line. `required` draws the asterisk; `invalid` rings
+ *  the box in red and adds the message that says why, announced to a screen
+ *  reader through `aria-describedby`. Validation itself is the caller's — this
+ *  only shows the result. */
 export function TextField({
   label,
   required,
   invalid,
   message,
   className,
+  onKeyDown,
   ...rest
-}: Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label: string;
   required?: boolean;
   invalid?: boolean;
@@ -21,21 +25,28 @@ export function TextField({
 }) {
   const id = useId();
   const messageId = `${id}-message`;
+  const submitOnEnter = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    onKeyDown?.(e);
+    if (e.defaultPrevented || e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    e.currentTarget.form?.requestSubmit();
+  };
   return (
     <div
-      className={`flex flex-col gap-8 rounded-8 p-12 ring-default ${invalid ? 'bg-status-rejected-bg ring-brand' : 'bg-surface-card'} ${className ?? ''}`}
+      className={`flex flex-col gap-12 rounded-10 bg-status-rejected-bg p-20 ring-brand-alt ${className ?? ''}`}
     >
-      <label htmlFor={id} className={`type-ui-bold ${invalid ? 'text-status-rejected-fg' : 'text-ink-strong'}`}>
+      <label htmlFor={id} className="type-subhead text-brand-primary-alt">
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </label>
-      <input
+      <textarea
         id={id}
-        type="text"
+        rows={1}
         required={required}
         aria-invalid={invalid || undefined}
         aria-describedby={invalid && message ? messageId : undefined}
-        className="h-control-height-md w-full appearance-none rounded-8 border-none bg-surface-card px-12 font-sans text-13 text-ink-primary ring-default outline-none transition-osrs placeholder:text-ink-muted focus:ring-brand"
+        onKeyDown={submitOnEnter}
+        className={`min-h-[58px] w-full resize-none appearance-none rounded-8 border-none bg-surface-card px-14 py-14 font-sans text-14 text-ink-primary outline-none transition-osrs placeholder:text-ink-muted focus:ring-brand ${invalid ? 'ring-brand' : 'ring-default'}`}
         {...rest}
       />
       {invalid && message ? (
