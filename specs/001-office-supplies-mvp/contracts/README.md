@@ -34,7 +34,7 @@ SPA forms MUST map each `errors[].pointer` to the matching input and show `detai
 
 ## Assets create / update fields (reference)
 
-From published `CreateAssetDto` / `UpdateAssetDto` (see Swagger). Catalog and Inventory UI MUST align with Figma Asset/Catalog screens **and** these fields — do not invent extras.
+From published `CreateAssetDto` / `UpdateAssetDto` as read from Swagger on **2026-09-24**, after backend PR #87 (BEN-20). Catalog and Inventory UI MUST align with Figma Asset/Catalog screens **and** these fields — do not invent extras.
 
 **Re-read from the live Swagger 2026-09-25** (BEN-42). The DTO has changed since
 this table was first written; the previous `type`, `location`, `specs[]` and
@@ -45,16 +45,17 @@ this table was first written; the previous `type`, `location`, `specs[]` and
 | `imageBase64` | Optional; base64 image, may include data-URI prefix. Nullable on update |
 | `name` | Required on create |
 | `category` | Required on create. Enum: Laptop, Headset, Monitor, Phone, UPS, Mice, **Wifi**, Type C Hub, Other Devices. Replaces `type` |
-| `model` | Required on create. Brand / model string |
+| `model` | Required on create, **for every category** — see conflict 4 |
 | `description` | Optional free text |
-| `ram` · `storage` · `processor` · `graphics` · `operatingSystem` | Optional spec strings. Replace the `specs[]` key/value list |
-| `lowQtyAlert` | Low-stock threshold — still on the asset, see conflict 3 |
+| `ram` · `storage` · `processor` · `graphics` · `operatingSystem` | Optional spec strings. Replace the `specs[]` key/value list — see conflict 5 |
+| `lowQtyAlert` | Low-stock threshold, one per asset, default 5 — see conflict 3 |
 
 `GET /assets` takes `page`, `limit`, `search` (name, model or category),
 `category`, `location` ("scope available quantities … to a single office") and
 `stockLevel` (`in_stock` · `low_stock` · `out_of_stock`, from Available against
-the threshold). **Its `200` response has no documented schema**, so the name of
-the per-office availability field is not yet published. The Catalog (spec 005)
+the threshold). **Its `200` response has no documented schema.** The backend source
+(2026-09-24) returns each asset with `quantity` = its count of **Available**
+units, at `location` when given; Reserved, Total and Deployed are not returned. The Catalog (spec 005)
 reads it through a seeded `CatalogSource` until it is.
 
 Stock itself is now carried by **inventory items**, one per unit:
@@ -64,6 +65,20 @@ Stock itself is now carried by **inventory items**, one per unit:
 update a `status` of `Available` · `Reserved` · `Assigned` · `Inactive`.
 
 ## Open conflicts with the 2026-09-22 design (raised 2026-09-22)
+
+### State on 2026-09-24
+
+The backend answered all three in PR #87 (BEN-20), before BEN-115 recorded a decision. Spec 008 (Assets and Inventory) ships as an SPA mock on seeded data until 1 is settled.
+
+| # | State | What is still needed |
+|---|-------|----------------------|
+| 1 | **Answered with a per-unit register.** Total / Available / Reserved are counts of unit records by status. | The per-unit register is out of scope under constitution VIII and contradicts ADR-0006, so the **project owner** must choose: amend ADR-0006 and VIII to adopt it, or ask the backend for an aggregate stock resource. Either way the SPA needs **per (asset, office) Total and Reserved, Deployed per asset, and a way to set a quantity per office in one call** — none is exposed today. |
+| 2 | **Resolved: `Ortigas`**, in every location enum (users, assets, inventory items). | — |
+| 3 | **Resolved**: `location` and `quantity` left the asset; `lowQtyAlert` stayed, one per asset, which matches the one threshold `03.4 - Update Stocks` draws. | Spec 001 FR-003 says per (asset, office); amend it to per asset. |
+| 4 | **New.** `model` is required for every category; the design asterisks it only on Laptop, Phone and Headset, offers it optionally on Wifi and Type C Hub, and draws no Model field on UPS, Mice and Other Device. | One of the two moves. |
+| 5 | **New.** `specs[]` was replaced by five fixed fields, so the Update Asset panel's free custom-spec row (`e.g. External Keyboard`) has nowhere to be saved. | Restore a custom-spec field, or the designer drops the row. |
+
+The sections below are the original write-up of 1–3.
 
 Constitution VII forbids the SPA papering over a gap between the design and the
 published contract. These three are **not UI preferences**; each needs a

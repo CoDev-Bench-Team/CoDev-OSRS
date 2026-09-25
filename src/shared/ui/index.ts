@@ -14,6 +14,7 @@ export { Search } from './forms/Search';
 export { Select } from './forms/Select';
 export { FilterChip } from './forms/FilterChip';
 export { TextField } from './forms/TextField';
+export { Field, FieldGroup, TextArea, TextInput, type FieldControl } from './forms/fields';
 
 // Data display
 export { StatusPill } from './data-display/StatusPill';

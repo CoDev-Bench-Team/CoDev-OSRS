@@ -16,8 +16,6 @@ function screen(id: DestinationId) {
   return <Placeholder name={title} purpose={purpose} />;
 }
 
-export const AssetsPlaceholder = () => screen('assets');
-export const InventoryPlaceholder = () => screen('inventory');
 export const HistoryPlaceholder = () => screen('history');
 
 /** `/requests/:id` — the one address that identifies a record, for the Admin
