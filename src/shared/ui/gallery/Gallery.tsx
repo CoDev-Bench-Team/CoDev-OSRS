@@ -27,9 +27,29 @@ import {
   SupplyCard,
   TableCard,
   TableHead,
+  TABLE_ROW_PADDING_CLASS,
+  tableColumnStyle,
   TopBar,
+  type ColumnWidth,
 } from '../index';
 import itemMonitor from '../../../assets/items/item-monitor.jpg';
+
+/** The gallery's request table sizes its row cells through the same
+ *  `tableColumnStyle` as its `TableHead`, so the reference the product is
+ *  ported FROM demonstrates the rule rather than hand-copying around it. */
+const REQUEST_COLUMNS = {
+  id: '180px',
+  requester: '200px',
+  items: undefined,
+  status: '160px',
+} as const satisfies Record<string, ColumnWidth | undefined>;
+
+const REQUEST_COLS: [label: string, width?: ColumnWidth][] = [
+  ['Request ID', REQUEST_COLUMNS.id],
+  ['Requester', REQUEST_COLUMNS.requester],
+  ['Items', REQUEST_COLUMNS.items],
+  ['Status', REQUEST_COLUMNS.status],
+];
 
 const NAV = [
   { label: 'Catalog', current: true },
@@ -190,7 +210,7 @@ export function Gallery() {
           </Row>
         </Section>
 
-        <Section id="status" title="Status" note="Amber waits on a human, green is moving, red is stopped by a decision, purple is closed and done, slate is stopped without one. Request status is the seven legal states — no other value can be expressed. For Delivery and For Pickup are peers, both moving, so both are green — ADR-0007's decision, not a gap: the design's pink and blue pill variants are deliberately not used.">
+        <Section id="status" title="Status" note="Amber waits on a human, green is moving, red is stopped by a decision, purple is closed and done, slate is stopped without one. Request status is the seven legal states — no other value can be expressed. For Delivery (pink) and Ready for Pickup (blue) are peers, not a sequence — the design's own pill variants, adopted 2026-09-24 (drift-2026-09-24 §6).">
           <Row label="Request — the seven legal states">
             {REQUEST_STATUSES.map((s) => (
               <StatusPill key={s} status={s} />
@@ -274,17 +294,17 @@ export function Gallery() {
           </Row>
           <Row label="Table">
             <TableCard className="w-full">
-              <TableHead cols={[['Request ID', '180px'], ['Requester', '200px'], ['Items'], ['Status', '160px']]} />
+              <TableHead cols={REQUEST_COLS} />
               {[
                 ['REQ-2026-1847', 'Maya Santos', 'Laptop, Keyboard + 1 more', 'Pending Approval'],
-                ['REQ-2026-1842', 'Daniel Santos', 'Monitor, Dock', 'For Pickup'],
+                ['REQ-2026-1842', 'Daniel Santos', 'Monitor, Dock', 'Ready for Pickup'],
                 ['REQ-2026-1760', 'Isabella Mendoza', 'Laptop Stand', 'Rejected'],
               ].map(([id, who, items, status]) => (
-                <div key={id} className="flex items-center border-t border-line-default px-20 py-18">
-                  <span className="w-[180px] shrink-0 type-ui-bold text-ink-primary">{id}</span>
-                  <span className="w-[200px] shrink-0 truncate type-ui text-ink-body">{who}</span>
-                  <span className="flex-1 truncate type-ui text-ink-body">{items}</span>
-                  <span className="w-[160px] shrink-0">
+                <div key={id} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
+                  <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">{id}</span>
+                  <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">{who}</span>
+                  <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">{items}</span>
+                  <span style={tableColumnStyle(REQUEST_COLUMNS.status)}>
                     <StatusPill status={status as (typeof REQUEST_STATUSES)[number]} />
                   </span>
                 </div>
@@ -367,12 +387,12 @@ export function Gallery() {
           </Row>
           <Row label="Table rows — overlong">
             <TableCard className="w-full">
-              <TableHead cols={[['Request ID', '180px'], ['Requester', '200px'], ['Items'], ['Status', '160px']]} />
-              <div className="flex items-center border-t border-line-default px-20 py-18">
-                <span className="w-[180px] shrink-0 type-ui-bold text-ink-primary">REQ-2026-1847</span>
-                <span className="w-[200px] shrink-0 truncate type-ui text-ink-body">Maria Isabella Concepcion Mendoza-Villanueva</span>
-                <span className="flex-1 truncate type-ui text-ink-body">Laptop, Wireless Keyboard, USB-C Headset, Monitor, Dock, Laptop Stand, Ergonomic Mouse</span>
-                <span className="w-[160px] shrink-0"><StatusPill status="Pending Approval" /></span>
+              <TableHead cols={REQUEST_COLS} />
+              <div className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
+                <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">REQ-2026-1847</span>
+                <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">Maria Isabella Concepcion Mendoza-Villanueva</span>
+                <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">Laptop, Wireless Keyboard, USB-C Headset, Monitor, Dock, Laptop Stand, Ergonomic Mouse</span>
+                <span style={tableColumnStyle(REQUEST_COLUMNS.status)}><StatusPill status="Pending Approval" /></span>
               </div>
             </TableCard>
           </Row>

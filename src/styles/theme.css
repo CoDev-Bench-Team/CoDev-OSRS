@@ -80,6 +80,10 @@
   --color-osrs-ink-800: rgb(27,29,41);
   --color-osrs-ink-900: rgb(23,32,51);
   --color-osrs-ink-tint: rgba(75,80,99,0.1);
+  --color-osrs-neutral-100: rgb(244,244,244);
+  --color-osrs-neutral-200: rgb(233,233,233);
+  --color-osrs-neutral-400: rgb(147,147,147);
+  --color-osrs-neutral-800: rgb(49,49,49);
   --color-osrs-pink-500: rgb(239,93,168);
   --color-osrs-pink-tint: rgba(239,93,168,0.1);
   --color-osrs-purple-50: rgb(241,236,255);

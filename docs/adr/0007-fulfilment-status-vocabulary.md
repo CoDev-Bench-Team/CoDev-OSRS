@@ -2,7 +2,28 @@
 
 ## Status
 
-Accepted — 2026-09-22.
+Accepted — 2026-09-22. **Amended 2026-09-24** (below).
+
+## Amendment — 2026-09-24: `Ready for Pickup`, and the drawn colours
+
+Decided by the project owner from the 2026-09-24 re-export
+([drift-2026-09-24 §6](../design-system/drift-2026-09-24.md)). Constitution
+**3.0.1**.
+
+- **Name.** The pickup handover state is **`Ready for Pickup`**. That is what
+  the `Request Status` component, the Status Definitions table and every screen
+  drawn since 09-22 call it. The queue's filter chip said `For Pickup`. This ADR
+  took the chip as authoritative because it is bound to a filter, and that
+  choice is reversed: the chip now reads `Ready for Pickup` too. It is the same
+  state with the same transitions, recorded location and notification, so
+  nothing below changes except the name.
+- **Colour.** The Neutral consequence below ("the tone map gains no new
+  colour") is withdrawn. `For Delivery` takes the design's pink
+  (`--color-status-delivery-*`) and `Ready for Pickup` its blue
+  (`--color-status-pickup-*`). Both pairs were kept in the token layer for this
+  case. `src/shared/ui/status.ts` gains the `delivery` and `pickup` tones.
+
+The body below is left as written on 2026-09-22.
 
 ## Context
 

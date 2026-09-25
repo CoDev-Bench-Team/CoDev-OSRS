@@ -9,7 +9,7 @@ identity as its colours, and page authors are expected to follow them
 | Tier | Used for | Examples |
 |------|----------|----------|
 | **Sentence case** | Page titles, even multi-word ones | "Supply Catalog", "Requests Queue", "My Requests" |
-| **Title Case** | Buttons, status pills, nav items | "Add to Request List", "Confirm Rejection", "Pending Approval", "For Pickup" |
+| **Title Case** | Buttons, status pills, nav items | "Add to Request List", "Confirm Rejection", "Pending Approval", "Ready for Pickup" |
 | **ALL CAPS** | Table column headings, card eyebrows | "REQUEST ID", "REQUESTER", "ITEMS", "TOTAL STOCK", "DEVICES" |
 
 Exception worth knowing: "Update stock" is sentence case because it is a link,

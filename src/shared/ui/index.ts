@@ -5,17 +5,27 @@
 export { CoDevRedMasterLogo, CoDevWhiteMasterLogo, CoDevSupplyRequestsLogo } from './brand/logos';
 
 // Actions
-export { Button, type ButtonVariant } from './actions/Button';
+export { Button } from './actions/Button';
+export { BUTTON_SHAPE, BUTTON_VARIANT, type ButtonVariant } from './actions/button-styles';
 export { ButtonTemplate, ButtonWithIcon, SignInButton } from './actions/imported';
 
 // Forms
 export { Search } from './forms/Search';
 export { Select } from './forms/Select';
+export { FilterChip } from './forms/FilterChip';
 
 // Data display
 export { StatusPill } from './data-display/StatusPill';
 export { SupplyCard } from './data-display/SupplyCard';
 export { SummaryCard, TableCard, TableHead } from './data-display/cards';
+export { Pagination } from './data-display/Pagination';
+export {
+  tableColumnStyle,
+  tableMinWidth,
+  TABLE_ROW_PADDING_CLASS,
+  TABLE_ROW_PADDING_X,
+  type ColumnWidth,
+} from './data-display/table-columns';
 
 // Overlay
 export { Backdrop } from './overlay/Backdrop';

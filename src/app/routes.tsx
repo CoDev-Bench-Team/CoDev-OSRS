@@ -5,6 +5,7 @@ import { LoginScreen } from '../features/auth/LoginScreen';
 import { RequireAccess } from '../features/auth/RequireAccess';
 import { ProfilePage } from '../features/profile/ProfilePage';
 import { useSession } from '../features/auth/session-context';
+import { QueuePage } from '../features/requests/queue/QueuePage';
 import { AppLayout } from './AppLayout';
 import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './destinations';
 import { NavButton } from './NavButton';
@@ -13,7 +14,6 @@ import {
   CatalogPlaceholder,
   HistoryPlaceholder,
   InventoryPlaceholder,
-  QueuePlaceholder,
   RequestDetailPlaceholder,
   RequestsPlaceholder,
 } from './placeholders';
@@ -75,7 +75,7 @@ export function AppRoutes() {
           path={DESTINATIONS.requestDetail.path}
           element={guarded('requestDetail', <RequestDetailPlaceholder />)}
         />
-        <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePlaceholder />)} />
+        <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
         <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />
         <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />

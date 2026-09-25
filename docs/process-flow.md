@@ -18,7 +18,7 @@ supplies, including stock movements and notifications.
 | Actor | Job |
 |-------|-----|
 | **Employee** | Browses the catalog, builds a request list, submits, tracks their own requests, cancels their own request while it is `Pending Approval` |
-| **Admin** | Reviews the queue, approves or rejects, sets `For Delivery` or `For Pickup`, completes, cancels what cannot be fulfilled, owns Assets and Inventory |
+| **Admin** | Reviews the queue, approves or rejects, sets `For Delivery` or `Ready for Pickup`, completes, cancels what cannot be fulfilled, owns Assets and Inventory |
 | **System** | Moves stock, sends mail, records the notification log |
 
 Two human roles, not three. See [ADR-0005](adr/0005-two-role-model.md).
@@ -45,7 +45,7 @@ Two human roles, not three. See [ADR-0005](adr/0005-two-role-model.md).
 
 The `Requests Queue` is one screen for the whole admin half: summary cards for
 *Pending approval*, *In Processing* and *Low stock alerts*; filter chips
-`All requests · Pending Approval · Approved · For Delivery · For Pickup`;
+`All requests · Pending Approval · Approved · For Delivery · Ready for Pickup`;
 search by request ID, employee name, email or item; sort by
 *Newest First / Oldest First / Employee (A-Z)*. **Review** opens the request
 panel.
@@ -66,8 +66,8 @@ your decision."*
 ### 3. Hand over (Admin)
 
 1. **Update Status** on an approved request opens a `Status *` select.
-2. Choose **For Delivery** or **For Pickup**. These are peers, not a sequence.
-   Choosing `For Pickup` records a **pickup location**.
+2. Choose **For Delivery** or **Ready for Pickup**. These are peers, not a sequence.
+   Choosing `Ready for Pickup` records a **pickup location**.
 3. Notification: **Status changed** (to Employee), carrying *Previous status* →
    *New status*, and the **Pickup** location when there is one.
 4. System: stock is still reserved; no quantity changes.
@@ -88,7 +88,7 @@ rejection: rejection is the Admin's decision on a request awaiting one.
 1. **Employee cancels** — only their own request, and only while it is
    `Pending Approval`. The dialog asks for **Reason for cancellation \*** and is
    confirmed with **Confirm Cancellation**.
-2. **Admin cancels** — an `Approved`, `For Delivery` or `For Pickup` request
+2. **Admin cancels** — an `Approved`, `For Delivery` or `Ready for Pickup` request
    that cannot be fulfilled. A reason is required.
 3. A **reason is required from whoever cancels**.
 4. A `Completed` request cannot be cancelled; the items are already with the
@@ -117,11 +117,11 @@ cancellation** and a **Close** button.
 | `Rejected` | Admin | reject, reason required | — | +qty | −qty |
 | `Approved` | Admin | approve | — | — | — |
 | `For Delivery` | Admin | update status | — | — | — |
-| `For Pickup` | Admin | update status, location recorded | — | — | — |
+| `Ready for Pickup` | Admin | update status, location recorded | — | — | — |
 | `Completed` | Admin | complete | −qty | — | −qty |
 | `Cancelled` | Employee or Admin | cancel, reason required | — | +qty | −qty |
 
-`For Delivery` and `For Pickup` are alternatives, not stages.
+`For Delivery` and `Ready for Pickup` are alternatives, not stages.
 `Rejected`, `Cancelled` and `Completed` are terminal.
 
 `For Release` and `Released` are **retired**. So is the Employee's
@@ -138,7 +138,7 @@ confirm-receipt step.
    status change to `Pending Approval`.
 5. **Reject and cancel release**: Reserved → Available, in the same transaction
    as the status change.
-6. **Approve, For Delivery and For Pickup change nothing.** The quantity is
+6. **Approve, For Delivery and Ready for Pickup change nothing.** The quantity is
    already reserved.
 7. **Complete consumes**: Total and Reserved both fall, in the same transaction
    as the status change to `Completed`. The Assets screen counts the difference
@@ -197,7 +197,7 @@ primary action, support copy, footer.
 
 ### 4. Status changed
 
-The template for **every other transition** — `For Delivery`, `For Pickup`,
+The template for **every other transition** — `For Delivery`, `Ready for Pickup`,
 `Completed`, `Cancelled`.
 
 - **When:** any transition not covered by 1–3
@@ -205,7 +205,7 @@ The template for **every other transition** — `For Delivery`, `For Pickup`,
 - **Eyebrow:** Status update
 - **Headline:** states the new status, e.g. "Your request is ready for pickup"
 - **Body:** "Hi [Name] - the Workplace team changed the status of your [request] request from [previous] to [new]."
-- **Details:** Request · Request ID · **Previous status** · **New status** · **Pickup** (when `For Pickup`)
+- **Details:** Request · Request ID · **Previous status** · **New status** · **Pickup** (when `Ready for Pickup`)
 - **Action:** View request
 - **Support:** e.g. "Bring your employee badge when you collect the device. Pickup hours are Monday-Friday, 9 AM-5 PM."
 
@@ -247,7 +247,7 @@ flowchart TD
   approve --> mailA[Email: Request approved]
   mailA --> handover{Update Status}
   handover -->|For Delivery| fd[For Delivery]
-  handover -->|For Pickup| fp[For Pickup / location recorded]
+  handover -->|Ready for Pickup| fp[Ready for Pickup / location recorded]
   fd --> mailS1[Email: Status changed]
   fp --> mailS1
   mailS1 --> complete[Admin completes / Completed]

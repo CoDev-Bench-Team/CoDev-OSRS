@@ -61,7 +61,7 @@ Folder names below are the **preferred parallel-safe layout**. If an older MVP t
 | Catalog | `src/features/catalog/*` *or* inventory Catalog page per plan | 1–2 lines in `src/app/routes.tsx` / `placeholders.tsx` |
 | Request submit drawer | `src/features/requests/create/*` | same |
 | My Requests | `src/features/requests/history/*` | same |
-| Approvals queue | `src/features/requests/approvals/*` | same |
+| Requests Queue | `src/features/requests/queue/*` | same |
 | Fulfillment | `src/features/requests/fulfillment/*` | same |
 | Request detail | `src/features/requests/detail/*` | same |
 | Inventory | `src/features/inventory/*` | same |
@@ -398,7 +398,7 @@ Hard rules for every issue:
 - **Two roles only: Employee and Admin** (constitution 3.0.0 II, ADR-0005)
 - Do not invent REST routes, payloads, or error codes — and do **not** paper over the three open conflicts in `contracts/README.md`
 - Stock is per (asset, office) as Total / Available / Reserved: submit reserves, reject and cancel release, complete consumes; `Total = Available + Reserved`, never negative (ADR-0006)
-- `For Delivery` and `For Pickup` are peers; `Completed` is an **Admin** action; a cancellation reason is required from whoever cancels (ADR-0007)
+- `For Delivery` and `Ready for Pickup` are peers; `Completed` is an **Admin** action; a cancellation reason is required from whoever cancels (ADR-0007, constitution 3.0.1)
 - SPA TypeScript strict; secrets stay out of git
 
 ---
