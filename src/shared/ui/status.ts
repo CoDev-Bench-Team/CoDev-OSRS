@@ -1,6 +1,6 @@
 /** The request and stock status vocabulary.
  *
- *  `RequestStatus` is exactly the states constitution 3.0.1 IV admits and
+ *  `RequestStatus` is exactly the states constitution 4.0.0 IV admits and
  *  nothing else: an illegal state is unrepresentable.
  *
  *  After `Approved` the Admin sets either `For Delivery` or `Ready for Pickup`.
@@ -9,8 +9,12 @@
  *  `Completed`. The pickup state is named as the design's `Request Status`
  *  component names it, not as the queue's `For Pickup` chip does; the project
  *  owner chose the component (drift-2026-09-24 §6, constitution 3.0.1).
- *  `For Release` and `Released` are retired, and so is the employee's
- *  confirm-receipt step (ADR-0007).
+ *  `For Release` and `Released` are retired.
+ *
+ *  `Received` follows either handover state: the System sets it when the
+ *  owning Employee submits the Accountability Form, and it is where stock is
+ *  consumed. The Admin then sets `Completed`, from `Received` only
+ *  (constitution 4.0.0, ADR-0008).
  *
  *  `Rejected` and `Cancelled` are both terminal and both need a reason, but
  *  they are different acts: a rejection is the Admin's decision on a pending
@@ -24,6 +28,7 @@ export const REQUEST_STATUSES = [
   'Rejected',
   'For Delivery',
   'Ready for Pickup',
+  'Received',
   'Completed',
   'Cancelled',
 ] as const;
@@ -52,7 +57,8 @@ export type InventoryStatus = (typeof INVENTORY_STATUSES)[number];
 
 /** Colour meaning: amber = waiting on a human · green = moving · red = stopped
  *  by a decision · purple = closed, done · slate = stopped without a decision ·
- *  pink / blue = handed over, by delivery / for pickup.
+ *  pink / blue = handed over, by delivery / for pickup · orange = received,
+ *  signed for, awaiting the Admin's close (drift-2026-09-26 §2).
  *
  *  The first three were the whole vocabulary until the 2026-09-15 re-export.
  *  The designer then gave `Completed` a purple of its own — it is no longer
@@ -64,7 +70,15 @@ export type InventoryStatus = (typeof INVENTORY_STATUSES)[number];
  *  and the `Request Status` component, paint `For Delivery` pink and
  *  `Ready for Pickup` blue, and the project owner adopted the drawn pairs on
  *  2026-09-24 (drift-2026-09-24 §6). */
-export type StatusTone = 'pending' | 'ready' | 'rejected' | 'completed' | 'cancelled' | 'delivery' | 'pickup';
+export type StatusTone =
+  | 'pending'
+  | 'ready'
+  | 'rejected'
+  | 'completed'
+  | 'cancelled'
+  | 'delivery'
+  | 'pickup'
+  | 'received';
 
 export const REQUEST_TONE: Record<RequestStatus, StatusTone> = {
   'Pending Approval': 'pending',
@@ -72,6 +86,7 @@ export const REQUEST_TONE: Record<RequestStatus, StatusTone> = {
   Rejected: 'rejected',
   'For Delivery': 'delivery',
   'Ready for Pickup': 'pickup',
+  Received: 'received',
   Completed: 'completed',
   Cancelled: 'cancelled',
 };

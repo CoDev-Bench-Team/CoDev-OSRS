@@ -83,6 +83,7 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
       handover: 'Ready for Pickup',
       approvedAt: '2026-07-28T06:15:00Z',
       handedOverAt: '2026-07-29T02:30:00Z',
+      receivedAt: '2026-07-29T03:10:00Z',
       completedAt: '2026-07-29T08:45:00Z',
     },
     {

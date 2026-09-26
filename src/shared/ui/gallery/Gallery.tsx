@@ -307,6 +307,7 @@ export function Gallery() {
                 { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
                 { label: 'Approved', state: 'reached', when: 'Sep 11, 2026, 1:05 PM' },
                 { label: 'For Delivery/For Pickup', state: 'pending' },
+                { label: 'Received', state: 'pending' },
                 { label: 'Complete', state: 'pending' },
               ]}
             />

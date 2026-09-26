@@ -24,6 +24,9 @@ export interface EmployeeRequest {
   handover?: 'For Delivery' | 'Ready for Pickup';
   approvedAt?: string;
   handedOverAt?: string;
+  /** Set by the System when the Employee submits the Accountability Form
+   *  (constitution 4.0.0). */
+  receivedAt?: string;
   completedAt?: string;
   /** A stopped request carries why, and the panel reads it back (BEN-67,
    *  BEN-70). */

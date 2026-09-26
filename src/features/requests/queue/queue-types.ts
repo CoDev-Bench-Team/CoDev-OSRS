@@ -24,13 +24,25 @@ export interface QueueSource {
 }
 
 /** The statuses the queue lists. Terminal ones — `Rejected`, `Cancelled`,
- *  `Completed` — belong to History (spec 001 FR-016a). */
-export const LIVE_STATUSES = ['Pending Approval', 'Approved', 'For Delivery', 'Ready for Pickup'] as const satisfies readonly RequestStatus[];
+ *  `Completed` — belong to History (spec 001 FR-016a). `Received` is live: it
+ *  waits on the Admin's Complete (constitution 4.0.0; spec 004 amendment 5). */
+export const LIVE_STATUSES = [
+  'Pending Approval',
+  'Approved',
+  'For Delivery',
+  'Ready for Pickup',
+  'Received',
+] as const satisfies readonly RequestStatus[];
 export type LiveStatus = (typeof LIVE_STATUSES)[number];
 
-/** A chip is either every live request or one live status. */
-export type QueueChip = 'All requests' | LiveStatus;
-export const QUEUE_CHIPS: readonly QueueChip[] = ['All requests', ...LIVE_STATUSES];
+/** The statuses the file draws a chip for (FR-019). `Received` has none —
+ *  it is reached through `All requests` and search (drift-2026-09-26 §3). */
+const CHIP_STATUSES = ['Pending Approval', 'Approved', 'For Delivery', 'Ready for Pickup'] as const satisfies readonly LiveStatus[];
+export type ChipStatus = (typeof CHIP_STATUSES)[number];
+
+/** A chip is either every live request or one drawn live status. */
+export type QueueChip = 'All requests' | ChipStatus;
+export const QUEUE_CHIPS: readonly QueueChip[] = ['All requests', ...CHIP_STATUSES];
 
 export const QUEUE_SORTS = ['Newest First', 'Oldest First', 'Employee (A-Z)'] as const;
 export type QueueSort = (typeof QUEUE_SORTS)[number];
