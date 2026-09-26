@@ -205,7 +205,7 @@ The complete set of addressable destinations and the roles permitted to reach ea
 | Sign-in | signed-out only | signed-out only | No shell chrome |
 | Catalog | yes | yes (by address; not in the Admin bar) | Only an Employee is offered the action that starts a request |
 | My requests | yes | no | The signed-in Employee's own history. Their request detail is a side panel here, not an address (amended 2026-09-23) |
-| Request detail | no | any request | Actions gated by status and role; FR-012a applies. Replaced by the Admin review panel in BEN-47 |
+| ~~Request detail~~ | — | — | **Retired 2026-09-26** (spec 008): the Admin reviews in a panel over `/queue`; `/requests/:id` is not-found for everyone |
 | Requests Queue | no | yes | Admin landing destination — review, approve, and fulfill (replaces the pending-requests and fulfillment queues) |
 | Assets | no | yes | Added 2026-09-24 |
 | Inventory | no | yes | |
@@ -289,6 +289,12 @@ No constitution version bump is required — no principle changes. `docs/product
 None dismissed. One consistency defect (CHK007, not-found versus record-existence leakage) and three gaps (CHK001, CHK002, CHK003) were found and all four resolved into requirements above.
 
 ## Clarifications
+
+### Session 2026-09-26 — Amendment
+
+Raised by spec 008 (BEN-47), which replaces the Admin's request-detail address with the review panel over `/queue`.
+
+- Q: Session 2026-09-23 kept `/requests/:id` for the Admin "until BEN-47 replaces it". Now that the panel exists, what happens to the address? → A: **It is retired.** The `Request detail` destination is removed from the destination set. `/requests/:id` matches no destination, so it gets the shell's not-found for every role and every id. FR-012a still holds, because an owned, a foreign and a missing id produce the identical response. Review opens the panel over `/queue` and never navigates (spec 008 FR-001, plan D10).
 
 ### Session 2026-09-24 — Amendment
 

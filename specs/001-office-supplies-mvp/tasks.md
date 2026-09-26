@@ -69,21 +69,21 @@ Depends on backend auth/session resources.
 **Goal**: Admin queue; reject requires a reason.
 
 - [x] T014 [US3] Requests Queue: summary cards, chips, search, sort, table, pagination — `src/features/requests/queue/QueuePage.tsx`
-- [ ] T015 [US3] Review panel: requester, lines with current inventory, note, timeline, Approve / Reject — `src/features/requests/queue/ReviewPanel.tsx`
-- [ ] T016 [US3] Reject dialog with required reason; rejected read-back state — `src/features/requests/queue/RejectDialog.tsx`
+- [ ] T015 [US3] Review panel: requester, lines with current inventory, note, timeline, Approve / Reject — `src/features/requests/queue/ReviewPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
+- [ ] T016 [US3] Reject dialog with required reason; rejected read-back state — `src/features/requests/queue/RejectDialog.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
 
 ## Phase 6: User Story 4 + 5 — Handover and complete (P1)
 
 **Goal**: Admin sets For Delivery / Ready for Pickup, then completes.
 
-- [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx`
-- [ ] T018 [US5] Complete action and its confirmation — `src/features/requests/queue/UpdateStatusPanel.tsx`
+- [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
+- [ ] T018 [US5] Complete action and its confirmation — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
 
 ## Phase 7: User Story 6 + 7 — History and cancel (P2)
 
 - [ ] T019 [P] [US6] My Requests table + status pills + detail panel — `src/features/requests/history/MyRequestsPage.tsx`
 - [ ] T020 [US7] Cancel Request dialog with required reason (employee, while pending) — `src/features/requests/history/CancelDialog.tsx`
-- [ ] T021 [US7] Admin cancel from the review panel (approved / for delivery / for pickup) — `src/features/requests/queue/ReviewPanel.tsx`
+- [ ] T021 [US7] Admin cancel from the review panel (approved / for delivery / for pickup) — `src/features/requests/queue/ReviewPanel.tsx` — **moved to BEN-135** (no control drawn; spec 008 Out of Scope)
 - [ ] T022 [US6] History page: chips, table, read-only detail panel showing the stored reason — `src/features/requests/history/HistoryPage.tsx`
 
 ## Phase 8: User Story 8 — Profile (P3)

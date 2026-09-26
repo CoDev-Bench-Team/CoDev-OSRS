@@ -379,6 +379,7 @@ below is ours.
 | **Reason field** | *(Redrawn 2026-09-25.)* `TextField tone="danger"`. The pink block — `status-rejected-bg`, a `red-500` outline and label — is the field's resting look, not its error state. Inside it, a 58px white box with the placeholder at the top: a one-row textarea that grows with a long reason, up to 160px, then scrolls. Enter submits, Shift+Enter breaks the line. | The redrawn `04.2 - Cancel Request` frame. The textarea is read from the top-set placeholder; the frame does not say what Enter does, so it keeps the one-line field's behaviour. The pink block marks a destructive step, so it is a tone, not the component's default: `neutral` is a plain white card that turns pink only when invalid, and nothing in the file draws it yet. |
 | **Empty reason** | The inner box takes the `red-600` ring, plus one line saying why — announced through `aria-describedby`. | The pink block no longer marks an error, and the asterisk alone does not tell a screen-reader user what went wrong. Whitespace counts as empty. |
 | **Timeline type** | *(Design feedback 2026-09-25.)* The *Status* heading is 14px bold; each node label 12.5px bold (`text-12-5`, new to the scale), its date or *Pending* 12px medium, 4px below it; nodes 14px apart; dots 12×12. | Design review of the `04.1` panel. The *Items Requested* heading keeps the 11px eyebrow until the designer says otherwise. |
+| **Timeline colours** | *(Design feedback 2026-09-26.)* A reached node is filled in its status pill's colour: Submitted amber, Approved green, For Delivery pink, Ready for Pickup blue, Complete purple; Cancelled slate and Rejected red as before. The latest reached node carries a 3px halo in its pill's tint. Unreached nodes stay grey. | The designer's timeline drawing paints Submitted amber, Approved green and the handover node pink with a halo. Blue and purple follow the pill vocabulary. |
 | **Stand-in My Requests table** | The `04 - My Requests` frame's five columns over the seeded source, so the panel has a *View details* to open from. Replaced by BEN-44. | BEN-44 had not shipped when BEN-45 was built. |
 | **REQ-2026-1791** | A seeded `Cancelled` row, the seventh. | `04 - My Requests` draws no cancelled row, but `04.2 - Cancelled` draws the panel for one; the seed carries one so it opens without cancelling first. Its reason is placeholder copy. |
 | **Struck-through Cancelled pill** | The `Cancelled` pill's label is struck through, everywhere the pill appears. | `04.2 - Cancelled` draws it so. The pill is shared, but today it renders only on My Requests, this panel and the gallery: the Requests Queue lists live statuses only (spec 004), so it never shows a Cancelled pill. The Admin's History, which lists resolved requests, will pick it up. |
@@ -389,6 +390,24 @@ cancellation*, and a rejected one under *Reason for rejection*, in the same card
 as *Note to Approver*, above the timeline. `04.2 - Cancelled` does not draw it;
 Linear BEN-67 and BEN-70 ask for it, and spec 001's Request entity stores both
 reasons. **Flagged to the designer** to draw it.
+
+## 3g. The Admin review panel (BEN-47, 2026-09-26)
+
+Frames `02.2`, `02.2.1 - Approve`, `02.2.1 - Update Status` (×2), `02.2.2` and
+`02.2.2.1` draw the panel. It reuses the §3f `SidePanel`, `StatusTimeline` and
+`TextField`. What follows is what those frames leave open (spec 008, plan D12).
+
+| Addition | What was decided | Basis |
+|----------|------------------|-------|
+| **Pickup location** | Choosing `Ready for Pickup` reveals a required `Pickup location *` select: the offices the source exposes, with the request's office preselected, and a last option `Other…` that reveals a required free-text field. | Spec 001 FR-011a requires a location. The `Update Status` frame draws only `Status *`. Decided by the project owner, 2026-09-26. **Flagged to the designer.** |
+| **Pickup read-back** | A `Ready for Pickup` request shows its location in a card like the Note to Approver card, above the timeline. | The `Status changed` email carries a Pickup row; the panel draws none. |
+| **Update Status on a handover state** | `For Delivery` and `Ready for Pickup` offer **Update Status**, so the two peers can be swapped. They do not offer **Complete**. | `02.2.1 - Update Status` (2) draws only Complete. The project owner moved Complete to after `Received` (BEN-134), and the peers must stay swappable (spec 001 US4). **Flagged.** |
+| **Complete confirmation** | *(Ships with BEN-134.)* An inline `Mark this request as completed?` · Cancel / Complete. | Complete consumes stock and cannot be undone. The frame draws a single button. |
+| **Refused or failed transition** | An inline red note above the requester card, in the same style as §3f's refused cancel. A failure keeps the form's input. | The frames draw no failure. |
+| **Terminal read-only state** | After reject, and for any terminal request, the panel reads the reason back and offers only **Close**. The reason sits **below the timeline** in a callout with a 1px border, 20px padding and a 9px gap — title Inter 13px bold, reason Inter 12.5px regular: *Reason for rejection* in `status-rejected` red, *Reason for cancellation* in the `status-cancelled` slate. | `02.2.2.1` draws this for Rejected: `red-600` border, title and text on `red-50`. The slate for Cancelled is ours; no frame draws a cancelled review panel. |
+| **Item-name line height** | A request line's item name uses `type-ui-bold-wrap`, 13px bold at a 1.3 line height, in both side panels (review and My Requests). | The frames set it at 100%, so a name that wraps to two lines has no gap between them. The project owner asked for more space, 2026-09-26. **Flagged to the designer.** |
+| **Name-over-context spacing** | 4px (`gap-4`) between a person's name and the line under it: the queue's REQUESTER cell (name over department) and the panel's REQUESTED BY card (name over `email • office`). | Both lines are drawn at 100% line height with 1px or no gap, so they touch. The project owner asked for more space, 2026-09-26. **Flagged to the designer.** |
+| **Unavailable stock figure** | CURRENT INVENTORY shows `—` when the source gives no figure, never `0 in stock`. | `0` would be a claim the SPA cannot make. |
 
 ## 4. Defects found in the source — flagged, not fixed
 

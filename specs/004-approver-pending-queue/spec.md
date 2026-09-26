@@ -93,7 +93,7 @@ An Admin can review the queue with keyboard controls and at every width supporte
 - **FR-007**: Low stock alerts MUST count inventory items classified as low stock by the system's data source; the SPA MUST NOT invent a threshold.
 - **FR-008**: ~~The pending table MUST contain only requests currently in `Pending Approval`.~~ **SUPERSEDED** by the third 2026-09-24 amendment. **Now:** the table MUST contain every live request — `Pending Approval`, `Approved`, `For Delivery`, `Ready for Pickup` — narrowed by the selected chip and the search term.
 - **FR-009**: Each row MUST show request id, requestor name, requestor organizational context when available, an item summary, the row's own status pill, submitted date, and Review.
-- **FR-010**: Review MUST navigate to the stable request-detail destination for that request.
+- **FR-010**: ~~Review MUST navigate to the stable request-detail destination for that request.~~ **Superseded by spec 008 FR-001 (2026-09-26):** Review opens the review panel over `/queue` without navigating.
 - **FR-011**: The queue MUST NOT approve, reject, cancel, prepare, release, or complete a request.
 - **FR-012**: The page MUST show distinct loading, empty, and failure states.
 - **FR-013**: A successful refresh after a request changes status MUST show its new status, remove it when that status is terminal, and update affected metrics and chip counts.
