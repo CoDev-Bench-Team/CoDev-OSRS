@@ -1,6 +1,6 @@
 import type { CatalogOffice } from './types';
 
-/** Seeded Available stock, per (asset, office), held in memory (spec 008 D11).
+/** Seeded Available stock, per (asset, office), held in memory (spec 010 D11).
  *
  *  The catalog's seeded source reads from it and the seeded request submit
  *  reserves out of it, so a demo submit visibly lowers the Catalog's numbers
@@ -10,7 +10,7 @@ import type { CatalogOffice } from './types';
  *  It models Available only. Reserved and Total are the backend's (constitution
  *  III); nothing in the SPA reads them yet. */
 declare global {
-  /** Development-only hooks for the check scripts (spec 008 D19). Never set
+  /** Development-only hooks for the check scripts (spec 010 D19). Never set
    *  in production: every writer is behind `import.meta.env.DEV`. Each module
    *  that owns a hook declares its own field here, by interface merging. */
   interface OsrsDevHooks {

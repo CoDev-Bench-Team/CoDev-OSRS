@@ -3,12 +3,12 @@ import type { User } from '../../auth/types';
 import { seededAsset, seededStock } from '../../catalog/seeded-source';
 import { OFFICES } from '../../catalog/types';
 import type { EmployeeRequest } from '../detail/request-detail-types';
-import { appendSeededRequest } from '../detail/seeded-employee-request-source';
+import { appendSeededRequest, nextSeededRequestId } from '../detail/seeded-employee-request-source';
 import type { RequestListDraftInput } from './request-list-types';
 import { REFUSED_COPY, type RequestSubmitSource, type SubmitResult } from './request-submit-source';
 
 /** A stand-in for `POST /requests` until the contract publishes its success
- *  body and its insufficient-stock refusal (contract conflict 4; spec 008,
+ *  body and its insufficient-stock refusal (contract conflict 4; spec 010,
  *  Clarifications 2026-09-25).
  *
  *  It keeps the rules the system must keep, so the feature can be demonstrated
@@ -40,10 +40,6 @@ declare global {
     __osrs?: OsrsDevHooks;
   }
 }
-
-/** Ids continue after the design's newest (`REQ-2026-1847`), the format every
- *  SPA screen draws. The live source shows whatever the API returns. */
-let nextId = 1848;
 
 /** A problem body's own `detail`, else its `title` (RFC 9457) — what a refusal
  *  that places nothing shows at the top of the drawer. Only a body with
@@ -115,7 +111,7 @@ export const seededRequestSubmitSource: RequestSubmitSource = {
     }
 
     const request: EmployeeRequest = {
-      id: `REQ-2026-${nextId++}`,
+      id: nextSeededRequestId(),
       submittedAt: new Date().toISOString(),
       status: 'Pending Approval',
       lines: draft.lines.map(({ assetId, quantity }) => {

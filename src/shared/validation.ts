@@ -63,3 +63,37 @@ export function parseValidationProblem(body: unknown): FieldProblem[] | null {
   }
   return problems.length > 0 ? problems : null;
 }
+
+/* The flat, one-message-per-field view a plain form wants — the API #41
+ * (BEN-48) wrote for the asset and stock panels, kept here so spec 001 T003a
+ * stays one module. Each is a thin layer over `pointerPath` /
+ * `parseValidationProblem`, not a second parser. */
+
+/** The contract's validation failure (BEN-98), as a type. */
+export type ValidationProblem = {
+  type: 'validation-error';
+  title: string;
+  status: 400;
+  errors: { detail: string; pointer: string }[];
+};
+
+export function isValidationProblem(value: unknown): value is ValidationProblem {
+  return isRecord(value) && value.type === 'validation-error' && Array.isArray(value.errors);
+}
+
+/** `#/specs/0/value` → `specs.0.value`. A pointer at the whole document maps
+ *  to `''`, which a form shows above its fields rather than under one. */
+export function pointerToField(pointer: string): string {
+  return pointerPath(pointer).join('.');
+}
+
+/** One message per field, keyed by `pointerToField`. The contract repeats a
+ *  pointer once per failed constraint; the first message is kept. */
+export function fieldErrors(problem: ValidationProblem): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const { path, detail } of parseValidationProblem(problem) ?? []) {
+    const field = path.join('.');
+    if (!(field in out)) out[field] = detail;
+  }
+  return out;
+}

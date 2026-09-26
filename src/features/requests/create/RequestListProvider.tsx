@@ -12,7 +12,7 @@ import {
 import type { EmployeeRequest } from '../detail/request-detail-types';
 import type { RequestListLine } from './request-list-types';
 
-/** The Employee's Request List, for the whole signed-in session (spec 008
+/** The Employee's Request List, for the whole signed-in session (spec 010
  *  FR-004a, D1).
  *
  *  Mounted above the routes, so the list survives moving between Catalog, My

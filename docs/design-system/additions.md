@@ -404,7 +404,7 @@ as *Note to Approver*, above the timeline. `04.2 - Cancelled` does not draw it;
 Linear BEN-67 and BEN-70 ask for it, and spec 001's Request entity stores both
 reasons. **Flagged to the designer** to draw it.
 
-## 3g. The Request List drawer (BEN-43, spec 008, 2026-09-25)
+## 3g. The Request List drawer (BEN-43, spec 010, 2026-09-25)
 
 `03 - Request List` and `03.1 - Request List - Request Submitted` are drawn; the
 drawer is the shared `SidePanel`, and the confirmation reuses the `04.1`
@@ -413,10 +413,10 @@ what the frames leave open.
 
 | Addition | What was decided | Basis |
 |----------|------------------|-------|
-| **The marker opens the drawer** | The top-bar Request List marker opens the drawer over the Catalog; from any other screen it goes to the Catalog first. Adding an item does not open it. It replaces the marker's stand-in route to My Requests. | Spec 008 FR-006a, D3. The frames draw the drawer open but never say what opens it. |
+| **The marker opens the drawer** | The top-bar Request List marker opens the drawer over the Catalog; from any other screen it goes to the Catalog first. Adding an item does not open it. It replaces the marker's stand-in route to My Requests. | Spec 010 FR-006a, D3. The frames draw the drawer open but never say what opens it. |
 | **Empty drawer** | Plain body copy: *"Your request list is empty. Add supplies from the catalog."* **Submit Request** disabled. | BEN-58 asks for an empty state; none is drawn. |
 | **Submitting** | Every control in the drawer is disabled, ✕ included, and the button reads *Submitting…* until the system answers. Esc and the scrim do nothing meanwhile, so the confirmation cannot be closed away before it arrives. | A second submit must not be possible (FR-010). Not drawn. |
-| **Refusals** | One red note at the top of the drawer carries the system's own message, whether a stock refusal, a validation message naming no visible field, or *"Your request was not sent."* A validation message for the note or a line sits under that field. The note takes the `ring-brand` hairline in place of its `ring-default` one; an invalid line keeps its `shadow-card` drop shadow and adds `outline-brand` — the same 1px brand red, drawn as an outline inset by 1px, because a second box-shadow utility would replace the card shadow rather than add to it. Nothing in the list is cleared. | Spec 008 FR-013–FR-015. The same red note `04.1` uses for a refused cancel — one shared `RefusalAlert`. Focus moves to it, or else to the first invalid line or the note. |
+| **Refusals** | One red note at the top of the drawer carries the system's own message, whether a stock refusal, a validation message naming no visible field, or *"Your request was not sent."* A validation message for the note or a line sits under that field. The note takes the `ring-brand` hairline in place of its `ring-default` one; an invalid line keeps its `shadow-card` drop shadow and adds `outline-brand` — the same 1px brand red, drawn as an outline inset by 1px, because a second box-shadow utility would replace the card shadow rather than add to it. Nothing in the list is cleared. | Spec 010 FR-013–FR-015. The same red note `04.1` uses for a refused cancel — one shared `RefusalAlert`. Focus moves to it, or else to the first invalid line or the note. |
 | **Drawn-size controls below 1440px** | The line's `−` / `+` squares and **Remove** keep their drawn size at every width and meet the 44px touch minimum through `hit-area`, as the Catalog card's stepper does. | Design review 2026-09-25: the global touch-target rule grew only the enabled square, so `−` and `+` differed. |
 | **Confirmation card** | The drawn success card on a `ring-warm` hairline, its check the frame's own **outline** tick — a 1px round-capped stroke in the `Available` green, drawn inline from the vector network — on a 37px `green-50` circle. | `03.1` as re-read on 2026-09-25 ([drift-2026-09-24 §10](drift-2026-09-24.md)). The icon set has no outline tick, so the path is drawn from the frame rather than swapped for the set's filled `CheckCircleFill`. |
 

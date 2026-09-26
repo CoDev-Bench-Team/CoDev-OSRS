@@ -9,7 +9,7 @@ import type { RequestListLine } from './request-list-types';
 const STEP =
   'hit-area flex size-[30px] cursor-pointer items-center justify-center rounded-6 border-none bg-surface-card p-0 type-meta text-ink-primary ring-default transition-osrs hover:text-ink-secondary disabled:cursor-not-allowed disabled:opacity-40';
 
-/** One line of the Request List (spec 008 FR-006), as `03 - Request List`
+/** One line of the Request List (spec 010 FR-006), as `03 - Request List`
  *  draws it since 2026-09-23: the category as a grey eyebrow over the item
  *  name, a `− qty +` stepper, and **Remove**, on the 18px-padded card.
  *

@@ -1,7 +1,7 @@
 # Implementation Plan: Request List drawer & submit
 
 **Date**: 2026-09-25
-**Spec**: `specs/008-request-list-drawer/spec.md`
+**Spec**: `specs/010-request-list-drawer/spec.md`
 **Linear**: [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43) (C1 = [BEN-57](https://linear.app/bench-synergy-project/issue/BEN-57))
 **Status**: Draft
 
@@ -43,7 +43,7 @@ against the published format from the start.
 | D10 | Extract the read-back body of `RequestDetailPanel` (Items Requested table, Note to Approver block, Status section) into `src/features/requests/detail/RequestReadBack.tsx`. Both panels render it; 007's markup and behaviour are unchanged by the extraction commit (`df66022`), which was byte-identical. *(Later styling on this branch — QTY column, heading type, note card, `StatusTimeline` — follows drift-2026-09-24 §10 and additions.md §3f, and changes both panels on purpose; it is recorded as a spec 007 amendment dated 2026-09-25.)* | Two copies of the same drawn block would drift. This is a needed extraction for reuse, not a drive-by refactor. The 007 check script guards it. |
 | D11 | Add a module-scoped seeded stock store, `src/features/catalog/seeded-stock.ts` (`available(assetId, office)`, `reserve(lines, office)`). `seeded-source.ts` reads from it, and the seeded submit reserves into it. | Without shared stock, SC-002 (Available falls by the quantity) cannot be demonstrated before the backend ships. Reserve is all-or-nothing: check every line, then apply. |
 | D12 | The seeded submit also appends the created request to the seeded Employee request store (spec 007), so it appears in My Requests. | Makes the demo path continuous (Catalog → My Requests → View details) with no extra UI. **Seeded-only glue:** the live source drops it, because the API owns the request list. BEN-44 owns My Requests, and this adds nothing to its UI. |
-| D13 | Validation parser: `parseValidationProblem(body: unknown): FieldProblem[] \| null` and `pointerPath(pointer: string): string[]`. It handles the fragment form (`#/…`) with percent-decoding and plain form (`/…`), plus RFC 6901 `~1`/`~0` unescaping. A body that is not an RFC 9457 `validation-error` with `errors[]` returns `null`. | BEN-57 constraint 4. H3/H4 reuse it, so it knows nothing about requests. |
+| D13 | Validation parser: `parseValidationProblem(body: unknown): FieldProblem[] \| null` and `pointerPath(pointer: string): string[]`. It handles the fragment form (`#/…`) with percent-decoding and plain form (`/…`), plus RFC 6901 `~1`/`~0` unescaping. A body that is not an RFC 9457 `validation-error` with `errors[]` returns `null`. *(Amended 2026-09-26, PR review: #41 (BEN-48) wrote the same T003a module with `ValidationProblem`, `isValidationProblem`, `pointerToField` and `fieldErrors`. Those names are exported here too, each a thin layer over the two functions above, so the two PRs share one parser and #41's panels import it unchanged.)* | BEN-57 constraint 4. H3/H4 reuse it, so it knows nothing about requests. |
 | D14 | Placement: `#/purpose` goes under the note. `#/items/N/…` goes under row N. Anything else (`#/items`, `#/`, unknown) goes in one alert at the top of the drawer, deduplicated by `detail`. | FR-013 and FR-013a. The contract's own example repeats identical `detail`s, so deduplication keeps the drawer readable. |
 | D15 | Top-of-drawer messages (`refused`, `unreachable`, unplaced validation) use the `role="alert"` block spec 007 uses for refusals, now one shared piece, `src/features/requests/detail/RefusalAlert.tsx`, rendered by both panels. Nothing is cleared from the lines or note (FR-015). After a refusal, focus moves to the first thing needing attention in reading order — the alert, a line, the note — and a line's message describes its controls. The same happens when the drawer opens onto a refusal held since it was closed (D7, review cycle 3). | Reuse of one treatment, as one component, so the two panels cannot drift. |
 | D16 | **Note to Approver (optional)** keeps its drawn label and maps to the contract's `purpose`. Whitespace-only is sent as absent. | Drift-2026-09-22 §8 (label as drawn). Constitution VII (the field is `purpose`). |
@@ -133,7 +133,7 @@ contract publishes, a live source gets written in the same folder:
 **Docs**
 
 - `specs/003-app-shell-routing/spec.md`: an amendment recording that the request-list marker now opens the drawer (D3), replacing the `/requests` stand-in.
-- `scripts/check-catalog.mjs` and `scripts/check-shell.mjs`: update the assertions D3 and D4 change. A repeat add of the same item no longer raises the badge, and the marker opens the drawer. Each updated check cites spec 008 FR-002 / D3.
+- `scripts/check-catalog.mjs` and `scripts/check-shell.mjs`: unchanged. Neither asserted what D3 and D4 change, and both pass as they are. A repeat add not raising the badge (FR-002) and the marker opening the drawer (D3) are asserted in `scripts/check-request-list.mjs` (T011).
 - `docs/design-system/additions.md`: the empty drawer (D17), and the marker now opening the drawer rather than going to `/requests`.
 - `scripts/check-request-list.mjs`, registered in `scripts/verify.mjs`. It checks:
   - add, merge, cap, Remove, and the count at every step;
@@ -150,7 +150,7 @@ contract publishes, a live source gets written in the same folder:
 
 1. **Extract `RequestReadBack` first**, as its own commit, with 007's DOM byte-identical (done: `df66022`; later styling is recorded in spec 007's 2026-09-25 amendment). Prove it with `check-request-detail.mjs` before anything else lands. This keeps the conflict window with BEN-44 and BEN-47 small (Known Risks 4).
 2. `src/shared/validation.ts` and `place-problems.ts`.
-3. `seeded-stock.ts`, the catalog `reload`, and the provider and draft move. Update the catalog and shell checks at this step.
+3. `seeded-stock.ts`, the catalog `reload`, and the provider and draft move. Re-run the catalog and shell checks at this step. *(Both passed unchanged; the merge rule and the marker are asserted in `check-request-list.mjs` — see T011.)*
 4. The drawer (editing), then submit and the submitted state.
 5. `check-request-list.mjs`. It **reloads before any assertion on seeded numbers**, and asserts Available as **deltas** from a reading taken in the same load, never as absolutes (Known Risks 5).
 
@@ -198,7 +198,7 @@ scripts/check-request-list.mjs                  (new)
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| I. Spec-Driven | PASS | Implements spec 008. Every decision maps to an FR |
+| I. Spec-Driven | PASS | Implements spec 010. Every decision maps to an FR |
 | II. Two roles | PASS | Employee-only list, marker and submit |
 | III. Inventory integrity | PASS | Nothing reserved before submit. Seeded reserve is all-or-nothing and never negative. Total is untouched |
 | IV. State machine | PASS | Creates `Pending Approval` only |
@@ -214,7 +214,7 @@ scripts/check-request-list.mjs                  (new)
 |---|------|--------|
 | 1 | The live 201 body is thinner than `EmployeeRequest` (no line names). | **Accepted — open until the 201 schema is published** (contract conflict 4). The submit seam carries no names today; D8a records the two ways out |
 | 2 | Nested validation failures arrive as bare `#/items`, as in the contract's example, so per-line placement (D14) never fires and item errors show at the top of the drawer. | **Accepted.** Nothing is dropped and SC-003 holds. Revisit when C4 captures a real 400 |
-| 3 | The merge rule and the marker change break existing gates (`check-catalog`, `check-shell`). | **Mitigated**: checks updated in the same PR, and a spec 003 amendment |
+| 3 | The merge rule and the marker change break existing gates (`check-catalog`, `check-shell`). | **Mitigated**: both gates pass unchanged, because neither asserted what changed (`check-catalog` adds each item once; `check-shell` never follows the marker). The new behaviour is gated in `check-request-list.mjs` instead (T011), and spec 003 is amended |
 | 4 | Extracting `RequestReadBack` conflicts with concurrent work on `requests/detail/`. | **Mitigated**: extraction first, DOM-identical in that commit, proven by `check-request-detail`. Later drift-driven styling is a recorded spec 007 amendment, not a silent change |
 | 5 | Module-scoped seeded stock and requests leak between assertions. | **Mitigated**: reload before absolute reads; the new check asserts deltas |
 

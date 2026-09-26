@@ -10,7 +10,7 @@ export type CatalogRead =
 
 export type CatalogState = CatalogRead & {
   /** Re-reads the same office, in every state: the retry after a failure, and
-   *  the re-read after a submit has moved stock (spec 008 FR-011). A reload
+   *  the re-read after a submit has moved stock (spec 010 FR-011). A reload
    *  while `loading` drops the read in flight, which may have started before
    *  the stock moved, and starts a fresh one. */
   reload: () => void;

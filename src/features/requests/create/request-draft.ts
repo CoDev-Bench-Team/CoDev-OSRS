@@ -4,7 +4,7 @@ import type { EmployeeRequest } from '../detail/request-detail-types';
 import { NO_PROBLEMS, type PlacedProblems } from './place-problems';
 import type { RequestListLine } from './request-list-types';
 
-/** The seam between the Catalog (spec 005) and the Request List (spec 008).
+/** The seam between the Catalog (spec 005) and the Request List (spec 010).
  *
  *  The catalog's job ends at "the Employee chose this item and this quantity",
  *  so the card and the View Specs panel see one method, `add`, and nothing
@@ -13,7 +13,7 @@ import type { RequestListLine } from './request-list-types';
  *
  *  An add for an asset already in the list MERGES into its line — quantities
  *  summed, capped at the item's Available — rather than opening a second line
- *  (spec 008 FR-002). */
+ *  (spec 010 FR-002). */
 export type RequestListDraft = {
   add(item: CatalogItem, quantity: number): void;
 };

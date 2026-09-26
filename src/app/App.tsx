@@ -39,7 +39,7 @@ export default function App() {
       <SessionProvider>
         <RequestListCountProvider>
           {/* The Employee's Request List lives for the session, above every
-              route, and is the only writer of the count (spec 008 D1, D2). */}
+              route, and is the only writer of the count (spec 010 D1, D2). */}
           <RequestListProvider>
             {Gallery && CompareHarness ? (
               <Routes>

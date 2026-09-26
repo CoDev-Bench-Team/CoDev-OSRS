@@ -11,7 +11,7 @@ import { RequestListLineRow } from './RequestListLineRow';
 import { SubmittedView } from './SubmittedView';
 
 /** The Request List drawer — `03 - Request List` and, after a successful
- *  submit, `03.1 - Request List - Request Submitted` (spec 008).
+ *  submit, `03.1 - Request List - Request Submitted` (spec 010).
  *
  *  Three states, one panel (D7): **editing** the list; **submitting**, when
  *  nothing can change, the drawer cannot be closed, and a second submit cannot

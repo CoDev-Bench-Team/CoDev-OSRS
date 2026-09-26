@@ -76,7 +76,7 @@
    can sit on an element that already carries a drop shadow. Two `box-shadow`
    utilities on one element do not compose — the later one wins — so an
    invalid Request List line (`shadow-card` + `ring-brand`) lost its card
-   shadow (spec 008 FR-013a). The negative offset keeps the line inside the
+   shadow (spec 010 FR-013a). The negative offset keeps the line inside the
    box, where the inset ring drew it; the outline follows `border-radius`. */
 @utility outline-brand {
   outline: 1px solid var(--color-osrs-red-600);
