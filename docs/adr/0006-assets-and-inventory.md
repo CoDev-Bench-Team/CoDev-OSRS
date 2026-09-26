@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted — 2026-09-22. **Amends [ADR-0002](0002-deduct-inventory-on-submit.md)**
+Accepted — 2026-09-22. **Partly superseded by [ADR-0008](0008-per-unit-inventory-register.md) (2026-09-26):** decision 5 (the register is post-MVP) is withdrawn. Decision 1's "Stock is a quantity held against an asset at an office" and decision 3's "Asset encoded / stock set" row and Deployed column no longer hold: stock is counted from unit statuses, and completion assigns units. Decisions 2 (stock is a vector over offices) and 4 (the `Low-stock threshold` term), the Assets/Inventory split in decision 1, and reserve-on-submit in decision 3 still stand.
+
+**Amends [ADR-0002](0002-deduct-inventory-on-submit.md)**
 (which remains accepted for *when* stock moves; this ADR changes *what* moves).
 
 ## Context

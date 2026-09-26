@@ -23,8 +23,8 @@ A **functional** end-to-end demo — not a perfect procurement suite — that sh
 | Actor | Job |
 |-------|-----|
 | **Employee (Requestor)** | Browse the catalog by category and office, build a request list, submit with a note, see rejection and cancellation reasons, track status and history, cancel their own pending request |
-| **Admin** | Review the queue; approve or reject (reason required); set For Delivery or Ready for Pickup; complete; cancel what cannot be fulfilled; own Assets and Inventory |
-| **System** | Show availability; reserve on submit; release on reject or cancel; consume on complete; email at each defined step |
+| **Admin** | Review the queue; approve or reject (reason required); set For Delivery or Ready for Pickup; complete; cancel what cannot be fulfilled; own Assets and Inventory, including the unit register (add, review, remove units) |
+| **System** | Show availability; reserve units on submit; release on reject or cancel; assign units to the requester on complete; email at each defined step |
 
 The 2026-09-11 process diagram split the old combined “Admin” into **Approver** and **Supply Admin**. The 2026-09-22 design re-export merges them back into a single **Admin**, and permissions follow that merge — see [ADR-0005](adr/0005-two-role-model.md), which names the control point this gives up.
 
@@ -53,5 +53,4 @@ Stack (this repo): React + TypeScript + Vite + Tailwind. The SPA consumes a REST
 - Multi-level or delegated approval
 - Ingesting requests from email or chat
 - Multi-warehouse, forecasting, or automatic reorder
-- A per-unit asset register (serial numbers, assignment to a person, BitLocker escrow) — the design anticipates it; the MVP must not foreclose it
 - Requesting more information from a requester (the `Action required` email has a template but no drawn flow)

@@ -222,12 +222,19 @@ colours (`--color-status-rejected-*`, `--color-status-info-*`) used for a new
 purpose. **This widens the status vocabulary's reach beyond request status** —
 worth the designer's ratification alongside the handover labels in §2b.
 
+**Ratification: pending designer** (D2 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)).
+
 ### The sign-out control
 
 Not drawn anywhere in the source. Placed in the account cluster, at the right
 end of the top bar, as the system's `ghost` button. Its placement, its label
 ("Sign Out", Title Case per the content conventions) and its very existence are
 ours.
+
+*2026-09-26:* the Prototype page's `05 - Profile` (09-18) draws a **Sign Out**
+action inside the profile card. The Mockups page does not draw it anywhere. The
+placement question is now top bar or in-card.
+**Ratification: pending designer** (D3 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)).
 
 ### Navigation sets — no longer invented (2026-09-24)
 
@@ -277,6 +284,8 @@ The source has no mobile frame. Below `md` the navigation collapses into a
 cluster, the request-list marker and sign-out stay in the bar at every width.
 Carries forward the responsive commitment in §3.
 
+**Ratification: pending designer** (D4 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)).
+
 ### The bar now starts at the 32px gutter it always claimed
 
 `TopBar` capped at the 1344px **content** width and centred, which at the 1440
@@ -287,6 +296,8 @@ the same grid. The source reaches its 1344 of content from an **asymmetric**
 pair of gutters (32 left, 64 right, measured from the frame); a symmetric flow
 layout cannot reproduce that, so the content runs 1376 wide instead. The
 designer should confirm the symmetric gutter.
+
+**Ratification: pending designer** (D5 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)).
 
 ### The sign-in card, composed in flow
 
@@ -353,10 +364,13 @@ demo accounts, so it disappears by itself the day a real one replaces it.
 `05 - Profile` draws one Employee's profile with three assigned units. Everything
 below is ours.
 
+**Admin profile — ratification: pending designer** (D6 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)). Since 2026-09-26
+the assigned units have a real source (constitution 4.0.0; ADR-0008).
+
 | Addition | What was decided | Basis |
 |----------|------------------|-------|
 | **Admin profile** | The Employee layout, unchanged. Nothing on the page varies by role. | Only the Employee's is drawn (spec 006 D2). |
-| **`Currently Assigned` hidden with no source** | When the backend exposes no assigned equipment, which is the case today, the section is not rendered at all: no heading and no gap. | The list reads a per-unit register the MVP does not build (spec 006 D1, FR-007c). An empty state would claim "nothing assigned" when the truth is "unknown". |
+| **`Currently Assigned` hidden with no source** | When the backend exposes no assigned equipment, which is the case today, the section is not rendered at all: no heading and no gap. | The list reads a per-unit register the MVP does not build (spec 006 D1, FR-007c). An empty state would claim "nothing assigned" when the truth is "unknown". *(Superseded 2026-09-26: the register is in scope, ADR-0008.)* |
 | **Empty state** | A card at half the grid's width: `Nothing is assigned to you` (subhead) over `Equipment issued to you will appear here` (body, secondary). Shown only when a source answers with no items. | Not drawn. Uses the assigned card's own treatment, so it reads as the list's absence rather than a notice. |
 | **Loading and failure** | Inline under the heading. `Loading assigned equipment` (body, secondary, `role="status"`), and `Couldn't load your assigned equipment` (body, rejected ink, `role="alert"`) with no retry control. The identity block always renders. | Not drawn. The shell's `LoadingState` and `Notice` are full-screen surfaces, which would bury the identity block for a failure in one section. |
 | **Missing assigned date** | The date line reads `Assignment date not available` (body, secondary) when the backend sends no date or one that does not format. The line is never dropped, so every card is the same height. Added 2026-09-23 after design review. | Not drawn; every drawn card has a date. Omitting the line left a shorter card beside full ones. The copy states the absence and invents no date. |
@@ -484,12 +498,14 @@ the mark red.
    export.)
 9. Ratify the application shell in §3d: the five feedback surfaces and their use
    of the status tints, the sign-out control, the collapsed navigation and the
-   symmetric 32px gutter.
+   symmetric 32px gutter. **Asked 2026-09-26** as D2–D5 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up).
 10. Settle the 2026-09-15 re-export in [drift-2026-09-15.md](drift-2026-09-15.md)
     — the new `Cancelled` status (which needs a constitution amendment, not a
     design decision), `Completed`'s new purple, the notification bell, and how
     Profile is reached now that it is not a navigation item.
 11. Ratify Profile in §3e: the reuse for the Admin, and the
     hidden / empty / loading / failure treatments of `Currently Assigned`, and
-    the `Assignment date not available` line for a card with no date. Decide
-    whether the per-unit register behind the drawn asset tags is ever in scope.
+    the `Assignment date not available` line for a card with no date. ~~Decide
+    whether the per-unit register behind the drawn asset tags is ever in scope.~~
+    **In scope since 2026-09-26** (constitution 4.0.0). The Admin reuse is asked as D6
+    in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up).
