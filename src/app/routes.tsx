@@ -8,6 +8,7 @@ import { ProfilePage } from '../features/profile/ProfilePage';
 import { MyRequestsPage } from '../features/requests/history/MyRequestsPage';
 import { useSession } from '../features/auth/session-context';
 import { QueuePage } from '../features/requests/queue/QueuePage';
+import { RequestDeepLink } from './RequestDeepLink';
 import { AppLayout } from './AppLayout';
 import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './destinations';
 import { NavButton } from './NavButton';
@@ -70,6 +71,7 @@ export function AppRoutes() {
         <Route index element={<LandingRedirect />} />
         <Route path={DESTINATIONS.catalog.path} element={guarded('catalog', <CatalogPage />)} />
         <Route path={DESTINATIONS.requests.path} element={guarded('requests', <MyRequestsPage />)} />
+        <Route path={DESTINATIONS.requestDetail.path} element={guarded('requestDetail', <RequestDeepLink />)} />
         <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
         <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />

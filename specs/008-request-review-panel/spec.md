@@ -5,14 +5,13 @@
 **Status**: Draft  
 **Sources**: BEN-47, BEN-76 (G0), BEN-77/78/79, constitution 3.0.1, `specs/001-office-supplies-mvp/spec.md` (US3–US5, FR-008–FR-014), `specs/004-approver-pending-queue/spec.md` (FR-010 seam), `specs/007-employee-request-panel/spec.md` (timeline, reason read-back), [ADR-0005](../../docs/adr/0005-two-role-model.md), [ADR-0006](../../docs/adr/0006-assets-and-inventory.md), [ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md), [drift-2026-09-22 §2–§3](../../docs/design-system/drift-2026-09-22.md), [drift-2026-09-24 §2, §5, §6](../../docs/design-system/drift-2026-09-24.md), [drift-2026-09-26 §2, §4](../../docs/design-system/drift-2026-09-26.md), Figma *Mockups* frames `02.2 - Requests Queue - Review`, `02.2.1 - … - Review - Approve`, `02.2.1 - … - Review - Update Status` (×2), `02.2.2- … - Review - Reject`, `02.2.2.1 - … - Review - Reject`, component `Status Timeline`
 
-> **Gated on a constitution amendment.** The project owner decided on
-> 2026-09-26 to adopt the `Received` status from
-> [drift-2026-09-24 §2](../../docs/design-system/drift-2026-09-24.md) (see
-> Clarifications). That redefines constitution IV and supersedes ADR-0007, so it
-> is **constitution 4.0.0**. That amendment is its own change. It is **not**
-> made by this spec. Stories 1–3 (read, approve, reject, hand over) do not
-> depend on it. Story 4 (Complete) does, and it MUST NOT ship until the
-> amendment lands.
+> **Amended 2026-09-26 after merging `dev`.** The `Received` amendment this
+> spec was gated on has landed: constitution **5.0.0** and ADR-0009 (BEN-43).
+> The Employee's Accountability Form sets `Received`; the reserved units are
+> assigned then, so Total and Reserved fall at `Received`, not at `Completed`.
+> The Admin completes only from `Received`, and Complete changes no quantity.
+> Story 4 is therefore unblocked, but is **not built yet**. See Session
+> 2026-09-26 (after the `dev` merge) in Clarifications.
 
 ## Overview
 
@@ -71,13 +70,13 @@ An Admin sets an approved request to `For Delivery` or `Ready for Pickup`, and c
 
 After the Employee has acknowledged receipt (`Received`), an Admin completes the request, and that is when the stock leaves the store.
 
-**Why this priority**: This closes the pipeline, and it is the only transition that reduces Total (ADR-0006). **Gated** on constitution 4.0.0 (see the banner).
+**Why this priority**: This closes the pipeline (constitution 5.0.0 IV). It changes no quantity: the units left the store at `Received` (constitution 5.0.0 III). **Not built yet** (see the banner).
 
 **Acceptance Criteria**:
 
 1. **Given** a `Received` request, **When** the panel renders, **Then** it offers **Complete** and no other action.
 2. **Given** the Admin activates **Complete**, **When** the confirm step opens, **Then** it asks the Admin to confirm, with **Cancel** and **Complete**. Nothing is sent until they confirm.
-3. **Given** the Admin confirms, **When** the source accepts it, **Then** the panel shows `Completed`, the timeline's last node is reached, the request leaves the queue, and every stock figure the SPA shows afterwards is the source's post-completion value (Total and Reserved lower by each line quantity; Available unchanged).
+3. **Given** the Admin confirms, **When** the source accepts it, **Then** the panel shows `Completed`, the timeline's last node is reached, the request leaves the queue, and no stock figure changes.
 4. **Given** any status other than `Received`, **When** the panel renders, **Then** **Complete** is not rendered.
 
 ### Edge Cases
@@ -94,6 +93,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 ## Functional Requirements
 
 - **FR-001**: **Review** on a queue row MUST open the panel over `/queue` and MUST NOT change the address. It replaces spec 004 FR-010's navigation to `/requests/:id`.
+- **FR-001a**: `/requests/:id` MUST open that request's panel: for an Admin, the review panel over `/queue`; for an Employee, their request panel over `/requests`. A request the page may not show (missing, or for an Employee not theirs) MUST open nothing and show one notice, identical for both cases, that does not echo the id (spec 003 FR-012a). The link MUST survive sign-in (spec 003 FR-013).
 - **FR-002**: The panel MUST close on ✕, Esc and a scrim click, MUST hold focus while open, and MUST return focus to the invoking **Review**. Closing MUST preserve the queue's query state.
 - **FR-003**: The panel body MUST show the request id and status pill, REQUESTED BY (avatar, name, `email • office`), the `ITEM · QTY · CURRENT INVENTORY` table, the Note to Approver when present, and the STATUS timeline. The body is the same in every state.
 - **FR-004**: CURRENT INVENTORY MUST show the Available quantity at the request's office as the data source reports it. The SPA MUST NOT compute it.
@@ -104,7 +104,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
   | `Pending Approval` | Reject Request · Approve Request |
   | `Approved` | Update Status |
   | `For Delivery` / `Ready for Pickup` | Update Status |
-  | `Received` | Complete (gated, FR-012) |
+  | `Received` | Complete (FR-012; not built yet, so nothing today) |
   | `Rejected` / `Cancelled` / `Completed` | Close |
 
 - **FR-006**: Approve MUST move `Pending Approval` → `Approved`.
@@ -113,11 +113,11 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 - **FR-009**: `Ready for Pickup` MUST require a pickup location: one of the offices the source exposes (the request's office preselected), or **Other…** with non-empty free text.
 - **FR-010**: The panel MUST NOT offer Complete from `For Delivery` or `Ready for Pickup`.
 - **FR-011**: Complete MUST ask for confirmation before it sends anything.
-- **FR-012**: Complete, `Received`, and the five-node timeline MUST NOT ship until constitution 4.0.0 adopts `Received`. Until then, `RequestStatus` stays the seven states of 3.0.1.
+- **FR-012**: Complete MUST be offered only on `Received` (constitution 5.0.0 IV). Until it is built, `Received` offers no action.
 - **FR-013**: After any successful transition, the panel, the queue rows, the chip counts and the summary cards MUST show the source's current state. A request that reaches a terminal status MUST leave the queue.
 - **FR-014**: A refusal caused by a changed status MUST say so and show the current status and its actions. Any other failure MUST leave the status unchanged and keep the form's input.
 - **FR-015**: A transition in flight MUST NOT be sendable again.
-- **FR-016**: The SPA MUST NOT change stock or send email. Reserve release (reject), consumption (complete) and every notification (approve → `Request approved`, reject → `Request declined`, every other transition → `Status changed` with previous and new status and the pickup location) are the API's (constitution III, V).
+- **FR-016**: The SPA MUST NOT change stock or send email. Reserve release (reject), unit assignment (`Received`) and every notification (approve → `Request approved`, reject → `Request declined`, every other transition → `Status changed` with previous and new status and the pickup location) are the API's (constitution III, V).
 - **FR-017**: The SPA MUST NOT invent REST routes, payloads, response fields or error codes. Until the contract publishes, data MAY come from a typed seeded source behind an interface, as spec 004 FR-018 allows.
 - **FR-018**: The panel and its forms MUST compose shared UI from `src/shared/ui`, and MUST reuse the timeline spec 007 established.
 - **FR-019**: Every control MUST be keyboard-operable with visible focus. The panel MUST stay usable from 360px to 1440px without page-level horizontal overflow.
@@ -134,7 +134,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 
 - **Admin cancel** (`Approved` / `For Delivery` / `Ready for Pickup` → `Cancelled`). Spec 001 FR-010b stands, but no control is drawn. Deferred to a follow-up ticket by the project owner, 2026-09-26.
 - The Employee's accountability form and the transition to `Received`. They are the amendment's and the Employee panel's.
-- The constitution 4.0.0 amendment itself. The follow-up covers ADR-0007's successor, spec 001 FR-012/FR-012a, `docs/process-flow.md`, `ARCHITECT.md` §5–§6, `status.ts`, and spec 004's chips.
+- The `Received` amendment itself, which landed with constitution 5.0.0 (BEN-43, ADR-0009).
 - The queue list, filters, search, sort and pagination (BEN-46).
 - History and its read-only panel (BEN-49 / spec 001 FR-016a).
 - Stock arithmetic, email sending, and REST contract definition.
@@ -146,7 +146,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 - **SC-002**: An Admin can take a seeded request from `Pending Approval` to `Ready for Pickup` with a location, entirely in the panel, without the address changing.
 - **SC-003**: An empty or whitespace-only rejection reason, or a missing pickup location, never changes a request's status.
 - **SC-004**: After each successful transition, the panel, the row, the chip counts and the summary cards agree with the source.
-- **SC-005**: No handover state offers Complete. Once the amendment lands, only `Received` does, and only after confirmation.
+- **SC-005**: No handover state offers Complete. Once Complete is built, only `Received` offers it, and only after confirmation.
 - **SC-006**: An Employee cannot reach any control in this feature through navigation or a direct address.
 - **SC-007**: Review of the feature finds no invented route, payload, field, error code, stock calculation or office name.
 
@@ -159,22 +159,30 @@ Raised while specifying BEN-47 (G0, BEN-76) against the 2026-09-22 frames, and d
 - Q: `Ready for Pickup` must record a location (spec 001 FR-011a), but the Update Status frame draws only `Status *`. How is it collected? → A: **A select of the office locations, with a last option that reveals a free-text field.** This is an undrawn addition, recorded in `docs/design-system/additions.md` and flagged to the designer.
 - Q: Admin cancel has no drawn control. Where does it go? → A: **Out of scope for BEN-47.** It is deferred to a follow-up ticket. Spec 001 FR-010b is unchanged.
 - Q: The handed-over frame draws only **Complete**, yet `For Delivery` and `Ready for Pickup` are peers. → A: **The Employee's `Received` (accountability form, drift-2026-09-24 §2) comes before Complete.** The Admin sees **Complete** only once the status is `Received`.
-- Q: Adopting `Received` redefines constitution IV (4.0.0) and supersedes ADR-0007. Where does that land? → A: **Recorded here, amended separately.** A follow-up change carries the constitution, ADR, spec 001, process-flow and `status.ts` amendment. This spec's Complete story is gated on it.
-- Q: With `Received`, which transition consumes stock? → A: **`Completed`, unchanged.** `Received` changes no quantity (ADR-0006 stock rule 7 stands).
+- ~~Q: Adopting `Received` redefines constitution IV (4.0.0) and supersedes ADR-0007. Where does that land? → A: **Recorded here, amended separately.**~~ *Superseded: it landed as constitution 5.0.0 (below).* A follow-up change carries the constitution, ADR, spec 001, process-flow and `status.ts` amendment. This spec's Complete story is gated on it.
+- ~~Q: With `Received`, which transition consumes stock? → A: **`Completed`, unchanged.**~~ *Superseded by constitution 5.0.0 III: the units are assigned, and Total and Reserved fall, at `Received`. Complete changes nothing.*
 - Q: What does the Admin's panel offer during `For Delivery` / `Ready for Pickup`? → A: **Update Status only**, so the two peers can be swapped. Complete appears at `Received`.
-- Q: Should Complete, which is irreversible and consumes stock, confirm first? → A: **Yes, a confirm step.** The frame draws none. This is an undrawn addition, flagged to the designer.
+- Q: Should Complete, which is irreversible, confirm first? → A: **Yes, a confirm step.** The frame draws none. This is an undrawn addition, flagged to the designer.
 
 Inferred from existing specs, not asked:
 
 - The reject reason is an **inline block in the panel**, not a modal. That is how `02.2.2` draws it (drift-2026-09-24 §5).
-- The open panel is component state, not part of the address, as in spec 007. Spec 003 kept the Admin's `/requests/:id` "until BEN-47". This feature retires that hand-off, and spec 003 is amended in the same change.
+- The open panel is component state, not part of the address, as in spec 007. *(Later the same day `/requests/:id` became a deep link that opens the panel; see below.)*
 - The pickup-location select preselects the request's office, which is the most likely pickup point. This is our default, not drawn.
+
+### Session 2026-09-26 — after merging `dev`
+
+Decided by the project owner.
+
+- Q: `dev` adopted `Received` as constitution 5.0.0 (BEN-43, ADR-0009): the Employee's form sets it, units are assigned then, and Complete changes nothing. What happens to this spec's gate? → A: **It is met.** The banner, Story 4, FR-012 and FR-016 follow 5.0.0. Complete stays unbuilt for now; `Received` offers no action until it is.
+- Q: An email's *View request* button links to `/requests/:id`, which this spec had retired. → A: **Build it as a deep link that opens the panel** (FR-001a). Spec 003 is amended the same day.
+- Q: The timeline dots: the frames' own shades, or the pills'? → A: **The pills.** A reached dot takes its status pill's ink ([drift-2026-09-26 §4b](../../docs/design-system/drift-2026-09-26.md)).
 
 ## Validation
 
 - Completeness: PASS. All four P1 stories have acceptance criteria. Story 4 is explicitly gated.
 - Clarity: PASS
-- Consistency: PASS with the recorded gate. FR-012 keeps this spec consistent with constitution 3.0.1 until 4.0.0 lands.
+- Consistency: PASS against constitution 5.0.0.
 - Measurability: PASS
 - Coverage: PASS. Admin cancel is excluded deliberately (Out of Scope).
 - Edge cases: PASS

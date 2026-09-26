@@ -29,6 +29,8 @@ import {
   type QueueViewModel,
 } from './queue-types';
 import { adminRequestSource } from './admin-request-source';
+import { RefusalAlert } from '../detail/RefusalAlert';
+import { useDeepLinkedRequest } from '../deep-link';
 import { ReviewPanel } from './ReviewPanel';
 import type { AdminRequestSource, ReviewSnapshot, TransitionResult } from './review-types';
 
@@ -176,6 +178,15 @@ export function QueuePage({
     }
   };
 
+  // `/requests/:id` lands here for an Admin and opens that request's panel. The
+  // snapshot holds every request, terminal ones included, so a link to a
+  // decided request opens it read-only.
+  const allIds = useMemo(
+    () => (state.kind === 'loaded' ? state.snapshot.requests.map((request) => request.id) : null),
+    [state],
+  );
+  const unavailable = useDeepLinkedRequest(allIds, setOpenId);
+
   const openRequest =
     openId && state.kind === 'loaded' ? state.snapshot.requests.find((request) => request.id === openId) : undefined;
 
@@ -234,6 +245,8 @@ export function QueuePage({
           }
         />
       ) : null}
+
+      {unavailable ? <RefusalAlert messages={[unavailable]} /> : null}
 
       {queue ? (
         <LoadedQueue queue={queue} query={query} onChange={change} focusRef={recoveredFocus} onReview={setOpenId} />

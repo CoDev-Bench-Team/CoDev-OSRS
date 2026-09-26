@@ -4,7 +4,7 @@
 **Plan**: `specs/008-request-review-panel/plan.md`  
 **Structure**: By delivery slice. One phase is one PR, as plan "Delivery slices" sets out.
 
-Linear lifecycle: BEN-76 (G0, spec) → BEN-77 (G1, plan/tasks) → BEN-78 (G2) → BEN-79 (G3a, G3b). G3b is **blocked by BEN-134** (constitution 4.0.0). Admin cancel is BEN-135 and is not in this list.
+Linear lifecycle: BEN-76 (G0, spec) → BEN-77 (G1, plan/tasks) → BEN-78 (G2) → BEN-79 (G3a, G3b). G3b was blocked on the `Received` amendment, which landed as constitution 5.0.0 (BEN-43). Admin cancel is BEN-135 and is not in this list.
 
 Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
@@ -14,7 +14,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 - [x] T002 [P] [BEN-77] Annotate FR-010 "superseded by spec 008 FR-001" — `specs/004-approver-pending-queue/spec.md`
 - [x] T003 [P] [BEN-77] Log undrawn additions §3h: pickup-location select + `Other…` field, pickup read-back row, Update Status on handover states, Complete confirm (D12) — `docs/design-system/additions.md`
 - [x] T004 [P] [BEN-77] Add spec 008 to the index; tick tasks.md T015/T016/T017/T018 as owned by spec 008 — `specs/README.md`, `specs/001-office-supplies-mvp/tasks.md`
-- [ ] T005 [BEN-77] Ask the backend whether the "View request" email links to `/requests/:id`, and record the answer on BEN-78 before G2 merges (accepted risk R3) — `specs/008-request-review-panel/plan.md` *(asked on BEN-78, 2026-09-26; awaiting the backend)*
+- [ ] T005 [BEN-77] Ask the backend whether the "View request" email links to `/requests/:id`, and record the answer on BEN-78 before G2 merges (accepted risk R3) — `specs/008-request-review-panel/plan.md` *(asked on BEN-78, 2026-09-26. No longer blocking: `/requests/:id` is now a deep link that opens the panel (T031–T034), so an email that links there works. The answer only confirms the address the emails use.)*
 
 ## Phase 1: Foundations (BEN-78)
 
@@ -58,9 +58,16 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   — `scripts/check-review-panel.mjs`
 - [ ] T024 [BEN-79] Lint, build, verify; fidelity against `02.2.1 Approve` and `02.2.1 Update Status`; PR to `dev` *(gates green; PR not opened)*
 
-## Phase 4: G3b — Complete (US4) (BEN-79) — BLOCKED by BEN-134
+## Phase 3b: `/requests/:id` deep link (BEN-47, 2026-09-26)
 
-Do not start until constitution 4.0.0 adds `Received` to `RequestStatus`. If BEN-134 is declined, apply accepted risk R5 instead: Complete comes from the handover states, as a one-row change to `reviewActions`.
+- [x] T031 [BEN-47] Amend spec 003 (Session 2026-09-26) and spec 008 (FR-001a, D10): the address is a deep link that opens the panel — `specs/003-app-shell-routing/spec.md`, `specs/008-request-review-panel/`
+- [x] T032 [BEN-47] `requestDetail` destination for both roles; `RequestDeepLink` forwards by role — `src/app/destinations.ts`, `src/app/routes.tsx`, `src/app/RequestDeepLink.tsx`
+- [x] T033 [BEN-47] `useDeepLinkedRequest`: open once the list loads, one notice for an id the page may not show, consume the state — `src/features/requests/deep-link.ts`, `src/features/requests/queue/QueuePage.tsx`, `src/features/requests/history/MyRequestsPage.tsx`
+- [x] T034 [BEN-47] Check both roles, a decided request, missing and foreign ids, and the link surviving sign-in — `scripts/check-shell.mjs`
+
+## Phase 4: G3b — Complete (US4) (BEN-79) — unblocked by constitution 5.0.0
+
+`Received` is in `RequestStatus` since constitution 5.0.0. Complete comes only from `Received` and changes no quantity (constitution 5.0.0 III, IV); the Employee's Accountability Form, which sets `Received`, is spec 001 T018b.
 
 - [ ] T025 [US4] [BEN-79] Add the `Received` row (`complete`) to `reviewActions`; the build must fail until it is added (D2) — `src/features/requests/queue/review-actions.ts`
 - [ ] T026 [US4] [BEN-79] Seeded `complete(id)` from `Received` only, setting `completedAt`, with no stock math — `src/features/requests/queue/seeded-admin-request-source.ts`, `src/features/requests/queue/review-types.ts`
@@ -71,10 +78,10 @@ Do not start until constitution 4.0.0 adds `Received` to `RequestStatus`. If BEN
 
 ## Dependencies
 
-- Phase 0 T001 before T016/T017. T005 before the G2 PR merges.
+- Phase 0 T001 before T016/T017.
 - T006 → T007, T008 → T009. T010 and T011 are independent of T006–T009.
 - Phase 1 → Phase 2 → Phase 3 → Phase 4.
-- Phase 4 is additionally blocked by BEN-134.
+- Phase 4 needs a `Received` request to act on, which the Accountability Form (spec 001 T018b) produces.
 
 ## Parallel opportunities
 
@@ -82,4 +89,4 @@ T002, T003, T004 together. T010 and T011 alongside T006–T009.
 
 ## MVP slice
 
-Phases 0–2 (G2): a working review panel with approve and reject on the seed. Phase 3 completes the handover. Phase 4 waits for the amendment.
+Phases 0–2 (G2): a working review panel with approve and reject on the seed. Phase 3 completes the handover. Phase 4 is next.

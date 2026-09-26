@@ -240,32 +240,48 @@ for (const retired of ['/approvals', '/fulfillment']) {
   const state = await cdp.evaluate(shellState);
   check(state.eyebrow === 'Not found', `retired ${retired} renders not-found for the Admin`, `eyebrow ${state.eyebrow}`);
 }
-// No role has a record address since 2026-09-26: the Admin reviews in a panel
-// over /queue (spec 008, spec 003 amendment), and the Employee in one over
-// /requests. Every id, whether owned, foreign or missing, is the same not-found
-// for both roles, so the response cannot be used to enumerate identifiers
-// (FR-012a).
-for (const role of ['admin', 'employee']) {
-  await signIn(role);
-  const records = [];
-  for (const id of ['REQ-2026-9999', 'REQ-2026-1500', 'REQ-2026-1847']) {
-    await go(`/requests/${id}`);
-    records.push({ id, ...(await cdp.evaluate(shellState)) });
-  }
-  check(
-    records.every((r) => r.eyebrow === 'Not found'),
-    `/requests/:id is not-found for the ${role} for a missing, a foreign and an owned id alike`,
-    records.map((r) => r.eyebrow).join(', '),
+// /requests/:id is a deep link since 2026-09-26 (spec 003; spec 008): it opens
+// the request's panel over the list the role works from. An Admin lands on
+// /queue, an Employee on /requests. A request the page may not show opens
+// nothing and gets one notice, word for word the same for a missing and, for an
+// Employee, a foreign id, without echoing it (FR-012a).
+const landing = () => ({
+  path: location.pathname,
+  panel: document.querySelector('dialog[open] h2')?.textContent.trim() ?? null,
+  notice: document.querySelector('main [role="alert"]')?.textContent.trim() ?? null,
+});
+const followLink = async (id, list) => {
+  await go(`/requests/${id}`);
+  await waitForPath(list, `the ${list} list`);
+  await cdp.waitFor(
+    () => !!document.querySelector('dialog[open] h2') || !!document.querySelector('main [role="alert"]'),
+    8000,
+    `the deep link to ${id} to settle`,
   );
-  check(
-    records.every((r) => r.body === records[0].body && r.title === records[0].title),
-    `and the three responses are word-for-word identical for the ${role}`,
-  );
-  check(
-    records.every((r) => !r.body?.includes(r.id.slice(-4))),
-    `no response echoes the identifier back to the ${role}`,
-  );
-}
+  return cdp.evaluate(landing);
+};
+
+console.log('\n/requests/:id opens the request\'s panel, for either role (spec 003, 2026-09-26)');
+await signIn('admin');
+let hit = await followLink('REQ-2026-1847', '/queue');
+check(hit.path === '/queue' && hit.panel === 'REQ-2026-1847', 'the Admin lands on /queue with that request\'s review panel open', JSON.stringify(hit));
+hit = await followLink('REQ-2026-1684', '/queue');
+check(hit.panel === 'REQ-2026-1684', 'a decided request opens too, read-only (it is not in the live queue)', JSON.stringify(hit));
+hit = await followLink('REQ-2026-9999', '/queue');
+check(!hit.panel && !!hit.notice && !hit.notice.includes('9999'), 'a missing id opens nothing and says so, without echoing it', JSON.stringify(hit));
+
+await signIn('employee');
+hit = await followLink('REQ-2026-1847', '/requests');
+check(hit.path === '/requests' && hit.panel === 'REQ-2026-1847', 'the Employee lands on /requests with their own request open', JSON.stringify(hit));
+const missing = await followLink('REQ-2026-9999', '/requests');
+const foreign = await followLink('REQ-2026-1748', '/requests'); // an Admin-queue request that is not Maya's
+check(!missing.panel && !foreign.panel, 'a missing and a foreign id open nothing for the Employee');
+check(
+  !!missing.notice && missing.notice === foreign.notice && !missing.notice.includes('9999') && !foreign.notice.includes('1748'),
+  'and get the same notice, word for word, never echoing the id (FR-012a)',
+  `${missing.notice} | ${foreign.notice}`,
+);
+check((await cdp.evaluate(() => history.state?.usr ?? null)) === null, 'the link\'s state is consumed, so Back or a reload does not reopen it');
 
 // ---- T048: a deep link survives sign-in ----
 console.log('\nA visitor who asked for a destination arrives there after signing in (FR-013)');
@@ -280,6 +296,19 @@ await cdp.evaluate(() => {
 });
 await waitForPath('/profile', 'the originally requested destination');
 pass('a signed-out request for /profile lands on /profile after sign-in, not on the landing screen');
+
+// The case the deep link exists for: a "View request" email opened while
+// signed out (spec 003, Session 2026-09-26).
+await signOutEverywhere();
+await go(`/requests/REQ-2026-1847`);
+await waitForPath('/login', 'the redirect to sign-in');
+await cdp.evaluate(() => {
+  document.querySelector('input[value="maya.santos"]').click();
+  [...document.querySelectorAll('button')].find((b) => b.textContent.includes('Sign in with Google')).click();
+});
+await waitForPath('/requests', 'My Requests after sign-in');
+await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.textContent.trim() === 'REQ-2026-1847', 8000, 'the request panel after sign-in');
+pass('an email link opened while signed out lands on the request\'s panel after sign-in');
 
 // A destination the role may NOT use falls back to its landing screen.
 await signOutEverywhere();

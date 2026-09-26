@@ -17,6 +17,8 @@ import { useSession } from '../../auth/session-context';
 import { RequestDetailPanel } from '../detail/RequestDetailPanel';
 import type { CancelResult, EmployeeRequest, EmployeeRequestSource } from '../detail/request-detail-types';
 import { employeeRequestSource } from '../detail/employee-request-source';
+import { RefusalAlert } from '../detail/RefusalAlert';
+import { useDeepLinkedRequest } from '../deep-link';
 import { formatDate, summarizeItems } from '../format';
 
 /** My Requests — a STAND-IN for BEN-44.
@@ -109,6 +111,12 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
     return result;
   };
 
+  // `/requests/:id` lands here for an Employee and opens their own request.
+  // Only their own ids are in the list, so another Employee's request and a
+  // missing one get the same notice (spec 003 FR-012a).
+  const ownIds = useMemo(() => (load.state === 'ready' ? load.requests.map((r) => r.id) : null), [load]);
+  const unavailable = useDeepLinkedRequest(ownIds, setOpenId);
+
   const { title, purpose } = DESTINATIONS.requests;
   const requests = load.state === 'ready' ? load.requests : [];
   const open = requests.find((r) => r.id === openId);
@@ -116,6 +124,8 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   return (
     <div className="flex flex-col gap-24 py-32">
       <PageHeader title={title} subtitle={purpose} />
+
+      {unavailable ? <RefusalAlert messages={[unavailable]} /> : null}
 
       {load.state === 'loading' ? <LoadingState label="Loading your requests" /> : null}
 

@@ -30,7 +30,7 @@
 | D7 | The Update Status form is a small `UpdateStatusForm`: `Status *` select, then, for `Ready for Pickup`, a `Pickup location *` select listing `source.pickupOffices` plus a final `Other…`, then a free-text field for `Other…`. The request's office is preselected. The value is a `PickupLocation` union (below). | Spec FR-008/FR-009, Clarifications 2026-09-26. The office list comes from the source, never a literal in the panel (see Known Risks: Pasig/Ortigas). |
 | D8 | The Complete confirm is **inline** in the action area (`Mark this request as completed?` · Cancel / Complete), not a modal over the panel. | FR-011. A dialog on a dialog would double the focus-trap logic. Inline matches how reject is drawn. |
 | D9 | Complete code (`CompleteConfirm`, the `complete` source method, the `Received` row) ships in a **separate PR after BEN-134**. G2 and G3a do not contain it. | Spec FR-012. Nothing unreachable ships behind a flag. |
-| D10 | **Retire `/requests/:id`.** The `requestDetail` destination, `RequestDetailPlaceholder` and `seeded-request-ids.ts` are removed. `/requests/:id` falls to the shell's not-found for both roles. Spec 003 gets a 2026-09-26 amendment line. | Spec 003 kept it "until BEN-47". Not-found for every id and role still satisfies spec 003 FR-012a (no enumeration). |
+| D10 | **`/requests/:id` is a deep link** *(amended 2026-09-26, after the `dev` merge; it was first retired)*. `RequestDeepLink` forwards to `/queue` (Admin) or `/requests` (Employee) with the id in navigation state; `useDeepLinkedRequest` opens the panel once the page's list has loaded, or shows one fixed notice for an id it may not show, then consumes the state. The `requestDetail` destination is kept for both roles so the link survives sign-in; `RequestDetailPlaceholder` and `seeded-request-ids.ts` stay deleted. | Email *View request* buttons link to the address (T005). Deciding existence against the page's own list keeps a missing and a foreign id identical (spec 003 FR-012a). |
 | D11 | The timeline mapping is widened to a structural `TimelineFacts` type (the fields it reads), so `requestTimeline` serves both `EmployeeRequest` and `ReviewRequest`. It moves to `src/features/requests/request-timeline.ts`. | FR-018: reuse the 007 timeline, with one mapping for both panels. |
 | D12 | Undrawn additions (pickup-location select, `Other…` field, pickup-location read-back row, Complete confirm, the `Update Status` action on a handover state) are logged in `docs/design-system/additions.md` §3h. | Constitution I: undrawn UI is recorded, not silent. |
 
@@ -122,8 +122,9 @@ None added. `AdminRequestSource` is an internal UI seam. The backend's approve, 
 
 **App**
 
-- `src/app/destinations.ts`, `src/app/routes.tsx`, `src/app/placeholders.tsx`: `requestDetail` removed (D10).
-- `src/app/seeded-request-ids.ts`: deleted (D10).
+- `src/app/destinations.ts`, `src/app/routes.tsx`: `requestDetail` is a deep link for both roles; `src/app/RequestDeepLink.tsx` forwards it (D10).
+- `src/features/requests/deep-link.ts`: `useDeepLinkedRequest`, used by `QueuePage` and `MyRequestsPage` (D10).
+- `src/app/placeholders.tsx`, `src/app/seeded-request-ids.ts`: the placeholder and seeded ownership ids are deleted (D10).
 
 **Docs**
 

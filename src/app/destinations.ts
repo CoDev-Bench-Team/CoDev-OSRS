@@ -21,6 +21,7 @@ import { ROLES, type Role } from '../features/auth/types';
 export type DestinationId =
   | 'catalog'
   | 'requests'
+  | 'requestDetail'
   | 'queue'
   | 'assets'
   | 'inventory'
@@ -37,9 +38,7 @@ export type Destination = {
   title: string;
   /** One sentence, no period. */
   purpose: string;
-  /** Roles permitted to reach the address at all. `/requests/:id` is the
-   *  Admin's only: an Employee's request detail is a side panel on My Requests
-   *  with no address of its own (spec 003, 2026-09-23; Linear BEN-45). */
+  /** Roles permitted to reach the address at all. */
   roles: readonly Role[];
 };
 
@@ -59,6 +58,19 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     title: 'My Requests',
     purpose: 'Track every request from submission through pickup and completion',
     roles: ['employee'],
+  },
+  /** A deep link, not a screen: it opens the request's panel over the list the
+   *  role works from — the review panel on `/queue` for an Admin, the request
+   *  panel on `/requests` for its owning Employee (spec 003, Session
+   *  2026-09-26). Listed so the link survives sign-in (FR-013). It is in no
+   *  navigation set. */
+  requestDetail: {
+    id: 'requestDetail',
+    path: '/requests/:id',
+    navLabel: 'Request',
+    title: 'Request',
+    purpose: 'Open one request in its panel',
+    roles: ROLES,
   },
   queue: {
     id: 'queue',
