@@ -138,7 +138,7 @@ Screens are the 2026-09-22 export. Routes follow `ARCHITECT.md` §7.
 | `02 - Requests Queue`, `02.1 - … Sort Menu` | `/queue` | **Admin landing** | F |
 | `02.2 - … Review`, `02.2.1 - … Approve`, `02.2.1 - … Update Status`, `02.2.2 - … Reject` | side panel on `/queue` | Admin | **G (re-scoped)** |
 | `03- Assets`, `03.1 Add Asset - <8>`, `03.2- View Asset` | `/assets` | Admin | H |
-| `03 - Inventory`, `03.4 - Update Stocks` | `/inventory` | Admin | H |
+| `03 - Inventory` (unit table), `03 - Inventory - Open Add Inventory Dropdown`, `03.1 - Inventory - Add Inventory`, `03 - Inventory - Bulk Add Units`, `03 - Inventory - Review/Edit`, `03 - Inventory - Delete Unit` (+ Confirmation) — `03.4 - Update Stocks` retired 2026-09-26 | `/inventory` | Admin | H |
 | `05 - Profile` | `/profile` | both | I |
 | six email frames | n/a — backend templates | — | backend |
 | *(not drawn)* Not found / Forbidden / Loading / sign-out / collapsed nav | shell feedback | all | A (A3) |
@@ -303,8 +303,8 @@ levels per item, edited per office).
 | H2 | [BEN-82](https://linear.app/bench-synergy-project/issue/BEN-82) | Execute Assets table + search + chips + pagination | H1 |
 | H3 | [BEN-83](https://linear.app/bench-synergy-project/issue/BEN-83) | Execute Add Asset panel (category-dependent fields) | H2 |
 | H4 | [BEN-84](https://linear.app/bench-synergy-project/issue/BEN-84) | Execute View Asset + Update Asset panels | H2 |
-| H6 | *new* | Execute Inventory table (Total / Available / Reserved / status) | H1 |
-| H7 | *new* | Execute Update stocks panel (threshold + per-office steppers) | H6 |
+| H6 | [BEN-107](https://linear.app/bench-synergy-project/issue/BEN-107) | Execute Inventory unit table (PR / Serial / Office / Assigned / Status) — re-scoped 2026-09-26 | H1 |
+| H7 | [BEN-108](https://linear.app/bench-synergy-project/issue/BEN-108) | Execute Inventory unit panels (add single / add multiple / review-edit / remove) — re-scoped 2026-09-26 | H6 |
 | H5 | [BEN-85](https://linear.app/bench-synergy-project/issue/BEN-85) | Run checks + PR | H2+ |
 
 **Related existing Linear (do not duplicate blindly):**
@@ -342,7 +342,7 @@ mapping (shared parser, same as C3).
 
 Figma draws the Employee profile only; the Admin variant is undesigned — call out in spec. Spec: `specs/006-profile/`. `Currently Assigned` is list / empty / **hidden with no source**, which is the live state (spec 006 FR-007; BEN-49, BEN-88 and BEN-89 amended 2026-09-23).
 
-**Shipped 2026-09-23**, before this export landed. The assigned list reads a per-unit register the MVP does not build, which is why "hidden with no source" is the right third state — see [drift §4e/§7](design-system/drift-2026-09-22.md). Profile is also the one page whose role gating survives the merge unchanged: it was always "both roles".
+**Shipped 2026-09-23**, before this export landed. The assigned list reads a per-unit register the MVP does not build (*superseded 2026-09-26: the register is in scope, constitution 4.0.0 / ADR-0008*), which is why "hidden with no source" is the right third state — see [drift §4e/§7](design-system/drift-2026-09-22.md). Profile is also the one page whose role gating survives the merge unchanged: it was always "both roles".
 
 ---
 

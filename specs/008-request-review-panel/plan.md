@@ -32,7 +32,7 @@
 | D9 | Complete code (`CompleteConfirm`, the `complete` source method, the `Received` row) ships in a **separate PR after BEN-134**. G2 and G3a do not contain it. | Spec FR-012. Nothing unreachable ships behind a flag. |
 | D10 | **Retire `/requests/:id`.** The `requestDetail` destination, `RequestDetailPlaceholder` and `seeded-request-ids.ts` are removed. `/requests/:id` falls to the shell's not-found for both roles. Spec 003 gets a 2026-09-26 amendment line. | Spec 003 kept it "until BEN-47". Not-found for every id and role still satisfies spec 003 FR-012a (no enumeration). |
 | D11 | The timeline mapping is widened to a structural `TimelineFacts` type (the fields it reads), so `requestTimeline` serves both `EmployeeRequest` and `ReviewRequest`. It moves to `src/features/requests/request-timeline.ts`. | FR-018: reuse the 007 timeline, with one mapping for both panels. |
-| D12 | Undrawn additions (pickup-location select, `Other…` field, pickup-location read-back row, Complete confirm, the `Update Status` action on a handover state) are logged in `docs/design-system/additions.md` §3g. | Constitution I: undrawn UI is recorded, not silent. |
+| D12 | Undrawn additions (pickup-location select, `Other…` field, pickup-location read-back row, Complete confirm, the `Update Status` action on a handover state) are logged in `docs/design-system/additions.md` §3h. | Constitution I: undrawn UI is recorded, not silent. |
 
 ### Actions by status (D1)
 
@@ -127,7 +127,7 @@ None added. `AdminRequestSource` is an internal UI seam. The backend's approve, 
 
 **Docs**
 
-- `docs/design-system/additions.md` §3g (D12).
+- `docs/design-system/additions.md` §3h (D12).
 - `specs/003-app-shell-routing/spec.md`: Session 2026-09-26 amendment (D10).
 - `specs/004-approver-pending-queue/spec.md`: FR-010 annotated "superseded by spec 008 FR-001".
 

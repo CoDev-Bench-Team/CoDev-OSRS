@@ -176,7 +176,11 @@ try {
     p.stock.join(', '),
   );
   check(p.text.includes('Note to Approver') && p.text.includes('temporary project setup'), 'the note reads back');
-  check(p.timeline.join(' → ') === 'Submitted → Approved → For Delivery/For Pickup → Complete', 'the four drawn timeline nodes', p.timeline.join(' → '));
+  check(
+    p.timeline.join(' → ') === 'Submitted → Approved → For Delivery/For Pickup → Received → Complete',
+    'the five drawn timeline nodes (constitution 5.0.0)',
+    p.timeline.join(' → '),
+  );
   check(p.focusInside, 'focus moves into the panel');
   check((await cdp.evaluate(page)).path === '/queue', 'opening does not change the address');
   await esc();

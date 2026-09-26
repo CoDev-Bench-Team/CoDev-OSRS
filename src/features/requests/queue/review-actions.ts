@@ -7,10 +7,9 @@ import type { RequestStatus } from '../../../shared/ui';
  *  "disabled" branch, so an illegal transition cannot be clicked because it is
  *  not on screen at all.
  *
- *  The table is exhaustive over `RequestStatus` (`satisfies Record<…>`). When
- *  BEN-134 (constitution 4.0.0) adds `Received`, this file stops compiling until
- *  that status is given its row, which is where Complete goes (plan D2, D9).
- *  Until then, no status offers Complete (spec 008 FR-010, FR-012). */
+ *  The table is exhaustive over `RequestStatus` (`satisfies Record<…>`), so a
+ *  new status stops the build until it is given its row (plan D2). No status
+ *  offers Complete yet (spec 008 FR-010, FR-012). */
 export type ReviewAction = 'approve' | 'reject' | 'updateStatus' | 'close';
 
 const ACTIONS = {
@@ -18,6 +17,10 @@ const ACTIONS = {
   Approved: ['updateStatus'],
   'For Delivery': ['updateStatus'],
   'Ready for Pickup': ['updateStatus'],
+  // Constitution 5.0.0 adopted `Received` (ADR-0009). Complete is its action,
+  // and it is not built yet (spec 008 Story 4). Until it is, the panel offers
+  // nothing here; ✕ still closes it.
+  Received: [],
   Rejected: ['close'],
   Cancelled: ['close'],
   Completed: ['close'],

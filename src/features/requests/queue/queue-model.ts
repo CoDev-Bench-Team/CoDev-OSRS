@@ -14,9 +14,9 @@ import { formatDate, NO_VALUE, summarizeItems } from '../format';
  *  worth a tooltip. */
 export { NO_VALUE };
 
-/** Non-terminal and past approval: the three statuses an Admin still has to
- *  hand over or complete (constitution 3.0.1 IV, ADR-0007). */
-const IN_PROCESSING = new Set<QueueRequest['status']>(['Approved', 'For Delivery', 'Ready for Pickup']);
+/** Non-terminal and past approval: the statuses an Admin still has to hand
+ *  over or complete (constitution 5.0.0 IV, ADR-0009). */
+const IN_PROCESSING = new Set<QueueRequest['status']>(['Approved', 'For Delivery', 'Ready for Pickup', 'Received']);
 
 const LIVE = new Set<QueueRequest['status']>(LIVE_STATUSES);
 const isLive = (request: QueueRequest): request is QueueRequest & { status: LiveStatus } => LIVE.has(request.status);
@@ -73,7 +73,7 @@ export function buildQueueViewModel(snapshot: QueueSnapshot, query: QueueQuery):
 
   const chipCounts = Object.fromEntries(QUEUE_CHIPS.map((chip) => [chip, 0])) as Record<QueueChip, number>;
   chipCounts['All requests'] = matches.length;
-  for (const request of matches) chipCounts[request.status] += 1;
+  for (const request of matches) if (request.status in chipCounts) chipCounts[request.status as QueueChip] += 1;
 
   const filtered = (
     query.chip === 'All requests' ? matches : matches.filter((request) => request.status === query.chip)

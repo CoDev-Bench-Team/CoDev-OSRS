@@ -23,9 +23,17 @@ Give every signed-in user a Profile: who they are, which office they belong to, 
 
 ## Decisions
 
+> **Note, 2026-09-26.** Constitution 4.0.0 brings the per-unit register into
+> scope ([ADR-0008](../../docs/adr/0008-per-unit-inventory-register.md)). D1's
+> premise — a register "the MVP does not build" — no longer holds. A completed
+> request now assigns units to the requester, so `Currently Assigned` has a real
+> source: the units assigned to the user. **No behaviour changes here**: the
+> section stays conditional (FR-007) and renders only what the contract exposes.
+> Wiring it to the unit read is later work, not part of this spec.
+
 | # | Decision | Consequence |
 |---|----------|-------------|
-| D1 | **The assigned list reads a register the MVP does not build.** The drawn tags (`CDV-MS-00087`, `CDV-PH-00231`) identify individual units, which belong to a per-unit asset register (serials, assignment to a person) that is out of scope under constitution VIII. The page renders whatever the backend exposes for "equipment assigned to me" and invents nothing. | `Currently Assigned` is a conditional section with three states (FR-007). No rows are fabricated, and no units are modelled to fill it. |
+| D1 | **The assigned list reads a register the MVP does not build.** The drawn tags (`CDV-MS-00087`, `CDV-PH-00231`) identify individual units, which belong to a per-unit asset register (serials, assignment to a person) that is out of scope under constitution VIII *(superseded 2026-09-26: in scope under 4.0.0, see the note above)*. The page renders whatever the backend exposes for "equipment assigned to me" and invents nothing. | `Currently Assigned` is a conditional section with three states (FR-007). No rows are fabricated, and no units are modelled to fill it. |
 | D2 | **The Admin Profile is undesigned.** The file draws only the Employee's. Reusing the Employee layout unchanged for the Admin is **our invention**, not the designer's. | One page for both roles. Flagged to the designer below. |
 | D3 | The identity block comes entirely from the session. Nothing on the page is hard-coded. | The session must carry the user's home office. Today it carries name, email, initials, avatar colour and role — **office is a new session fact** (see Dependencies). |
 
@@ -98,7 +106,7 @@ Below the identity block, under the heading `Currently Assigned`, the user sees 
 
 ## Out of Scope
 
-- The per-unit asset register: serial numbers, asset-tag issuance, assignment and unassignment of units to people, BitLocker or other escrow (D1, constitution VIII).
+- The per-unit asset register: serial numbers, asset-tag issuance, assignment and unassignment of units to people, BitLocker or other escrow (D1, constitution VIII). (superseded 2026-09-26: the register is in scope under constitution 4.0.0 — see the note under Decisions)
 - Editing name, email, office or avatar colour.
 - Viewing another user's Profile, including by an Admin.
 - Showing the Google profile photograph.
@@ -121,7 +129,7 @@ Below the identity block, under the heading `Currently Assigned`, the user sees 
 | **No Profile screen for the Admin.** Only the Employee's is drawn. | D2 reuses the Employee layout. **Ours, not the designer's.** |
 | **No empty state for `Currently Assigned`** is drawn. | Its copy and presentation are invented. |
 | **No loading or error state for `Currently Assigned`** is drawn. | Both are invented (FR-011). |
-| **The drawn list implies a per-unit asset register** the MVP does not build. | The section is conditional (FR-007) and hidden against today's backend. |
+| **The drawn list implies a per-unit asset register** the MVP does not build. (superseded 2026-09-26: the register is in scope under constitution 4.0.0 — see the note under Decisions) | The section is conditional (FR-007) and hidden against today's backend. |
 | **No affordance into Profile** is drawn now that Profile has left the navigation. | Inherited from spec 003: the account cluster is the route in. |
 
 ## Linear Reconciliation

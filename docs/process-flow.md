@@ -8,7 +8,12 @@ longer has. Where this document departs from it, the departure is recorded in
 [design-system/drift-2026-09-22.md](design-system/drift-2026-09-22.md) and
 carried by [ADR-0005](adr/0005-two-role-model.md),
 [ADR-0006](adr/0006-assets-and-inventory.md) and
-[ADR-0007](adr/0007-fulfilment-status-vocabulary.md).
+[ADR-0007](adr/0007-fulfilment-status-vocabulary.md). Since 2026-09-26 stock is a
+register of units ([drift-2026-09-26](design-system/drift-2026-09-26.md),
+[ADR-0008](adr/0008-per-unit-inventory-register.md)). The numbers below are
+counts of unit statuses and are unchanged. The same re-export added
+`Received` ([drift-2026-09-26 §3](design-system/drift-2026-09-26.md),
+[ADR-0009](adr/0009-received-and-accountability-form.md)).
 
 **Purpose:** Clear path for requesting, approving and handing over office
 supplies, including stock movements and notifications.
@@ -71,14 +76,23 @@ your decision."*
 3. Notification: **Status changed** (to Employee), carrying *Previous status* →
    *New status*, and the **Pickup** location when there is one.
 4. System: stock is still reserved; no quantity changes.
-5. **Complete** → status **Completed**. System: `Total` and `Reserved` both
-   fall by the requested quantity — this is when the items leave the store.
-6. Notification: **Status changed** (to Employee).
+5. **Employee signs the Accountability Form** — the owning Employee, while the
+   request is `For Delivery` or `Ready for Pickup`: ticks *I have read and agree
+   to the above*, types their full name, optionally adds *Other Notes*, and
+   presses **I acknowledge and sign**.
+6. System: status **Received**. The reserved units become `Assigned` to the
+   Employee, so `Total` and `Reserved` both fall by the requested quantity —
+   this is when the items leave the store.
+7. Notification: **Status changed** (to Employee) — the design's
+   `Status changed email - Received`.
+8. **Complete** (Admin) → status **Completed**, from `Received` only. No
+   quantity changes.
+9. Notification: **Status changed** (to Employee).
 
-The Admin completes the request. The Employee is not asked to confirm receipt;
-no such control exists in the design. See
-[ADR-0007](adr/0007-fulfilment-status-vocabulary.md), which names that as a
-cost.
+The Employee confirms receipt; the Admin closes the request. See
+[ADR-0009](adr/0009-received-and-accountability-form.md), which amends
+[ADR-0007](adr/0007-fulfilment-status-vocabulary.md) and
+[ADR-0008](adr/0008-per-unit-inventory-register.md).
 
 ### 3b. Cancel (Employee or Admin)
 
@@ -91,8 +105,8 @@ rejection: rejection is the Admin's decision on a request awaiting one.
 2. **Admin cancels** — an `Approved`, `For Delivery` or `Ready for Pickup` request
    that cannot be fulfilled. A reason is required.
 3. A **reason is required from whoever cancels**.
-4. A `Completed` request cannot be cancelled; the items are already with the
-   employee.
+4. A `Received` or `Completed` request cannot be cancelled; the items are
+   already with the employee.
 5. System: **release the reservation** (Reserved → Available); status
    **Cancelled**.
 6. Notification: **Status changed** (to Employee; to the Admin queue when the
@@ -118,41 +132,54 @@ cancellation** and a **Close** button.
 | `Approved` | Admin | approve | — | — | — |
 | `For Delivery` | Admin | update status | — | — | — |
 | `Ready for Pickup` | Admin | update status, location recorded | — | — | — |
-| `Completed` | Admin | complete | −qty | — | −qty |
+| `Received` | System | the owning Employee submits the Accountability Form, from `For Delivery` or `Ready for Pickup` | −qty | — | −qty |
+| `Completed` | Admin | complete, from `Received` only | — | — | — |
 | `Cancelled` | Employee or Admin | cancel, reason required | — | +qty | −qty |
 
 `For Delivery` and `Ready for Pickup` are alternatives, not stages.
 `Rejected`, `Cancelled` and `Completed` are terminal.
 
-`For Release` and `Released` are **retired**. So is the Employee's
-confirm-receipt step.
+`For Release` and `Released` are **retired**. The Employee's confirm-receipt
+step, retired by ADR-0007, returns as the Accountability Form
+([ADR-0009](adr/0009-received-and-accountability-form.md)).
 
 ## Stock Rules
 
-1. An **Asset** must exist and hold stock before it can be requested.
-2. Stock is held per **(asset, office)** — Cebu, Bacolod, Makati, Ortigas,
-   Davao — as three numbers: **Total**, **Available**, **Reserved**.
+1. An **Asset** must exist and hold stock before it can be requested. Stock is
+   **units**: one per physical item, added by an Admin one at a time or in bulk
+   (`+ Add Inventory` → Add Single Unit / Add Multiple Units).
+2. Each unit is held at one office — Cebu, Bacolod, Makati, Ortigas, Davao —
+   and has a status: `Available`, `Reserved`, `Assigned` or `Inactive`. Per
+   **(asset, office)**, **Available** and **Reserved** count the units in those
+   statuses, and **Total** = Available + Reserved (the units still in the store).
 3. `Total = Available + Reserved` at all times. None of the three may be
    negative.
-4. **Submit reserves**: Available → Reserved, in the same transaction as the
-   status change to `Pending Approval`.
-5. **Reject and cancel release**: Reserved → Available, in the same transaction
-   as the status change.
-6. **Approve, For Delivery and Ready for Pickup change nothing.** The quantity is
-   already reserved.
-7. **Complete consumes**: Total and Reserved both fall, in the same transaction
-   as the status change to `Completed`. The Assets screen counts the difference
-   as *Deployed units*.
+4. **Submit reserves**: the requested number of units move Available → Reserved,
+   in the same transaction as the status change to `Pending Approval`. The API
+   chooses which units.
+5. **Reject and cancel release**: those units move Reserved → Available, in the
+   same transaction as the status change.
+6. **Approve, For Delivery, Ready for Pickup and Complete change nothing.** The
+   units are already reserved, or already assigned.
+7. **Received assigns**: the reserved units become `Assigned` to the Employee,
+   so Total and Reserved both fall, in the same transaction as the status change
+   to `Received`. The Assets screen counts them as *Assigned units* (formerly
+   *Deployed units*), and the Employee's Profile lists them under
+   *Currently Assigned*.
 8. A line quantity must not exceed `Available` at the requesting office at
    submit time. Concurrent submits for the last unit must serialize so
    `Available` never goes negative.
-9. Each asset carries a **Low-stock threshold** per office, which drives the
-   `In Stock` / `Low Stock` / `Out of Stock` pill and the chip counts.
+9. Each asset carries one **Low-stock threshold** (per asset, not per office),
+   which drives the `In Stock` / `Low Stock` / `Out of Stock` pill and the chip
+   counts against Available in the scope on screen.
+10. Only request transitions move a unit into or out of `Reserved`. An Admin
+    editing a unit may set `Available` ↔ `Inactive`, or record an existing
+    assignment (`Assigned` + user) for equipment handed out outside a request.
+    A unit that is `Assigned` or `Reserved` cannot be removed. A unit's BitLocker
+    identifier and recovery key/PIN are Admin-only secrets.
 
-> `Ortigas` is the design file's fifth office; the published `CreateAssetDto`
-> says `Pasig`. Unresolved — see
-> [drift-2026-09-22 §4c](design-system/drift-2026-09-22.md). The SPA uses
-> whatever the contract exposes and invents no third spelling.
+> ~~`Ortigas` vs the published `CreateAssetDto`'s `Pasig`.~~ **Closed
+> 2026-09-25**: every contract `location` enum says `Ortigas`.
 
 ## Notification Catalog
 
@@ -198,7 +225,8 @@ primary action, support copy, footer.
 ### 4. Status changed
 
 The template for **every other transition** — `For Delivery`, `Ready for Pickup`,
-`Completed`, `Cancelled`.
+`Received`, `Completed`, `Cancelled`. The design draws a variant for `Received`,
+*"Equipment Delivered/Claimed"* (`Status changed email - Received`).
 
 - **When:** any transition not covered by 1–3
 - **To:** Employee (and the Admin queue when the Employee cancelled)
@@ -250,9 +278,12 @@ flowchart TD
   handover -->|Ready for Pickup| fp[Ready for Pickup / location recorded]
   fd --> mailS1[Email: Status changed]
   fp --> mailS1
-  mailS1 --> complete[Admin completes / Completed]
-  complete --> consume[Total and Reserved fall by qty]
-  consume --> mailC[Email: Status changed]
+  mailS1 --> sign[Employee signs the Accountability Form]
+  sign --> received[System: Received]
+  received --> consume[Total and Reserved fall by qty]
+  consume --> mailRc[Email: Status changed]
+  mailRc --> complete[Admin completes / Completed]
+  complete --> mailC[Email: Status changed]
   mailC --> endNode([End])
 
   reserve -.->|Employee cancels + reason| canc[Release reservation / Cancelled]

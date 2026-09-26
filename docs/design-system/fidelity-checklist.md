@@ -90,3 +90,12 @@ Optical judgement — whether spacing *feels* right, whether a component reads
 correctly in a real composition — is not automated. Open the gallery beside
 `design-system/ui_kits/osrs-web/index.html` and the `guidelines/*.card.html`
 specimens at 1440px for that pass.
+
+## Reading the source before porting it
+
+Two rules decide what in the `.fig` counts as the design. Both are set out in
+[drift-2026-09-26 §How this was read](drift-2026-09-26.md#how-this-was-read):
+
+- the bound style wins over the cached value
+- in a frame that draws a side panel over a page, only the panel is
+  authoritative, and the page behind it is backdrop

@@ -222,12 +222,19 @@ colours (`--color-status-rejected-*`, `--color-status-info-*`) used for a new
 purpose. **This widens the status vocabulary's reach beyond request status** —
 worth the designer's ratification alongside the handover labels in §2b.
 
+**Ratification: pending designer** (D2 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)).
+
 ### The sign-out control
 
 Not drawn anywhere in the source. Placed in the account cluster, at the right
 end of the top bar, as the system's `ghost` button. Its placement, its label
 ("Sign Out", Title Case per the content conventions) and its very existence are
 ours.
+
+*2026-09-26:* the Prototype page's `05 - Profile` (09-18) draws a **Sign Out**
+action inside the profile card. The Mockups page does not draw it anywhere. The
+placement question is now top bar or in-card.
+**Ratification: pending designer** (D3 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)).
 
 ### Navigation sets — no longer invented (2026-09-24)
 
@@ -277,6 +284,8 @@ The source has no mobile frame. Below `md` the navigation collapses into a
 cluster, the request-list marker and sign-out stay in the bar at every width.
 Carries forward the responsive commitment in §3.
 
+**Ratification: pending designer** (D4 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)).
+
 ### The bar now starts at the 32px gutter it always claimed
 
 `TopBar` capped at the 1344px **content** width and centred, which at the 1440
@@ -287,6 +296,8 @@ the same grid. The source reaches its 1344 of content from an **asymmetric**
 pair of gutters (32 left, 64 right, measured from the frame); a symmetric flow
 layout cannot reproduce that, so the content runs 1376 wide instead. The
 designer should confirm the symmetric gutter.
+
+**Ratification: pending designer** (D5 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)).
 
 ### The sign-in card, composed in flow
 
@@ -353,10 +364,13 @@ demo accounts, so it disappears by itself the day a real one replaces it.
 `05 - Profile` draws one Employee's profile with three assigned units. Everything
 below is ours.
 
+**Admin profile — ratification: pending designer** (D6 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up)). Since 2026-09-26
+the assigned units have a real source (constitution 4.0.0; ADR-0008).
+
 | Addition | What was decided | Basis |
 |----------|------------------|-------|
 | **Admin profile** | The Employee layout, unchanged. Nothing on the page varies by role. | Only the Employee's is drawn (spec 006 D2). |
-| **`Currently Assigned` hidden with no source** | When the backend exposes no assigned equipment, which is the case today, the section is not rendered at all: no heading and no gap. | The list reads a per-unit register the MVP does not build (spec 006 D1, FR-007c). An empty state would claim "nothing assigned" when the truth is "unknown". |
+| **`Currently Assigned` hidden with no source** | When the backend exposes no assigned equipment, which is the case today, the section is not rendered at all: no heading and no gap. | The list reads a per-unit register the MVP does not build (spec 006 D1, FR-007c). An empty state would claim "nothing assigned" when the truth is "unknown". *(Superseded 2026-09-26: the register is in scope, ADR-0008.)* |
 | **Empty state** | A card at half the grid's width: `Nothing is assigned to you` (subhead) over `Equipment issued to you will appear here` (body, secondary). Shown only when a source answers with no items. | Not drawn. Uses the assigned card's own treatment, so it reads as the list's absence rather than a notice. |
 | **Loading and failure** | Inline under the heading. `Loading assigned equipment` (body, secondary, `role="status"`), and `Couldn't load your assigned equipment` (body, rejected ink, `role="alert"`) with no retry control. The identity block always renders. | Not drawn. The shell's `LoadingState` and `Notice` are full-screen surfaces, which would bury the identity block for a failure in one section. |
 | **Missing assigned date** | The date line reads `Assignment date not available` (body, secondary) when the backend sends no date or one that does not format. The line is never dropped, so every card is the same height. Added 2026-09-23 after design review. | Not drawn; every drawn card has a date. Omitting the line left a shorter card beside full ones. The copy states the absence and invents no date. |
@@ -378,8 +392,8 @@ below is ours.
 | **Refused cancel** | An inline red note above the items: the request changed while the panel was open, and the panel shows its current status. | The file draws no failure. The copy follows the Notice voice. |
 | **Reason field** | *(Redrawn 2026-09-25.)* `TextField tone="danger"`. The pink block — `status-rejected-bg`, a `red-500` outline and label — is the field's resting look, not its error state. Inside it, a 58px white box with the placeholder at the top: a one-row textarea that grows with a long reason, up to 160px, then scrolls. Enter submits, Shift+Enter breaks the line. | The redrawn `04.2 - Cancel Request` frame. The textarea is read from the top-set placeholder; the frame does not say what Enter does, so it keeps the one-line field's behaviour. The pink block marks a destructive step, so it is a tone, not the component's default: `neutral` is a plain white card that turns pink only when invalid, and nothing in the file draws it yet. |
 | **Empty reason** | The inner box takes the `red-600` ring, plus one line saying why — announced through `aria-describedby`. | The pink block no longer marks an error, and the asterisk alone does not tell a screen-reader user what went wrong. Whitespace counts as empty. |
-| **Timeline type** | *(Design feedback 2026-09-25.)* The *Status* heading is 14px bold; each node label 12.5px bold (`text-12-5`, new to the scale), its date or *Pending* 12px medium, 4px below it; nodes 14px apart; dots 12×12. | Design review of the `04.1` panel. The *Items Requested* heading keeps the 11px eyebrow until the designer says otherwise. |
-| **Timeline colours** | *(Design feedback 2026-09-26.)* A reached node is filled in its status pill's colour: Submitted amber, Approved green, For Delivery pink, Ready for Pickup blue, Complete purple; Cancelled slate and Rejected red as before. The latest reached node carries a 3px halo in its pill's tint. Unreached nodes stay grey. | The designer's timeline drawing paints Submitted amber, Approved green and the handover node pink with a halo. Blue and purple follow the pill vocabulary. |
+| **Timeline type** | *(Re-read 2026-09-25 against the file, with character overrides — drift-2026-09-24 §10.)* *Items Requested* and *Status* headings: `Body 1` overridden to Inter **Bold** 14 / 1.5, in `Ink-400`, 18px above what they head. Node label: `Body 3` overridden to Inter **Bold** 12.5 / 1.45, black once reached and `Ink-400` while pending. Date or *Pending*: `Label 2`, Inter Medium 12 / 1.3, `Ink-400`. Dots: 12×12, 5px down; pending ones `Border-Strong`; the current one carries a 2px outside halo of its colour at 10%. Connectors: 1px `Border`, running dot to dot. Items 52px apart. Note to Approver card: Inter Bold 15 over Inter Regular 12 in `Ink-900`, 12px apart. | The first design review on 2026-09-25 had the weights right: bold. A second pass that day read only the bound text styles, missed the character overrides, and briefly made them regular. The colours, the halo and the connector come from that re-read. |
+| **Timeline colours** | *(Decided by the project owner, 2026-09-26.)* A reached node is filled in its status pill's ink: Submitted amber, Approved green, For Delivery pink, Ready for Pickup blue, Received orange, Complete purple; Cancelled slate and Rejected red as before. The current node's halo is that ink at 10%, 2px outside, as the file draws it. Unreached nodes stay `Border-Strong`. | The frames paint Submitted, Approved, For Delivery, Rejected and Cancelled dots in their own colours ([drift-2026-09-26 §4b](drift-2026-09-26.md)). Three of those shades differ slightly from the pill inks; the owner chose the pills, so one status has one colour everywhere. |
 | **Stand-in My Requests table** | The `04 - My Requests` frame's five columns over the seeded source, so the panel has a *View details* to open from. Replaced by BEN-44. | BEN-44 had not shipped when BEN-45 was built. |
 | **REQ-2026-1791** | A seeded `Cancelled` row, the seventh. | `04 - My Requests` draws no cancelled row, but `04.2 - Cancelled` draws the panel for one; the seed carries one so it opens without cancelling first. Its reason is placeholder copy. |
 | **Struck-through Cancelled pill** | The `Cancelled` pill's label is struck through, everywhere the pill appears. | `04.2 - Cancelled` draws it so. The pill is shared, but today it renders only on My Requests, this panel and the gallery: the Requests Queue lists live statuses only (spec 004), so it never shows a Cancelled pill. The Admin's History, which lists resolved requests, will pick it up. |
@@ -391,7 +405,33 @@ as *Note to Approver*, above the timeline. `04.2 - Cancelled` does not draw it;
 Linear BEN-67 and BEN-70 ask for it, and spec 001's Request entity stores both
 reasons. **Flagged to the designer** to draw it.
 
-## 3g. The Admin review panel (BEN-47, 2026-09-26)
+## 3g. The Request List drawer (BEN-43, spec 011, 2026-09-25)
+
+`03 - Request List` and `03.1 - Request List - Request Submitted` are drawn; the
+drawer is the shared `SidePanel`, and the confirmation reuses the `04.1`
+read-back (Items Requested, Note to Approver, Status). What follows is only
+what the frames leave open.
+
+| Addition | What was decided | Basis |
+|----------|------------------|-------|
+| **The marker opens the drawer** | The top-bar Request List marker opens the drawer over the Catalog; from any other screen it goes to the Catalog first. Adding an item does not open it. It replaces the marker's stand-in route to My Requests. | Spec 011 FR-006a, D3. The frames draw the drawer open but never say what opens it. |
+| **Empty drawer** | Plain body copy: *"Your request list is empty. Add supplies from the catalog."* **Submit Request** disabled. | BEN-58 asks for an empty state; none is drawn. |
+| **Submitting** | Every control in the drawer is disabled, ✕ included, and the button reads *Submitting…* until the system answers. Esc and the scrim do nothing meanwhile, so the confirmation cannot be closed away before it arrives. | A second submit must not be possible (FR-010). Not drawn. |
+| **Refusals** | One red note at the top of the drawer carries the system's own message, whether a stock refusal, a validation message naming no visible field, or *"Your request was not sent."* A validation message for the note or a line sits under that field. The note takes the `ring-brand` hairline in place of its `ring-default` one; an invalid line keeps its `shadow-card` drop shadow and adds `outline-brand` — the same 1px brand red, drawn as an outline inset by 1px, because a second box-shadow utility would replace the card shadow rather than add to it. Nothing in the list is cleared. | Spec 011 FR-013–FR-015. The same red note `04.1` uses for a refused cancel — one shared `RefusalAlert`. Focus moves to it, or else to the first invalid line or the note. |
+| **Drawn-size controls below 1440px** | The line's `−` / `+` squares and **Remove** keep their drawn size at every width and meet the 44px touch minimum through `hit-area`, as the Catalog card's stepper does. | Design review 2026-09-25: the global touch-target rule grew only the enabled square, so `−` and `+` differed. |
+| **Confirmation card** | The drawn success card on a `ring-warm` hairline, its check the frame's own **outline** tick — a 1px round-capped stroke in the `Available` green, drawn inline from the vector network — on a 37px `green-50` circle. | `03.1` as re-read on 2026-09-25 ([drift-2026-09-24 §10](drift-2026-09-24.md)). The icon set has no outline tick, so the path is drawn from the frame rather than swapped for the set's filled `CheckCircleFill`. |
+
+| Addition | What was decided | Basis |
+|----------|------------------|-------|
+| **`--color-osrs-border-strong`** | `rgb(216,215,210)`, a new palette token for the file's `Border-Strong` fill style. Used by the pending timeline dots. | The file binds it; the vendored token layer predates it (tasks T000e). |
+| **`ring-warm`** | A 1px inset ring in `border-warm`, for the file's `Border` stroke style. Used by the confirmation card. | As above. |
+| **Panel close icon** | `bytesize:close` as drawn: a 16px frame with a 14px cross, 1px black, round caps. Shared `SidePanel`, so every side panel. | Every panel in the file draws this one icon. The previous 20px, ~1.5px cross was not from the file. |
+
+**"Note to Approver" is kept as drawn**, although the Approver role is retired
+([drift-2026-09-22 §8](drift-2026-09-22.md)). The contract names the field
+`purpose`. **Flagged to the designer.**
+
+## 3h. The Admin review panel (BEN-47, 2026-09-26)
 
 Frames `02.2`, `02.2.1 - Approve`, `02.2.1 - Update Status` (×2), `02.2.2` and
 `02.2.2.1` draw the panel. It reuses the §3f `SidePanel`, `StatusTimeline` and
@@ -401,13 +441,12 @@ Frames `02.2`, `02.2.1 - Approve`, `02.2.1 - Update Status` (×2), `02.2.2` and
 |----------|------------------|-------|
 | **Pickup location** | Choosing `Ready for Pickup` reveals a required `Pickup location *` select: the offices the source exposes, with the request's office preselected, and a last option `Other…` that reveals a required free-text field. | Spec 001 FR-011a requires a location. The `Update Status` frame draws only `Status *`. Decided by the project owner, 2026-09-26. **Flagged to the designer.** |
 | **Pickup read-back** | A `Ready for Pickup` request shows its location in a card like the Note to Approver card, above the timeline. | The `Status changed` email carries a Pickup row; the panel draws none. |
-| **Update Status on a handover state** | `For Delivery` and `Ready for Pickup` offer **Update Status**, so the two peers can be swapped. They do not offer **Complete**. | `02.2.1 - Update Status` (2) draws only Complete. The project owner moved Complete to after `Received` (BEN-134), and the peers must stay swappable (spec 001 US4). **Flagged.** |
-| **Complete confirmation** | *(Ships with BEN-134.)* An inline `Mark this request as completed?` · Cancel / Complete. | Complete consumes stock and cannot be undone. The frame draws a single button. |
+| **Update Status on a handover state** | `For Delivery` and `Ready for Pickup` offer **Update Status**, so the two peers can be swapped. They do not offer **Complete**. | `02.2.1 - Update Status` (2) draws only Complete. Constitution 5.0.0 IV allows Complete only from `Received`, and the peers must stay swappable (spec 001 US4). **Flagged.** |
+| **Complete confirmation** | *(Not built yet: spec 008 Story 4.)* An inline `Mark this request as completed?` · Cancel / Complete. | Complete closes the request for good. The frame draws a single button. |
 | **Refused or failed transition** | An inline red note above the requester card, in the same style as §3f's refused cancel. A failure keeps the form's input. | The frames draw no failure. |
 | **Terminal read-only state** | After reject, and for any terminal request, the panel reads the reason back and offers only **Close**. The reason sits **below the timeline** in a callout with a 1px border, 20px padding and a 9px gap — title Inter 13px bold, reason Inter 12.5px regular: *Reason for rejection* in `status-rejected` red, *Reason for cancellation* in the `status-cancelled` slate. | `02.2.2.1` draws this for Rejected: `red-600` border, title and text on `red-50`. The slate for Cancelled is ours; no frame draws a cancelled review panel. |
 | **Item-name line height** | A request line's item name uses `type-ui-bold-wrap`, 13px bold at a 1.3 line height, in both side panels (review and My Requests). | The frames set it at 100%, so a name that wraps to two lines has no gap between them. The project owner asked for more space, 2026-09-26. **Flagged to the designer.** |
 | **Name-over-context spacing** | 4px (`gap-4`) between a person's name and the line under it: the queue's REQUESTER cell (name over department) and the panel's REQUESTED BY card (name over `email • office`). | Both lines are drawn at 100% line height with 1px or no gap, so they touch. The project owner asked for more space, 2026-09-26. **Flagged to the designer.** |
-| **Timeline dots never drawn reached** | A reached Ready for Pickup dot is blue-700 and a reached Complete dot purple-600, their pill inks. Complete's current-step halo is `purple-50`, as there is no purple tint. | The other dots follow the frames ([drift-2026-09-26](drift-2026-09-26.md) §4). No frame draws these two reached. **Flagged to the designer.** |
 | **Unavailable stock figure** | CURRENT INVENTORY shows `—` when the source gives no figure, never `0 in stock`. | `0` would be a claim the SPA cannot make. |
 
 ## 4. Defects found in the source — flagged, not fixed
@@ -504,12 +543,14 @@ the mark red.
    export.)
 9. Ratify the application shell in §3d: the five feedback surfaces and their use
    of the status tints, the sign-out control, the collapsed navigation and the
-   symmetric 32px gutter.
+   symmetric 32px gutter. **Asked 2026-09-26** as D2–D5 in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up).
 10. Settle the 2026-09-15 re-export in [drift-2026-09-15.md](drift-2026-09-15.md)
     — the new `Cancelled` status (which needs a constitution amendment, not a
     design decision), `Completed`'s new purple, the notification bell, and how
     Profile is reached now that it is not a navigation item.
 11. Ratify Profile in §3e: the reuse for the Admin, and the
     hidden / empty / loading / failure treatments of `Currently Assigned`, and
-    the `Assignment date not available` line for a card with no date. Decide
-    whether the per-unit register behind the drawn asset tags is ever in scope.
+    the `Assignment date not available` line for a card with no date. ~~Decide
+    whether the per-unit register behind the drawn asset tags is ever in scope.~~
+    **In scope since 2026-09-26** (constitution 4.0.0). The Admin reuse is asked as D6
+    in [drift-2026-09-26 §5](drift-2026-09-26.md#5-designer-follow-up).

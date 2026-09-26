@@ -17,6 +17,7 @@ const TONE: Record<StatusTone, string> = {
   cancelled: 'bg-status-cancelled-bg text-status-cancelled-fg line-through',
   delivery: 'bg-status-delivery-bg text-status-delivery-fg',
   pickup: 'bg-status-pickup-bg text-status-pickup-fg',
+  received: 'bg-status-received-bg text-status-received-fg',
 };
 
 const AVAILABILITY: Record<Availability, { cls: string; label: string }> = {

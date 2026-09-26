@@ -89,9 +89,9 @@ An Admin can review the queue with keyboard controls and at every width supporte
 - **FR-003**: ~~The page MUST NOT merge Approver and Supply Admin capabilities or identity.~~ **SUPERSEDED** by constitution 3.0.0 — the two roles *are* merged ([ADR-0005](../../docs/adr/0005-two-role-model.md)). **Now:** withdrawn; the one Admin both decides and fulfils, and this page links to both halves through Review.
 - **FR-004**: The page MUST show three read-only summary cards labelled Pending approval, In Processing, and Low stock alerts.
 - **FR-005**: Pending approval MUST count requests whose current status is `Pending Approval`.
-- **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, ~~`For Release`, and `Released`~~ — those two statuses are **SUPERSEDED** by constitution 3.0.0 ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)). **Now:** `Approved`, `For Delivery` and `Ready for Pickup`.
+- **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, ~~`For Release`, and `Released`~~ — those two statuses are **SUPERSEDED** by constitution 3.0.0 ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)). **Now:** `Approved`, `For Delivery`, `Ready for Pickup` and `Received` (amendment 5).
 - **FR-007**: Low stock alerts MUST count inventory items classified as low stock by the system's data source; the SPA MUST NOT invent a threshold.
-- **FR-008**: ~~The pending table MUST contain only requests currently in `Pending Approval`.~~ **SUPERSEDED** by the third 2026-09-24 amendment. **Now:** the table MUST contain every live request — `Pending Approval`, `Approved`, `For Delivery`, `Ready for Pickup` — narrowed by the selected chip and the search term.
+- **FR-008**: ~~The pending table MUST contain only requests currently in `Pending Approval`.~~ **SUPERSEDED** by the third 2026-09-24 amendment. **Now:** the table MUST contain every live request — `Pending Approval`, `Approved`, `For Delivery`, `Ready for Pickup`, and `Received` (amendment 5) — narrowed by the selected chip and the search term.
 - **FR-009**: Each row MUST show request id, requestor name, requestor organizational context when available, an item summary, the row's own status pill, submitted date, and Review.
 - **FR-010**: ~~Review MUST navigate to the stable request-detail destination for that request.~~ **Superseded by spec 008 FR-001 (2026-09-26):** Review opens the review panel over `/queue` without navigating.
 - **FR-011**: The queue MUST NOT approve, reject, cancel, prepare, release, or complete a request.
@@ -139,6 +139,13 @@ An Admin can review the queue with keyboard controls and at every width supporte
 - **SC-007**: Review of the feature finds no invented backend route, payload, response field, error code, or inventory threshold.
 
 ## Clarifications
+
+### Session 2026-09-26 — Amendment 5: `Received` is live work
+
+Raised by constitution 5.0.0 and [drift-2026-09-26 §3](../../docs/design-system/drift-2026-09-26.md).
+
+- Q: `Received` waits on the Admin's **Complete**. Does the queue list it? → A: **Yes.** It is live: FR-008 lists it and FR-006 counts it under *In Processing*.
+- Q: The file draws no `Received` chip. Add one? → A: **No.** The chips stay as drawn (FR-019); a `Received` request is reached through *All requests* and search. **Flagged to the designer** (drift-2026-09-26 §5, R3).
 
 ### Session 2026-09-22
 

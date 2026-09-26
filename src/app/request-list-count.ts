@@ -2,11 +2,10 @@ import { createContext, use } from 'react';
 
 /** The count on the Employee's request-list marker (FR-015, Story 5 AC3).
  *
- *  The request list itself is spec 001's T010 and has not shipped, so the shell
- *  must NOT invent one. What it can do is wire the badge to a value that any
- *  later feature can set: the count lives in context, defaults to 0, and the
- *  badge re-renders when it changes — no reload, and no request model in the
- *  shell. */
+ *  The shell owns no request model. The count lives in context, defaults to 0,
+ *  and the badge re-renders when it changes — no reload. Its one writer is the
+ *  Request List (spec 011's `RequestListProvider`, FR-005, D2), so the badge
+ *  and the list cannot disagree. */
 export type RequestListCount = {
   count: number;
   setCount: (count: number) => void;

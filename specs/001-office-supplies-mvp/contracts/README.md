@@ -93,6 +93,20 @@ the per-unit register constitution VIII puts out of scope, and the aggregate
 Total / Available / Reserved read the screens need is not published as a shape.
 Still open with the backend team; see also drift-2026-09-24 §4.
 
+**2026-09-26 — decided: the per-unit register.** The project owner followed the
+file and the contract. Inventory is `/inventory-items`, and per-(asset, office)
+Total / Available / Reserved are **counts of unit statuses**
+([ADR-0008](../../../docs/adr/0008-per-unit-inventory-register.md), constitution
+4.0.0 III). Submit reserves units, reject and cancel release them, and `Received`
+moves them to `Assigned` to the requester (constitution 5.0.0, ADR-0009). **Still needed from the API:**
+
+- the unit moves atomic with the request status change, with the API choosing the units
+- a published read of per-asset counts (available / reserved / assigned) for the Assets table
+- whether the contract's unit-removal operation (planned as backend BEN-130) accepts the `Reason for removal` the design draws
+- unit fields the design and spec 001 FR-003 need that the contract field list above lacks: the unit **tag** (`PR`, e.g. `CODEV-LAPTOP-1232`), an **assigned-on** date (Profile's "Assigned Jan 14, 2026"), and the notes **description / attachment**
+- the design's `In Storage` unit status, which the contract lacks
+- storage, masking and access audit for `recoveryPin` / `bitlockerIdentifier` (Admin-only secrets, constitution VIII / IX)
+
 ### 2. `Ortigas` vs `Pasig`
 
 The design file's `Site Office Label` component has exactly five variants:
@@ -105,7 +119,8 @@ MUST NOT map or invent a third.
 Swagger now says **Ortigas**. The Catalog uses it. The shell's `Office` type
 (`src/features/auth/types.ts`) still says `Pasig` and has to follow; until it
 does, a `Pasig` user has no recognised office and the Catalog offers them no
-request action (spec 005 D7).
+request action (spec 005 D7). **Follow-on** (spec 010 FR-014): shell/auth owns
+moving `Office` to `Ortigas`.
 
 ### 3. `location`, `quantity` and `lowQtyAlert` are no longer on the asset form
 
@@ -122,10 +137,64 @@ DTO. `lowQtyAlert` remains on the asset, which matches the design's single
 **Low-stock threshold**. Whether that threshold is per asset or per office is
 the one part still open.
 
+**2026-09-26 — closed.** The threshold is **per asset**: the contract's
+`lowQtyAlert` and the design's Update Asset panel (`STOCKS · Low-stock
+threshold`) agree ([drift-2026-09-26 §4](../../../docs/design-system/drift-2026-09-26.md#q3--asset-fields)).
+
+### 4. Request submit: no success body, no insufficient-stock refusal (raised 2026-09-25)
+
+`POST /requests` is published with `CreateRequestDto` — `purpose` (optional;
+the design's **Note to Approver**) and `items[]` of `{ assetId, quantity }`,
+with no office field. Only its `400` validation response is documented.
+
+**Needed from the API:**
+
+- the **success** response: at least the display id (`REQ-…`), status,
+  submitted time and the created lines, which the `03.1 - Request List -
+  Request Submitted` confirmation reads back;
+- the **insufficient-stock** refusal: its status code and body, so the SPA can
+  show the API's own message without inventing a code;
+- confirmation that submit is all-or-nothing across lines and reserves at the
+  requester's home office.
+
+Until then spec 011 submits through a seeded source behind a seam (spec 011,
+Clarifications 2026-09-25). Linear: [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43).
+
+### 5. `Received` and the Accountability Form (raised 2026-09-26)
+
+Constitution 5.0.0 adds a request status, **`Received`**, between the handover
+states and `Completed`
+([ADR-0009](../../../docs/adr/0009-received-and-accountability-form.md),
+[drift-2026-09-26 §3](../../../docs/design-system/drift-2026-09-26.md)). The
+published contract has neither the status nor a way to reach it.
+
+**Needed from the API:**
+
+- `Received` in the request status vocabulary, with the time it was set;
+- an Employee-only submission of the **Accountability Form** on the owner's
+  own `For Delivery` / `Ready for Pickup` request, carrying the agreement,
+  the typed full name and optional notes, which sets `Received` and moves
+  the reserved units to `Assigned` (`Total` and `Reserved` fall) in one
+  transaction;
+- **Complete** narrowed to `Received` only, with no unit change;
+- cancel refused on `Received`;
+- the `Status changed` email on `Received`.
+
+Until then the SPA shows `Received` wherever it renders a status or timeline,
+and does not build the form (spec 001 FR-012b, tasks T018b).
+
 ### Also worth a word
 
 The design's emails print request ids as `REQ-10482`; every SPA screen prints
 `REQ-2026-1847`. Whichever the API returns is what the SPA shows — but the two
 should not both ship.
+
+**2026-09-26 — deferred to the backend** by the project owner. The SPA prints
+and formats whatever id the API returns, at API integration.
+
+**Follow-on for BEN-107:** the `INVENTORY_STATUSES` comment in
+`src/shared/ui/status.ts` still calls the unit register "out of scope
+(constitution VIII)". BEN-107 fixes it when it models the unit statuses (spec 010
+plan D12).
 
 Product behavior (roles, statuses, inventory rules) still lives in `spec.md` and `docs/process-flow.md`; those are domain requirements, not HTTP design.

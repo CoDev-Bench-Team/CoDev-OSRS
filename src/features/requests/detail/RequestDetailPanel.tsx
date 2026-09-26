@@ -1,19 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Button,
-  SidePanel,
-  StatusPill,
-  StatusTimeline,
-  TABLE_ROW_PADDING_CLASS,
-  TableCard,
-  TableHead,
-  tableColumnStyle,
-  type ColumnWidth,
-} from '../../../shared/ui';
-import type { CancelResult, EmployeeRequest } from './request-detail-types';
-import { keyedLines } from '../format';
+import { Button, SidePanel, StatusPill } from '../../../shared/ui';
 import { ReasonForm } from '../ReasonForm';
-import { requestTimeline } from '../request-timeline';
+import type { CancelResult, EmployeeRequest } from './request-detail-types';
+import { RefusalAlert } from './RefusalAlert';
+import { RequestReadBack } from './RequestReadBack';
 
 /** The Employee's request detail — a side panel over My Requests (BEN-45,
  *  frames `04.1`, `04.2 - Cancel Request`, `04.2 - Cancelled`).
@@ -30,8 +20,6 @@ const REFUSAL_COPY: Record<Exclude<CancelResult, { ok: true }>['refusal'], strin
   'reason-required': 'Enter a reason for cancelling this request.',
   unavailable: 'This request could not be cancelled. Close the panel and try again.',
 };
-
-const QTY_WIDTH: ColumnWidth = '48px';
 
 export function RequestDetailPanel({
   request,
@@ -59,15 +47,6 @@ export function RequestDetailPanel({
   });
 
   const cancellable = request.status === 'Pending Approval';
-  // BEN-67 / BEN-70: a stopped request reads back why. The `04.2 - Cancelled`
-  // frame does not draw it; Linear asks for it (additions.md §3e).
-  const stopped =
-    request.status === 'Cancelled' && request.cancellation
-      ? { label: 'Reason for cancellation', reason: request.cancellation.reason }
-      : request.status === 'Rejected' && request.rejection
-        ? { label: 'Reason for rejection', reason: request.rejection.reason }
-        : null;
-
   const backOut = () => {
     refocus.current = true;
     setConfirming(false);
@@ -82,7 +61,8 @@ export function RequestDetailPanel({
     try {
       result = await onCancel(request.id, reason);
     } catch {
-      // A thrown cancel reads as `unavailable`, and the buttons come back.
+      // A source that throws is the system not answering: shown as a refusal,
+      // never left to escape with the button stuck on submitting.
       result = { ok: false, refusal: 'unavailable' };
     } finally {
       setSubmitting(false);
@@ -126,53 +106,9 @@ export function RequestDetailPanel({
       }
       footer={footer}
     >
-      {refusal ? (
-        <p role="alert" className="rounded-8 bg-status-rejected-bg px-12 py-10 type-body text-status-rejected-fg">
-          {refusal}
-        </p>
-      ) : null}
+      {refusal ? <RefusalAlert messages={[refusal]} /> : null}
 
-      <section className="flex flex-col gap-10" aria-labelledby="items-requested">
-        <h3 id="items-requested" className="type-eyebrow uppercase text-ink-secondary">
-          Items Requested
-        </h3>
-        <TableCard>
-          <TableHead cols={[['Item'], ['Qty', QTY_WIDTH]]} />
-          <ul>
-            {keyedLines(request.lines).map(({ key, line }) => (
-              <li key={key} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
-                <span style={tableColumnStyle()} className="type-ui-bold-wrap text-ink-primary">
-                  {line.description}
-                </span>
-                <span style={tableColumnStyle(QTY_WIDTH)} className="type-ui-bold tabular-nums text-ink-primary">
-                  {line.qty}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </TableCard>
-      </section>
-
-      {request.noteToApprover ? (
-        <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-20 shadow-card">
-          <h3 className="type-ui-bold text-ink-primary">Note to Approver</h3>
-          <p className="type-meta text-ink-body">{request.noteToApprover}</p>
-        </section>
-      ) : null}
-
-      {stopped ? (
-        <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-20 shadow-card">
-          <h3 className="type-ui-bold text-ink-primary">{stopped.label}</h3>
-          <p className="type-meta text-ink-body">{stopped.reason}</p>
-        </section>
-      ) : null}
-
-      <section className="flex flex-col gap-18" aria-labelledby="request-status">
-        <h3 id="request-status" className="font-sans text-14 font-bold leading-tight uppercase text-ink-secondary">
-          Status
-        </h3>
-        <StatusTimeline nodes={requestTimeline(request)} />
-      </section>
+      <RequestReadBack request={request} />
     </SidePanel>
   );
 }

@@ -24,6 +24,7 @@ export function SidePanel({
   onClose,
   children,
   footer,
+  dismissible = true,
 }: {
   /** The dialog's accessible name, applied as `aria-label`. */
   title: string;
@@ -38,6 +39,11 @@ export function SidePanel({
    *  receives `close`, which leaves the way ✕ does (animated, then `onClose`),
    *  for a footer that carries its own Close button (spec 008, `02.2.2.1`). */
   footer?: ReactNode | ((close: () => void) => ReactNode);
+  /** `false` while the caller has work in flight that the panel must outlive —
+   *  the Request List's submit (spec 011 FR-010). ✕, Esc and the scrim are
+   *  ignored until it is `true` again, so the panel cannot unmount mid-submit.
+   *  The ✕ stays in place, disabled, so the header does not reflow. */
+  dismissible?: boolean;
 }) {
   const panel = useRef<HTMLDialogElement>(null);
   // The page behind the scrim stays put while the panel is open.
@@ -54,6 +60,8 @@ export function SidePanel({
   // `animationend` arrives, so the panel can never get stuck open.
   const [leaving, setLeaving] = useState(false);
   const leave = useRef(() => {});
+  // Read by the native-close listener, which is installed once.
+  const canDismiss = useRef(dismissible);
   const done = useRef(false);
   const finish = () => {
     if (done.current) return;
@@ -61,7 +69,8 @@ export function SidePanel({
     close.current();
   };
   useLayoutEffect(() => {
-    leave.current = () => setLeaving(true);
+    leave.current = dismissible ? () => setLeaving(true) : () => {};
+    canDismiss.current = dismissible;
   });
   useEffect(() => {
     if (!leaving) return;
@@ -76,10 +85,14 @@ export function SidePanel({
     if (dialog && !dialog.open) dialog.showModal();
     dialog?.focus();
 
-    // Esc arrives as the dialog's `cancel` event. It is cancelled so the
-    // closing animation can run first. A control inside that handled Esc
-    // itself (an open Select closing its list) prevents the keydown, and the
-    // browser then raises no `cancel` at all.
+    // Esc is handled on keydown, and the keydown is cancelled, so the browser
+    // never starts its own close. Leaving it to the dialog's `cancel` event is
+    // not enough: Chrome makes `cancel` un-cancellable when Esc repeats with no
+    // user activation in between, and would close a panel that must stay open
+    // (`dismissible={false}`) or skip the exit animation. A control inside
+    // that handled Esc itself (an open Select closing its list) has already
+    // prevented the keydown: that Esc was the control's, not the panel's.
+    // `cancel` stays as the fallback for close requests that are not a key.
     const onCancel = (e: Event) => {
       e.preventDefault();
       leave.current();
@@ -87,13 +100,25 @@ export function SidePanel({
     // The page behind is inert, but Tab can still leave the document for the
     // browser's own chrome. Wrap it inside the panel, as before (FR-002).
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (e.defaultPrevented) return;
+        e.preventDefault();
+        leave.current();
+        return;
+      }
       if (e.key !== 'Tab' || !dialog) return;
       const focusable = [
         ...dialog.querySelectorAll<HTMLElement>(
           'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
         ),
       ];
-      if (!focusable.length) return;
+      // Nothing enabled — every control disabled while work is in flight: hold
+      // focus on the dialog itself rather than let Tab reach the page behind.
+      if (!focusable.length) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       // A focused control that unmounts drops focus to <body>. Treat anywhere
@@ -137,7 +162,14 @@ export function SidePanel({
     // close from a StrictMode remount's cleanup arrives after the dialog has
     // been reopened, and is ignored because the dialog is open again.
     const onNativeClose = () => {
-      if (!dialog?.open) finish();
+      if (!dialog || dialog.open) return;
+      // Work in flight must outlive the panel (`dismissible={false}`): a
+      // close the browser forced is undone rather than honoured.
+      if (!canDismiss.current) {
+        dialog.showModal();
+        return;
+      }
+      finish();
     };
     dialog?.addEventListener('cancel', onCancel);
     dialog?.addEventListener('pointerdown', onPress);
@@ -179,17 +211,22 @@ export function SidePanel({
           type="button"
           aria-label="Close"
           onClick={() => leave.current()}
-          className="inline-flex h-touch-target w-touch-target shrink-0 cursor-pointer items-center justify-center rounded-8 border-none bg-transparent text-ink-strong transition-osrs hover:text-ink-secondary"
+          disabled={!dismissible}
+          className="inline-flex h-touch-target w-touch-target shrink-0 cursor-pointer items-center justify-center rounded-8 border-none bg-transparent text-ink-primary transition-osrs hover:text-ink-secondary disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <svg viewBox="0 0 24 24" className="h-20 w-20" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          {/* `bytesize:close`, as every panel in the file draws it: a 16px
+              frame, a 14px cross at (1,1), 1px black round-capped stroke. */}
+          <svg viewBox="0 0 16 16" className="size-16" fill="none" aria-hidden="true">
+            <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
           </svg>
         </button>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-24 overflow-y-auto px-20 py-20">{children}</div>
       {footer ? (
         <div className="flex flex-col gap-12 px-20 pb-20">
-          {typeof footer === 'function' ? footer(() => setLeaving(true)) : footer}
+          {typeof footer === 'function' ? footer(() => {
+              if (dismissible) setLeaving(true);
+            }) : footer}
         </div>
       ) : null}
     </dialog>

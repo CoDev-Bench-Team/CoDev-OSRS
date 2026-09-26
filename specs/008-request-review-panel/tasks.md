@@ -12,7 +12,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
 - [x] T001 [BEN-77] Amend spec 003, Session 2026-09-26: the Admin's `/requests/:id` is retired and falls to not-found for every role and id (plan D10) — `specs/003-app-shell-routing/spec.md`
 - [x] T002 [P] [BEN-77] Annotate FR-010 "superseded by spec 008 FR-001" — `specs/004-approver-pending-queue/spec.md`
-- [x] T003 [P] [BEN-77] Log undrawn additions §3g: pickup-location select + `Other…` field, pickup read-back row, Update Status on handover states, Complete confirm (D12) — `docs/design-system/additions.md`
+- [x] T003 [P] [BEN-77] Log undrawn additions §3h: pickup-location select + `Other…` field, pickup read-back row, Update Status on handover states, Complete confirm (D12) — `docs/design-system/additions.md`
 - [x] T004 [P] [BEN-77] Add spec 008 to the index; tick tasks.md T015/T016/T017/T018 as owned by spec 008 — `specs/README.md`, `specs/001-office-supplies-mvp/tasks.md`
 - [ ] T005 [BEN-77] Ask the backend whether the "View request" email links to `/requests/:id`, and record the answer on BEN-78 before G2 merges (accepted risk R3) — `specs/008-request-review-panel/plan.md` *(asked on BEN-78, 2026-09-26; awaiting the backend)*
 

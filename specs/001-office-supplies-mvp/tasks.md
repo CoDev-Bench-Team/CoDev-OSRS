@@ -7,7 +7,7 @@
 
 Format: `- [ ] [TaskID] [P?] [US?] Description — path`
 
-This list is **SPA-only**. Do not implement or specify REST routes here. Wire HTTP only after the backend team's contract covers the shape — three of the shapes this list needs are open conflicts, see `contracts/README.md`.
+This list is **SPA-only**. Do not implement or specify REST routes here. Wire HTTP only after the backend team's contract covers the shape — the remaining contract gaps are listed in `contracts/README.md`.
 
 ## Phase 0: Realign the shipped shell to constitution 3.0.0
 
@@ -28,6 +28,7 @@ enum, which is the right call under constitution VII. Conflict 2 in
 - [x] T000d Update `StatusPill` and the gallery's status section to the new vocabulary — `src/shared/ui/data-display/StatusPill.tsx`, `src/shared/ui/gallery/Gallery.tsx`
 - [ ] T000e Re-vendor `design-system/` from the 2026-09-22 export (two exports stale; token layer included) — `design-system/`
   - **Deferred (2026-09-24, BEN-122).** There is no skill-folder export of the 2026-09-22 `.fig` to vendor — the 09-15 and 09-22 drifts were read from the `.fig` directly. Waiting on a fresh export from the designer.
+- [x] T000g Add `Received` (constitution 5.0.0, ADR-0009): `REQUEST_STATUSES`, the `received` tone and its orange pair, the five-node timeline, and `Received` as live on the Requests Queue — `src/shared/ui/status.ts`, `src/shared/ui/data-display/StatusPill.tsx`, `src/features/requests/detail/request-timeline.ts`, `src/features/requests/queue/queue-types.ts`
 - [x] T000f Reconcile the **shipped Profile** (spec 006, merged 2026-09-23): `ROLE_LABEL`, the D2 "Approver and Supply Admin reuse" rationale, and the role copy in `ProfilePage.tsx` all name retired roles — `specs/006-profile/*`, `src/features/profile/ProfilePage.tsx`, `docs/design-system/additions.md`
 
 ## Phase 1: Setup (SPA)
@@ -52,8 +53,8 @@ Depends on backend auth/session resources.
 - [ ] T008 [US1] Assets table + search + category filter + chips + pagination — `src/features/assets/AssetsPage.tsx`
 - [ ] T009 [US1] Add Asset panel with category-dependent fields (FR-002a) — `src/features/assets/AddAssetPanel.tsx`
 - [ ] T009a [US1] View Asset panel + Update Asset panel (prefilled, custom spec row) — `src/features/assets/AssetPanels.tsx`
-- [ ] T010 [US1] Inventory table: Total / Available / Reserved / status pill / Update stock — `src/features/inventory/InventoryPage.tsx`
-- [ ] T010a [US1] Update stocks panel: low-stock threshold + one stepper per office — `src/features/inventory/UpdateStocksPanel.tsx`
+- [ ] T010 [US1] ~~Inventory table: Total / Available / Reserved / status pill / Update stock~~ **Re-scoped 2026-09-26 (BEN-107):** Inventory unit table: MODEL · CATEGORY · PR · SERIAL NUMBER · OFFICE · ASSIGNED · STATUS · ACTION, chips All items · Assigned · Available · Reserved — `src/features/inventory/InventoryPage.tsx`
+- [ ] T010a [US1] ~~Update stocks panel: low-stock threshold + one stepper per office~~ **Re-scoped 2026-09-26 (BEN-108):** unit panels: Add Inventory dropdown, Add Single Unit, Add Multiple Units, Review/Edit unit, Remove Unit + confirmation. The threshold moves to Update Asset (T009a) — `src/features/inventory/`
 
 ## Phase 4: User Story 2 — Catalog and submit (P1)
 
@@ -74,10 +75,11 @@ Depends on backend auth/session resources.
 
 ## Phase 6: User Story 4 + 5 — Handover and complete (P1)
 
-**Goal**: Admin sets For Delivery / Ready for Pickup, then completes.
+**Goal**: Admin sets For Delivery / Ready for Pickup; the Employee signs the Accountability Form (`Received`); the Admin completes.
 
 - [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
-- [ ] T018 [US5] Complete action and its confirmation — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
+- [ ] T018 [US5] Complete action and its confirmation, offered on `Received` only (FR-012) — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
+- [ ] T018b [US5] Accountability Form on the Employee's own `For Delivery` / `Ready for Pickup` request (FR-012a, FR-012b) — `src/features/requests/detail/AccountabilityForm.tsx`. **Blocked on contracts/README.md conflict 5.**
 
 ## Phase 7: User Story 6 + 7 — History and cancel (P2)
 
@@ -102,7 +104,7 @@ Depends on backend auth/session resources.
 ## Dependencies
 
 - **Phase 0 blocks everything.** The shipped types name roles and statuses that no longer exist.
-- T003 and all HTTP-backed UI (T005+) need the backend contract, and T008–T013 additionally need the three conflicts in `contracts/README.md` resolved
+- T003 and all HTTP-backed UI (T005+) need the backend contract, and T008–T013 additionally need the remaining contract gaps in `contracts/README.md` resolved
 - UI stories 1 → 2 → 3 → 4/5; 6/7 after 2; 8 anytime after Phase 2
 - T026 needs T008–T024 plus a contract-compliant API
 
@@ -116,5 +118,5 @@ T002 with T001; T008 with T010; T009/T009a with T010a; T019 after T013; T023 any
 
 ## Blocked on decisions, not on code
 
-- Three backend contract conflicts — `contracts/README.md`
-- Ten designer questions — [drift-2026-09-22 §10](../../docs/design-system/drift-2026-09-22.md), of which §4d (which `03 - Inventory` is real) blocks T010 and §4f (asset fields) blocks T009
+- Contract gaps — `contracts/README.md`. Conflict 2 is closed and conflict 3 is closed. Conflict 1 is decided (units); the per-asset count read and the unit-removal reason are still open
+- ~~Ten designer questions~~ **Ratified 2026-09-26** — [drift-2026-09-22 §10 status table](../../docs/design-system/drift-2026-09-22.md#status-2026-09-26). §4d and §4f no longer block T009/T010. What the designer still owes blocks nothing: [drift-2026-09-26 §5](../../docs/design-system/drift-2026-09-26.md#5-designer-follow-up)

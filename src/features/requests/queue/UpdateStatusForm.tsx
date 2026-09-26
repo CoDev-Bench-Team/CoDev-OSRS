@@ -10,7 +10,7 @@ import { HANDOVER_STATUSES, type HandoverStatus, type PickupLocation } from './r
  *  required pickup location, because spec 001 FR-011a needs one. The location
  *  is one of the offices the source exposes, with the request's office
  *  preselected, or `Other…`, which reveals a free-text field. This is decided
- *  by the project owner, undrawn, and logged in additions.md §3g.
+ *  by the project owner, undrawn, and logged in additions.md §3h.
  *
  *  A request already `Ready for Pickup` starts on the location it has, not the
  *  office, so confirming without looking never silently moves it. A submit that

@@ -109,6 +109,28 @@ An Employee is never offered a control to mark a request received or complete.
 
 ## Clarifications
 
+### Session 2026-09-26 — Amendment (constitution 5.0.0)
+
+Raised by [drift-2026-09-26 §3](../../docs/design-system/drift-2026-09-26.md): `04.1` and `04.2` now draw a five-node timeline.
+
+- Q: What does the panel's timeline show? → A: **Submitted → Approved → For Delivery/For Pickup → Received → Complete.** `Received` is reached when the request is `Received` or `Completed`, and carries the time it was set. Cancelled and Rejected still collapse to two nodes.
+- Q: Does the panel get the Accountability Form? → A: **Not in this spec.** It is spec 001 FR-012b / tasks T018b, blocked on the contract (conflict 5). The panel still offers **Cancel Request** only while `Pending Approval`.
+
+### Session 2026-09-25 — Amendment (from spec 011, BEN-43)
+
+Raised by spec 011, which reuses this panel's read-back for the Request List's
+confirmation. Recorded here because it changes what this panel draws.
+Constitution I requires the change to cite its diff:
+[drift-2026-09-24 §10](../../docs/design-system/drift-2026-09-24.md) and
+[additions.md §3f](../../docs/design-system/additions.md).
+
+- Q: The read-back (Items Requested, Note to Approver, the stopped reason, Status) is now one shared piece, `RequestReadBack`, rendered by this panel and by spec 011's confirmation. Does this panel's DOM change? → A: **Not by the extraction** — that commit (`df66022`) was byte-identical. **Yes by the re-read that followed**: `04.1` and `03.1` were re-read against the file on 2026-09-25, with character overrides, and both panels now draw the result — the QTY column 50px (was 48px); *Items Requested* and *Status* headings Inter Bold 14 / 1.5 in `Ink-400`, 18px above what they head; the note and reason cards Inter Bold 15 over Inter Regular 12 in `Ink-900`, 12px apart; sections 18px apart.
+- Q: The shared `StatusTimeline` changed with it. What does this panel now show? → A: Labels Inter Bold 12.5 / 1.45, dates `Label 2` in `Ink-400`; pending dots `Border-Strong`; 1px `Border` connectors running dot to dot; and a 10% halo on the step the request is **at** — the last node that is not pending, in that node's own colour, so a Cancelled or Rejected request haloes its slate or red ending rather than Submitted.
+- Q: The refusal note at the top of this panel is now the shared `RefusalAlert`, also used by spec 011's drawer. Does it look or behave differently? → A: **No** — same red pair, same `role="alert"`; its message now sits in a `<p>` inside the alert rather than being the alert itself.
+
+No requirement above changes; FR-003's content and SC-001 to SC-006 hold, and
+`scripts/check-request-detail.mjs` still passes.
+
 ### Session 2026-09-23
 
 Raised by the review of BEN-45 against the repo. Each was decided in favour of the Linear ticket, and the product specs were amended to match.

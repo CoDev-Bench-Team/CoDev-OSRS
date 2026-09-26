@@ -307,6 +307,7 @@ function DataSection({ model, onModelChange }: { model: string; onModelChange: (
             { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
             { label: 'Approved', state: 'reached', tone: 'ready', when: 'Sep 11, 2026, 1:05 PM' },
             { label: 'For Delivery', state: 'reached', tone: 'delivery', when: 'Sep 12, 2026, 9:42 AM' },
+            { label: 'Received', state: 'pending' },
             { label: 'Complete', state: 'pending' },
           ]}
         />
