@@ -1,12 +1,15 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button, FilterChip, LoadingState, Notice, PageHeader, Search } from '../../shared/ui';
 import { DESTINATIONS } from '../../app/destinations';
 import { useSession } from '../auth/session-context';
+import { useRequestList } from '../requests/create/request-draft';
+import { RequestListDrawer } from '../requests/create/RequestListDrawer';
+import { seededRequestSubmitSource } from '../requests/create/seeded-request-submit-source';
+import type { CatalogSource } from './catalog-source';
 import { useCatalog } from './catalog-context';
 import { CatalogProvider } from './CatalogProvider';
 import { CatalogGrid } from './CatalogGrid';
 import { OfficeSelect } from './OfficeSelect';
-import { RequestListDraftProvider } from './RequestListDraftProvider';
 import { seededCatalogSource } from './seeded-source';
 import { OFFICES, type CatalogOffice } from './types';
 import { CATEGORY_CHIPS, useCatalogFilters } from './useCatalogFilters';
@@ -56,7 +59,7 @@ function CatalogContents({
         tone="stopped"
         title="The catalog could not be loaded"
         body="Stock numbers are not available right now, so nothing is shown rather than showing figures that may be out of date."
-        actions={<Button onClick={state.retry}>Try again</Button>}
+        actions={<Button onClick={state.reload}>Try again</Button>}
       />
     );
   } else if (items.length === 0) {
@@ -108,6 +111,31 @@ function CatalogContents({
   );
 }
 
+/** The Request List drawer, over the Catalog (spec 008 FR-006). Employee-only
+ *  (FR-016); opened only from the top-bar marker (FR-006a). Inside the catalog
+ *  provider so a submit can re-read the numbers it just moved (FR-011). */
+function CatalogRequestList({ source, homeOffice }: { source: CatalogSource; homeOffice: CatalogOffice | undefined }) {
+  const { session } = useSession();
+  const { isOpen, submissions } = useRequestList();
+  const { reload } = useCatalog();
+  /* FR-011 in every state, keyed on the session's success count rather than
+     a drawer callback: a submit sent before leaving the Catalog mid-submit
+     (D7) can land after this Catalog was mounted anew, and it is this one that
+     must re-read. A read already in flight may predate the reserve, and a
+     failed one deserves the retry the submit makes useful. Not on mount — the
+     Catalog has just read. */
+  const seen = useRef(submissions);
+  useEffect(() => {
+    if (seen.current === submissions) return;
+    seen.current = submissions;
+    reload();
+  }, [submissions, reload]);
+  if (!isOpen || session?.role !== 'employee') return null;
+  return (
+    <RequestListDrawer catalogSource={source} submitSource={seededRequestSubmitSource} homeOffice={homeOffice} />
+  );
+}
+
 export function CatalogPage() {
   /* Stable across renders so the provider's effect does not re-fetch on every
      parent render. Swapped for a contract-backed source when one exists. */
@@ -120,9 +148,8 @@ export function CatalogPage() {
 
   return (
     <CatalogProvider source={source} office={office}>
-      <RequestListDraftProvider>
-        <CatalogContents office={office} onOfficeChange={setOffice} homeOffice={homeOffice} />
-      </RequestListDraftProvider>
+      <CatalogContents office={office} onOfficeChange={setOffice} homeOffice={homeOffice} />
+      <CatalogRequestList source={source} homeOffice={homeOffice} />
     </CatalogProvider>
   );
 }

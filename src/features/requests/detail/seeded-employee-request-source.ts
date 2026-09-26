@@ -104,6 +104,14 @@ const store = new Map<string, EmployeeRequest[]>(
   Object.entries(SEED).map(([owner, requests]) => [owner, requests.map((r) => ({ ...r }))]),
 );
 
+/** Adds a newly submitted request to its owner's list, newest first. Used only
+ *  by the seeded request submit (spec 008 D12) so a demo submit shows up in My
+ *  Requests. Seeded-only glue: against the backend, the API owns the list. */
+export function appendSeededRequest(user: User, request: EmployeeRequest): void {
+  const own = store.get(user.id) ?? [];
+  store.set(user.id, [{ ...request }, ...own]);
+}
+
 export const seededEmployeeRequestSource: EmployeeRequestSource = {
   async list(user: User) {
     return [...(store.get(user.id) ?? [])];

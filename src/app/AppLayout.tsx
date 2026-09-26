@@ -6,6 +6,7 @@ import { useSession } from '../features/auth/session-context';
 import { ROLE_LABEL } from '../features/auth/types';
 import { canRoleReach, DESTINATIONS, landingPath, SIGN_IN_PATH } from './destinations';
 import { NavButton } from './NavButton';
+import { useRequestList } from '../features/requests/create/request-draft';
 import { useRequestListCount } from './request-list-count';
 
 /** The persistent chrome every signed-in destination lives inside (FR-014).
@@ -21,8 +22,15 @@ import { useRequestListCount } from './request-list-count';
 export function AppLayout() {
   const { session, signOut } = useSession();
   const { count, notificationCount } = useRequestListCount();
+  const { openList, closeList } = useRequestList();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Exactly one item is current (FR-014). `startsWith` so a nested address —
+  // /requests/REQ-2026-1847 — still marks My Requests, but only on a path
+  // boundary, so /requests never lights up /request-something-else.
+  const isCurrent = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   // FR-017b: a role that changes mid-session re-evaluates. Navigation derives
   // from `role` on every render, so it follows on its own; what needs saying is
@@ -41,15 +49,26 @@ export function AppLayout() {
     if (!canRoleReach(role, location.pathname)) void navigate(landingPath(role), { replace: true });
   }, [session?.role, location.pathname, navigate]);
 
+  // Spec 008 FR-006a: the drawer opens only from the marker. Its open flag
+  // lives above the routes, so leaving the Catalog by any path — browser Back
+  // included, which never passes through the drawer's own close — must clear
+  // it, or the next visit would open the drawer by itself. Keyed to the
+  // TRANSITION off the Catalog, not to being elsewhere: the marker pressed on
+  // another screen opens the list before the Catalog has mounted, and that
+  // open must survive. (Not an unmount cleanup in the Catalog: StrictMode's
+  // rehearsal unmount would close the list the marker had just opened.)
+  // Leaving mid-submit closes the drawer too; the submit still lands, and the
+  // session list holds its confirmation for the next open (D7).
+  const onCatalog = isCurrent(DESTINATIONS.catalog.path);
+  const wasOnCatalog = useRef(onCatalog);
+  useEffect(() => {
+    if (wasOnCatalog.current && !onCatalog) closeList();
+    wasOnCatalog.current = onCatalog;
+  }, [onCatalog, closeList]);
+
   if (!session) return null; // RequireAccess resolves this; belt and braces.
 
   const { user, role } = session;
-
-  // Exactly one item is current (FR-014). `startsWith` so a nested address —
-  // /requests/REQ-2026-1847 — still marks My Requests, but only on a path
-  // boundary, so /requests never lights up /request-something-else.
-  const isCurrent = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const nav: NavItem[] = navigationFor(role).map((destination) => ({
     label: destination.navLabel,
@@ -69,9 +88,13 @@ export function AppLayout() {
         // FR-015: employees only. `undefined` removes the marker entirely for
         // the other two roles rather than showing them a zero.
         requestListCount={role === 'employee' ? count : undefined}
-        // The request-list drawer is spec 001's own work (T010). Until it
-        // ships, the marker goes where the list's contents will end up.
-        onOpenRequestList={() => void navigate(DESTINATIONS.requests.path)}
+        // The marker is the only way into the Request List drawer, which sits
+        // over the Catalog (spec 008 FR-006a, D3). From anywhere else it goes
+        // to the Catalog first; the list itself lives for the session.
+        onOpenRequestList={() => {
+          if (!onCatalog) void navigate(DESTINATIONS.catalog.path);
+          openList();
+        }}
         // The 2026-09-15 export puts a notification marker in both bars, with a
         // count on the Admin one. It is a marker, not a control: the file draws
         // no panel for it to open, so it announces a count and does nothing —

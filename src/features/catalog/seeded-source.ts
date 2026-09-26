@@ -5,6 +5,7 @@ import itemLaptop from '../../assets/items/item-laptop.jpg';
 import itemMonitor from '../../assets/items/item-monitor.jpg';
 import itemMouse from '../../assets/items/item-mouse.jpg';
 import type { CatalogSource } from './catalog-source';
+import { createSeededStock } from './seeded-stock';
 import type { CatalogItem, CatalogOffice } from './types';
 
 /** Demo data behind the boundary, on the same terms spec 003 established for
@@ -118,6 +119,22 @@ const ASSETS: SeededAsset[] = [
   },
 ];
 
+/** An asset's name and model, as the seeded "system" knows them — so the
+ *  seeded request submit can read back what was created (spec 008 T018). */
+export function seededAsset(id: string): { name: string; model: string } | undefined {
+  const asset = ASSETS.find((a) => a.id === id);
+  return asset ? { name: asset.name, model: asset.model } : undefined;
+}
+
+/** The live seeded stock. The request submit's seeded source reserves out of
+ *  it, so a demo submit lowers what this catalog reads (spec 008 D11). */
+export const seededStock = createSeededStock(ASSETS);
+
+/* DEVELOPMENT ONLY: the check scripts read and move the app's own store, not a
+   second copy a dynamic import would load (spec 008 D19). Dropped from a
+   production build along with the branch. */
+if (import.meta.env.DEV) window.__osrs = { ...window.__osrs, seededStock };
+
 /** The seeded source resolves in a microtask, so loading exists for less than
  *  a frame and neither a person nor a check can see it. In DEVELOPMENT ONLY,
  *  query flags make every SC-004 state reachable without editing code —
@@ -144,10 +161,10 @@ export function seededCatalogSource(): CatalogSource {
       /* An asset with no stock line at this office is still listed, at zero:
          it exists, it just cannot be requested from here (spec 001 Edge
          Cases). */
-      return ASSETS.map(({ stock, ...asset }) => ({
+      return ASSETS.map(({ stock: _stock, ...asset }) => ({
         ...asset,
         specs: { ...asset.specs },
-        available: stock[office] ?? 0,
+        available: seededStock.available(asset.id, office),
       }));
     },
   };

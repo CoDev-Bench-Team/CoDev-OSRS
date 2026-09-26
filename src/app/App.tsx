@@ -1,11 +1,12 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { SessionProvider } from '../features/auth/SessionProvider';
+import { RequestListProvider } from '../features/requests/create/RequestListProvider';
 import { RequestListCountProvider } from './RequestListCountProvider';
 import { AppRoutes } from './routes';
 
 /** The application root: history, then session, then the count the top bar
- *  shows, then the routes.
+ *  shows, then the Request List that writes it, then the routes.
  *
  *  Order matters. The router is outermost because guards redirect, and a guard
  *  is rendered by a route. The session provider sits above every route so a
@@ -37,29 +38,33 @@ export default function App() {
     <BrowserRouter>
       <SessionProvider>
         <RequestListCountProvider>
-          {Gallery && CompareHarness ? (
-            <Routes>
-              <Route
-                path="/__gallery"
-                element={
-                  <Suspense fallback={null}>
-                    <Gallery />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="/__compare"
-                element={
-                  <Suspense fallback={null}>
-                    <CompareHarness />
-                  </Suspense>
-                }
-              />
-              <Route path="*" element={<AppRoutes />} />
-            </Routes>
-          ) : (
-            <AppRoutes />
-          )}
+          {/* The Employee's Request List lives for the session, above every
+              route, and is the only writer of the count (spec 008 D1, D2). */}
+          <RequestListProvider>
+            {Gallery && CompareHarness ? (
+              <Routes>
+                <Route
+                  path="/__gallery"
+                  element={
+                    <Suspense fallback={null}>
+                      <Gallery />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/__compare"
+                  element={
+                    <Suspense fallback={null}>
+                      <CompareHarness />
+                    </Suspense>
+                  }
+                />
+                <Route path="*" element={<AppRoutes />} />
+              </Routes>
+            ) : (
+              <AppRoutes />
+            )}
+          </RequestListProvider>
         </RequestListCountProvider>
       </SessionProvider>
     </BrowserRouter>

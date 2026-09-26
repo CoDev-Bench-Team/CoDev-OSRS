@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SupplyCard } from '../../shared/ui';
 import { useSession } from '../auth/session-context';
-import { useRequestListDraft } from './request-draft';
+import { useRequestListDraft } from '../requests/create/request-draft';
 import { requestAction } from './request-action';
 import { clampQuantity, stockStatus } from './stock';
 import type { CatalogItem, CatalogOffice } from './types';
