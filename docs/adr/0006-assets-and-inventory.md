@@ -7,6 +7,8 @@ Accepted — 2026-09-22. **Partly superseded by [ADR-0008](0008-per-unit-invento
 **Amends [ADR-0002](0002-deduct-inventory-on-submit.md)**
 (which remains accepted for *when* stock moves; this ADR changes *what* moves).
 
+**Amended 2026-09-26 by [ADR-0009](0009-received-and-accountability-form.md)**: the items leave the store on `Received` (the Employee's Accountability Form), not on `Completed`. In the table below, read the `Completed` row as `Received`; `Completed` now changes no quantity.
+
 ## Context
 
 Until this export the domain had one inventory concept: an item with a name, an

@@ -83,6 +83,7 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
       handover: 'Ready for Pickup',
       approvedAt: '2026-07-28T06:15:00Z',
       handedOverAt: '2026-07-29T02:30:00Z',
+      receivedAt: '2026-07-29T03:10:00Z',
       completedAt: '2026-07-29T08:45:00Z',
     },
     {
@@ -103,6 +104,29 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
 const store = new Map<string, EmployeeRequest[]>(
   Object.entries(SEED).map(([owner, requests]) => [owner, requests.map((r) => ({ ...r }))]),
 );
+
+/** The next free `REQ-2026-NNNN`, one past the highest id across **every**
+ *  owner's list — so a demo submit can never reuse an id another Employee's
+ *  seed already holds (an id is unique or it is not an id). Used only by the
+ *  seeded request submit (spec 011 D12); the live source shows the API's id. */
+export function nextSeededRequestId(): string {
+  let highest = 0;
+  for (const requests of store.values()) {
+    for (const { id } of requests) {
+      const n = Number(/^REQ-2026-(\d+)$/.exec(id)?.[1]);
+      if (n > highest) highest = n;
+    }
+  }
+  return `REQ-2026-${highest + 1}`;
+}
+
+/** Adds a newly submitted request to its owner's list, newest first. Used only
+ *  by the seeded request submit (spec 011 D12) so a demo submit shows up in My
+ *  Requests. Seeded-only glue: against the backend, the API owns the list. */
+export function appendSeededRequest(user: User, request: EmployeeRequest): void {
+  const own = store.get(user.id) ?? [];
+  store.set(user.id, [{ ...request }, ...own]);
+}
 
 export const seededEmployeeRequestSource: EmployeeRequestSource = {
   async list(user: User) {

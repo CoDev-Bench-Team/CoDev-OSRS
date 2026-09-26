@@ -1,7 +1,7 @@
 # Architecture — Office Supplies Request System
 
 **Status**: Accepted for MVP  
-**Date**: 2026-09-11 · **Last amended**: 2026-09-26 (unit register; constitution 4.0.0)  
+**Date**: 2026-09-11 · **Last amended**: 2026-09-26 (`Received`; constitution 5.0.0)  
 **Companion docs**: [product](docs/product.md), [process flow](docs/process-flow.md), [ADRs](docs/adr/), [feature plan](specs/001-office-supplies-mvp/plan.md)
 
 This file is the cross-cutting HOW. Feature WHAT lives in specs. Do not duplicate user stories here.
@@ -109,6 +109,10 @@ Do not add an API implementation directory until an ADR names the stack. Configu
                     (peers, not a sequence;
                      Ready for Pickup records a location)
                          │
+                         │ Accountability Form (owning Employee) → System
+                         ▼
+                      Received   (units assigned; not cancellable)
+                         │
                          │ complete (Admin)
                          ▼
                       Completed
@@ -119,10 +123,11 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 - **Submit**: authenticated Employee; every line qty ≥ 1; qty ≤ `Available` at the requesting office; assets exist and are active.
 - **Approve / Reject**: Admin; request is `Pending Approval`; reject body includes a non-empty reason.
 - **Update status**: Admin; request is `Approved`, `For Delivery` or `Ready for Pickup`; target is `For Delivery` or `Ready for Pickup`; `Ready for Pickup` records a pickup location.
-- **Complete**: Admin; request is `For Delivery` or `Ready for Pickup`.
-- **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `Ready for Pickup`. **A reason is required from whoever cancels.** Never once `Completed`. Releases the reservation in the same transaction, exactly as reject does.
+- **Accountability Form → Received**: owning Employee; request is `For Delivery` or `Ready for Pickup`; the form is agreed and signed with the Employee's full name. The System sets `Received` and moves the reserved units to `Assigned` in the same transaction.
+- **Complete**: Admin; request is `Received`.
+- **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `Ready for Pickup`. **A reason is required from whoever cancels.** Never once `Received` or `Completed`. Releases the reservation in the same transaction, exactly as reject does.
 
-There is no confirm-receipt transition. `Completed` is an Admin action — see [ADR-0007](docs/adr/0007-fulfilment-status-vocabulary.md).
+The Employee confirms receipt with the Accountability Form; `Completed` is an Admin action — see [ADR-0009](docs/adr/0009-received-and-accountability-form.md), which amends [ADR-0007](docs/adr/0007-fulfilment-status-vocabulary.md).
 
 ## 6. Stock Coupling
 
@@ -139,9 +144,10 @@ Stock is a register of **units** ([ADR-0008](docs/adr/0008-per-unit-inventory-re
 | Request cancelled | Cancelled | those units → `Available` | — | +qty | −qty |
 | Approved | Approved | none | — | — | — |
 | For Delivery / Ready for Pickup | those statuses | none | — | — | — |
-| Request completed | Completed | those units → `Assigned` to the requester | −qty | — | −qty |
+| Accountability Form submitted | Received | those units → `Assigned` to the requester | −qty | — | −qty |
+| Request completed | Completed | none | — | — | — |
 
-`Completed` is the only transition that reduces `Total`; those units are what the Assets screen counts as *Assigned units*. Concurrent submits for the last units MUST serialize so `Available` never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract's choice.
+`Received` is the only request transition that reduces `Total`; those units are what the Assets screen counts as *Assigned units*. Concurrent submits for the last units MUST serialize so `Available` never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract's choice.
 
 A unit that is `Assigned` or `Reserved` cannot be removed. Only request transitions move a unit into or out of `Reserved`; a manual edit may set `Available` ↔ `Inactive` or record an existing assignment.
 
@@ -161,6 +167,7 @@ Each asset carries one **low-stock threshold** (per asset, compared against Avai
 | View requests queue (all requestors) | no | yes |
 | Approve / reject | no | yes |
 | Set For Delivery / Ready for Pickup | no | yes |
+| Sign the Accountability Form (sets `Received`) | own, while `For Delivery` / `Ready for Pickup` | no |
 | Complete a request | no | yes |
 | Cancel a request | own, while `Pending Approval`, reason required | any `Approved` / `For Delivery` / `Ready for Pickup`, reason required |
 | View resolved history | own only (My Requests) | yes (History, all requestors) |
@@ -217,7 +224,7 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 ## 12. Testing Architecture
 
 - **Contract**: HTTP against the **backend-published** REST contract (not a file invented in this repo).
-- **E2E (Playwright)**: units added → employee request → admin reject (reservation released) → new request → approve → For Delivery or Ready for Pickup → complete (units assigned; Total and Reserved fall); assert notifications as the backend contract exposes them.
+- **E2E (Playwright)**: units added → employee request → admin reject (reservation released) → new request → approve → For Delivery or Ready for Pickup → employee signs the Accountability Form (Received; units assigned; Total and Reserved fall) → complete; assert notifications as the backend contract exposes them.
 
 ## 13. Decisions
 
@@ -229,5 +236,6 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 | [0004](docs/adr/0004-client-routing.md) | Client-side routing via React Router v7 |
 | [0005](docs/adr/0005-two-role-model.md) | Employee and Admin — two human roles |
 | [0006](docs/adr/0006-assets-and-inventory.md) | Assets and Inventory are separate; per-office Total/Available/Reserved stock — **partly superseded by 0008** |
-| [0007](docs/adr/0007-fulfilment-status-vocabulary.md) | One handover state (For Delivery / For Pickup), completed by the Admin — amended 2026-09-24: `Ready for Pickup`, drawn pink/blue pills |
-| [0008](docs/adr/0008-per-unit-inventory-register.md) | Inventory is a per-unit register; stock counted from unit statuses (partly supersedes 0006) |
+| [0007](docs/adr/0007-fulfilment-status-vocabulary.md) | One handover state (For Delivery / For Pickup), completed by the Admin — amended 2026-09-24: `Ready for Pickup`, drawn pink/blue pills; amended by 0009 |
+| [0008](docs/adr/0008-per-unit-inventory-register.md) | Inventory is a per-unit register; stock counted from unit statuses (partly supersedes 0006); amended by 0009 |
+| [0009](docs/adr/0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes |

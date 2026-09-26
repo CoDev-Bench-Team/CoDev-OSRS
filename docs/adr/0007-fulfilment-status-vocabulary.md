@@ -4,6 +4,8 @@
 
 Accepted — 2026-09-22. **Amended 2026-09-24** (below).
 
+**Amended 2026-09-26 by [ADR-0009](0009-received-and-accountability-form.md)**: a `Received` status sits between the handover states and `Completed`. The Employee confirms receipt with the Accountability Form, which withdraws decision 2's "the employee's confirm-receipt step is withdrawn". The Admin still completes, now only from `Received`, and the items leave the store on `Received`, not on `Completed`.
+
 ## Amendment — 2026-09-24: `Ready for Pickup`, and the drawn colours
 
 Decided by the project owner from the 2026-09-24 re-export

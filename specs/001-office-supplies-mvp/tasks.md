@@ -28,6 +28,7 @@ enum, which is the right call under constitution VII. Conflict 2 in
 - [x] T000d Update `StatusPill` and the gallery's status section to the new vocabulary — `src/shared/ui/data-display/StatusPill.tsx`, `src/shared/ui/gallery/Gallery.tsx`
 - [ ] T000e Re-vendor `design-system/` from the 2026-09-22 export (two exports stale; token layer included) — `design-system/`
   - **Deferred (2026-09-24, BEN-122).** There is no skill-folder export of the 2026-09-22 `.fig` to vendor — the 09-15 and 09-22 drifts were read from the `.fig` directly. Waiting on a fresh export from the designer.
+- [x] T000g Add `Received` (constitution 5.0.0, ADR-0009): `REQUEST_STATUSES`, the `received` tone and its orange pair, the five-node timeline, and `Received` as live on the Requests Queue — `src/shared/ui/status.ts`, `src/shared/ui/data-display/StatusPill.tsx`, `src/features/requests/detail/request-timeline.ts`, `src/features/requests/queue/queue-types.ts`
 - [x] T000f Reconcile the **shipped Profile** (spec 006, merged 2026-09-23): `ROLE_LABEL`, the D2 "Approver and Supply Admin reuse" rationale, and the role copy in `ProfilePage.tsx` all name retired roles — `specs/006-profile/*`, `src/features/profile/ProfilePage.tsx`, `docs/design-system/additions.md`
 
 ## Phase 1: Setup (SPA)
@@ -74,10 +75,11 @@ Depends on backend auth/session resources.
 
 ## Phase 6: User Story 4 + 5 — Handover and complete (P1)
 
-**Goal**: Admin sets For Delivery / Ready for Pickup, then completes.
+**Goal**: Admin sets For Delivery / Ready for Pickup; the Employee signs the Accountability Form (`Received`); the Admin completes.
 
 - [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx`
-- [ ] T018 [US5] Complete action and its confirmation — `src/features/requests/queue/UpdateStatusPanel.tsx`
+- [ ] T018 [US5] Complete action and its confirmation, offered on `Received` only (FR-012) — `src/features/requests/queue/UpdateStatusPanel.tsx`
+- [ ] T018b [US5] Accountability Form on the Employee's own `For Delivery` / `Ready for Pickup` request (FR-012a, FR-012b) — `src/features/requests/detail/AccountabilityForm.tsx`. **Blocked on contracts/README.md conflict 5.**
 
 ## Phase 7: User Story 6 + 7 — History and cancel (P2)
 

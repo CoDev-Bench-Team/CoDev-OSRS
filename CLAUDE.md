@@ -60,8 +60,8 @@ Do not introduce a new frontend framework or UI kit without an ADR in `docs/adr/
 
 - Honor AGENTS.md constitution. MUST violations without a documented exception are errors.
 - Two roles only: **Employee** and **Admin** (ADR-0005). Do not reintroduce `approver` / `supply_admin`.
-- Request status transitions MUST follow `docs/process-flow.md`. No skipped states. `For Delivery` and `Ready for Pickup` are peers; `Completed` is set by an **Admin**, not by the requester.
-- Stock is a register of **units**, counted per **(asset, office)** as **Total / Available / Reserved** (ADR-0006, ADR-0008). Submit reserves units; reject and cancel release them; complete assigns them to the requester. `Total = Available + Reserved`; never negative. BitLocker identifier and recovery key/PIN are Admin-only secrets.
+- Request status transitions MUST follow `docs/process-flow.md`. No skipped states. `For Delivery` and `Ready for Pickup` are peers; the requester's Accountability Form moves the request to `Received` (System); `Completed` is set by an **Admin**, only from `Received`.
+- Stock is a register of **units**, counted per **(asset, office)** as **Total / Available / Reserved** (ADR-0006, ADR-0008). Submit reserves units; reject and cancel release them; `Received` assigns them to the requester (ADR-0009). `Total = Available + Reserved`; never negative. BitLocker identifier and recovery key/PIN are Admin-only secrets.
 - A cancellation reason is required from whoever cancels.
 - Email notification on every defined transition, using the four templates in `docs/process-flow.md`. Missing a notification is a bug (API responsibility; SPA surfaces status).
 - SPA TypeScript is strict. No `any` without justification.

@@ -57,6 +57,9 @@ Queue's pagination (drift-2026-09-24 §7); and four from the Catalog's
 | `--color-osrs-pink-500` | `rgb(239,93,168)` | The "For Delivery" ink. No pink exists anywhere in the source palette; specified by the project owner, 2026-09-14 (additions.md §2b). |
 | `--color-osrs-pink-tint` | `rgba(239,93,168,0.1)` | Its 10% fill, following the `--osrs-*-tint` convention the source already uses for green and red. |
 | `--color-status-delivery-bg` / `-fg` | the pink pair | `For Delivery`'s pill, the `delivery` tone. Unused from ADR-0007 until 2026-09-24, when the project owner adopted the design's pink over ADR-0007's green (drift-2026-09-24 §6). |
+| `--color-osrs-orange-500` | `rgb(255,141,40)` | The `Received` ink, `#ff8d28`. Bound to no colour style in the file; taken raw, as the pink was (drift-2026-09-26 §3). |
+| `--color-osrs-orange-tint` | `rgba(255,141,40,0.1)` | Its 10% fill, as the `Received` pill draws it. |
+| `--color-status-received-bg` / `-fg` | the orange pair | `Received`'s pill, the `received` tone (constitution 5.0.0, ADR-0009). |
 | `--color-status-pickup-bg` / `-fg` | `var(--color-osrs-blue-50)` / `var(--color-osrs-blue-700)` | `Ready for Pickup`'s pill, the `pickup` tone — both values are source primitives, and the pair is the one every drawn `Ready for Pickup` pill uses. Back in use since 2026-09-24, as above. |
 | `--color-osrs-google-green` | `rgb(52,168,83)` | A Google brand colour. **Present in the `.fig`, absent from the export**: the mark's vector carries only the red in `fillPaints` and takes this from `vectorData.styleOverrideTable` (styleID 3), which `tokens/colors.css` never captured. Restored 2026-09-15 (additions.md §4.2). |
 | `--color-osrs-google-yellow` | `rgb(251,188,5)` | The same, styleID 4. |

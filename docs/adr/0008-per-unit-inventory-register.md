@@ -5,6 +5,8 @@
 Accepted — 2026-09-26. Decided by the project owner (BEN-116).
 **Partly supersedes [ADR-0006](0006-assets-and-inventory.md)**: ADR-0006 decision 5 (the register is post-MVP) is withdrawn. Decision 1's "Stock is a quantity held against an asset at an office" and decision 3's "Asset encoded / stock set" row and Deployed column no longer hold: stock is counted from unit statuses, and completion assigns units. Decisions 2 (stock is a vector over offices) and 4 (the `Low-stock threshold` term), the Assets/Inventory split in decision 1, and reserve-on-submit in decision 3 still stand.
 
+**Amended 2026-09-26 by [ADR-0009](0009-received-and-accountability-form.md)**: the reserved units move to `Assigned` on `Received` (the Employee's Accountability Form), not on completion. In the tables below, read the "Request completed" row as `Received`; `Completed` now changes no unit's status.
+
 ## Context
 
 ADR-0006 modelled stock as three stored numbers per (asset, office), set with
