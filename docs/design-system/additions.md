@@ -131,7 +131,7 @@ designer should ratify the sentence, not just the swatches.
 |----------|------------------|
 | **Responsive breakpoints** | Exact source geometry at ≥1440. Fluid 768–1439. Single column below 768. The source has only the 1440 frame, so every breakpoint here is invented. |
 | **44px minimum touch target** | Below the design width. `--spacing-touch-target`. Applied as a minimum box size on links, buttons and fields. The one control the source draws smaller than 44px — the stepper's 22px `-` / `+` — is exempt from the box rule and meets the minimum with an invisible, centred 44px pseudo-element instead (`hit-area` in `utilities.css`), so the stepper keeps its 1440 geometry at every width. |
-| **`TopBar` redesign** | The source positions it absolutely — logo (32,22), nav x=618, account right:64. Converted to flow layout with a centred nav that wraps below `md`. Preserved exactly: 87px height, white surface, hairline ring, 32px gutter, brand red on the current item, 31px divider. |
+| **`TopBar` redesign** | ~~Converted to flow layout with a centred nav.~~ **Superseded 2026-09-15**: the bar is now a port of the `Top Navigation` component (88:22807), matching the frame to within a pixel at 1440. See §3d. |
 | **`PageHeader` redesign** | Source places it at (32,121) absolutely. Now a flow block with the same 32/1.3 title, 8px gap and 14/1.5 subtitle. |
 | **8 promotions** | `TopBar`, `Avatar`, `PageHeader`, `SummaryCard`, `Button`, `TableCard`, `TableHead`, `SectionTitle` were drawn as frames inside the UI kit, not published as components. They are first-class components here. **Worth publishing in Figma** so future exports stay in sync. |
 
@@ -346,7 +346,6 @@ a role switcher (D5): it chooses who signs *in*, and changing role still means
 signing out and back in. It renders only while the active session source offers
 demo accounts, so it disappears by itself the day a real one replaces it.
 
----
 
 ## 3e. Profile (spec 006)
 
@@ -389,6 +388,75 @@ cancellation*, and a rejected one under *Reason for rejection*, in the same card
 as *Note to Approver*, above the timeline. `04.2 - Cancelled` does not draw it;
 Linear BEN-67 and BEN-70 ask for it, and spec 001's Request entity stores both
 reasons. **Flagged to the designer** to draw it.
+
+## 3g. The 2026-09-15 frames — newer than the vendored export
+
+Four frames were built against the **live Figma file** rather than
+`design-system/`: `01 - Login` second variant (28:2673), `03 - Inventory`
+(113:27060), `04 - Add Item` (113:27374) and `04 - Update Item` (113:28004).
+
+The vendored export was taken on 2026-09-12 and does not contain them. That is
+drift in the sense of §1 of [DESIGN.md](../../DESIGN.md) — the export and the
+file no longer agree — and the response is the documented one: re-vendor, diff
+`SHA256SUMS`, reconcile the token map. Until that happens, the values below come
+from the file and have no entry in `token-map.md`.
+
+**The item drawer is withdrawn (PR #32 review, 2026-09-26).** `04 - Add Item`
+and `04 - Update Item` moved to the file's `Archive` page in the 2026-09-22
+export ([drift §1](drift-2026-09-22.md)): Inventory's row action now opens
+`03.4 - Update Stocks`, and asset create / update belongs to the Assets screen.
+The drawer and its two routes are removed; Inventory ships its table read-only
+until an Inventory spec exists. The rows below that describe only the drawer are
+struck. `Field`, `TextInput` and the close glyph stay in the library, so their
+rows stand.
+
+### Values the frames state and the token export does not carry
+
+| Value | Where | Note |
+|-------|-------|------|
+| ~~**22px display size**~~ | ~~The item drawer's heading~~ | Withdrawn with the drawer. |
+| **39px control height** | `Field` / `TextInput`, from the drawer's fields | The system's control heights are 46 and 42. |
+| **6px radius, warm 1px border on inputs** | `TextInput`, from the drawer's fields | The system's inputs are ringed, not bordered (`DESIGN.md` §6). The frames draw a real border in `--color-osrs-border-warm`, so that is what shipped. |
+| **48px table header** | The inventory table | The library's `TableHead` is 41px and has no alignment control, so this header is inlined in the feature — as the source's own inventory screen does. |
+| ~~**400px drawer, 371px content column**~~ | ~~Both item frames~~ | Withdrawn with the drawer. |
+| **36px / 4px-radius pagination controls** | The inventory pager | Now the shared `Pagination` the Requests Queue introduced (spec 001 FR-018), built to the file's `pagination` components — see below. |
+
+### Decisions made while porting them
+
+| Decision | Detail |
+|----------|--------|
+| ~~**Two greys substituted in the pager**~~ | **Superseded (PR #32 review).** Inventory's feature-local pager is gone; it uses the shared `Pagination`, which renders the file's `neutral-200` ring and `neutral-800` ink from tokens, so nothing is substituted. The range is worked out from the rows rather than copied as the frame's "1-50 of 1,250". |
+| **heroicons chevrons ported** | Heroicons-mini, not MDI, transcribed from the exported paths and repainted with `currentColor`. Exported from the library; the shared pager draws its own copy. |
+| **bytesize close glyph ported** | Drawn as the drawer's dismiss control; stays in the library. The export ships no close icon. |
+| **Field labels sit on a normal line box** | 11px bold, but not the eyebrow role's 100% line height: the drawn label occupies 13px, and those 2px are what keep a column of fields on the frame's 58px rhythm. |
+| **Asymmetric gutters, as drawn** | The frame insets the bar's row 32px left and 75px right, and the content column 32px left and 64px right — so neither is centred. Both are reproduced exactly at ≥1440 and go symmetric (32/32) below it, where the frame says nothing. Measured against the frame: bar 87px, title at (32,121), table at (32,337) and 1344px wide. |
+| **The pager is pinned near the bottom edge** | The frame places it at y=894 of its 1024 canvas rather than under the table, so it is pushed to the bottom of the viewport here and lands at the drawn position at the design size. |
+| **Subtitle keeps its full stop** | `content-conventions.md` says subtitles take no period; this frame's subtitle ends with one. The designer's copy won. Worth reconciling. |
+| ~~**"+ Add custom field" adds a numbered spec row**~~ | Withdrawn with the drawer. |
+| ~~**Update prefills from the row**~~ | Withdrawn with the drawer. |
+
+### The Admin bar — drawn verbatim, then superseded
+
+The frames carry an **Admin** account cluster and the navigation
+`[Requests Queue, History, Inventory]`, plus a bell with a count of 3, and the
+project owner asked on 2026-09-15 for that bar exactly. This branch built it.
+
+**§3d won it.** The shell derives every navigation set from the authorization
+matrix in `ARCHITECT.md` §7, which gives the Supply Admin
+`[Fulfillment, Inventory, History, Catalog]` — the drawn three plus Catalog, and
+`Fulfillment` where the frame writes `Requests Queue`. Two decisions survive
+from the drawn bar and are worth keeping on the record:
+
+| Drawn | Shipped | Note |
+|-------|---------|------|
+| Account cluster reads **Admin** | "Supply Admin" | A caption in the file, not a role. `Role` is still the closed union of `employee`, `approver` and `supply_admin`, the guards still authorize against `supply_admin`, and no approval action is reachable from this bar — which is what constitution II and [ADR-0003](../adr/0003-three-role-model.md) forbid collapsing. |
+| Bell with a count of 3 | the bell, count from context | Presentational. Notifications are sent by the API and spec 003 FR-024 keeps them out of the shell, so it announces a count and opens nothing. |
+
+**Still open for the designer**: whether the Supply Admin's bar reads
+`Requests Queue` (as drawn) or `Fulfillment` (as the destination table names it),
+and whether Catalog belongs on it. Neither changes what the role may do.
+
+---
 
 ## 4. Defects found in the source — flagged, not fixed
 
@@ -493,3 +561,7 @@ the mark red.
     hidden / empty / loading / failure treatments of `Currently Assigned`, and
     the `Assignment date not available` line for a card with no date. Decide
     whether the per-unit register behind the drawn asset tags is ever in scope.
+12. Ratify or replace everything in §3g — the four 2026-09-15 frames are newer
+    than the vendored export, so none of their values is in the token map.
+13. Decide the content column: the frames' 1344px table against the top bar's
+    own 32px gutter (§3d, §3g).

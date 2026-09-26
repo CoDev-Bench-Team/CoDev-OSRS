@@ -14,9 +14,9 @@ import { NavButton } from './NavButton';
 import {
   AssetsPlaceholder,
   HistoryPlaceholder,
-  InventoryPlaceholder,
   RequestDetailPlaceholder,
 } from './placeholders';
+import { InventoryPage } from '../features/inventory/InventoryPage';
 
 /** The route map — the destination set in `destinations.ts`, made addressable.
  *
@@ -77,7 +77,7 @@ export function AppRoutes() {
         />
         <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
         <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
-        <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />
+        <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPage />)} />
         <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />
         <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePage />)} />
         <Route path="*" element={<NotFoundRoute />} />

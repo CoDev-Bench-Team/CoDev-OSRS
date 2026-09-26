@@ -12,6 +12,7 @@ export { ButtonTemplate, ButtonWithIcon, SignInButton } from './actions/imported
 // Forms
 export { Search } from './forms/Search';
 export { Select } from './forms/Select';
+export { Field, TextInput } from './forms/fields';
 export { FilterChip } from './forms/FilterChip';
 export { TextField } from './forms/TextField';
 
@@ -61,6 +62,8 @@ export { CaretRight } from './icons/CaretRight';
 export { CheckCircleFill } from './icons/CheckCircleFill';
 export { GoogleIcon, type GoogleIconSize } from './icons/GoogleIcon';
 export { MdiChevronDown } from './icons/MdiChevronDown';
+export { BytesizeClose } from './icons/BytesizeClose';
+export { HeroChevronLeft, HeroChevronRight, HeroChevronDown } from './icons/heroicons';
 
 // Status vocabulary
 export {

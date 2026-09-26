@@ -19,6 +19,7 @@ import {
   PageHeader,
   REQUEST_STATUSES,
   STOCK_STATUSES,
+  Field,
   INVENTORY_STATUSES,
   Search,
   Select,
@@ -33,6 +34,7 @@ import {
   TABLE_ROW_PADDING_CLASS,
   tableColumnStyle,
   TextField,
+  TextInput,
   TopBar,
   type ColumnWidth,
 } from '../index';
@@ -277,6 +279,16 @@ export function Gallery() {
           <Row label="Select — disabled explicitly">
             <div className="w-[420px] max-w-full">
               <Select label="Model" value={model} options={LAPTOP_MODELS} disabled />
+            </div>
+          </Row>
+          <Row label="Field — the item drawer's 39px geometry">
+            <div className="flex w-[420px] max-w-full flex-col gap-12">
+              <Field label="Item name" required>
+                {({ id, required }) => <TextInput id={id} required={required} placeholder="e.g. External Keyboard" />}
+              </Field>
+              <Field label="Category" required>
+                {({ id }) => <Select id={id} size="sm" label="Category" value={model} options={LAPTOP_MODELS} onChange={setModel} />}
+              </Field>
             </div>
           </Row>
           <Row label="Text field, danger — required, then refused empty (04.2 cancel form)">
