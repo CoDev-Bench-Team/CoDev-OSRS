@@ -204,6 +204,10 @@ it when the backend documents both shapes. The gap is recorded in
 
 ## Clarifications
 
+### Session 2026-09-26 — Amendment (constitution 5.0.0)
+
+- Q: `03.1 - Request List - Request Submitted` now draws a `Received` node. Does the confirmation's timeline follow? → A: **Yes.** It is the shared `RequestReadBack` timeline, so it reads Submitted → Approved → For Delivery/For Pickup → Received → Complete, with every step after Submitted pending ([drift-2026-09-26 §3](../../docs/design-system/drift-2026-09-26.md)).
+
 ### Session 2026-09-25
 
 - Q: How long does the Request List last? The shell's count lives for the session, but the interim draft died with `/catalog`, so the two could disagree. → A: **The whole signed-in session.** The list survives route changes and is cleared on sign-out. It is not persisted across a reload (FR-004a).

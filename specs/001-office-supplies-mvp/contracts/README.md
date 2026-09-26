@@ -97,8 +97,8 @@ Still open with the backend team; see also drift-2026-09-24 §4.
 file and the contract. Inventory is `/inventory-items`, and per-(asset, office)
 Total / Available / Reserved are **counts of unit statuses**
 ([ADR-0008](../../../docs/adr/0008-per-unit-inventory-register.md), constitution
-4.0.0 III). Submit reserves units, reject and cancel release them, and complete
-moves them to `Assigned` to the requester. **Still needed from the API:**
+4.0.0 III). Submit reserves units, reject and cancel release them, and `Received`
+moves them to `Assigned` to the requester (constitution 5.0.0, ADR-0009). **Still needed from the API:**
 
 - the unit moves atomic with the request status change, with the API choosing the units
 - a published read of per-asset counts (available / reserved / assigned) for the Assets table
@@ -159,6 +159,29 @@ with no office field. Only its `400` validation response is documented.
 
 Until then spec 010 submits through a seeded source behind a seam (spec 010,
 Clarifications 2026-09-25). Linear: [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43).
+
+### 5. `Received` and the Accountability Form (raised 2026-09-26)
+
+Constitution 5.0.0 adds a request status, **`Received`**, between the handover
+states and `Completed`
+([ADR-0009](../../../docs/adr/0009-received-and-accountability-form.md),
+[drift-2026-09-26 §3](../../../docs/design-system/drift-2026-09-26.md)). The
+published contract has neither the status nor a way to reach it.
+
+**Needed from the API:**
+
+- `Received` in the request status vocabulary, with the time it was set;
+- an Employee-only submission of the **Accountability Form** on the owner's
+  own `For Delivery` / `Ready for Pickup` request, carrying the agreement,
+  the typed full name and optional notes, which sets `Received` and moves
+  the reserved units to `Assigned` (`Total` and `Reserved` fall) in one
+  transaction;
+- **Complete** narrowed to `Received` only, with no unit change;
+- cancel refused on `Received`;
+- the `Status changed` email on `Received`.
+
+Until then the SPA shows `Received` wherever it renders a status or timeline,
+and does not build the form (spec 001 FR-012b, tasks T018b).
 
 ### Also worth a word
 
