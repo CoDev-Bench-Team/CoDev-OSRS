@@ -4,7 +4,7 @@
 **Linear**: [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43) (C0 = [BEN-56](https://linear.app/bench-synergy-project/issue/BEN-56))
 **Created**: 2026-09-25
 **Status**: Draft
-**Renumbered**: 2026-09-26, from 008. #41 (BEN-48) claimed `008-assets-inventory` first and #42 (BEN-44) holds `009-my-requests`; the decisions and requirements are unchanged, only the number moved.
+**Renumbered**: 2026-09-26, from 008, then 010. #41 (BEN-48) claimed `008-assets-inventory` first, #42 (BEN-44) holds `009-my-requests`, and #45 (BEN-116) merged `010-design-ratification`; the decisions and requirements are unchanged, only the number moved.
 **Sources**: `03 - Request List` (as edited 2026-09-23; [drift-2026-09-24 §10](../../docs/design-system/drift-2026-09-24.md)) and `03.1 - Request List - Request Submitted` (2026-09-22 `.fig`), spec 001 US2 / FR-005–FR-007, spec 005 (Catalog) FR-008–FR-014, spec 007 (Employee request panel), `docs/process-flow.md` §1, [ADR-0006](../../docs/adr/0006-assets-and-inventory.md), published Requests contract (`specs/001-office-supplies-mvp/contracts/README.md`), [BEN-98](https://linear.app/bench-synergy-project/issue/BEN-98) validation format
 
 ## Overview

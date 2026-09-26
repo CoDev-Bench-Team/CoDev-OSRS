@@ -108,7 +108,7 @@ const store = new Map<string, EmployeeRequest[]>(
 /** The next free `REQ-2026-NNNN`, one past the highest id across **every**
  *  owner's list — so a demo submit can never reuse an id another Employee's
  *  seed already holds (an id is unique or it is not an id). Used only by the
- *  seeded request submit (spec 010 D12); the live source shows the API's id. */
+ *  seeded request submit (spec 011 D12); the live source shows the API's id. */
 export function nextSeededRequestId(): string {
   let highest = 0;
   for (const requests of store.values()) {
@@ -121,7 +121,7 @@ export function nextSeededRequestId(): string {
 }
 
 /** Adds a newly submitted request to its owner's list, newest first. Used only
- *  by the seeded request submit (spec 010 D12) so a demo submit shows up in My
+ *  by the seeded request submit (spec 011 D12) so a demo submit shows up in My
  *  Requests. Seeded-only glue: against the backend, the API owns the list. */
 export function appendSeededRequest(user: User, request: EmployeeRequest): void {
   const own = store.get(user.id) ?? [];

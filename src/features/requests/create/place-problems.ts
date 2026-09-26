@@ -1,6 +1,6 @@
 import type { FieldProblem } from '../../../shared/validation';
 
-/** Where each validation message goes in the Request List drawer (spec 010
+/** Where each validation message goes in the Request List drawer (spec 011
  *  FR-013, FR-013a, D14).
  *
  *  - `#/purpose` names the note — the contract's name for Note to Approver.

@@ -25,7 +25,7 @@ export interface EmployeeRequest {
   approvedAt?: string;
   handedOverAt?: string;
   /** Set by the System when the Employee submits the Accountability Form
-   *  (constitution 4.0.0). */
+   *  (constitution 5.0.0). */
   receivedAt?: string;
   completedAt?: string;
   /** A stopped request carries why, and the panel reads it back (BEN-67,

@@ -49,7 +49,7 @@ export function AppLayout() {
     if (!canRoleReach(role, location.pathname)) void navigate(landingPath(role), { replace: true });
   }, [session?.role, location.pathname, navigate]);
 
-  // Spec 010 FR-006a: the drawer opens only from the marker. Its open flag
+  // Spec 011 FR-006a: the drawer opens only from the marker. Its open flag
   // lives above the routes, so leaving the Catalog by any path — browser Back
   // included, which never passes through the drawer's own close — must clear
   // it, or the next visit would open the drawer by itself. Keyed to the
@@ -89,7 +89,7 @@ export function AppLayout() {
         // the other two roles rather than showing them a zero.
         requestListCount={role === 'employee' ? count : undefined}
         // The marker is the only way into the Request List drawer, which sits
-        // over the Catalog (spec 010 FR-006a, D3). From anywhere else it goes
+        // over the Catalog (spec 011 FR-006a, D3). From anywhere else it goes
         // to the Catalog first; the list itself lives for the session.
         onOpenRequestList={() => {
           if (!onCatalog) void navigate(DESTINATIONS.catalog.path);

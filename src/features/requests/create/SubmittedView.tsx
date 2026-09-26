@@ -2,7 +2,7 @@ import type { EmployeeRequest } from '../detail/request-detail-types';
 import { RequestReadBack } from '../detail/RequestReadBack';
 
 /** The drawer after a successful submit — `03.1 - Request List - Request
- *  Submitted` (spec 010 Story 3, FR-012).
+ *  Submitted` (spec 011 Story 3, FR-012).
  *
  *  Everything here is read from the request the system returned, not from the
  *  list that was typed: the id, the lines and the note are the created

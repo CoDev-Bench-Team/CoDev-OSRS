@@ -1,4 +1,4 @@
-/** Spec 010 — the Request List drawer and submit (BEN-43).
+/** Spec 011 — the Request List drawer and submit (BEN-43).
  *
  *  Asserts the list (merge-and-cap, stepper bounds, Remove, the count at every
  *  step, persistence across routes, reset on sign-out), the marker as the only

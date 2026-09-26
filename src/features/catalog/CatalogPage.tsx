@@ -111,7 +111,7 @@ function CatalogContents({
   );
 }
 
-/** The Request List drawer, over the Catalog (spec 010 FR-006). Employee-only
+/** The Request List drawer, over the Catalog (spec 011 FR-006). Employee-only
  *  (FR-016); opened only from the top-bar marker (FR-006a). Inside the catalog
  *  provider so a submit can re-read the numbers it just moved (FR-011). */
 function CatalogRequestList({ source, homeOffice }: { source: CatalogSource; homeOffice: CatalogOffice | undefined }) {

@@ -1,7 +1,7 @@
 # Tasks: Request List drawer & submit
 
-**Spec**: `specs/010-request-list-drawer/spec.md`
-**Plan**: `specs/010-request-list-drawer/plan.md`
+**Spec**: `specs/011-request-list-drawer/spec.md`
+**Plan**: `specs/011-request-list-drawer/plan.md`
 **Linear**: [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43). Sub-tickets: BEN-58 (drawer UI), BEN-59 (submit + validation mapping), BEN-60 (checks + PR)
 **Structure**: By user story, after the foundational phase. The foundational phase follows the plan's *Delivery order*.
 
@@ -28,7 +28,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - open state (D3).
   Depends on T001 and T008 — `src/features/requests/create/RequestListProvider.tsx`
 - [x] T010 [BEN-58] Mount `RequestListProvider` inside `RequestListCountProvider`, resetting in place when the signed-in user changes — not keyed, see D1 (FR-004a). Remove the interim provider from `CatalogPage` and delete it — `src/app/App.tsx`, `src/features/catalog/CatalogPage.tsx`, `src/features/catalog/RequestListDraftProvider.tsx`
-- [x] T011 [BEN-60] Update the gates D3 and D4 change: a repeat add of the same item no longer raises the badge, and the marker opens the drawer. Cite spec 010 FR-002 / D3 in each changed assertion (Known Risks 3) — `scripts/check-catalog.mjs`, `scripts/check-shell.mjs`
+- [x] T011 [BEN-60] Update the gates D3 and D4 change: a repeat add of the same item no longer raises the badge, and the marker opens the drawer. Cite spec 011 FR-002 / D3 in each changed assertion (Known Risks 3) — `scripts/check-catalog.mjs`, `scripts/check-shell.mjs`
   - **Done with no edits (2026-09-25).** Both gates pass unchanged: `check-catalog`'s "+1 badge" adds an item for the first time, which the merge rule doesn't change, and `check-shell` never asserted where the marker went. It did catch a real defect instead: keying the provider by user id remounted the routes and broke FR-017b. See plan D1 (amended). The merge rule and the marker are asserted in `check-request-list.mjs`.
 
 ## Phase 3: User Story 1 — Review and edit the request list (P1)

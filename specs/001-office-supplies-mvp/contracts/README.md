@@ -157,7 +157,7 @@ with no office field. Only its `400` validation response is documented.
 - confirmation that submit is all-or-nothing across lines and reserves at the
   requester's home office.
 
-Until then spec 010 submits through a seeded source behind a seam (spec 010,
+Until then spec 011 submits through a seeded source behind a seam (spec 011,
 Clarifications 2026-09-25). Linear: [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43).
 
 ### 5. `Received` and the Accountability Form (raised 2026-09-26)

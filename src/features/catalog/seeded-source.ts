@@ -120,18 +120,18 @@ const ASSETS: SeededAsset[] = [
 ];
 
 /** An asset's name and model, as the seeded "system" knows them — so the
- *  seeded request submit can read back what was created (spec 010 T018). */
+ *  seeded request submit can read back what was created (spec 011 T018). */
 export function seededAsset(id: string): { name: string; model: string } | undefined {
   const asset = ASSETS.find((a) => a.id === id);
   return asset ? { name: asset.name, model: asset.model } : undefined;
 }
 
 /** The live seeded stock. The request submit's seeded source reserves out of
- *  it, so a demo submit lowers what this catalog reads (spec 010 D11). */
+ *  it, so a demo submit lowers what this catalog reads (spec 011 D11). */
 export const seededStock = createSeededStock(ASSETS);
 
 /* DEVELOPMENT ONLY: the check scripts read and move the app's own store, not a
-   second copy a dynamic import would load (spec 010 D19). Dropped from a
+   second copy a dynamic import would load (spec 011 D19). Dropped from a
    production build along with the branch. */
 if (import.meta.env.DEV) window.__osrs = { ...window.__osrs, seededStock };
 

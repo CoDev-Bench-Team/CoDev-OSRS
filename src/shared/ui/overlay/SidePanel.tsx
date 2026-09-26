@@ -37,7 +37,7 @@ export function SidePanel({
   /** Pinned to the bottom of the sheet, outside the scrolling body. */
   footer?: ReactNode;
   /** `false` while the caller has work in flight that the panel must outlive —
-   *  the Request List's submit (spec 010 FR-010). ✕, Esc and the scrim are
+   *  the Request List's submit (spec 011 FR-010). ✕, Esc and the scrim are
    *  ignored until it is `true` again, so the panel cannot unmount mid-submit.
    *  The ✕ stays in place, disabled, so the header does not reflow. */
   dismissible?: boolean;

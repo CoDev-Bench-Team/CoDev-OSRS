@@ -8,7 +8,7 @@ import type { RequestListDraftInput } from './request-list-types';
 import { REFUSED_COPY, type RequestSubmitSource, type SubmitResult } from './request-submit-source';
 
 /** A stand-in for `POST /requests` until the contract publishes its success
- *  body and its insufficient-stock refusal (contract conflict 4; spec 010,
+ *  body and its insufficient-stock refusal (contract conflict 4; spec 011,
  *  Clarifications 2026-09-25).
  *
  *  It keeps the rules the system must keep, so the feature can be demonstrated

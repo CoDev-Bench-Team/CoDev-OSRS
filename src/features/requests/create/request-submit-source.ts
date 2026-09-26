@@ -3,7 +3,7 @@ import type { FieldProblem } from '../../../shared/validation';
 import type { EmployeeRequest } from '../detail/request-detail-types';
 import type { RequestListDraftInput } from './request-list-types';
 
-/** How a submit ended, in the SPA's own vocabulary (spec 010 D8).
+/** How a submit ended, in the SPA's own vocabulary (spec 011 D8).
  *
  *  These are outcomes, not error codes. `refused.message` is the system's own
  *  text, passed through verbatim — the SPA never translates a refusal into a

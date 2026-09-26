@@ -68,7 +68,7 @@
   --color-osrs-blue-tint: rgba(45,95,163,0.1);
   --color-osrs-border: rgb(227,230,236);
   --color-osrs-border-warm: rgb(231,230,226);
-  --color-osrs-border-strong: rgb(216,215,210); /* the file's `Border-Strong` style; pending timeline dots (spec 010, additions §3g) */
+  --color-osrs-border-strong: rgb(216,215,210); /* the file's `Border-Strong` style; pending timeline dots (spec 011, additions §3g) */
   --color-osrs-canvas: rgb(250,250,249);
   --color-osrs-google-blue: rgb(66,133,244);
   --color-osrs-google-gray: rgb(128,134,139);

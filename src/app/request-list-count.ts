@@ -4,7 +4,7 @@ import { createContext, use } from 'react';
  *
  *  The shell owns no request model. The count lives in context, defaults to 0,
  *  and the badge re-renders when it changes — no reload. Its one writer is the
- *  Request List (spec 010's `RequestListProvider`, FR-005, D2), so the badge
+ *  Request List (spec 011's `RequestListProvider`, FR-005, D2), so the badge
  *  and the list cannot disagree. */
 export type RequestListCount = {
   count: number;

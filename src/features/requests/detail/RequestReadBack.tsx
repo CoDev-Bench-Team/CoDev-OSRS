@@ -15,7 +15,7 @@ const QTY_WIDTH: ColumnWidth = '50px';
  *  Note to Approver, a stopped request's reason, and the Status timeline.
  *
  *  Two panels draw it — the Employee's request detail (`04.1`) and the Request
- *  List's confirmation after submit (`03.1`, spec 010 D10) — so it lives once,
+ *  List's confirmation after submit (`03.1`, spec 011 D10) — so it lives once,
  *  and the two can never drift apart.
  *
  *  Type as both frames resolve it (`03.1`, `04.1`): the *Items Requested* and

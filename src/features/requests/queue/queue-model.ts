@@ -15,7 +15,7 @@ import { formatDate, NO_VALUE, summarizeItems } from '../format';
 export { NO_VALUE };
 
 /** Non-terminal and past approval: the statuses an Admin still has to hand
- *  over or complete (constitution 4.0.0 IV, ADR-0008). */
+ *  over or complete (constitution 5.0.0 IV, ADR-0009). */
 const IN_PROCESSING = new Set<QueueRequest['status']>(['Approved', 'For Delivery', 'Ready for Pickup', 'Received']);
 
 const LIVE = new Set<QueueRequest['status']>(LIVE_STATUSES);

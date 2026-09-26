@@ -292,9 +292,9 @@ None dismissed. One consistency defect (CHK007, not-found versus record-existenc
 
 ### Session 2026-09-25 — Amendment
 
-Raised by spec 010 (Request List drawer, BEN-43), plan D3.
+Raised by spec 011 (Request List drawer, BEN-43), plan D3.
 
-- Q: The request-list marker has gone to My Requests as a stand-in until the drawer shipped. Where does it go now? → A: **It opens the Request List drawer over the Catalog**, going to `/catalog` first when pressed anywhere else. FR-015 is unchanged: the marker and its count are still Employee-only, and the count is now written by the Request List itself (spec 010 D2).
+- Q: The request-list marker has gone to My Requests as a stand-in until the drawer shipped. Where does it go now? → A: **It opens the Request List drawer over the Catalog**, going to `/catalog` first when pressed anywhere else. FR-015 is unchanged: the marker and its count are still Employee-only, and the count is now written by the Request List itself (spec 011 D2).
 
 ### Session 2026-09-24 — Amendment
 

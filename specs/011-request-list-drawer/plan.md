@@ -1,7 +1,7 @@
 # Implementation Plan: Request List drawer & submit
 
 **Date**: 2026-09-25
-**Spec**: `specs/010-request-list-drawer/spec.md`
+**Spec**: `specs/011-request-list-drawer/spec.md`
 **Linear**: [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43) (C1 = [BEN-57](https://linear.app/bench-synergy-project/issue/BEN-57))
 **Status**: Draft
 
@@ -198,7 +198,7 @@ scripts/check-request-list.mjs                  (new)
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| I. Spec-Driven | PASS | Implements spec 010. Every decision maps to an FR |
+| I. Spec-Driven | PASS | Implements spec 011. Every decision maps to an FR |
 | II. Two roles | PASS | Employee-only list, marker and submit |
 | III. Inventory integrity | PASS | Nothing reserved before submit. Seeded reserve is all-or-nothing and never negative. Total is untouched |
 | IV. State machine | PASS | Creates `Pending Approval` only |

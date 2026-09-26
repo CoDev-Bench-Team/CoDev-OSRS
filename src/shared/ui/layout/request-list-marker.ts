@@ -1,5 +1,5 @@
 /** The top bar's Request List marker, as something a feature can return focus
- *  to without knowing how the bar marks it (spec 010 D3).
+ *  to without knowing how the bar marks it (spec 011 D3).
  *
  *  The drawer the marker opens is closed from the Catalog, sometimes after the
  *  route changed underneath it, and then `SidePanel`'s recorded opener can be
