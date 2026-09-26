@@ -4,7 +4,7 @@
 **Linear**: [BEN-43](https://linear.app/bench-synergy-project/issue/BEN-43) (C0 = [BEN-56](https://linear.app/bench-synergy-project/issue/BEN-56))
 **Created**: 2026-09-25
 **Status**: Draft
-**Sources**: `03 - Request List` and `03.1 - Request List - Request Submitted` (2026-09-22 `.fig`), spec 001 US2 / FR-005–FR-007, spec 005 (Catalog) FR-008–FR-014, spec 007 (Employee request panel), `docs/process-flow.md` §1, [ADR-0006](../../docs/adr/0006-assets-and-inventory.md), published Requests contract (`specs/001-office-supplies-mvp/contracts/README.md`), [BEN-98](https://linear.app/bench-synergy-project/issue/BEN-98) validation format
+**Sources**: `03 - Request List` (as edited 2026-09-23; [drift-2026-09-24 §10](../../docs/design-system/drift-2026-09-24.md)) and `03.1 - Request List - Request Submitted` (2026-09-22 `.fig`), spec 001 US2 / FR-005–FR-007, spec 005 (Catalog) FR-008–FR-014, spec 007 (Employee request panel), `docs/process-flow.md` §1, [ADR-0006](../../docs/adr/0006-assets-and-inventory.md), published Requests contract (`specs/001-office-supplies-mvp/contracts/README.md`), [BEN-98](https://linear.app/bench-synergy-project/issue/BEN-98) validation format
 
 ## Overview
 
@@ -22,7 +22,7 @@ editing, submission, the confirmation, and how refusals are shown.
 ### User Story 1 — Review and edit the request list (Priority: P1)
 
 An Employee who has added items from the Catalog opens the Request List drawer
-over the Catalog. Each line shows the item name above its model, with a quantity
+over the Catalog. Each line shows the item's category above its name, with a quantity
 stepper and **Remove**. They can raise or lower a quantity, remove a line, and
 close the drawer without losing anything. Nothing they do here touches stock.
 
@@ -132,7 +132,7 @@ where it belongs, the list is intact, and no availability moved.
 - **FR-004**: System MUST let the Employee remove any line.
 - **FR-004a**: System MUST keep the Request List for the whole signed-in session, across moves between routes, and MUST clear it on sign-out. It does not survive a page reload.
 - **FR-005**: System MUST keep the top-bar count equal to the number of lines in the Request List at all times.
-- **FR-006**: System MUST present the Request List as a right-hand drawer over the Catalog, with the `Request List` header, one row per line (item name, model beneath it, `− qty +` stepper, **Remove**), a **Note to Approver (optional)** free-text field, and **Submit Request**.
+- **FR-006**: System MUST present the Request List as a right-hand drawer over the Catalog, with the `Request List` header, one row per line (the item's category as an eyebrow, its name beneath, a `− qty +` stepper, **Remove**), a **Note to Approver (optional)** free-text field, and **Submit Request**.
 - **FR-006a**: System MUST open the drawer only from the top-bar Request List marker. Adding an item MUST NOT open it.
 - **FR-006b**: System MUST re-read Available at the Employee's office for the listed items each time the drawer opens. That read is the bound FR-003 uses.
 - **FR-006c**: System MUST give the drawer the same behaviour as the product's other side panels: announced as a dialog, focus kept inside while open, the page behind it not scrollable.
@@ -141,7 +141,7 @@ where it belongs, the list is intact, and no availability moved.
 - **FR-009**: System MUST treat submit as all-or-nothing. On refusal, no request exists and no line is reserved (spec 001 FR-006, FR-007).
 - **FR-010**: System MUST prevent a second submit while one is in flight.
 - **FR-010a**: System MUST show that a submit is in progress, and MUST NOT allow the lines or note to be edited until it resolves.
-- **FR-011**: System MUST, on success, clear the Request List, reset the top-bar count to 0, re-read Catalog availability, and show the confirmation state.
+- **FR-011**: System MUST, on success, clear the Request List of what was submitted, reset the top-bar count accordingly (to 0 unless an item was added while the submit was in flight), re-read Catalog availability, and show the confirmation state. An item added after the submit started was never sent and MUST NOT be removed by its success.
 - **FR-012**: System MUST show, in the confirmation state, the request id and status as returned, the `Request submitted` title and the drawn confirmation copy, the **Items Requested** table (`ITEM` / `QTY`), the **Note to Approver** when present, and the **Status** timeline.
 - **FR-013**: System MUST show a validation refusal's message beneath the field it names, and MUST show messages that name no visible field at the top of the drawer.
 - **FR-013a**: System MUST place a validation message whose pointer falls inside a line (any field of the Nth submitted line) beneath that line's row, and one pointing at the note beneath the note field.
@@ -153,7 +153,7 @@ where it belongs, the list is intact, and no availability moved.
 ### Key Entities
 
 - **Request List** (client-held, pre-submit): The Employee's draft. Lines plus an optional note. It never reaches the system until submit.
-- **Request List line**: An asset (its name and model, as the Catalog showed them) and a quantity, bounded by Available at the Employee's office.
+- **Request List line**: An asset (its category, name and model, as the Catalog showed them) and a quantity, bounded by Available at the Employee's office.
 - **Request** (system-held, post-submit): What the system created. Its id, status (`Pending Approval`), submitted time, lines and note, as returned. The confirmation reads these, not the draft.
 
 ## Contract facts
@@ -208,3 +208,7 @@ it when the backend documents both shapes. The gap is recorded in
 - Q: How long does the Request List last? The shell's count lives for the session, but the interim draft died with `/catalog`, so the two could disagree. → A: **The whole signed-in session.** The list survives route changes and is cleared on sign-out. It is not persisted across a reload (FR-004a).
 - Q: Does adding an item open the drawer? BEN-43 says "opens/updates"; the View Specs panel stays open after an add, so auto-opening would stack two panels. → A: **No. The drawer opens only from the top-bar marker.** An add updates the list and the badge in place (FR-006a). This reads BEN-43 acceptance 1's "opens/updates" as "updates".
 - Q: The contract documents no success body and no insufficient-stock refusal for submit. Build live, block, or stand in? → A: **Stand in behind a seam**, as specs 005 and 007 do. A seeded source enforces the same all-or-nothing reserve rules until the backend publishes both shapes, and the gap is logged in `contracts/README.md`. FR-013's validation mapping follows the published RFC 9457 format from the start.
+
+### Session 2026-09-25 — Amendment (design)
+
+- Q: The file's `03 - Request List` line was redrawn on 2026-09-23, after the render this spec was first built to, and the 09-24 drift missed it: the category as a grey eyebrow over the item name, no model. Follow it? → A: **Yes** (project owner, design review 2026-09-25). FR-006 amended; recorded in [drift-2026-09-24 §10](../../docs/design-system/drift-2026-09-24.md). The submitted read-back (`03.1`, unchanged) keeps "<name> - <model>".
