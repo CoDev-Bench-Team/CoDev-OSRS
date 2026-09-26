@@ -21,7 +21,6 @@ import { ROLES, type Role } from '../features/auth/types';
 export type DestinationId =
   | 'catalog'
   | 'requests'
-  | 'requestDetail'
   | 'queue'
   | 'assets'
   | 'inventory'
@@ -60,14 +59,6 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     title: 'My Requests',
     purpose: 'Track every request from submission through pickup and completion',
     roles: ['employee'],
-  },
-  requestDetail: {
-    id: 'requestDetail',
-    path: '/requests/:id',
-    navLabel: 'Request',
-    title: 'Request detail',
-    purpose: 'Everything recorded about one request',
-    roles: ['admin'],
   },
   queue: {
     id: 'queue',
@@ -125,13 +116,6 @@ export function landingPath(role: Role): string {
 
 export function landingDestination(role: Role): Destination {
   return DESTINATIONS[LANDING[role]];
-}
-
-/** The concrete request-detail address for one request, derived from the
- *  canonical `requestDetail` destination rather than restated by hand, so a
- *  caller's link cannot drift from the route map if the path ever changes. */
-export function requestDetailPath(id: string): string {
-  return DESTINATIONS.requestDetail.path.replace(':id', encodeURIComponent(id));
 }
 
 /** Whether a role may reach an address at all — used to decide whether a

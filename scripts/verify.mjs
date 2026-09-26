@@ -18,6 +18,7 @@ const steps = [
   ['catalog (spec 005)', 'node', ['scripts/check-catalog.mjs']],
   ['profile (spec 006)', 'node', ['scripts/check-profile.mjs']],
   ['request panel (BEN-45)', 'node', ['scripts/check-request-detail.mjs']],
+  ['review panel (spec 008)', 'node', ['scripts/check-review-panel.mjs']],
   ['build', 'npm', ['run', 'build']],
   ['profile build: lazy stub + SPA fallback (FR-010)', 'node', ['scripts/check-profile-build.mjs']],
 ];

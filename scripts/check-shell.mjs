@@ -31,13 +31,14 @@ const ACCOUNTS = {
 
 const PERMITTED = {
   employee: ['/catalog', '/requests', '/profile'],
-  admin: ['/queue', '/assets', '/inventory', '/history', '/catalog', '/requests/REQ-2026-1847', '/profile'],
+  admin: ['/queue', '/assets', '/inventory', '/history', '/catalog', '/profile'],
 };
 
 const FORBIDDEN = {
   // Since 2026-09-23 an Employee's request detail is a panel on /requests,
-  // not an address (spec 003 amendment, BEN-45).
-  employee: ['/queue', '/assets', '/inventory', '/history', '/requests/REQ-2026-1847'],
+  // not an address (spec 003 amendment, BEN-45). Since 2026-09-26 no role has
+  // a record address at all; see the not-found block below.
+  employee: ['/queue', '/assets', '/inventory', '/history'],
   admin: ['/requests'],
 };
 
@@ -239,32 +240,32 @@ for (const retired of ['/approvals', '/fulfillment']) {
   const state = await cdp.evaluate(shellState);
   check(state.eyebrow === 'Not found', `retired ${retired} renders not-found for the Admin`, `eyebrow ${state.eyebrow}`);
 }
-await signIn('employee');
-
-// An Employee has no record address since 2026-09-23: every id — their own,
-// someone else's, one that does not exist — gets the same role refusal, so the
-// response still cannot be used to enumerate identifiers.
-await go(`/requests/REQ-2026-9999`);
-const missingRecord = await cdp.evaluate(shellState);
-await go(`/requests/REQ-2026-1500`); // conceptually another employee's
-const forbiddenRecord = await cdp.evaluate(shellState);
-await go(`/requests/REQ-2026-1847`); // Maya's own
-const ownRecord = await cdp.evaluate(shellState);
-check(
-  [missingRecord, forbiddenRecord, ownRecord].every((r) => r.eyebrow === 'No access'),
-  'an Employee is refused /requests/:id for a missing, a foreign and their own id alike',
-);
-check(
-  missingRecord.body === forbiddenRecord.body &&
-    forbiddenRecord.body === ownRecord.body &&
-    missingRecord.title === forbiddenRecord.title,
-  'and the three responses are word-for-word identical, so identifiers cannot be enumerated',
-);
-check(
-  !missingRecord.body?.includes('9999') && !forbiddenRecord.body?.includes('1500') && !ownRecord.body?.includes('1847'),
-  'no response echoes the identifier back',
-);
-check(missingRecord.eyebrow !== missingPath.eyebrow, 'a mistyped address is still distinguishable from a refused record');
+// No role has a record address since 2026-09-26: the Admin reviews in a panel
+// over /queue (spec 008, spec 003 amendment), and the Employee in one over
+// /requests. Every id, whether owned, foreign or missing, is the same not-found
+// for both roles, so the response cannot be used to enumerate identifiers
+// (FR-012a).
+for (const role of ['admin', 'employee']) {
+  await signIn(role);
+  const records = [];
+  for (const id of ['REQ-2026-9999', 'REQ-2026-1500', 'REQ-2026-1847']) {
+    await go(`/requests/${id}`);
+    records.push({ id, ...(await cdp.evaluate(shellState)) });
+  }
+  check(
+    records.every((r) => r.eyebrow === 'Not found'),
+    `/requests/:id is not-found for the ${role} for a missing, a foreign and an owned id alike`,
+    records.map((r) => r.eyebrow).join(', '),
+  );
+  check(
+    records.every((r) => r.body === records[0].body && r.title === records[0].title),
+    `and the three responses are word-for-word identical for the ${role}`,
+  );
+  check(
+    records.every((r) => !r.body?.includes(r.id.slice(-4))),
+    `no response echoes the identifier back to the ${role}`,
+  );
+}
 
 // ---- T048: a deep link survives sign-in ----
 console.log('\nA visitor who asked for a destination arrives there after signing in (FR-013)');

@@ -117,7 +117,7 @@ const openSpecs = async (name) => {
 
 const panel = () =>
   cdp.evaluate(() => {
-    const dialog = document.querySelector('[role="dialog"]');
+    const dialog = document.querySelector('dialog[open]');
     if (!dialog) return null;
     return {
       labels: [...dialog.querySelectorAll('dt')].map((d) => d.textContent),
@@ -127,7 +127,11 @@ const panel = () =>
   });
 
 const closeWithEscape = async () => {
-  await cdp.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+  // A real key press. The panel is a native <dialog>, and the browser raises
+  // its `cancel` only for a trusted Esc, never for a synthetic KeyboardEvent.
+  for (const type of ['keyDown', 'keyUp']) {
+    await cdp.send('Input.dispatchKeyEvent', { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  }
   await new Promise((r) => setTimeout(r, 600));
 };
 
@@ -163,7 +167,7 @@ try {
   check(p?.office === 'Davao', 'the panel names the office the stock was read for', p?.office);
   const before = await badge();
   await cdp.evaluate(() =>
-    [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === 'Add to Request List').click(),
+    [...document.querySelectorAll('dialog[open] button')].find((b) => b.textContent === 'Add to Request List').click(),
   );
   await settle();
   check((await panel()) !== null, 'adding keeps the panel open, so every close runs the panel exit');

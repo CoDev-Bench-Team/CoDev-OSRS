@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Button,
   SidePanel,
@@ -8,11 +8,12 @@ import {
   TableCard,
   TableHead,
   tableColumnStyle,
-  TextField,
   type ColumnWidth,
 } from '../../../shared/ui';
 import type { CancelResult, EmployeeRequest } from './request-detail-types';
-import { requestTimeline } from './request-timeline';
+import { keyedLines } from '../format';
+import { ReasonForm } from '../ReasonForm';
+import { requestTimeline } from '../request-timeline';
 
 /** The Employee's request detail — a side panel over My Requests (BEN-45,
  *  frames `04.1`, `04.2 - Cancel Request`, `04.2 - Cancelled`).
@@ -43,8 +44,6 @@ export function RequestDetailPanel({
   onCancel: (id: string, reason: string) => Promise<CancelResult>;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const [reason, setReason] = useState('');
-  const [invalid, setInvalid] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   // Closing the cancel form unmounts the control that held focus. Put focus
@@ -72,60 +71,41 @@ export function RequestDetailPanel({
   const backOut = () => {
     refocus.current = true;
     setConfirming(false);
-    setReason('');
-    setInvalid(false);
   };
 
-  const confirm = async (e: FormEvent) => {
-    e.preventDefault();
-    // Acceptance 3: an empty reason — or one that is only spaces — is refused
-    // here, before anything is sent, and the status does not change.
-    if (!reason.trim()) {
-      setInvalid(true);
-      return;
-    }
+  // Acceptance 3: `ReasonForm` refuses an empty or whitespace-only reason
+  // before this runs, and hands it over trimmed (plan D6).
+  const confirm = async (reason: string) => {
     setSubmitting(true);
     setRefusal(null);
-    // Sent trimmed (plan D6), so no source has to trim it again.
-    const result = await onCancel(request.id, reason.trim());
-    setSubmitting(false);
+    let result: CancelResult;
+    try {
+      result = await onCancel(request.id, reason);
+    } catch {
+      // A thrown cancel reads as `unavailable`, and the buttons come back.
+      result = { ok: false, refusal: 'unavailable' };
+    } finally {
+      setSubmitting(false);
+    }
     if (result.ok) {
       backOut();
       return;
     }
-    if (result.refusal === 'reason-required') {
-      setInvalid(true);
-      return;
-    }
+    if (result.refusal === 'reason-required') return 'reason-required' as const;
     backOut();
     setRefusal(REFUSAL_COPY[result.refusal]);
   };
 
   const footer = !cancellable ? undefined : confirming ? (
-    <form onSubmit={confirm} className="flex flex-col gap-12" noValidate>
-      <TextField
-        label="Reason for cancellation"
-        tone="danger"
-        required
-        autoFocus
-        placeholder="e.g duplicate request..."
-        value={reason}
-        invalid={invalid}
-        message={REFUSAL_COPY['reason-required']}
-        onChange={(e) => {
-          setReason(e.target.value);
-          if (invalid && e.target.value.trim()) setInvalid(false);
-        }}
-      />
-      <div className="flex items-center justify-center gap-12">
-        <Button variant="ghost" onClick={backOut} disabled={submitting}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={submitting}>
-          Confirm Cancellation
-        </Button>
-      </div>
-    </form>
+    <ReasonForm
+      label="Reason for cancellation"
+      placeholder="e.g duplicate request..."
+      confirmLabel="Confirm Cancellation"
+      requiredMessage={REFUSAL_COPY['reason-required']}
+      submitting={submitting}
+      onBack={backOut}
+      onConfirm={confirm}
+    />
   ) : (
     <Button variant="ghost" className="w-full" onClick={() => setConfirming(true)}>
       Cancel Request
@@ -159,11 +139,9 @@ export function RequestDetailPanel({
         <TableCard>
           <TableHead cols={[['Item'], ['Qty', QTY_WIDTH]]} />
           <ul>
-            {request.lines.map((line, i) => (
-              // Lines carry no id of their own, and a description need not be
-              // unique; the list never reorders, so position is stable.
-              <li key={i} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
-                <span style={tableColumnStyle()} className="type-ui-bold text-ink-primary">
+            {keyedLines(request.lines).map(({ key, line }) => (
+              <li key={key} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
+                <span style={tableColumnStyle()} className="type-ui-bold-wrap text-ink-primary">
                   {line.description}
                 </span>
                 <span style={tableColumnStyle(QTY_WIDTH)} className="type-ui-bold tabular-nums text-ink-primary">

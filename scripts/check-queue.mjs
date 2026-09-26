@@ -58,8 +58,8 @@ const queueState = () => {
     cards: document.querySelector('section[aria-label="Requests workload summary"]')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
     chips,
     pressed: document.querySelector('[role="group"][aria-label="Filter by status"] button[aria-pressed="true"]')?.textContent ?? null,
-    ids: [...document.querySelectorAll('a[aria-label^="Review request "]')].map((a) => a.getAttribute('aria-label').slice('Review request '.length)),
-    names: [...(table?.querySelectorAll('a[aria-label^="Review request "]') ?? [])].map(
+    ids: [...document.querySelectorAll('button[aria-label^="Review request "]')].map((a) => a.getAttribute('aria-label').slice('Review request '.length)),
+    names: [...(table?.querySelectorAll('button[aria-label^="Review request "]') ?? [])].map(
       (a) => a.closest('div').children[1]?.firstElementChild?.textContent ?? '',
     ),
     range: pages?.querySelector('p')?.textContent.trim() ?? null,
@@ -116,7 +116,7 @@ const settle = () => new Promise((r) => setTimeout(r, 150));
 // Whatever happens below, the tab is closed and the summary printed.
 try {
   await signIn(ADMIN);
-  await cdp.waitFor(() => !!document.querySelector('a[aria-label^="Review request "]'), 8000, 'the queue rows');
+  await cdp.waitFor(() => !!document.querySelector('button[aria-label^="Review request "]'), 8000, 'the queue rows');
   let s = await state();
 
   console.log('\nLive statuses only, and the summary cards (FR-004–FR-008)');

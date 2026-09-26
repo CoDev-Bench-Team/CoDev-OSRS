@@ -41,7 +41,7 @@ const rows = () =>
     }));
 
 const panel = () => {
-  const d = document.querySelector('[role="dialog"]');
+  const d = document.querySelector('dialog[open]');
   if (!d) return null;
   const buttons = [...d.querySelectorAll('button')].map((b) => b.textContent.trim());
   return {
@@ -63,23 +63,32 @@ const openRow = async (id) => {
     b.focus();
     b.click();
   }, id);
-  await cdp.waitFor(() => !!document.querySelector('[role="dialog"]'), 5000, `the panel for ${id}`);
+  await cdp.waitFor(() => !!document.querySelector('dialog[open]'), 5000, `the panel for ${id}`);
 };
 const clickInPanel = (label) =>
   cdp.evaluate((l) => {
-    [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent.trim() === l).click();
+    [...document.querySelectorAll('dialog[open] button')].find((b) => b.textContent.trim() === l).click();
   }, label);
-const closed = () => cdp.waitFor(() => !document.querySelector('[role="dialog"]'), 5000, 'the panel to close');
+// Gone from the DOM, not merely closed: a natively closed <dialog> unmounts a
+// moment later, when its `close` event is handled.
+// A real press and release on the scrim, left of the 400px sheet. The panel
+// closes only when both land there, so a synthetic click() is not enough.
+const mouse = async (type, x, y) => cdp.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
+const clickScrim = async () => {
+  await mouse('mousePressed', 100, 500);
+  await mouse('mouseReleased', 100, 500);
+};
+const closed = () => cdp.waitFor(() => !document.querySelector('dialog'), 5000, 'the panel to close');
 // Review of #38: closing the cancel form unmounts the focused control, and
 // focus must neither sit on <body> nor Tab out to the page behind the scrim.
-const focusInDialog = () => cdp.evaluate(() => !!document.querySelector('[role="dialog"]')?.contains(document.activeElement));
+const focusInDialog = () => cdp.evaluate(() => !!document.querySelector('dialog[open]')?.contains(document.activeElement));
 const pressTab = async () => {
   for (const type of ['keyDown', 'keyUp']) {
     await cdp.send('Input.dispatchKeyEvent', { type, key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
   }
 };
 const typeReason = async (text) => {
-  await cdp.evaluate(() => document.querySelector('[role="dialog"] textarea').focus());
+  await cdp.evaluate(() => document.querySelector('dialog[open] textarea').focus());
   await cdp.send('Input.insertText', { text });
 };
 
@@ -122,12 +131,12 @@ check(
 );
 
 await openRow('REQ-2026-1847');
-await cdp.evaluate(() => document.querySelector('[role="dialog"] button[aria-label="Close"]').click());
+await cdp.evaluate(() => document.querySelector('dialog[open] button[aria-label="Close"]').click());
 await closed();
 pass('✕ closes it');
 
 await openRow('REQ-2026-1847');
-await cdp.evaluate(() => document.querySelector('[role="dialog"]').previousElementSibling.click());
+await clickScrim();
 await closed();
 pass('a click on the scrim closes it');
 check((await cdp.evaluate(() => location.pathname)) === '/requests', 'and the address never changed');
@@ -161,7 +170,7 @@ for (const row of initial) {
       JSON.stringify(p.timeline),
     );
   }
-  await cdp.evaluate(() => document.querySelector('[role="dialog"] button[aria-label="Close"]').click());
+  await cdp.evaluate(() => document.querySelector('dialog[open] button[aria-label="Close"]').click());
   await closed();
 }
 
@@ -169,7 +178,7 @@ for (const row of initial) {
 console.log('\nAC3 — Confirm Cancellation is refused with an empty reason');
 await openRow('REQ-2026-1847');
 await clickInPanel('Cancel Request');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea'), 5000, 'the cancel form');
 await clickInPanel('Confirm Cancellation');
 p = await cdp.evaluate(panel);
 check(p.invalid, 'an empty reason is marked invalid');
@@ -190,11 +199,11 @@ check(await focusInDialog(), 'and the next Tab stays inside the panel');
 // ---- AC4: success cancels, and the row follows ----
 console.log('\nAC4 — a reason cancels the request, and the row’s pill follows');
 await clickInPanel('Cancel Request');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea'), 5000, 'the cancel form');
 await typeReason('duplicate request');
 await clickInPanel('Confirm Cancellation');
 await cdp.waitFor(
-  () => document.querySelector('[role="dialog"] h2')?.nextElementSibling?.textContent.trim() === 'Cancelled',
+  () => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'Cancelled',
   5000,
   'the panel to show Cancelled',
 );
@@ -226,10 +235,10 @@ await go('/requests?requests=changes');
 await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the request rows');
 await openRow('REQ-2026-1847');
 await clickInPanel('Cancel Request');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea'), 5000, 'the cancel form');
 await typeReason('duplicate request');
 await clickInPanel('Confirm Cancellation');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal note');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal note');
 p = await cdp.evaluate(panel);
 check(p.text.includes('can no longer be cancelled'), 'the panel says the request changed and can no longer be cancelled');
 check(p.pill === 'Approved', 'and shows its current status', `pill ${p.pill}`);
@@ -243,11 +252,11 @@ await go('/requests?requests=refresh-fails');
 await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the request rows');
 await openRow('REQ-2026-1847');
 await clickInPanel('Cancel Request');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea'), 5000, 'the cancel form');
 await typeReason('  duplicate request  ');
 await clickInPanel('Confirm Cancellation');
 await cdp.waitFor(
-  () => document.querySelector('[role="dialog"] h2')?.nextElementSibling?.textContent.trim() === 'Cancelled',
+  () => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'Cancelled',
   5000,
   'the panel to show Cancelled',
 );
@@ -267,10 +276,10 @@ await go('/requests?requests=changes-reload-fails');
 await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the request rows');
 await openRow('REQ-2026-1847');
 await clickInPanel('Cancel Request');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] textarea'), 5000, 'the cancel form');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea'), 5000, 'the cancel form');
 await typeReason('duplicate request');
 await clickInPanel('Confirm Cancellation');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal note');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal note');
 p = await cdp.evaluate(panel);
 check(p.text.includes('could not be cancelled') && !p.text.includes('shown above'), 'the note says it could not be cancelled, and nothing about a current status');
 check(p.pill === 'Pending Approval', 'the panel stays open on the status it last knew', `pill ${p.pill}`);

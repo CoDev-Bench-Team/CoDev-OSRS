@@ -1,6 +1,19 @@
-import { type RequestStatus, type TimelineNode, type TimelineNodeState } from '../../../shared/ui';
-import { formatDateTime } from '../format';
-import type { EmployeeRequest } from './request-detail-types';
+import { REQUEST_TONE, type RequestStatus, type TimelineNode, type TimelineNodeState } from '../../shared/ui';
+import { formatDateTime } from './format';
+
+/** The facts the timeline reads, and nothing more. Both the Employee's panel
+ *  (spec 007) and the Admin's review panel (spec 008) hand their own read model
+ *  in, so there is one mapping for both (spec 008 plan D11). */
+export interface TimelineFacts {
+  status: RequestStatus;
+  submittedAt: string;
+  handover?: 'For Delivery' | 'Ready for Pickup';
+  approvedAt?: string;
+  handedOverAt?: string;
+  completedAt?: string;
+  rejection?: { at: string };
+  cancellation?: { at: string };
+}
 
 /** The design's four drawn nodes, mapped onto the seven legal states.
  *
@@ -12,14 +25,17 @@ import type { EmployeeRequest } from './request-detail-types';
  *
  *  The stopped endings follow `04.2 - Cancelled`: the timeline collapses to
  *  Submitted and the ending. Rejected is not drawn and takes the same shape in
- *  red (docs/design-system/additions.md). */
+ *  red (docs/design-system/additions.md).
+ *
+ *  Each reached node takes the tone of the status pill it stands for. */
 const APPROVED_OR_LATER = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup', 'Completed']);
 const HANDED_OVER = new Set<RequestStatus>(['For Delivery', 'Ready for Pickup', 'Completed']);
 
-export function requestTimeline(request: EmployeeRequest): TimelineNode[] {
+export function requestTimeline(request: TimelineFacts): TimelineNode[] {
   const submitted: TimelineNode = {
     label: 'Submitted',
     state: 'reached',
+    tone: REQUEST_TONE['Pending Approval'],
     when: formatDateTime(request.submittedAt),
   };
 
@@ -37,16 +53,19 @@ export function requestTimeline(request: EmployeeRequest): TimelineNode[] {
     {
       label: 'Approved',
       state: reached(APPROVED_OR_LATER.has(request.status)),
+      tone: REQUEST_TONE.Approved,
       when: formatDateTime(request.approvedAt),
     },
     {
       label: request.handover ?? 'For Delivery/For Pickup',
       state: reached(HANDED_OVER.has(request.status)),
+      tone: request.handover ? REQUEST_TONE[request.handover] : undefined,
       when: formatDateTime(request.handedOverAt),
     },
     {
       label: 'Complete',
       state: reached(request.status === 'Completed'),
+      tone: REQUEST_TONE.Completed,
       when: formatDateTime(request.completedAt),
     },
   ];

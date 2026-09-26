@@ -64,6 +64,10 @@
   font: var(--type-ui-bold);
 }
 
+@utility type-ui-bold-wrap {
+  font: var(--type-ui-bold-wrap);
+}
+
 @utility ring-brand {
   box-shadow: inset 0 0 0 1px var(--color-osrs-red-600);
 }
@@ -142,7 +146,9 @@
   .animate-sheet-in,
   .animate-sheet-out,
   .animate-fade-in,
-  .animate-fade-out {
+  .animate-fade-out,
+  /* The SidePanel's scrim is its <dialog>'s ::backdrop. */
+  :is(.backdrop\:animate-fade-in, .backdrop\:animate-fade-out)::backdrop {
     animation-duration: 1ms;
   }
 }

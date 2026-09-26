@@ -15,7 +15,8 @@ export const ROLES: readonly Role[] = ['employee', 'admin'];
 
 /** A home office, in the published contract's own vocabulary — the current
  *  user's `location` enum, transcribed rather than invented (spec 006 D3). */
-export type Office = 'Cebu' | 'Bacolod' | 'Makati' | 'Pasig' | 'Davao';
+export const OFFICES = ['Cebu', 'Bacolod', 'Makati', 'Pasig', 'Davao'] as const;
+export type Office = (typeof OFFICES)[number];
 
 /** What the account cluster needs to name the signed-in person, and nothing
  *  more. `initials` is carried rather than derived: a name is not reliably two

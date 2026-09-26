@@ -15,7 +15,6 @@ import {
   AssetsPlaceholder,
   HistoryPlaceholder,
   InventoryPlaceholder,
-  RequestDetailPlaceholder,
 } from './placeholders';
 
 /** The route map — the destination set in `destinations.ts`, made addressable.
@@ -71,10 +70,6 @@ export function AppRoutes() {
         <Route index element={<LandingRedirect />} />
         <Route path={DESTINATIONS.catalog.path} element={guarded('catalog', <CatalogPage />)} />
         <Route path={DESTINATIONS.requests.path} element={guarded('requests', <MyRequestsPage />)} />
-        <Route
-          path={DESTINATIONS.requestDetail.path}
-          element={guarded('requestDetail', <RequestDetailPlaceholder />)}
-        />
         <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
         <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />
