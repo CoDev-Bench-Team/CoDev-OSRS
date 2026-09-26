@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Avatar } from './Avatar';
+import { REQUEST_LIST_MARKER_PROPS } from './request-list-marker';
 import { MdiChevronDown } from '../icons/MdiChevronDown';
 import { MdiLightBell } from '../icons/MdiLightBell';
 import { MdiLightClipboardText } from '../icons/MdiLightClipboardText';
@@ -133,6 +134,7 @@ export function TopBar({
             <button
               type="button"
               onClick={onOpenRequestList}
+              {...REQUEST_LIST_MARKER_PROPS}
               className="flex min-h-touch-target cursor-pointer items-center gap-8 border-none bg-transparent p-0 transition-osrs hover:opacity-80"
             >
               <span className="flex items-center gap-4 text-ink-primary">

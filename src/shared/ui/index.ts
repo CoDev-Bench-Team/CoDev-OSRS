@@ -35,6 +35,7 @@ export { SidePanel } from './overlay/SidePanel';
 
 // Layout
 export { TopBar, type NavItem } from './layout/TopBar';
+export { focusRequestListMarkerIfIdle } from './layout/request-list-marker';
 export { Avatar } from './layout/Avatar';
 export { PageHeader, SectionTitle } from './layout/headings';
 

@@ -23,6 +23,7 @@ export function SidePanel({
   onClose,
   children,
   footer,
+  dismissible = true,
 }: {
   /** The dialog's accessible name, applied as `aria-label`. */
   title: string;
@@ -35,6 +36,11 @@ export function SidePanel({
   children: ReactNode;
   /** Pinned to the bottom of the sheet, outside the scrolling body. */
   footer?: ReactNode;
+  /** `false` while the caller has work in flight that the panel must outlive —
+   *  the Request List's submit (spec 008 FR-010). ✕, Esc and the scrim are
+   *  ignored until it is `true` again, so the panel cannot unmount mid-submit.
+   *  The ✕ stays in place, disabled, so the header does not reflow. */
+  dismissible?: boolean;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   // The page behind the scrim stays put while the panel is open.
@@ -58,7 +64,7 @@ export function SidePanel({
     close.current();
   };
   useLayoutEffect(() => {
-    leave.current = () => setLeaving(true);
+    leave.current = dismissible ? () => setLeaving(true) : () => {};
   });
   useEffect(() => {
     if (!leaving) return;
@@ -83,7 +89,13 @@ export function SidePanel({
           'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
         ),
       ];
-      if (!focusable.length) return;
+      // Nothing enabled — every control disabled while work is in flight: hold
+      // focus on the dialog itself rather than let Tab reach the page behind.
+      if (!focusable.length) {
+        e.preventDefault();
+        panel.current.focus();
+        return;
+      }
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       // Focus can leave the panel without a Tab: a focused control that
@@ -131,10 +143,13 @@ export function SidePanel({
             type="button"
             aria-label="Close"
             onClick={() => leave.current()}
-            className="inline-flex h-touch-target w-touch-target shrink-0 cursor-pointer items-center justify-center rounded-8 border-none bg-transparent text-ink-strong transition-osrs hover:text-ink-secondary"
+            disabled={!dismissible}
+            className="inline-flex h-touch-target w-touch-target shrink-0 cursor-pointer items-center justify-center rounded-8 border-none bg-transparent text-ink-primary transition-osrs hover:text-ink-secondary disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <svg viewBox="0 0 24 24" className="h-20 w-20" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            {/* `bytesize:close`, as every panel in the file draws it: a 16px
+                frame, a 14px cross at (1,1), 1px black round-capped stroke. */}
+            <svg viewBox="0 0 16 16" className="size-16" fill="none" aria-hidden="true">
+              <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
             </svg>
           </button>
         </div>
