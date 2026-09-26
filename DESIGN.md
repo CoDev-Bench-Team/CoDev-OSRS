@@ -26,7 +26,7 @@ The design system is a verbatim export of `Office Supplies Request System
 | **Verify before trusting it** | `cd design-system && shasum -a 256 -c SHA256SUMS` — 106 files. A mismatch is drift, not a bug to fix in place (FR-019). |
 | **Never ship it** | Reachable only through the `@ds` alias, used only by the dev-only fidelity harness. A gate asserts `design-system/` is absent from the build. |
 | **Re-export procedure** | Re-vendor → diff `SHA256SUMS` → reconcile `docs/design-system/token-map.md` → re-run `npm run verify`. |
-| **The export is already behind the file** | Four frames used since — `01 - Login` second variant (28:2673), `03 - Inventory` (113:27060), `04 - Add Item` (113:27374), `04 - Update Item` (113:28004) — postdate the 2026-09-12 export and were built from the live file. Their values have no entry in the token map. Listed in [additions.md §3d](docs/design-system/additions.md). A re-export is owed. |
+| **The export is already behind the file** | Four frames used since — `01 - Login` second variant (28:2673), `03 - Inventory` (113:27060), `04 - Add Item` (113:27374), `04 - Update Item` (113:28004) — postdate the 2026-09-12 export and were built from the live file. Their values have no entry in the token map. Listed in [additions.md §3g](docs/design-system/additions.md). A re-export is owed. The two item frames have since been archived in the file (drift-2026-09-22 §1). |
 
 What the export contains: 7 token files (156 tokens), 17 component families in 6
 groups, 15 guideline specimen cards, a 7-file click-through UI kit of the whole
@@ -135,18 +135,25 @@ the signature — do not flatten it to one grey.**
 | Tone | Meaning | Applies to |
 |------|---------|------------|
 | **Amber** | waiting on a human | `Pending Approval`, `Low Stock` |
-| **Green** | moving or done | `Approved`, `For Release`, `Released`, `Completed`, `In Stock` |
-| **Red** | stopped | `Rejected`, `Out of Stock` |
-| **Blue** | informational only | asset codes |
+| **Green** | moving | `Approved`, `In Stock` |
+| **Pink** | handed over, by delivery | `For Delivery` |
+| **Blue** | handed over, for pickup | `Ready for Pickup` |
+| **Purple** | closed, done | `Completed` |
+| **Red** | stopped by a decision | `Rejected`, `Out of Stock` |
+| **Slate** | stopped without a decision | `Cancelled` |
 
-`RequestStatus` admits **only the six legal states** of constitution IV — an
-illegal state is unrepresentable in the type system.
+`RequestStatus` admits **only the seven legal states** of constitution 3.0.1 IV
+— an illegal state is unrepresentable in the type system. `src/shared/ui/status.ts`
+is the source of truth; this table follows it.
 
-The one exception: a `Released` request may *read* "Ready for Pickup" (blue) or
-"For Delivery" (pink), naming how items reach the employee. Both are
-**presentational only** — the status underneath is still `Released`, and no
-state is added (spec 002 D5, amended 2026-09-14). The pink is the first colour
-outside amber/green/red and **awaits designer ratification**.
+`For Delivery` and `Ready for Pickup` are **states**, peers rather than a
+sequence, not labels on a shared handover state. `For Release` and `Released`
+are retired ([ADR-0007](docs/adr/0007-fulfilment-status-vocabulary.md)).
+`Completed` took its own purple and `Cancelled` the file's `Status/Cancelled`
+slate in the 2026-09-15 export; the pink and blue handover pairs were adopted
+from the drawn `Request Status` component on 2026-09-24
+([drift-2026-09-24 §6](docs/design-system/drift-2026-09-24.md)). Token pairs are
+in [token-map.md](docs/design-system/token-map.md).
 
 ## 6. Spacing, geometry, elevation
 
@@ -316,10 +323,14 @@ the screen that depends on it can be built faithfully.
 
 | Gap | Blocks |
 |-----|--------|
-| **No Prepare / Release screen** for the Supply Admin — the source designs approval only | Spec 001 US4 (P1); ships as a placeholder in spec 003 |
-| **No notification-email designs**, though the pipeline defines five | FR-014 |
 | **No loading, empty or error states** | Every data-backed screen |
-| **No mobile or tablet frames** | Our breakpoints are invented |
+| **No mobile or tablet frames**, and no collapsed navigation | Our breakpoints are invented |
+| **No sign-out control, no not-found or forbidden screen** | The shell (additions.md §3d) |
+| **No Admin profile** | Spec 001 US8 for the Admin |
+
+Closed by the 2026-09-22 export: the handover screen (folded into the Requests
+Queue's Update Status panel) and the notification emails (six frames). See
+[drift-2026-09-22 §2, §5, §8](docs/design-system/drift-2026-09-22.md).
 
 ## 12. Accepted defects
 

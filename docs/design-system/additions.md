@@ -401,30 +401,39 @@ file no longer agree — and the response is the documented one: re-vendor, diff
 `SHA256SUMS`, reconcile the token map. Until that happens, the values below come
 from the file and have no entry in `token-map.md`.
 
+**The item drawer is withdrawn (PR #32 review, 2026-09-26).** `04 - Add Item`
+and `04 - Update Item` moved to the file's `Archive` page in the 2026-09-22
+export ([drift §1](drift-2026-09-22.md)): Inventory's row action now opens
+`03.4 - Update Stocks`, and asset create / update belongs to the Assets screen.
+The drawer and its two routes are removed; Inventory ships its table read-only
+until an Inventory spec exists. The rows below that describe only the drawer are
+struck. `Field`, `TextInput` and the close glyph stay in the library, so their
+rows stand.
+
 ### Values the frames state and the token export does not carry
 
 | Value | Where | Note |
 |-------|-------|------|
-| **22px display size** | The item drawer's heading | Between the 19px section title and the 28px metric. Rendered as `text-[22px]`; wants a token. |
-| **39px control height** | Every field in the drawer | The system's control heights are 46 and 42. |
-| **6px radius, warm 1px border on inputs** | Every field in the drawer | The system's inputs are ringed, not bordered (`DESIGN.md` §6). The frames draw a real border in `--color-osrs-border-warm`, so that is what shipped. |
+| ~~**22px display size**~~ | ~~The item drawer's heading~~ | Withdrawn with the drawer. |
+| **39px control height** | `Field` / `TextInput`, from the drawer's fields | The system's control heights are 46 and 42. |
+| **6px radius, warm 1px border on inputs** | `TextInput`, from the drawer's fields | The system's inputs are ringed, not bordered (`DESIGN.md` §6). The frames draw a real border in `--color-osrs-border-warm`, so that is what shipped. |
 | **48px table header** | The inventory table | The library's `TableHead` is 41px and has no alignment control, so this header is inlined in the feature — as the source's own inventory screen does. |
-| **400px drawer, 371px content column** | Both item frames | Fixed panel geometry, no token. |
-| **36px / 4px-radius pagination controls, 14px on 20px text** | The inventory pager | An imported control, like `ButtonTemplate` — see below. |
+| ~~**400px drawer, 371px content column**~~ | ~~Both item frames~~ | Withdrawn with the drawer. |
+| **36px / 4px-radius pagination controls** | The inventory pager | Now the shared `Pagination` the Requests Queue introduced (spec 001 FR-018), built to the file's `pagination` components — see below. |
 
 ### Decisions made while porting them
 
 | Decision | Detail |
 |----------|--------|
-| **Two greys substituted in the pager** | The imported pagination component carries its own near-black text grey and pale border grey, which the OSRS palette does not have. Raw hex is a build failure and two new tokens for one imported control would be worse, so they render as `ink-strong` and `line-default`. The one place on these screens where a drawn colour is not reproduced exactly. |
-| **heroicons chevrons ported** | The pager's three chevrons are heroicons-mini, not MDI. Transcribed from the exported paths rather than substituted, and repainted with `currentColor`. |
-| **bytesize close glyph ported** | The drawer's dismiss control. The export ships no close icon. |
+| ~~**Two greys substituted in the pager**~~ | **Superseded (PR #32 review).** Inventory's feature-local pager is gone; it uses the shared `Pagination`, which renders the file's `neutral-200` ring and `neutral-800` ink from tokens, so nothing is substituted. The range is worked out from the rows rather than copied as the frame's "1-50 of 1,250". |
+| **heroicons chevrons ported** | Heroicons-mini, not MDI, transcribed from the exported paths and repainted with `currentColor`. Exported from the library; the shared pager draws its own copy. |
+| **bytesize close glyph ported** | Drawn as the drawer's dismiss control; stays in the library. The export ships no close icon. |
 | **Field labels sit on a normal line box** | 11px bold, but not the eyebrow role's 100% line height: the drawn label occupies 13px, and those 2px are what keep a column of fields on the frame's 58px rhythm. |
 | **Asymmetric gutters, as drawn** | The frame insets the bar's row 32px left and 75px right, and the content column 32px left and 64px right — so neither is centred. Both are reproduced exactly at ≥1440 and go symmetric (32/32) below it, where the frame says nothing. Measured against the frame: bar 87px, title at (32,121), table at (32,337) and 1344px wide. |
 | **The pager is pinned near the bottom edge** | The frame places it at y=894 of its 1024 canvas rather than under the table, so it is pushed to the bottom of the viewport here and lands at the drawn position at the design size. |
 | **Subtitle keeps its full stop** | `content-conventions.md` says subtitles take no period; this frame's subtitle ends with one. The designer's copy won. Worth reconciling. |
-| **"+ Add custom field" adds a numbered spec row** | The frame draws the control but not what it produces. |
-| **Update prefills from the row** | The two frames are otherwise identical, and the Update frame shows the same empty placeholders as Add. Prefilling the item's name, category and stock is what "update this item" means. |
+| ~~**"+ Add custom field" adds a numbered spec row**~~ | Withdrawn with the drawer. |
+| ~~**Update prefills from the row**~~ | Withdrawn with the drawer. |
 
 ### The Admin bar — drawn verbatim, then superseded
 
@@ -441,7 +450,7 @@ from the drawn bar and are worth keeping on the record:
 | Drawn | Shipped | Note |
 |-------|---------|------|
 | Account cluster reads **Admin** | "Supply Admin" | A caption in the file, not a role. `Role` is still the closed union of `employee`, `approver` and `supply_admin`, the guards still authorize against `supply_admin`, and no approval action is reachable from this bar — which is what constitution II and [ADR-0003](../adr/0003-three-role-model.md) forbid collapsing. |
-| Bell with a count of 3 | the bell, count from context | Presentational, like the screen's 238 and 1,250. Notifications are sent by the API and spec 003 FR-024 keeps them out of the shell, so it announces a count and opens nothing. |
+| Bell with a count of 3 | the bell, count from context | Presentational. Notifications are sent by the API and spec 003 FR-024 keeps them out of the shell, so it announces a count and opens nothing. |
 
 **Still open for the designer**: whether the Supply Admin's bar reads
 `Requests Queue` (as drawn) or `Fulfillment` (as the destination table names it),

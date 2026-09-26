@@ -17,7 +17,6 @@ import {
   RequestDetailPlaceholder,
 } from './placeholders';
 import { InventoryPage } from '../features/inventory/InventoryPage';
-import { AddCatalogItemRoute, UpdateStockRoute } from '../features/inventory/drawer-routes';
 
 /** The route map — the destination set in `destinations.ts`, made addressable.
  *
@@ -78,15 +77,7 @@ export function AppRoutes() {
         />
         <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
         <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
-        {/* Inventory's two drawers are nested addresses rather than component
-            state (FR-008), so they can be linked, reloaded, and closed with
-            browser back; they render through the screen's own `<Outlet/>`,
-            which is why inventory stays visible behind the scrim as the frames
-            draw it. */}
-        <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPage />)}>
-          <Route path="new" element={<AddCatalogItemRoute />} />
-          <Route path=":itemId/stock" element={<UpdateStockRoute />} />
-        </Route>
+        <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPage />)} />
         <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />
         <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePage />)} />
         <Route path="*" element={<NotFoundRoute />} />

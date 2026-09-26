@@ -168,7 +168,11 @@ export function Select({
     }
     switch (e.key) {
       case 'Escape':
+        // An open list owns this Escape. Without stopping it, the same event
+        // reaches a dialog's document-level listener and closes the whole
+        // panel — discarding the form — when only the list was meant to close.
         e.preventDefault();
+        e.stopPropagation();
         close();
         break;
       case 'Tab':

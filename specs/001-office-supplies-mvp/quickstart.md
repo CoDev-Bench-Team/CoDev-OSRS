@@ -53,20 +53,6 @@ trusted.
 When the backend publishes its contract, write a second implementation of
 `SessionSource` against it. No shell code changes.
 
-### Signing in today
-
-There is no authentication in the SPA and no backend contract to delegate to
-yet, so the session boundary (`src/features/auth/session-source.ts`) is
-satisfied by `seeded-source.ts`: three non-production seed users, one per role,
-permitted in source by constitution IX. The drawn Google control resolves to the
-Supply Admin seed — **Ethan Cruz**, `ethan.cruz@codev.local` — because the
-Supply Admin's screens are the ones that exist. No password, no token, no
-secret.
-
-A reload keeps you signed in for eight hours: browser storage holds an opaque
-reference and a timestamp, never a user or a role, and every load re-resolves
-it. Sign out from the account cluster clears it.
-
 ## Run the SPA
 
 ```bash

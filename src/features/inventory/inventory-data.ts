@@ -36,20 +36,22 @@ export const INVENTORY_ITEMS: InventoryItem[] = [
   { id: 'usb-c-cable-2m', name: 'USB-C Cable 2m', category: 'Cables', total: 60, available: 0, reserved: 60, stock: 'Out of Stock' },
 ];
 
-/** The filter chips, with the counts the frame states. They do not describe
- *  the six rows above — the frame shows six rows and a footer reading
- *  "1-50 of 1,250", so its own numbers describe a catalog these rows are a
- *  page of. Reproduced as drawn rather than recomputed. */
+/** The four stock chips. Their counts are worked out from the rows the
+ *  screen has, not copied from the frame — the frame's "238 / 7 / 7 / 7"
+ *  describes a catalog these six rows are not, and a chip that disagrees with
+ *  the table under it reads as a defect (PR #32 review). */
 export const STOCK_FILTERS = [
-  { label: 'All items', count: 238, match: null },
-  { label: 'In stock', count: 7, match: 'In Stock' },
-  { label: 'Low stock', count: 7, match: 'Low Stock' },
-  { label: 'Out of stock', count: 7, match: 'Out of Stock' },
-] as const satisfies readonly { label: string; count: number; match: StockStatus | null }[];
+  { label: 'All items', match: null },
+  { label: 'In stock', match: 'In Stock' },
+  { label: 'Low stock', match: 'Low Stock' },
+  { label: 'Out of stock', match: 'Out of Stock' },
+] as const satisfies readonly { label: string; match: StockStatus | null }[];
 
-/** Categories offered by the filter and by the drawer's Category field. */
+/** Categories offered by the filter. */
 export const ALL_CATEGORIES = 'All categories';
 export const CATEGORIES = ['Office Supplies', 'Laptops', 'Monitors', 'Keyboards', 'Mice', 'Headsets', 'Cables'];
 
-/** The pagination figures the frame states, drawn as-is for the same reason. */
-export const PAGINATION = { rangeLabel: '1-50 of 1,250', pages: [1, 2, 3, 4, 5], current: 2, perPage: '50' };
+/** The pager's page sizes and starting size. The frame's footer shows 50; the
+ *  smaller sizes are the Requests Queue's, so both tables offer the same set. */
+export const PAGE_SIZES = [10, 25, 50, 100] as const;
+export const DEFAULT_PAGE_SIZE = 50;
