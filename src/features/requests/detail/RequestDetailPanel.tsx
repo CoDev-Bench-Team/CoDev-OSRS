@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Button, SidePanel, StatusPill, TextField } from '../../../shared/ui';
+import { useEffect, useRef, useState } from 'react';
+import { Button, SidePanel, StatusPill } from '../../../shared/ui';
+import { ReasonForm } from '../ReasonForm';
 import type { CancelResult, EmployeeRequest } from './request-detail-types';
 import { RefusalAlert } from './RefusalAlert';
 import { RequestReadBack } from './RequestReadBack';
@@ -31,8 +32,6 @@ export function RequestDetailPanel({
   onCancel: (id: string, reason: string) => Promise<CancelResult>;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const [reason, setReason] = useState('');
-  const [invalid, setInvalid] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   // Closing the cancel form unmounts the control that held focus. Put focus
@@ -51,24 +50,16 @@ export function RequestDetailPanel({
   const backOut = () => {
     refocus.current = true;
     setConfirming(false);
-    setReason('');
-    setInvalid(false);
   };
 
-  const confirm = async (e: FormEvent) => {
-    e.preventDefault();
-    // Acceptance 3: an empty reason — or one that is only spaces — is refused
-    // here, before anything is sent, and the status does not change.
-    if (!reason.trim()) {
-      setInvalid(true);
-      return;
-    }
+  // Acceptance 3: `ReasonForm` refuses an empty or whitespace-only reason
+  // before this runs, and hands it over trimmed (plan D6).
+  const confirm = async (reason: string) => {
     setSubmitting(true);
     setRefusal(null);
-    // Sent trimmed (plan D6), so no source has to trim it again.
     let result: CancelResult;
     try {
-      result = await onCancel(request.id, reason.trim());
+      result = await onCancel(request.id, reason);
     } catch {
       // A source that throws is the system not answering: shown as a refusal,
       // never left to escape with the button stuck on submitting.
@@ -80,39 +71,21 @@ export function RequestDetailPanel({
       backOut();
       return;
     }
-    if (result.refusal === 'reason-required') {
-      setInvalid(true);
-      return;
-    }
+    if (result.refusal === 'reason-required') return 'reason-required' as const;
     backOut();
     setRefusal(REFUSAL_COPY[result.refusal]);
   };
 
   const footer = !cancellable ? undefined : confirming ? (
-    <form onSubmit={confirm} className="flex flex-col gap-12" noValidate>
-      <TextField
-        label="Reason for cancellation"
-        tone="danger"
-        required
-        autoFocus
-        placeholder="e.g duplicate request..."
-        value={reason}
-        invalid={invalid}
-        message={REFUSAL_COPY['reason-required']}
-        onChange={(e) => {
-          setReason(e.target.value);
-          if (invalid && e.target.value.trim()) setInvalid(false);
-        }}
-      />
-      <div className="flex items-center justify-center gap-12">
-        <Button variant="ghost" onClick={backOut} disabled={submitting}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={submitting}>
-          Confirm Cancellation
-        </Button>
-      </div>
-    </form>
+    <ReasonForm
+      label="Reason for cancellation"
+      placeholder="e.g duplicate request..."
+      confirmLabel="Confirm Cancellation"
+      requiredMessage={REFUSAL_COPY['reason-required']}
+      submitting={submitting}
+      onBack={backOut}
+      onConfirm={confirm}
+    />
   ) : (
     <Button variant="ghost" className="w-full" onClick={() => setConfirming(true)}>
       Cancel Request

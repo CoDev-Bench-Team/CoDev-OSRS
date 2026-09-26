@@ -6,7 +6,7 @@
  *  router, so the component library stays free of routing. */
 export { Notice, type NoticeTone } from './Notice';
 export { LoadingState } from './LoadingState';
-export { NotFoundScreen, RecordUnavailableScreen } from './NotFoundScreen';
+export { NotFoundScreen } from './NotFoundScreen';
 export { ForbiddenScreen } from './ForbiddenScreen';
 export { Placeholder } from './Placeholder';
 export { ErrorBoundary } from './ErrorBoundary';

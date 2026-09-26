@@ -31,13 +31,14 @@ const ACCOUNTS = {
 
 const PERMITTED = {
   employee: ['/catalog', '/requests', '/profile'],
-  admin: ['/queue', '/assets', '/inventory', '/history', '/catalog', '/requests/REQ-2026-1847', '/profile'],
+  admin: ['/queue', '/assets', '/inventory', '/history', '/catalog', '/profile'],
 };
 
 const FORBIDDEN = {
   // Since 2026-09-23 an Employee's request detail is a panel on /requests,
-  // not an address (spec 003 amendment, BEN-45).
-  employee: ['/queue', '/assets', '/inventory', '/history', '/requests/REQ-2026-1847'],
+  // not an address (spec 003 amendment, BEN-45). Since 2026-09-26 no role has
+  // a record address at all; see the not-found block below.
+  employee: ['/queue', '/assets', '/inventory', '/history'],
   admin: ['/requests'],
 };
 
@@ -239,32 +240,52 @@ for (const retired of ['/approvals', '/fulfillment']) {
   const state = await cdp.evaluate(shellState);
   check(state.eyebrow === 'Not found', `retired ${retired} renders not-found for the Admin`, `eyebrow ${state.eyebrow}`);
 }
-await signIn('employee');
+// /requests/:id is a deep link since 2026-09-26 (spec 003; spec 008): it opens
+// the request's panel over the list the role works from. An Admin lands on
+// /queue, an Employee on /requests. A request the page may not show opens
+// nothing and gets one notice, word for word the same for a missing and, for an
+// Employee, a foreign id, without echoing it (FR-012a).
+const landing = () => ({
+  path: location.pathname,
+  panel: document.querySelector('dialog[open] h2')?.textContent.trim() ?? null,
+  notice: document.querySelector('main [role="alert"]')?.textContent.trim() ?? null,
+});
+const followLink = async (id, list) => {
+  await go(`/requests/${id}`);
+  await waitForPath(list, `the ${list} list`);
+  await cdp.waitFor(
+    () => !!document.querySelector('dialog[open] h2') || !!document.querySelector('main [role="alert"]'),
+    8000,
+    `the deep link to ${id} to settle`,
+  );
+  return cdp.evaluate(landing);
+};
 
-// An Employee has no record address since 2026-09-23: every id — their own,
-// someone else's, one that does not exist — gets the same role refusal, so the
-// response still cannot be used to enumerate identifiers.
-await go(`/requests/REQ-2026-9999`);
-const missingRecord = await cdp.evaluate(shellState);
-await go(`/requests/REQ-2026-1500`); // conceptually another employee's
-const forbiddenRecord = await cdp.evaluate(shellState);
-await go(`/requests/REQ-2026-1847`); // Maya's own
-const ownRecord = await cdp.evaluate(shellState);
+console.log('\n/requests/:id opens the request\'s panel, for either role (spec 003, 2026-09-26)');
+await signIn('admin');
+let hit = await followLink('REQ-2026-1847', '/queue');
+check(hit.path === '/queue' && hit.panel === 'REQ-2026-1847', 'the Admin lands on /queue with that request\'s review panel open', JSON.stringify(hit));
+hit = await followLink('REQ-2026-1684', '/queue');
+check(hit.panel === 'REQ-2026-1684', 'a decided request opens too, read-only (it is not in the live queue)', JSON.stringify(hit));
+hit = await followLink('REQ-2026-9999', '/queue');
+check(!hit.panel && !!hit.notice && !hit.notice.includes('9999'), 'a missing id opens nothing and says so, without echoing it', JSON.stringify(hit));
+check(!/yours/.test(hit.notice ?? ''), 'the Admin\'s notice does not suggest the request might not be theirs', hit.notice);
+await cdp.evaluate(() => document.querySelector('button[aria-label^="Review request "]').click());
+await cdp.waitFor(() => !!document.querySelector('dialog[open] h2'), 5000, 'a panel opened from the queue');
+check((await cdp.evaluate(landing)).notice === null, 'opening a panel clears the notice');
+
+await signIn('employee');
+hit = await followLink('REQ-2026-1847', '/requests');
+check(hit.path === '/requests' && hit.panel === 'REQ-2026-1847', 'the Employee lands on /requests with their own request open', JSON.stringify(hit));
+const missing = await followLink('REQ-2026-9999', '/requests');
+const foreign = await followLink('REQ-2026-1748', '/requests'); // an Admin-queue request that is not Maya's
+check(!missing.panel && !foreign.panel, 'a missing and a foreign id open nothing for the Employee');
 check(
-  [missingRecord, forbiddenRecord, ownRecord].every((r) => r.eyebrow === 'No access'),
-  'an Employee is refused /requests/:id for a missing, a foreign and their own id alike',
+  !!missing.notice && missing.notice === foreign.notice && !missing.notice.includes('9999') && !foreign.notice.includes('1748'),
+  'and get the same notice, word for word, never echoing the id (FR-012a)',
+  `${missing.notice} | ${foreign.notice}`,
 );
-check(
-  missingRecord.body === forbiddenRecord.body &&
-    forbiddenRecord.body === ownRecord.body &&
-    missingRecord.title === forbiddenRecord.title,
-  'and the three responses are word-for-word identical, so identifiers cannot be enumerated',
-);
-check(
-  !missingRecord.body?.includes('9999') && !forbiddenRecord.body?.includes('1500') && !ownRecord.body?.includes('1847'),
-  'no response echoes the identifier back',
-);
-check(missingRecord.eyebrow !== missingPath.eyebrow, 'a mistyped address is still distinguishable from a refused record');
+check((await cdp.evaluate(() => history.state?.usr ?? null)) === null, 'the link\'s state is consumed, so Back or a reload does not reopen it');
 
 // ---- T048: a deep link survives sign-in ----
 console.log('\nA visitor who asked for a destination arrives there after signing in (FR-013)');
@@ -279,6 +300,19 @@ await cdp.evaluate(() => {
 });
 await waitForPath('/profile', 'the originally requested destination');
 pass('a signed-out request for /profile lands on /profile after sign-in, not on the landing screen');
+
+// The case the deep link exists for: a "View request" email opened while
+// signed out (spec 003, Session 2026-09-26).
+await signOutEverywhere();
+await go(`/requests/REQ-2026-1847`);
+await waitForPath('/login', 'the redirect to sign-in');
+await cdp.evaluate(() => {
+  document.querySelector('input[value="maya.santos"]').click();
+  [...document.querySelectorAll('button')].find((b) => b.textContent.includes('Sign in with Google')).click();
+});
+await waitForPath('/requests', 'My Requests after sign-in');
+await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.textContent.trim() === 'REQ-2026-1847', 8000, 'the request panel after sign-in');
+pass('an email link opened while signed out lands on the request\'s panel after sign-in');
 
 // A destination the role may NOT use falls back to its landing screen.
 await signOutEverywhere();

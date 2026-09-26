@@ -52,3 +52,15 @@ export function summarizeItems(names: readonly string[], shown: 2 | 3) {
   if (named.length <= shown) return named.join(', ');
   return `${named.slice(0, shown).join(', ')} + ${named.length - shown} more`;
 }
+
+/** Request lines carry no id of their own, and two lines may share a
+ *  description. Each gets a key from its description, with `#2`, `#3`… on
+ *  repeats, so React tracks a line by what it is rather than where it sits. */
+export function keyedLines<T extends { description: string }>(lines: readonly T[]): { key: string; line: T }[] {
+  const seen = new Map<string, number>();
+  return lines.map((line) => {
+    const n = (seen.get(line.description) ?? 0) + 1;
+    seen.set(line.description, n);
+    return { key: n === 1 ? line.description : `${line.description}#${n}`, line };
+  });
+}

@@ -7,7 +7,8 @@ import {
   type ColumnWidth,
 } from '../../../shared/ui';
 import type { EmployeeRequest } from './request-detail-types';
-import { requestTimeline } from './request-timeline';
+import { keyedLines } from '../format';
+import { requestTimeline } from '../request-timeline';
 
 const QTY_WIDTH: ColumnWidth = '50px';
 
@@ -42,11 +43,9 @@ export function RequestReadBack({ request }: { request: EmployeeRequest }) {
         <TableCard>
           <TableHead cols={[['Item'], ['Qty', QTY_WIDTH]]} />
           <ul>
-            {request.lines.map((line, i) => (
-              // Lines carry no id of their own, and a description need not be
-              // unique; the list never reorders, so position is stable.
-              <li key={i} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
-                <span style={tableColumnStyle()} className="type-ui-bold text-ink-primary">
+            {keyedLines(request.lines).map(({ key, line }) => (
+              <li key={key} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
+                <span style={tableColumnStyle()} className="type-ui-bold-wrap text-ink-primary">
                   {line.description}
                 </span>
                 <span style={tableColumnStyle(QTY_WIDTH)} className="type-ui-bold tabular-nums text-ink-primary">

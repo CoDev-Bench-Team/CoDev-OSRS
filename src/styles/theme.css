@@ -279,4 +279,8 @@
   --type-subhead: var(--font-weight-bold) var(--text-15)/100% var(--font-sans);
   --type-ui: var(--font-weight-regular) var(--text-13)/100% var(--font-sans);
   --type-ui-bold: var(--font-weight-bold) var(--text-13)/100% var(--font-sans);
+  /* Not in the source: `type-ui-bold` for text that wraps, such as a request
+     line's item name in the side panels. The drawn 100% leaves no gap between
+     the lines; the owner asked for more (additions.md §3h). */
+  --type-ui-bold-wrap: var(--font-weight-bold) var(--text-13)/1.3 var(--font-sans);
 }

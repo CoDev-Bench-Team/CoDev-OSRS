@@ -7,6 +7,7 @@ AI-SDD feature folders. Do not put application code here.
 | [001-office-supplies-mvp](001-office-supplies-mvp/spec.md) | Office Supplies Request System MVP | Draft |
 | [005-catalog](005-catalog/spec.md) | Catalog page (view stock + start request) | Draft |
 | [006-profile](006-profile/spec.md) | Profile (all roles) | Draft |
+| [008-request-review-panel](008-request-review-panel/spec.md) | Request review panel + admin transitions (BEN-47) | Draft |
 | [011-request-list-drawer](011-request-list-drawer/spec.md) | Request List drawer & submit | Draft |
 | [010-design-ratification](010-design-ratification/spec.md) | Ratify the 2026-09-22 export's open questions; unit-register amendment (BEN-116) | Draft |
 | [constitution.md](constitution.md) | Governing principles (also in AGENTS.md) | 5.0.0 |

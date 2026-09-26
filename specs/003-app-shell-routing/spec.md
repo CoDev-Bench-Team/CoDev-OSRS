@@ -205,7 +205,7 @@ The complete set of addressable destinations and the roles permitted to reach ea
 | Sign-in | signed-out only | signed-out only | No shell chrome |
 | Catalog | yes | yes (by address; not in the Admin bar) | Only an Employee is offered the action that starts a request |
 | My requests | yes | no | The signed-in Employee's own history. Their request detail is a side panel here, not an address (amended 2026-09-23) |
-| Request detail | no | any request | Actions gated by status and role; FR-012a applies. Replaced by the Admin review panel in BEN-47 |
+| Request detail | no | any request | **A deep link since 2026-09-26** (spec 008): opens the review panel over `/queue` for an Admin, or the request panel over `/requests` for its owning Employee. FR-012a applies |
 | Requests Queue | no | yes | Admin landing destination — review, approve, and fulfill (replaces the pending-requests and fulfillment queues) |
 | Assets | no | yes | Added 2026-09-24 |
 | Inventory | no | yes | |
@@ -289,6 +289,13 @@ No constitution version bump is required — no principle changes. `docs/product
 None dismissed. One consistency defect (CHK007, not-found versus record-existence leakage) and three gaps (CHK001, CHK002, CHK003) were found and all four resolved into requirements above.
 
 ## Clarifications
+
+### Session 2026-09-26 — Amendment
+
+Raised by spec 008 (BEN-47), which replaces the Admin's request-detail placeholder with the review panel over `/queue`. Decided by the project owner.
+
+- Q: Session 2026-09-23 kept `/requests/:id` for the Admin "until BEN-47 replaces it". Now that both roles read a request in a panel, what does the address do? → A: **It is a deep link that opens the panel.** It is not a screen of its own. An Admin lands on `/queue` with that request's review panel open; an Employee lands on `/requests` with their request panel open. The address the page settles on is the list's, because the panel itself has no address (spec 007 FR-001, spec 008 FR-001). The link survives sign-in (FR-013), so a `View request` button in an email works for either role.
+- Q: FR-012a must not reveal whether a request exists. → A: A request that does not exist, and, for an Employee, a request that is not theirs, open no panel and show the **same** notice, word for word, on the list, without echoing the id. An owned, a foreign and a missing id are therefore indistinguishable to an Employee.
 
 ### Session 2026-09-25 — Amendment
 

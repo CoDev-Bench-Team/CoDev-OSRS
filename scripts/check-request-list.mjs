@@ -124,19 +124,23 @@ const addFromCard = async (name) => {
 
 const openMarker = async () => {
   await cdp.evaluate(() => document.querySelector('[data-request-list-marker]').click());
-  await cdp.waitFor(() => !!document.querySelector('[role="dialog"]'), 8000, 'the drawer');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open]'), 8000, 'the drawer');
   await settle();
 };
 
 const closeWithEscape = async () => {
-  await cdp.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+  // A real key press. The drawer is a native <dialog>, and the browser raises
+  // its `cancel` only for a trusted Esc, never for a synthetic KeyboardEvent.
+  for (const type of ['keyDown', 'keyUp']) {
+    await cdp.send('Input.dispatchKeyEvent', { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  }
   await new Promise((r) => setTimeout(r, 600));
 };
 
 /** The drawer, read the same way after every interaction. */
 const drawer = () =>
   cdp.evaluate(() => {
-    const d = document.querySelector('[role="dialog"]');
+    const d = document.querySelector('dialog[open]');
     if (!d) return null;
     const rows = [...d.querySelectorAll('ul[aria-label="Items in your request list"] > li')].map((li) => {
       const spans = li.querySelectorAll('span.truncate');
@@ -169,7 +173,7 @@ const drawer = () =>
 
 const rowAction = async (name, label) => {
   await cdp.evaluate(
-    ([n, l]) => document.querySelector(`[role="dialog"] button[aria-label="${l} ${n}"]`).click(),
+    ([n, l]) => document.querySelector(`dialog[open] button[aria-label="${l} ${n}"]`).click(),
     [name, label],
   );
   await settle();
@@ -177,7 +181,7 @@ const rowAction = async (name, label) => {
 
 const setNote = async (value) => {
   await cdp.evaluate((v) => {
-    const t = document.querySelector('[role="dialog"] textarea');
+    const t = document.querySelector('dialog[open] textarea');
     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(t, v);
     t.dispatchEvent(new Event('input', { bubbles: true }));
   }, value);
@@ -194,7 +198,7 @@ const press = async (key, { shift = false } = {}) => {
 };
 const focusInDrawer = () =>
   cdp.evaluate(() => {
-    const d = document.querySelector('[role="dialog"]');
+    const d = document.querySelector('dialog[open]');
     return !!d && d.contains(document.activeElement);
   });
 const clickNav = async (label, path) => {
@@ -205,7 +209,7 @@ const clickNav = async (label, path) => {
 
 const pressSubmit = async () => {
   await cdp.evaluate(() =>
-    [...document.querySelectorAll('[role="dialog"] button')].find((b) => /Submit/.test(b.textContent)).click(),
+    [...document.querySelectorAll('dialog[open] button')].find((b) => /Submit/.test(b.textContent)).click(),
   );
   await new Promise((r) => setTimeout(r, 600));
 };
@@ -218,7 +222,7 @@ try {
   const mouseBefore = await available(MOUSE.id);
   await addFromCard(MOUSE.name);
   check((await badge()) === '1', 'adding an item adds a line (FR-005)', await badge());
-  check((await cdp.evaluate(() => !!document.querySelector('[role="dialog"]'))) === false, 'adding does not open the drawer (FR-006a)');
+  check((await cdp.evaluate(() => !!document.querySelector('dialog[open]'))) === false, 'adding does not open the drawer (FR-006a)');
   await addFromCard(MOUSE.name);
   check((await badge()) === '1', 'adding the same item again merges into its line (FR-002)', await badge());
   await addFromCard(HUB.name);
@@ -431,21 +435,25 @@ try {
 
   await openMarker();
   const callsBefore = await cdp.evaluate(() => window.__osrs.submitCalls ?? 0);
-  await cdp.evaluate(() => [...document.querySelectorAll('[role="dialog"] button')].find((b) => /Submit/.test(b.textContent)).click());
+  await cdp.evaluate(() => [...document.querySelectorAll('dialog[open] button')].find((b) => /Submit/.test(b.textContent)).click());
   await new Promise((r) => setTimeout(r, 150));
   d = await drawer();
   check(d?.submit?.label === 'Submitting…' && d?.submit?.enabled === false, 'Submit reads Submitting… and is disabled while in flight (FR-010a)', JSON.stringify(d?.submit));
   // A second submit by any route — the button, or the form itself.
   await cdp.evaluate(() => {
-    [...document.querySelectorAll('[role="dialog"] button')].find((b) => /Submit/.test(b.textContent)).click();
-    document.querySelector('[role="dialog"] form').requestSubmit();
+    [...document.querySelectorAll('dialog[open] button')].find((b) => /Submit/.test(b.textContent)).click();
+    document.querySelector('dialog[open] form').requestSubmit();
   });
   await press('Escape');
-  await cdp.evaluate(() => document.querySelector('[role="dialog"]').previousElementSibling.click());
-  await cdp.evaluate(() => document.querySelector('[role="dialog"] button[aria-label="Close"]').click());
+  // A real press and release on the scrim, left of the 400px drawer: the
+  // panel closes only when both land there.
+  for (const type of ['mousePressed', 'mouseReleased']) {
+    await cdp.send('Input.dispatchMouseEvent', { type, x: 100, y: 500, button: 'left', clickCount: 1 });
+  }
+  await cdp.evaluate(() => document.querySelector('dialog[open] button[aria-label="Close"]').click());
   await new Promise((r) => setTimeout(r, 300));
   check((await drawer())?.submit?.label === 'Submitting…', 'Esc, the scrim and ✕ do not close the drawer mid-submit (FR-010)');
-  await cdp.waitFor(() => /^REQ-/.test(document.querySelector('[role="dialog"] h2')?.textContent ?? ''), 8000, 'the confirmation');
+  await cdp.waitFor(() => /^REQ-/.test(document.querySelector('dialog[open] h2')?.textContent ?? ''), 8000, 'the confirmation');
   check(true, 'the confirmation still arrives');
   const calls = (await cdp.evaluate(() => window.__osrs.submitCalls ?? 0)) - callsBefore;
   check(calls === 1, 'exactly one submit reached the system (FR-010)', `${calls} submits`);
@@ -465,7 +473,7 @@ try {
   await addFromCard(MOUSE.name);
   await cdp.evaluate(() => history.replaceState(history.state, '', '/catalog?slow-submit=1500'));
   await openMarker();
-  await cdp.evaluate(() => [...document.querySelectorAll('[role="dialog"] button')].find((b) => /Submit/.test(b.textContent)).click());
+  await cdp.evaluate(() => [...document.querySelectorAll('dialog[open] button')].find((b) => /Submit/.test(b.textContent)).click());
   await new Promise((r) => setTimeout(r, 150));
   check((await drawer())?.submit?.label === 'Submitting…', 'the submit is in flight');
   await cdp.evaluate(() => history.back());
@@ -513,7 +521,7 @@ try {
     history.replaceState(history.state, '', '/catalog?slow-submit=1500');
   });
   await openMarker();
-  await cdp.evaluate(() => [...document.querySelectorAll('[role="dialog"] button')].find((b) => /Submit/.test(b.textContent)).click());
+  await cdp.evaluate(() => [...document.querySelectorAll('dialog[open] button')].find((b) => /Submit/.test(b.textContent)).click());
   await new Promise((r) => setTimeout(r, 150));
   check((await drawer())?.submit?.label === 'Submitting…', 'a second submit is in flight');
   await cdp.evaluate(() => history.back());
@@ -553,7 +561,7 @@ try {
   const keyboardBeforeLate = await available(KEYBOARD.id);
   await cdp.evaluate(() => history.replaceState(history.state, '', '/catalog?slow-submit=3000'));
   await openMarker();
-  await cdp.evaluate(() => [...document.querySelectorAll('[role="dialog"] button')].find((b) => /Submit/.test(b.textContent)).click());
+  await cdp.evaluate(() => [...document.querySelectorAll('dialog[open] button')].find((b) => /Submit/.test(b.textContent)).click());
   await new Promise((r) => setTimeout(r, 150));
   check((await drawer())?.submit?.label === 'Submitting…', 'a third submit is in flight');
   await cdp.evaluate(() => history.back());
@@ -594,7 +602,7 @@ try {
   await cdp.evaluate(() => history.replaceState(history.state, '', '/catalog?slow-submit=1500'));
   await openMarker();
   const signOutCalls = await cdp.evaluate(() => window.__osrs.submitCalls ?? 0);
-  await cdp.evaluate(() => [...document.querySelectorAll('[role="dialog"] button')].find((b) => /Submit/.test(b.textContent)).click());
+  await cdp.evaluate(() => [...document.querySelectorAll('dialog[open] button')].find((b) => /Submit/.test(b.textContent)).click());
   await new Promise((r) => setTimeout(r, 150));
   check((await drawer())?.submit?.label === 'Submitting…', 'a submit is in flight before signing out');
   await cdp.evaluate(() => [...document.querySelectorAll('header button')].find((b) => b.textContent.includes('Sign Out')).click());
@@ -637,7 +645,7 @@ try {
   check(same(d?.alert, []) && same(d?.rows[0]?.messages, ['quantity must not be greater than 99']), 'a line-only refusal places its message under row 0, with no alert', JSON.stringify(d));
   check(
     await cdp.evaluate(() => {
-      const row = document.querySelector('[role="dialog"] ul[aria-label="Items in your request list"] > li');
+      const row = document.querySelector('dialog[open] ul[aria-label="Items in your request list"] > li');
       return !!row && row.contains(document.activeElement) && document.activeElement.tagName === 'BUTTON';
     }),
     'focus lands on a control in the invalid line (D15)',
@@ -654,7 +662,7 @@ try {
   d = await drawer();
   check(same(d?.alert, []) && d?.noteInvalid && d?.rows[0]?.messages.length === 0, 'a note-only refusal marks only the note', JSON.stringify(d));
   check(
-    await cdp.evaluate(() => document.activeElement === document.querySelector('[role="dialog"] textarea')),
+    await cdp.evaluate(() => document.activeElement === document.querySelector('dialog[open] textarea')),
     'focus lands on the note (D15)',
   );
   // A validation body with nothing to place must not fail silently (SC-003):
@@ -682,7 +690,7 @@ try {
   await go('/catalog');
   await gridReady();
   check((await cdp.evaluate(() => !!document.querySelector('[data-request-list-marker]'))) === false, 'the Admin has no marker (FR-016)');
-  check((await cdp.evaluate(() => !!document.querySelector('[role="dialog"]'))) === false, 'and no drawer');
+  check((await cdp.evaluate(() => !!document.querySelector('dialog[open]'))) === false, 'and no drawer');
 } catch (error) {
   check(false, `the run stopped: ${error.message}`);
 } finally {

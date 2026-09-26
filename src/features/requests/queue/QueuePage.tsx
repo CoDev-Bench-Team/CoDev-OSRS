@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { Link } from 'react-router';
+import { useLocation } from 'react-router';
 import {
-  BUTTON_SHAPE,
-  BUTTON_VARIANT,
   Button,
   FilterChip,
   Notice,
@@ -19,7 +17,7 @@ import {
   tableMinWidth,
   type ColumnWidth,
 } from '../../../shared/ui';
-import { DESTINATIONS, requestDetailPath } from '../../../app/destinations';
+import { DESTINATIONS } from '../../../app/destinations';
 import { buildQueueViewModel, NO_VALUE, updateQuery } from './queue-model';
 import {
   INITIAL_QUERY,
@@ -27,17 +25,19 @@ import {
   QUEUE_CHIPS,
   QUEUE_SORTS,
   type QueueQuery,
-  type QueueSnapshot,
   type QueueSort,
-  type QueueSource,
   type QueueViewModel,
 } from './queue-types';
-import { seededQueueSource } from './seeded-queue-source';
+import { adminRequestSource } from './admin-request-source';
+import { RefusalAlert } from '../detail/RefusalAlert';
+import { REQUEST_NOT_FOUND, useDeepLinkedRequest } from '../deep-link';
+import { ReviewPanel } from './ReviewPanel';
+import type { AdminRequestSource, ReviewSnapshot, TransitionResult } from './review-types';
 
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'failed' }
-  | { kind: 'loaded'; snapshot: QueueSnapshot };
+  | { kind: 'loaded'; snapshot: ReviewSnapshot };
 
 /** One source of truth for the grid. The header and the row cells read the
  *  same widths through the same `tableColumnStyle`, so a column cannot be
@@ -86,13 +86,23 @@ export function QueuePage({
   /** Must be referentially stable — it is an effect dependency, so an object
    *  built inline in the caller's render would reload the queue on every
    *  render. Pass a module constant, or hold it in `useMemo`/a ref. */
-  source = seededQueueSource,
+  source: given,
 }: {
-  source?: QueueSource;
+  source?: AdminRequestSource;
 }) {
+  const { search } = useLocation();
+  const source = useMemo(() => given ?? adminRequestSource(search), [given, search]);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [query, setQuery] = useState<QueueQuery>(INITIAL_QUERY);
+  /** The request open in the review panel. Component state, not an address:
+   *  Review opens the panel over `/queue` and never navigates (spec 008
+   *  FR-001, plan D10). */
+  const [openId, setOpenId] = useState<string | null>(null);
+  /** The request whose last change was saved but whose reload failed, so the
+   *  panel is showing stale data for it. Tied to an id, so a late result from
+   *  a panel already closed never warns about a different request. */
+  const [staleId, setStaleId] = useState<string | null>(null);
 
   /** Set only by Try Again, so a successful FIRST load never steals focus from
    *  wherever the visitor already is. */
@@ -142,6 +152,64 @@ export function QueuePage({
   );
   const change = (next: Partial<QueueQuery>) => setQuery((current) => updateQuery(current, next));
 
+  /** Runs one transition, then reloads from the same source whatever the
+   *  outcome, so the panel, rows, chips and cards are one snapshot (spec 008
+   *  FR-013, plan D3). The reload never passes through `loading`: the current
+   *  snapshot stays on screen, so the panel does not unmount, and the new one
+   *  replaces it on success. If the reload fails, the old snapshot stays. A
+   *  refusal that promised to show the current status then reports
+   *  `unavailable` instead, because the panel can no longer show it. */
+  const refresh = async () => {
+    const snapshot = await source.load();
+    setState({ kind: 'loaded', snapshot });
+    setStaleId(null);
+  };
+
+  const transition = async (id: string, run: () => Promise<TransitionResult>): Promise<TransitionResult> => {
+    const result = await run();
+    try {
+      await refresh();
+      return result;
+    } catch {
+      // Once a change is saved but unseen, the warning stays until a reload
+      // succeeds. A later refusal must not clear it.
+      if (result.ok) setStaleId(id);
+      return !result.ok && result.refusal === 'status-changed' ? { ok: false, refusal: 'unavailable' } : result;
+    }
+  };
+
+  // `/requests/:id` lands here for an Admin and opens that request's panel. The
+  // snapshot holds every request, terminal ones included, so a link to a
+  // decided request opens it read-only.
+  const allIds = useMemo(
+    () => (state.kind === 'loaded' ? state.snapshot.requests.map((request) => request.id) : null),
+    [state],
+  );
+  const { unavailable, dismiss } = useDeepLinkedRequest(allIds, setOpenId, REQUEST_NOT_FOUND);
+  const review = (id: string) => {
+    dismiss();
+    setOpenId(id);
+  };
+
+  const openRequest =
+    openId && state.kind === 'loaded' ? state.snapshot.requests.find((request) => request.id === openId) : undefined;
+
+  const closePanel = () => {
+    setOpenId(null);
+    // The stale-data notice tells the Admin to close the panel to refresh, so
+    // closing does. If this reload fails too, the request stays marked stale
+    // and warns again when it is reopened.
+    if (staleId) refresh().catch(() => {});
+    // SidePanel returns focus to the Review that opened it. If that row has
+    // left the queue (the request became terminal), the button is gone and
+    // focus would fall to <body>. It goes to the chips instead, the queue's
+    // existing recovery target (FR-002).
+    requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body) recoveredFocus.current?.focus();
+    });
+  };
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-32 py-32">
 
@@ -182,7 +250,26 @@ export function QueuePage({
         />
       ) : null}
 
-      {queue ? <LoadedQueue queue={queue} query={query} onChange={change} focusRef={recoveredFocus} /> : null}
+      {unavailable ? <RefusalAlert messages={[unavailable]} /> : null}
+
+      {queue ? (
+        <LoadedQueue queue={queue} query={query} onChange={change} focusRef={recoveredFocus} onReview={review} />
+      ) : null}
+
+      {openRequest ? (
+        <ReviewPanel
+          // A different request is a different panel: its form state, focus
+          // and dialog start fresh, and nothing from the last one leaks in.
+          key={openRequest.id}
+          request={openRequest}
+          pickupOffices={source.pickupOffices}
+          reloadFailed={staleId === openRequest.id}
+          onClose={closePanel}
+          onApprove={(id) => transition(id, () => source.approve(id))}
+          onReject={(id, reason) => transition(id, () => source.reject(id, reason))}
+          onUpdateStatus={(id, to, pickup) => transition(id, () => source.updateStatus(id, to, pickup))}
+        />
+      ) : null}
     </div>
   );
 }
@@ -192,12 +279,15 @@ function LoadedQueue({
   query,
   onChange,
   focusRef,
+  onReview,
 }: {
   queue: QueueViewModel;
   query: QueueQuery;
   onChange: (change: Partial<QueueQuery>) => void;
   /** Where focus lands when a retry succeeds; see the effect that uses it. */
   focusRef: RefObject<HTMLDivElement | null>;
+  /** Opens the review panel for a request (spec 008 FR-001). */
+  onReview: (id: string) => void;
 }) {
   return (
     /* Vertical rhythm from `02 - Requests Queue`: 14px under the header, 16px
@@ -300,7 +390,7 @@ function LoadedQueue({
                   <span style={tableColumnStyle(COLUMNS.id)} className="type-ui-bold text-ink-primary">
                     {request.id}
                   </span>
-                  <span style={tableColumnStyle(COLUMNS.requester)} className="flex flex-col gap-1 pr-12">
+                  <span style={tableColumnStyle(COLUMNS.requester)} className="flex flex-col gap-4 pr-12">
                     <span className="truncate type-ui text-ink-primary">{request.requestorName}</span>
                     {request.requestorContext ? (
                       <span className="truncate type-meta text-ink-secondary">{request.requestorContext}</span>
@@ -323,15 +413,11 @@ function LoadedQueue({
                     {request.submittedLabel}
                   </span>
                   <span style={tableColumnStyle(COLUMNS.action)} className="flex items-center">
-                    {/* BEN-47 replaces this link with its review panel; until
-                        then Review goes to request detail (FR-010). */}
-                    <Link
-                      to={requestDetailPath(request.id)}
-                      aria-label={`Review request ${request.id}`}
-                      className={`${BUTTON_SHAPE} ${BUTTON_VARIANT.primary}`}
-                    >
+                    {/* Opens the review panel over the queue; the address and
+                        the query stay as they are (spec 008 FR-001, FR-002). */}
+                    <Button aria-label={`Review request ${request.id}`} onClick={() => onReview(request.id)}>
                       Review
-                    </Link>
+                    </Button>
                   </span>
                 </div>
               ))
