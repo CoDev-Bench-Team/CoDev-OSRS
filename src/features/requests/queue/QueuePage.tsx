@@ -30,7 +30,7 @@ import {
 } from './queue-types';
 import { adminRequestSource } from './admin-request-source';
 import { RefusalAlert } from '../detail/RefusalAlert';
-import { useDeepLinkedRequest } from '../deep-link';
+import { REQUEST_NOT_FOUND, useDeepLinkedRequest } from '../deep-link';
 import { ReviewPanel } from './ReviewPanel';
 import type { AdminRequestSource, ReviewSnapshot, TransitionResult } from './review-types';
 
@@ -185,7 +185,11 @@ export function QueuePage({
     () => (state.kind === 'loaded' ? state.snapshot.requests.map((request) => request.id) : null),
     [state],
   );
-  const unavailable = useDeepLinkedRequest(allIds, setOpenId);
+  const { unavailable, dismiss } = useDeepLinkedRequest(allIds, setOpenId, REQUEST_NOT_FOUND);
+  const review = (id: string) => {
+    dismiss();
+    setOpenId(id);
+  };
 
   const openRequest =
     openId && state.kind === 'loaded' ? state.snapshot.requests.find((request) => request.id === openId) : undefined;
@@ -249,7 +253,7 @@ export function QueuePage({
       {unavailable ? <RefusalAlert messages={[unavailable]} /> : null}
 
       {queue ? (
-        <LoadedQueue queue={queue} query={query} onChange={change} focusRef={recoveredFocus} onReview={setOpenId} />
+        <LoadedQueue queue={queue} query={query} onChange={change} focusRef={recoveredFocus} onReview={review} />
       ) : null}
 
       {openRequest ? (

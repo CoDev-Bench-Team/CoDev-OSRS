@@ -101,7 +101,9 @@ export function SidePanel({
     // browser's own chrome. Wrap it inside the panel, as before (FR-002).
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (e.defaultPrevented) return;
+        // Esc that cancels an input method's composition (Chinese, Japanese,
+        // Korean typing) belongs to the text field, not the panel.
+        if (e.defaultPrevented || e.isComposing) return;
         e.preventDefault();
         leave.current();
         return;
@@ -189,6 +191,14 @@ export function SidePanel({
     };
   }, []);
 
+  // A footer function may return nothing, and then there is no footer band.
+  const footerContent =
+    typeof footer === 'function'
+      ? footer(() => {
+          if (dismissible) setLeaving(true);
+        })
+      : footer;
+
   return (
     <dialog
       ref={panel}
@@ -222,13 +232,7 @@ export function SidePanel({
         </button>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-24 overflow-y-auto px-20 py-20">{children}</div>
-      {footer ? (
-        <div className="flex flex-col gap-12 px-20 pb-20">
-          {typeof footer === 'function' ? footer(() => {
-              if (dismissible) setLeaving(true);
-            }) : footer}
-        </div>
-      ) : null}
+      {footerContent ? <div className="flex flex-col gap-12 px-20 pb-20">{footerContent}</div> : null}
     </dialog>
   );
 }

@@ -209,6 +209,10 @@ export function ReviewPanel({
       );
     }
 
+    // `Received` offers nothing until Complete is built: no footer at all,
+    // rather than an empty button row.
+    if (actions.length === 0) return null;
+
     return (
       <>
         {actions.includes('approve') || actions.includes('reject') ? (

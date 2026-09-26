@@ -93,7 +93,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 ## Functional Requirements
 
 - **FR-001**: **Review** on a queue row MUST open the panel over `/queue` and MUST NOT change the address. It replaces spec 004 FR-010's navigation to `/requests/:id`.
-- **FR-001a**: `/requests/:id` MUST open that request's panel: for an Admin, the review panel over `/queue`; for an Employee, their request panel over `/requests`. A request the page may not show (missing, or for an Employee not theirs) MUST open nothing and show one notice, identical for both cases, that does not echo the id (spec 003 FR-012a). The link MUST survive sign-in (spec 003 FR-013).
+- **FR-001a**: `/requests/:id` MUST open that request's panel: for an Admin, the review panel over `/queue`; for an Employee, their request panel over `/requests`. A request the page may not show (missing, or for an Employee not theirs) MUST open nothing and show a notice that does not echo the id; for an Employee it MUST be identical for both cases (spec 003 FR-012a). Opening a panel clears it. The link MUST survive sign-in (spec 003 FR-013).
 - **FR-002**: The panel MUST close on ✕, Esc and a scrim click, MUST hold focus while open, and MUST return focus to the invoking **Review**. Closing MUST preserve the queue's query state.
 - **FR-003**: The panel body MUST show the request id and status pill, REQUESTED BY (avatar, name, `email • office`), the `ITEM · QTY · CURRENT INVENTORY` table, the Note to Approver when present, and the STATUS timeline. The body is the same in every state.
 - **FR-004**: CURRENT INVENTORY MUST show the Available quantity at the request's office as the data source reports it. The SPA MUST NOT compute it.
@@ -176,6 +176,7 @@ Decided by the project owner.
 
 - Q: `dev` adopted `Received` as constitution 5.0.0 (BEN-43, ADR-0009): the Employee's form sets it, units are assigned then, and Complete changes nothing. What happens to this spec's gate? → A: **It is met.** The banner, Story 4, FR-012 and FR-016 follow 5.0.0. Complete stays unbuilt for now; `Received` offers no action until it is.
 - Q: An email's *View request* button links to `/requests/:id`, which this spec had retired. → A: **Build it as a deep link that opens the panel** (FR-001a). Spec 003 is amended the same day.
+- Q: The Admin can view every request. Should the Admin's notice for an unopenable link also say "or it may not be yours to view"? → A: **No.** The Admin's reads "That request is not available. It may not exist." The Employee's stays identical for missing and foreign ids (FR-001a). Opening any panel clears the notice.
 - Q: The timeline dots: the frames' own shades, or the pills'? → A: **The pills.** A reached dot takes its status pill's ink ([drift-2026-09-26 §4b](../../docs/design-system/drift-2026-09-26.md)).
 
 ## Validation

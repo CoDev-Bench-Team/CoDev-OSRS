@@ -18,7 +18,7 @@ import { RequestDetailPanel } from '../detail/RequestDetailPanel';
 import type { CancelResult, EmployeeRequest, EmployeeRequestSource } from '../detail/request-detail-types';
 import { employeeRequestSource } from '../detail/employee-request-source';
 import { RefusalAlert } from '../detail/RefusalAlert';
-import { useDeepLinkedRequest } from '../deep-link';
+import { REQUEST_UNAVAILABLE, useDeepLinkedRequest } from '../deep-link';
 import { formatDate, summarizeItems } from '../format';
 
 /** My Requests — a STAND-IN for BEN-44.
@@ -115,7 +115,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   // Only their own ids are in the list, so another Employee's request and a
   // missing one get the same notice (spec 003 FR-012a).
   const ownIds = useMemo(() => (load.state === 'ready' ? load.requests.map((r) => r.id) : null), [load]);
-  const unavailable = useDeepLinkedRequest(ownIds, setOpenId);
+  const { unavailable, dismiss } = useDeepLinkedRequest(ownIds, setOpenId, REQUEST_UNAVAILABLE);
 
   const { title, purpose } = DESTINATIONS.requests;
   const requests = load.state === 'ready' ? load.requests : [];
@@ -171,7 +171,10 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
                   <span style={tableColumnStyle(WIDTH.action)}>
                     <button
                       type="button"
-                      onClick={() => setOpenId(request.id)}
+                      onClick={() => {
+                        dismiss();
+                        setOpenId(request.id);
+                      }}
                       aria-label={`View details of ${request.id}`}
                       className="inline-flex cursor-pointer items-center gap-4 border-none bg-transparent p-0 type-ui-bold text-ink-link transition-osrs hover:text-brand-primary-alt"
                     >

@@ -269,6 +269,10 @@ hit = await followLink('REQ-2026-1684', '/queue');
 check(hit.panel === 'REQ-2026-1684', 'a decided request opens too, read-only (it is not in the live queue)', JSON.stringify(hit));
 hit = await followLink('REQ-2026-9999', '/queue');
 check(!hit.panel && !!hit.notice && !hit.notice.includes('9999'), 'a missing id opens nothing and says so, without echoing it', JSON.stringify(hit));
+check(!/yours/.test(hit.notice ?? ''), 'the Admin\'s notice does not suggest the request might not be theirs', hit.notice);
+await cdp.evaluate(() => document.querySelector('button[aria-label^="Review request "]').click());
+await cdp.waitFor(() => !!document.querySelector('dialog[open] h2'), 5000, 'a panel opened from the queue');
+check((await cdp.evaluate(landing)).notice === null, 'opening a panel clears the notice');
 
 await signIn('employee');
 hit = await followLink('REQ-2026-1847', '/requests');

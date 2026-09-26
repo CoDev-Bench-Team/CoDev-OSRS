@@ -34,6 +34,9 @@ export interface ReviewRequest extends QueueRequest {
   pickupLocation?: PickupLocation;
   approvedAt?: string;
   handedOverAt?: string;
+  /** Set when the Employee's Accountability Form moves it to `Received`
+   *  (constitution 5.0.0 IV). */
+  receivedAt?: string;
   completedAt?: string;
   rejection?: { reason: string; at: string };
   cancellation?: { reason: string; at: string };
