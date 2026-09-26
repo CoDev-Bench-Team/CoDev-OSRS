@@ -8,7 +8,10 @@ longer has. Where this document departs from it, the departure is recorded in
 [design-system/drift-2026-09-22.md](design-system/drift-2026-09-22.md) and
 carried by [ADR-0005](adr/0005-two-role-model.md),
 [ADR-0006](adr/0006-assets-and-inventory.md) and
-[ADR-0007](adr/0007-fulfilment-status-vocabulary.md).
+[ADR-0007](adr/0007-fulfilment-status-vocabulary.md). Since 2026-09-26 stock is a
+register of units ([drift-2026-09-26](design-system/drift-2026-09-26.md),
+[ADR-0008](adr/0008-per-unit-inventory-register.md)). The numbers below are
+counts of unit statuses and are unchanged.
 
 **Purpose:** Clear path for requesting, approving and handing over office
 supplies, including stock movements and notifications.
@@ -71,8 +74,9 @@ your decision."*
 3. Notification: **Status changed** (to Employee), carrying *Previous status* →
    *New status*, and the **Pickup** location when there is one.
 4. System: stock is still reserved; no quantity changes.
-5. **Complete** → status **Completed**. System: `Total` and `Reserved` both
-   fall by the requested quantity — this is when the items leave the store.
+5. **Complete** → status **Completed**. System: the reserved units become
+   `Assigned` to the Employee, so `Total` and `Reserved` both fall by the
+   requested quantity — this is when the items leave the store.
 6. Notification: **Status changed** (to Employee).
 
 The Admin completes the request. The Employee is not asked to confirm receipt;
@@ -129,30 +133,41 @@ confirm-receipt step.
 
 ## Stock Rules
 
-1. An **Asset** must exist and hold stock before it can be requested.
-2. Stock is held per **(asset, office)** — Cebu, Bacolod, Makati, Ortigas,
-   Davao — as three numbers: **Total**, **Available**, **Reserved**.
+1. An **Asset** must exist and hold stock before it can be requested. Stock is
+   **units**: one per physical item, added by an Admin one at a time or in bulk
+   (`+ Add Inventory` → Add Single Unit / Add Multiple Units).
+2. Each unit is held at one office — Cebu, Bacolod, Makati, Ortigas, Davao —
+   and has a status: `Available`, `Reserved`, `Assigned` or `Inactive`. Per
+   **(asset, office)**, **Available** and **Reserved** count the units in those
+   statuses, and **Total** = Available + Reserved (the units still in the store).
 3. `Total = Available + Reserved` at all times. None of the three may be
    negative.
-4. **Submit reserves**: Available → Reserved, in the same transaction as the
-   status change to `Pending Approval`.
-5. **Reject and cancel release**: Reserved → Available, in the same transaction
-   as the status change.
-6. **Approve, For Delivery and Ready for Pickup change nothing.** The quantity is
+4. **Submit reserves**: the requested number of units move Available → Reserved,
+   in the same transaction as the status change to `Pending Approval`. The API
+   chooses which units.
+5. **Reject and cancel release**: those units move Reserved → Available, in the
+   same transaction as the status change.
+6. **Approve, For Delivery and Ready for Pickup change nothing.** The units are
    already reserved.
-7. **Complete consumes**: Total and Reserved both fall, in the same transaction
-   as the status change to `Completed`. The Assets screen counts the difference
-   as *Deployed units*.
+7. **Complete assigns**: the reserved units become `Assigned` to the Employee,
+   so Total and Reserved both fall, in the same transaction as the status change
+   to `Completed`. The Assets screen counts them as *Assigned units* (formerly
+   *Deployed units*), and the Employee's Profile lists them under
+   *Currently Assigned*.
 8. A line quantity must not exceed `Available` at the requesting office at
    submit time. Concurrent submits for the last unit must serialize so
    `Available` never goes negative.
-9. Each asset carries a **Low-stock threshold** per office, which drives the
-   `In Stock` / `Low Stock` / `Out of Stock` pill and the chip counts.
+9. Each asset carries one **Low-stock threshold** (per asset, not per office),
+   which drives the `In Stock` / `Low Stock` / `Out of Stock` pill and the chip
+   counts against Available in the scope on screen.
+10. Only request transitions move a unit into or out of `Reserved`. An Admin
+    editing a unit may set `Available` ↔ `Inactive`, or record an existing
+    assignment (`Assigned` + user) for equipment handed out outside a request.
+    A unit that is `Assigned` or `Reserved` cannot be removed. A unit's BitLocker
+    identifier and recovery key/PIN are Admin-only secrets.
 
-> `Ortigas` is the design file's fifth office; the published `CreateAssetDto`
-> says `Pasig`. Unresolved — see
-> [drift-2026-09-22 §4c](design-system/drift-2026-09-22.md). The SPA uses
-> whatever the contract exposes and invents no third spelling.
+> ~~`Ortigas` vs the published `CreateAssetDto`'s `Pasig`.~~ **Closed
+> 2026-09-25**: every contract `location` enum says `Ortigas`.
 
 ## Notification Catalog
 

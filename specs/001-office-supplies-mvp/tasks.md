@@ -7,7 +7,7 @@
 
 Format: `- [ ] [TaskID] [P?] [US?] Description — path`
 
-This list is **SPA-only**. Do not implement or specify REST routes here. Wire HTTP only after the backend team's contract covers the shape — three of the shapes this list needs are open conflicts, see `contracts/README.md`.
+This list is **SPA-only**. Do not implement or specify REST routes here. Wire HTTP only after the backend team's contract covers the shape — the remaining contract gaps are listed in `contracts/README.md`.
 
 ## Phase 0: Realign the shipped shell to constitution 3.0.0
 
@@ -52,8 +52,8 @@ Depends on backend auth/session resources.
 - [ ] T008 [US1] Assets table + search + category filter + chips + pagination — `src/features/assets/AssetsPage.tsx`
 - [ ] T009 [US1] Add Asset panel with category-dependent fields (FR-002a) — `src/features/assets/AddAssetPanel.tsx`
 - [ ] T009a [US1] View Asset panel + Update Asset panel (prefilled, custom spec row) — `src/features/assets/AssetPanels.tsx`
-- [ ] T010 [US1] Inventory table: Total / Available / Reserved / status pill / Update stock — `src/features/inventory/InventoryPage.tsx`
-- [ ] T010a [US1] Update stocks panel: low-stock threshold + one stepper per office — `src/features/inventory/UpdateStocksPanel.tsx`
+- [ ] T010 [US1] ~~Inventory table: Total / Available / Reserved / status pill / Update stock~~ **Re-scoped 2026-09-26 (BEN-107):** Inventory unit table: MODEL · CATEGORY · PR · SERIAL NUMBER · OFFICE · ASSIGNED · STATUS · ACTION, chips All items · Assigned · Available · Reserved — `src/features/inventory/InventoryPage.tsx`
+- [ ] T010a [US1] ~~Update stocks panel: low-stock threshold + one stepper per office~~ **Re-scoped 2026-09-26 (BEN-108):** unit panels: Add Inventory dropdown, Add Single Unit, Add Multiple Units, Review/Edit unit, Remove Unit + confirmation. The threshold moves to Update Asset (T009a) — `src/features/inventory/`
 
 ## Phase 4: User Story 2 — Catalog and submit (P1)
 
@@ -102,7 +102,7 @@ Depends on backend auth/session resources.
 ## Dependencies
 
 - **Phase 0 blocks everything.** The shipped types name roles and statuses that no longer exist.
-- T003 and all HTTP-backed UI (T005+) need the backend contract, and T008–T013 additionally need the three conflicts in `contracts/README.md` resolved
+- T003 and all HTTP-backed UI (T005+) need the backend contract, and T008–T013 additionally need the remaining contract gaps in `contracts/README.md` resolved
 - UI stories 1 → 2 → 3 → 4/5; 6/7 after 2; 8 anytime after Phase 2
 - T026 needs T008–T024 plus a contract-compliant API
 
@@ -116,5 +116,5 @@ T002 with T001; T008 with T010; T009/T009a with T010a; T019 after T013; T023 any
 
 ## Blocked on decisions, not on code
 
-- Three backend contract conflicts — `contracts/README.md`
-- Ten designer questions — [drift-2026-09-22 §10](../../docs/design-system/drift-2026-09-22.md), of which §4d (which `03 - Inventory` is real) blocks T010 and §4f (asset fields) blocks T009
+- Contract gaps — `contracts/README.md`. Conflict 2 is closed and conflict 3 is closed. Conflict 1 is decided (units); the per-asset count read and the unit-removal reason are still open
+- ~~Ten designer questions~~ **Ratified 2026-09-26** — [drift-2026-09-22 §10 status table](../../docs/design-system/drift-2026-09-22.md#status-2026-09-26). §4d and §4f no longer block T009/T010. What the designer still owes blocks nothing: [drift-2026-09-26 §5](../../docs/design-system/drift-2026-09-26.md#5-designer-follow-up)

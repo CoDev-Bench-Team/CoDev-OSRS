@@ -4,6 +4,8 @@ Logical **product** model (roles, statuses, stock rules). **Not a database schem
 
 Amended 2026-09-22 to the design re-export — see [drift-2026-09-22](../../docs/design-system/drift-2026-09-22.md) and ADRs [0005](../../docs/adr/0005-two-role-model.md), [0006](../../docs/adr/0006-assets-and-inventory.md), [0007](../../docs/adr/0007-fulfilment-status-vocabulary.md).
 
+Amended 2026-09-26: stock is a **register of units**, and `Stock` is a projection over them. See [drift-2026-09-26](../../docs/design-system/drift-2026-09-26.md) and [ADR-0008](../../docs/adr/0008-per-unit-inventory-register.md).
+
 ## Entities
 
 ### User
@@ -24,7 +26,7 @@ Amended 2026-09-22 to the design re-export — see [drift-2026-09-22](../../docs
 
 A fixed enum, not a table: `Cebu` \| `Bacolod` \| `Makati` \| `Ortigas` \| `Davao`.
 
-> The published `CreateAssetDto` says `Pasig` where the design says `Ortigas`. Unresolved; the SPA uses whatever the contract exposes and invents no third spelling.
+> ~~The published `CreateAssetDto` says `Pasig` where the design says `Ortigas`. Unresolved.~~ The contract adopted `Ortigas` on 2026-09-25. The SPA's shell `Office` type still says `Pasig` and has to follow (contracts README, conflict 2).
 
 ### Asset
 
@@ -40,6 +42,7 @@ The requestable model. What an employee picks from the catalog.
 | image | binary/base64? | `.jpeg` / `.png`, max 25 MB |
 | specs | `{ key, value }[]` | Category-dependent; see below |
 | isActive | boolean | default true |
+| lowStockThreshold | integer | ≥ 0; per asset (moved from Stock 2026-09-26); drives the pill and the chip counts |
 | createdAt / updatedAt | datetime | |
 
 **Category-dependent specs** (design-defined):
@@ -52,25 +55,45 @@ The requestable model. What an employee picks from the catalog.
 
 **Rules**: Inactive assets cannot be added to new requests. An asset with no stock at the selected office is not requestable from there.
 
-### Stock
+### Unit
 
-Held per **(asset, office)**. This is the entity that replaced the old single `quantityOnHand`.
+One physical item of an asset, held at one office. Added 2026-09-26 (ADR-0008).
 
 | Field | Type | Notes |
 |-------|------|--------|
-| assetId | id | |
-| office | enum | |
-| total | integer | ≥ 0 |
-| available | integer | ≥ 0 |
-| reserved | integer | ≥ 0 |
-| lowStockThreshold | integer | ≥ 0; drives the pill and the chip counts |
-| updatedAt | datetime | |
+| id | id | |
+| assetId | id | → Asset |
+| tag | string | `PR` on the table, e.g. `CODEV-LAPTOP-1232` |
+| serialNumber | string? | |
+| office | enum | Office |
+| status | enum | The contract's set: `Available` \| `Reserved` \| `Assigned` \| `Inactive` |
+| assigneeId | id? | → User; set when the unit is `Assigned` |
+| assignedAt | datetime? | Profile's "Assigned Jan 14, 2026" |
+| price / supplier / purchasedDate | money? / string? / date? | Purchase details |
+| bitlockerIdentifier | **secret?** | Admin-only; never shown to an Employee, never logged |
+| recoveryKey | **secret?** | Admin-only; never shown to an Employee, never logged |
+| description / attachment | string? / file? | Notes; `.jpeg` / `.png`, max 25 MB |
+| createdAt / updatedAt | datetime | |
+
+**Rules**: Only an Admin creates, edits or removes units. A unit that is `Assigned` or `Reserved` cannot be removed. Only request transitions move a unit into or out of `Reserved`. A manual edit may set `Available` ↔ `Inactive` or record an existing assignment. Units can be added one at a time or in bulk.
+
+> The design's `Inventory Status` also draws `In Storage`, which the contract lacks. The SPA shows the contract's set and raises the gap (constitution VII).
+
+### Stock
+
+**A projection over units, not a stored row** (2026-09-26). ~~Held per (asset, office) as `total` / `available` / `reserved` / `lowStockThreshold`.~~
+
+| Derived field | Per (asset, office) |
+|---------------|---------------------|
+| available | count of units in `Available` |
+| reserved | count of units in `Reserved` |
+| total | available + reserved: the units still in the store |
 
 **Invariant**: `total = available + reserved`, always, and none of the three may be negative.
 
-**Derived stock status**: `Out of Stock` when `available = 0`; `Low Stock` when `0 < available ≤ lowStockThreshold`; `In Stock` otherwise.
+**Derived stock status**: `Out of Stock` when `available = 0`; `Low Stock` when `0 < available ≤` the asset's `lowStockThreshold`; `In Stock` otherwise. The comparison uses Available in the scope on screen: one office when selected, otherwise the sum.
 
-**Derived on Assets**: *available units* = `available`, *pending/reserved units* = `reserved`, *deployed units* = cumulative quantity consumed by `Completed` requests.
+**Derived on Assets**: *available units* = `available`, *pending/reserved units* = `reserved`, *assigned units* = count of units in `Assigned` (~~deployed units~~; the column was renamed on 2026-09-24).
 
 ### Request
 
@@ -145,7 +168,9 @@ Held per **(asset, office)**. This is the entity that replaced the old single `q
 ```
 User 1──* Request (requestor)
 User 1──* Request (actor on review / handover / complete / cancel)
-Asset 1──* Stock (one per office)
+Asset 1──* Unit
+User 1──* Unit (assignee)
+Stock ⇐ Unit (derived per asset, office)
 Asset 1──* Request line
 Request 1──* Request line
 Request 1──* Notification log
@@ -153,25 +178,27 @@ Request 1──* Notification log
 
 ## Stock vs request status
 
-Per line, against the `(asset, office)` stock row:
+Per line, at the requesting office. The API chooses which units.
 
-| Transition | total | available | reserved |
-|------------|-------|-----------|----------|
-| → pending_approval | — | −qty | +qty |
-| → rejected | — | +qty | −qty |
-| → cancelled | — | +qty | −qty |
-| → approved | — | — | — |
-| → for_delivery / for_pickup | — | — | — |
-| → completed | −qty | — | −qty |
+| Transition | Unit status change | total | available | reserved |
+|------------|--------------------|-------|-----------|----------|
+| → pending_approval | *qty* units `Available` → `Reserved` | — | −qty | +qty |
+| → rejected | those units `Reserved` → `Available` | — | +qty | −qty |
+| → cancelled | those units `Reserved` → `Available` | — | +qty | −qty |
+| → approved | none | — | — | — |
+| → for_delivery / for_pickup | none | — | — | — |
+| → completed | those units `Reserved` → `Assigned`, assignee = requester | −qty | — | −qty |
+
+Outside a request (Admin unit edits): `Available` → `Inactive` or removed: total −n, available −n; `Inactive` → `Available`: +n, +n; existing assignment recorded (`Available` → `Assigned`): −n, −n. Removing an `Inactive` unit, or adding one directly as `Assigned`, changes no count.
 
 `available` at the requesting office is authoritative for new submits.
 
 ## Deliberately not modelled (MVP)
 
-The design file describes a **per-unit asset register** — an individual unit with a tag (`CODEV-LAPTOP-1232`, `CDV-MS-00087`), a serial number, purchase details (price, supplier, purchased date), a BitLocker identifier and recovery key, an office, and an assignment to a person with an assigned-on date. It appears in `Add Catalog Item`, in Inventory variant A, and in Profile's *Currently Assigned* list.
-
-It is **out of scope** (constitution VIII), and the shapes above must not foreclose it: a unit would hang off `Asset` and carry its own office and assignee, and `Stock` would become a projection over units rather than a stored row.
+~~The per-unit asset register~~: modelled since 2026-09-26 (see Unit). Nothing
+in this section remains. `In Storage` is noted under Unit as a gap between the
+design and the contract, not as an unmodelled entity.
 
 ## Seed (demo)
 
-Documented in `quickstart.md`: two users (one employee, one admin), a handful of assets with non-zero stock at one or more offices (provided by the API).
+Documented in `quickstart.md`: two users (one employee, one admin), a handful of assets with `Available` units at one or more offices (provided by the API).

@@ -16,7 +16,7 @@ Build the Vite React SPA in this repo so it can run the four-stage supply pipeli
 **Target Platform**: Internal web (desktop-class browser)  
 **Project Type**: SPA consuming REST  
 **Performance Goals**: SPA usable on typical laptops; API SLAs are backend-owned  
-**Constraints**: 4-week MVP; constitution **3.0.0** in AGENTS.md; do not invent a REST contract; three open contract conflicts (`contracts/README.md`) gate the stock-facing screens
+**Constraints**: 4-week MVP; constitution **4.0.0** in AGENTS.md (amended 2026-09-26: the unit register, ADR-0008); do not invent a REST contract; the remaining contract gaps (`contracts/README.md`) gate the stock-facing screens
 
 ## Constitution Check
 
@@ -24,7 +24,7 @@ Build the Vite React SPA in this repo so it can run the four-stage supply pipeli
 |-----------|--------|--------|
 | I. Spec-Driven Development | PASS | This plan implements spec 001 only |
 | II. Two Distinct Human Roles | PASS | Role from the backend session/me resource (ADR-0005) |
-| III. Inventory Integrity | PASS | Required of the API; SPA displays API quantities. **Depends on conflict 1 in `contracts/README.md`** |
+| III. Inventory Integrity | PASS | Required of the API; SPA displays counts the API derives from unit statuses (4.0.0, ADR-0008). **The per-asset count read is still open** (`contracts/README.md` conflict 1) |
 | IV. Explicit Request State Machine | PASS | SPA only offers legal actions; API enforces |
 | V. Notification Completeness | PASS | API emits; SPA shows whatever the contract exposes |
 | VI. Independently Testable Increments | PASS | Stories ordered; e2e on demo path |

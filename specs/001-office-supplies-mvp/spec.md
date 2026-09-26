@@ -3,7 +3,7 @@
 **Feature Branch**: `001-office-supplies-mvp`  
 **Created**: 2026-09-11  
 **Status**: Draft  
-**Sources**: Linear initiative brief, process-flow diagram, 2026-09-22 design re-export ([drift](../../docs/design-system/drift-2026-09-22.md))
+**Sources**: Linear initiative brief, process-flow diagram, 2026-09-22 design re-export ([drift](../../docs/design-system/drift-2026-09-22.md)), re-checked against the 2026-09-26 export ([drift](../../docs/design-system/drift-2026-09-26.md))
 
 ## Overview
 
@@ -11,21 +11,24 @@ Replace Codev's chat/email office-supplies process with a centralized system whe
 
 Amended 2026-09-22 to the design re-export: two roles instead of three, per-office `Total / Available / Reserved` stock instead of a single on-hand number, and `For Delivery` / `Ready for Pickup` / Admin-completed instead of `For Release` / `Released` / employee-confirmed. See the Clarifications section and [ADR-0005](../../docs/adr/0005-two-role-model.md)–[0007](../../docs/adr/0007-fulfilment-status-vocabulary.md).
 
+Amended 2026-09-26: Inventory is a **register of units**, and the per-office quantities are counts of unit statuses, with the same numbers as before. See Session 2026-09-26 and [ADR-0008](../../docs/adr/0008-per-unit-inventory-register.md).
+
 ## User Scenarios & Testing
 
-### User Story 1 - Encode assets and set stock (Priority: P1)
+### User Story 1 - Encode assets and add units (Priority: P1)
 
-An Admin records assets (name, category, model, description, image, category-dependent specs) on the **Assets** screen, then sets how many of each are held at each office on the **Inventory** screen. Employees open the catalog and see availability **before** they request anything. If an asset is not encoded, or holds no stock at the selected office, it cannot be requested from there.
+An Admin records assets (name, category, model, description, image, category-dependent specs, low-stock threshold) on the **Assets** screen, then adds **units** of each on the **Inventory** screen, one at a time or several at once. Each unit is held at an office. ~~then sets how many of each are held at each office on the **Inventory** screen~~ (withdrawn 2026-09-26). Employees open the catalog and see availability **before** they request anything. If an asset is not encoded, or holds no stock at the selected office, it cannot be requested from there.
 
 **Why this priority**: Stock must exist before the pipeline can run (stock rule 1).
-**Independent Test**: Log in as Admin, add an asset, set per-office quantities; log in as Employee and see that availability for the matching office.
+**Independent Test**: Log in as Admin, add an asset, add units at an office; log in as Employee and see that availability for the matching office.
 **Acceptance Scenarios**:
 
 1. **Given** no assets exist, **When** an Admin saves an asset with name, category and the fields its category requires, **Then** it appears on Assets with zero units.
-2. **Given** an encoded asset, **When** an Admin opens **Update stock** and sets Cebu to 10, **Then** Inventory shows Total 10, Available 10, Reserved 0 and an `In Stock` pill.
+2. ~~**Given** an encoded asset, **When** an Admin opens **Update stock** and sets Cebu to 10, **Then** Inventory shows Total 10, Available 10, Reserved 0 and an `In Stock` pill.~~ **Given** an encoded asset, **When** an Admin adds 10 units at Cebu with **Add Multiple Units**, **Then** Inventory lists 10 `Available` units at Cebu and the asset counts Total 10, Available 10, Reserved 0 there.
+2a. **Given** a unit that is `Assigned` or `Reserved`, **When** an Admin tries to remove it, **Then** the system refuses.
 3. **Given** encoded stock, **When** an Employee opens the catalog with the Cebu office selected, **Then** they see availability per asset and cannot edit it.
 4. **Given** an asset with 0 available at the selected office, **When** an Employee builds a request, **Then** they cannot submit a positive quantity for it.
-5. **Given** an asset whose Available at an office is at or below its low-stock threshold, **When** either screen is opened, **Then** it counts under the `Low stock` chip and shows a `Low Stock` pill.
+5. **Given** an asset whose Available at an office is at or below its (per-asset) low-stock threshold, **When** either screen is opened, **Then** it counts under the `Low stock` chip and shows a `Low Stock` pill.
 
 ### User Story 2 - Submit a supply request (Priority: P1)
 
@@ -107,7 +110,7 @@ The owning Employee stops their own request while it is `Pending Approval`; an A
 
 A signed-in user opens **Profile** and sees their name, email, home office and the equipment currently assigned to them.
 
-**Why this priority**: Nav completeness; the assigned list depends on a register the MVP does not build.
+**Why this priority**: Nav completeness; ~~the assigned list depends on a register the MVP does not build~~ the assigned list reads the units assigned to the user (ADR-0008), and stays conditional until the contract exposes them.
 **Independent Test**: Open Profile as an Employee and see identity plus either the assigned list or its empty state.
 **Acceptance Scenarios**:
 
@@ -136,12 +139,13 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - **FR-001**: System MUST authenticate users and expose exactly one role per user: **Employee** or **Admin**.
 - **FR-002**: System MUST allow Admins to create and update **assets** — name, category, model, description, image, active flag, and the specification fields the category defines.
 - **FR-002a**: System MUST vary the asset form's fields by category, as the design defines: Laptop adds RAM, Storage, Processor, Graphics, Operating System; Phone adds RAM, Storage; Laptop / Phone / Headset require Model; Wifi and Type C Hub offer Model as optional; UPS, Mice and Other Device offer neither.
-- **FR-003**: System MUST hold stock per **(asset, office)** across the five offices, as **Total**, **Available** and **Reserved**, plus a **low-stock threshold**, and MUST allow Admins to set them from the Update stock panel.
+- **FR-003**: ~~System MUST hold stock per **(asset, office)** across the five offices, as **Total**, **Available** and **Reserved**, plus a **low-stock threshold**, and MUST allow Admins to set them from the Update stock panel.~~ *(Withdrawn 2026-09-26.)* System MUST hold stock as **units**: each unit belongs to one asset and one of the five offices, and carries a tag, serial number, status (`Available` · `Reserved` · `Assigned` · `Inactive`, as the contract defines), optional assignee, purchase details and device details. Admins MUST be able to add one unit or several at once, review and edit a unit, and remove one. Per (asset, office), **Available** and **Reserved** are counts of units in those statuses and **Total** = Available + Reserved. The **low-stock threshold** is held per asset.
 - **FR-003a**: System MUST maintain `Total = Available + Reserved` and MUST NEVER persist a negative value for any of the three.
+- **FR-003b**: System MUST refuse to remove a unit that is `Assigned` or `Reserved`. It MUST let only request transitions move a unit into or out of `Reserved`. A manual unit edit MAY set `Available` ↔ `Inactive` or record an existing assignment (`Assigned` + user). It MUST treat a unit's BitLocker identifier and recovery key/PIN as Admin-only secrets, never shown to an Employee and never logged.
 - **FR-004**: System MUST display availability per active asset for the selected office to authenticated users before request submit.
 - **FR-005**: System MUST allow Employees to submit a request with one or more lines, quantity ≥ 1 per line, a selected model where the asset offers one, and an optional **note to approver**.
 - **FR-006**: System MUST refuse submit when any line exceeds `Available` at the requesting office or references an inactive or missing asset, and MUST roll the whole submit back.
-- **FR-007**: System MUST, on successful submit, create the request in `Pending Approval` and move each line quantity from `Available` to `Reserved` in one atomic operation.
+- **FR-007**: System MUST, on successful submit, create the request in `Pending Approval` and move each line quantity from `Available` to `Reserved` (that many units change status) in one atomic operation.
 - **FR-008**: System MUST allow Admins to approve a `Pending Approval` request, moving it to `Approved` without changing any quantity.
 - **FR-009**: System MUST allow Admins to reject a `Pending Approval` request only when a non-empty reason is provided, moving it to `Rejected` and returning each line quantity from `Reserved` to `Available` in one atomic operation.
 - **FR-010**: System MUST NOT reopen a rejected or cancelled request; the Employee MUST create a new request if they still need the items.
@@ -150,7 +154,7 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - **FR-010c**: System MUST refuse cancellation of a `Completed`, `Rejected` or already-`Cancelled` request.
 - **FR-011**: System MUST allow Admins to move an `Approved`, `For Delivery` or `Ready for Pickup` request to `For Delivery` or `Ready for Pickup` without changing any quantity. The two are peers, not a sequence.
 - **FR-011a**: System MUST record a pickup location when the target status is `Ready for Pickup`, and MUST carry it in the resulting notification.
-- **FR-012**: System MUST allow Admins to move a `For Delivery` or `Ready for Pickup` request to `Completed`, decreasing `Total` and `Reserved` by each line quantity in one atomic operation.
+- **FR-012**: System MUST allow Admins to move a `For Delivery` or `Ready for Pickup` request to `Completed`, decreasing `Total` and `Reserved` by each line quantity (the reserved units become `Assigned` to the requester) in one atomic operation.
 - **FR-012a**: System MUST NOT offer any actor a confirm-receipt action. `Completed` is an Admin transition.
 - **FR-013**: System MUST refuse illegal status transitions and actions not allowed for the caller's role.
 - **FR-014**: System MUST send an email on every defined transition using the design's templates: **Request received** on submit (Employee); **Request approved** on approve (Employee); **Request declined** on reject (Employee); **Status changed** on every other transition — `For Delivery`, `Ready for Pickup`, `Completed`, `Cancelled` — carrying previous status, new status, and the pickup location when there is one.
@@ -159,14 +163,15 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - **FR-015**: System MUST persist notification attempts (sent or failed) tied to the request and template.
 - **FR-016**: System MUST show Employees **My Requests** (their own requests, any status) and Admins the **Requests Queue** (all requestors, live statuses) with filter chips `All requests · Pending Approval · Approved · For Delivery · Ready for Pickup`, search by request id / employee name / email / item, and sort by Newest First / Oldest First / Employee (A-Z).
 - **FR-016a**: System MUST show Admins a **History** of resolved requests across all requestors — `Completed`, `Rejected` and `Cancelled` — with request id, requestor, items, status, the date it was resolved, and a read-only detail panel carrying the stored rejection or cancellation reason.
-- **FR-017**: System MUST show a signed-in user their **Profile**: name, email, home office, and the equipment currently assigned to them where the contract exposes it, with an empty state otherwise.
+- **FR-017**: System MUST show a signed-in user their **Profile**: name, email, home office, and the equipment currently assigned to them (units assigned to the user) where the contract exposes it, with an empty state otherwise.
 - **FR-018**: System MUST paginate the Assets, Inventory, Requests Queue and History tables, showing the result range, page controls and a results-per-page control.
 
 ### Key Entities
 
 - **User**: Authenticated person with name, email, home office, and a single role (`employee` | `admin`).
-- **Asset**: Requestable model — name, category, model, description, image, active flag, category-dependent specification pairs. Must exist before it can be requested.
-- **Stock**: Held per (asset, office): `total`, `available`, `reserved`, `lowStockThreshold`. Derived stock status: `In Stock` | `Low Stock` | `Out of Stock`.
+- **Asset**: Requestable model — name, category, model, description, image, active flag, low-stock threshold, category-dependent specification pairs. Must exist before it can be requested.
+- **Unit**: One physical item of an asset at one office: tag, serial number, status, optional assignee and assigned-on date, purchase details, device details (secret fields Admin-only), notes.
+- **Stock**: ~~Held per (asset, office): `total`, `available`, `reserved`, `lowStockThreshold`.~~ Derived per (asset, office) from units: `available`, `reserved`, `total` = available + reserved; `lowStockThreshold` is on the Asset. Derived stock status: `In Stock` | `Low Stock` | `Out of Stock`.
 - **Request**: Header with requestor, requesting office, status, optional note to approver, optional rejection reason, optional cancellation reason and who cancelled, optional pickup location, and timestamps per transition.
 - **Request line**: Asset + selected model + quantity captured at submit (quantity does not change after submit).
 - **Notification log**: Template, recipients, request id, payload facts, send outcome.
@@ -179,7 +184,7 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - Pickup location is entered when the Admin chooses `Ready for Pickup`, matching the "Pickup" row in the `Status changed` email.
 - "Real-time status" means the UI shows API state after refresh or after a successful mutation, not a live websocket (unless later specified).
 - A notification is emitted and recorded on each defined transition. Delivery transport is an API concern (inbox, SMTP, or logged stub).
-- The office set is the five the design defines. `Ortigas` vs the contract's `Pasig` is unresolved; the SPA uses whatever the contract exposes.
+- The office set is the five the design defines: Cebu, Bacolod, Makati, **Ortigas**, Davao. ~~`Ortigas` vs the contract's `Pasig` is unresolved~~ The contract adopted `Ortigas` on 2026-09-25.
 
 ## Out of Scope
 
@@ -189,7 +194,7 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - Multi-level approval, delegation, or out-of-office routing
 - Creating requests from email or chat
 - Automatic cancel of stale pending requests
-- **A per-unit asset register** — serial numbers, assignment to a person, purchase details, BitLocker escrow. The design draws it (`Add Catalog Item`, Inventory variant A, Profile's assigned list); the MVP ships the aggregate model only and must not foreclose it.
+- ~~**A per-unit asset register** — serial numbers, assignment to a person, purchase details, BitLocker escrow. The design draws it (`Add Catalog Item`, Inventory variant A, Profile's assigned list); the MVP ships the aggregate model only and must not foreclose it.~~ *Brought into scope 2026-09-26* (Session 2026-09-26, ADR-0008).
 - **The `Action required` flow** — asking a requester for more information with a respond-by date.
 - Requesting stock held at an office other than the requester's
 
@@ -216,6 +221,25 @@ Resolved from the Linear brief and process diagram with MVP defaults (no blockin
 - Q: Resubmit after reject? → A: New request, not reopen.
 - Q: Who can approve? → A: ~~Any user with Approver role~~ **any Admin** (small internal team).
 - Q: Auth for MVP? → A: ~~Username/password (email + password) with seeded demo users; SSO later.~~ **Superseded 2026-09-12 — see Session 2026-09-12 below.**
+
+### Session 2026-09-26 — Amendment
+
+Raised by the ratification of the 2026-09-22 export's open questions (BEN-116,
+[spec 010](../010-design-ratification/spec.md)), checked against the 2026-09-26
+`.fig` ([drift-2026-09-26](../../docs/design-system/drift-2026-09-26.md)), and
+decided by the project owner.
+
+- Q: The Mockups page now carries a single `03 - Inventory` that lists **units** (`MODEL · CATEGORY · PR · SERIAL NUMBER · OFFICE · ASSIGNED · STATUS · ACTION`), and `03.4 - Update Stocks` is on the Archive page. Keep the stock-line table and per-office steppers, or follow the file? → A: **Follow the file.** Inventory is a unit register. `+ Add Inventory` offers **Add Single Unit** and **Add Multiple Units**.
+- Q: How do the stock rules map onto units? → A: **Counts of unit statuses per (asset, office).** Submit reserves *qty* units, reject and cancel release them, and complete moves them to `Assigned` to the requester. The numbers are unchanged. The API picks the units.
+- Q: Where is the low-stock threshold held? → A: **On the asset**, as the contract (`lowQtyAlert`) and the Update Asset panel both have it.
+
+**Scope of the amendment.** Constitution **4.0.0** (MAJOR: III and VIII are
+redefined), carried by [ADR-0008](../../docs/adr/0008-per-unit-inventory-register.md),
+which partly supersedes ADR-0006. US1, FR-003 and Key Entities are rewritten
+over units, and FR-003b is added. The per-unit register leaves Out of Scope. The
+**Update stocks panel is withdrawn**. The `Received` status and the
+accountability form the same file draws are **not** adopted; they remain the
+open decision in [drift-2026-09-24 §2](../../docs/design-system/drift-2026-09-24.md).
 
 ### Session 2026-09-24 — Amendment
 

@@ -93,6 +93,20 @@ the per-unit register constitution VIII puts out of scope, and the aggregate
 Total / Available / Reserved read the screens need is not published as a shape.
 Still open with the backend team; see also drift-2026-09-24 §4.
 
+**2026-09-26 — decided: the per-unit register.** The project owner followed the
+file and the contract. Inventory is `/inventory-items`, and per-(asset, office)
+Total / Available / Reserved are **counts of unit statuses**
+([ADR-0008](../../../docs/adr/0008-per-unit-inventory-register.md), constitution
+4.0.0 III). Submit reserves units, reject and cancel release them, and complete
+moves them to `Assigned` to the requester. **Still needed from the API:**
+
+- the unit moves atomic with the request status change, with the API choosing the units
+- a published read of per-asset counts (available / reserved / assigned) for the Assets table
+- whether the contract's unit-removal operation (planned as backend BEN-130) accepts the `Reason for removal` the design draws
+- unit fields the design and spec 001 FR-003 need that the contract field list above lacks: the unit **tag** (`PR`, e.g. `CODEV-LAPTOP-1232`), an **assigned-on** date (Profile's "Assigned Jan 14, 2026"), and the notes **description / attachment**
+- the design's `In Storage` unit status, which the contract lacks
+- storage, masking and access audit for `recoveryPin` / `bitlockerIdentifier` (Admin-only secrets, constitution VIII / IX)
+
 ### 2. `Ortigas` vs `Pasig`
 
 The design file's `Site Office Label` component has exactly five variants:
@@ -105,7 +119,8 @@ MUST NOT map or invent a third.
 Swagger now says **Ortigas**. The Catalog uses it. The shell's `Office` type
 (`src/features/auth/types.ts`) still says `Pasig` and has to follow; until it
 does, a `Pasig` user has no recognised office and the Catalog offers them no
-request action (spec 005 D7).
+request action (spec 005 D7). **Follow-on** (spec 010 FR-014): shell/auth owns
+moving `Office` to `Ortigas`.
 
 ### 3. `location`, `quantity` and `lowQtyAlert` are no longer on the asset form
 
@@ -122,10 +137,22 @@ DTO. `lowQtyAlert` remains on the asset, which matches the design's single
 **Low-stock threshold**. Whether that threshold is per asset or per office is
 the one part still open.
 
+**2026-09-26 — closed.** The threshold is **per asset**: the contract's
+`lowQtyAlert` and the design's Update Asset panel (`STOCKS · Low-stock
+threshold`) agree ([drift-2026-09-26 §4](../../../docs/design-system/drift-2026-09-26.md#q3--asset-fields)).
+
 ### Also worth a word
 
 The design's emails print request ids as `REQ-10482`; every SPA screen prints
 `REQ-2026-1847`. Whichever the API returns is what the SPA shows — but the two
 should not both ship.
+
+**2026-09-26 — deferred to the backend** by the project owner. The SPA prints
+and formats whatever id the API returns, at API integration.
+
+**Follow-on for BEN-107:** the `INVENTORY_STATUSES` comment in
+`src/shared/ui/status.ts` still calls the unit register "out of scope
+(constitution VIII)". BEN-107 fixes it when it models the unit statuses (spec 010
+plan D12).
 
 Product behavior (roles, statuses, inventory rules) still lives in `spec.md` and `docs/process-flow.md`; those are domain requirements, not HTTP design.
