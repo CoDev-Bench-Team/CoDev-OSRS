@@ -32,10 +32,12 @@
   --spacing: initial;
   --spacing-*: initial;
 
-  /* Colour — palette and semantic aliases — 80.
+  /* Colour — palette and semantic aliases — 99.
      Five added 2026-09-15 from the `.fig` re-export: the purple pair that
      `Completed` now carries, the slate tint `Cancelled` sits on, and the two
-     status aliases for each. See docs/design-system/drift-2026-09-15.md. */
+     status aliases for each. See docs/design-system/drift-2026-09-15.md.
+     Four added 2026-09-25 for the Catalog's `Low in Stock` pill — see
+     docs/design-system/token-map.md, Additions. */
   --color-backdrop: rgba(0,0,0,0.5);
   --color-black: var(--color-osrs-black);
   --color-brand-on-primary: var(--color-osrs-white);
@@ -53,6 +55,10 @@
   --color-line-strong: var(--color-osrs-black);
   --color-osrs-amber-50: rgb(255,245,222);
   --color-osrs-amber-700: rgb(161,92,0);
+  /* Added 2026-09-25 from the 2026-09-24 export: `Status/Pending Approval`
+     (#b4740e), the text and 10% tint of `Inventory Status / Low in stock`. */
+  --color-osrs-amber-600: rgb(180,116,14);
+  --color-osrs-amber-tint: rgba(180,116,14,0.1);
   --color-osrs-avatar-green: rgb(21,101,53);
   --color-osrs-avatar-orange: rgb(244,129,13);
   --color-osrs-black: rgb(0,0,0);
@@ -80,6 +86,10 @@
   --color-osrs-ink-800: rgb(27,29,41);
   --color-osrs-ink-900: rgb(23,32,51);
   --color-osrs-ink-tint: rgba(75,80,99,0.1);
+  --color-osrs-neutral-100: rgb(244,244,244);
+  --color-osrs-neutral-200: rgb(233,233,233);
+  --color-osrs-neutral-400: rgb(147,147,147);
+  --color-osrs-neutral-800: rgb(49,49,49);
   --color-osrs-pink-500: rgb(239,93,168);
   --color-osrs-pink-tint: rgba(239,93,168,0.1);
   --color-osrs-purple-50: rgb(241,236,255);
@@ -102,6 +112,8 @@
   --color-red-error: rgb(198,40,40);
   --color-status-available-bg: var(--color-osrs-green-tint);
   --color-status-available-fg: var(--color-osrs-green-600);
+  --color-status-low-bg: var(--color-osrs-amber-tint);
+  --color-status-low-fg: var(--color-osrs-amber-600);
   --color-status-cancelled-bg: var(--color-osrs-ink-tint);
   --color-status-cancelled-fg: var(--color-osrs-ink-700);
   --color-status-completed-bg: var(--color-osrs-purple-50);
@@ -137,6 +149,7 @@
   --text-11: 11px;
   --text-11-5: 11.5px;
   --text-12: 12px;
+  --text-12-5: 12.5px;
   --text-13: 13px;
   --text-14: 14px;
   --text-15: 15px;

@@ -1,5 +1,5 @@
 import { useParams } from 'react-router';
-import { Button, Placeholder, RecordUnavailableScreen } from '../shared/ui';
+import { Placeholder, RecordUnavailableScreen } from '../shared/ui';
 import { useSession } from '../features/auth/session-context';
 import { DESTINATIONS, landingPath, type DestinationId } from './destinations';
 import { mayViewRequest } from './seeded-request-ids';
@@ -16,38 +16,13 @@ function screen(id: DestinationId) {
   return <Placeholder name={title} purpose={purpose} />;
 }
 
-export function CatalogPlaceholder() {
-  const { session } = useSession();
-  const { title, purpose } = DESTINATIONS.catalog;
-  // Story 2 AC5: every role sees stock, but only an Employee is offered the
-  // action that starts a request. The action is disabled because starting a
-  // request is spec 001's own feature — the shell shows who is offered it, not
-  // what it does.
-  const employee = session?.role === 'employee';
-  return (
-    <Placeholder
-      name={title}
-      purpose={purpose}
-      action={
-        employee ? (
-          <>
-            <Button disabled>Add to Request List</Button>
-            <span className="type-body text-ink-secondary">Requesting ships with the catalog feature</span>
-          </>
-        ) : undefined
-      }
-    />
-  );
-}
-
-export const RequestsPlaceholder = () => screen('requests');
-export const ApprovalsPlaceholder = () => screen('approvals');
-export const FulfillmentPlaceholder = () => screen('fulfillment');
+export const AssetsPlaceholder = () => screen('assets');
 export const InventoryPlaceholder = () => screen('inventory');
 export const HistoryPlaceholder = () => screen('history');
-export const ProfilePlaceholder = () => screen('profile');
 
-/** `/requests/:id` — the one address that identifies a record.
+/** `/requests/:id` — the one address that identifies a record, for the Admin
+ *  only. An Employee's request detail is a panel on My Requests (spec 003,
+ *  2026-09-23), and BEN-47 replaces this address with the Admin's own panel.
  *
  *  It must not reveal whether that record exists (FR-012a), so a request the
  *  signed-in Employee does not own and a request that does not exist render the

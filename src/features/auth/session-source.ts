@@ -35,7 +35,7 @@ export interface SessionSource {
 /** A demo affordance, deliberately NOT part of `SessionSource`.
  *
  *  A source that authenticates nobody has to be told whom to sign in as, and a
- *  tester has to be able to reach all three roles to exercise SC-001 and
+ *  tester has to be able to reach both roles to exercise SC-001 and
  *  SC-003. A source backed by the real contract authenticates a real person, so
  *  it implements none of this and the chooser disappears from the sign-in
  *  screen on its own — see `hasDemoAccounts()`. */

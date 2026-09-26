@@ -68,6 +68,10 @@
   box-shadow: inset 0 0 0 1px var(--color-osrs-red-600);
 }
 
+@utility ring-brand-alt {
+  box-shadow: inset 0 0 0 1px var(--color-osrs-red-500);
+}
+
 @utility ring-default {
   box-shadow: inset 0 0 0 1px var(--color-osrs-border);
 }
@@ -102,4 +106,43 @@
   transition-property: color, background-color, border-color, box-shadow, opacity;
   transition-duration: var(--motion-fast);
   transition-timing-function: var(--ease-osrs);
+}
+
+/* The side panel (`SidePanel`) slides in from the right over a fading scrim,
+   and back out on close. The source draws only the open sheet; the motion uses
+   its recorded curve: base duration in, fast out. Reduced motion keeps the animation
+   events (the close waits on `animationend`) but makes them instant. */
+@keyframes osrs-sheet-in {
+  from { transform: translateX(100%); }
+}
+@keyframes osrs-sheet-out {
+  to { transform: translateX(100%); }
+}
+@keyframes osrs-fade-in {
+  from { opacity: 0; }
+}
+@keyframes osrs-fade-out {
+  to { opacity: 0; }
+}
+
+@utility animate-sheet-in {
+  animation: osrs-sheet-in var(--motion-base) var(--ease-osrs) both;
+}
+@utility animate-sheet-out {
+  animation: osrs-sheet-out var(--motion-fast) var(--ease-osrs) both;
+}
+@utility animate-fade-in {
+  animation: osrs-fade-in var(--motion-base) var(--ease-osrs) both;
+}
+@utility animate-fade-out {
+  animation: osrs-fade-out var(--motion-fast) var(--ease-osrs) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet-in,
+  .animate-sheet-out,
+  .animate-fade-in,
+  .animate-fade-out {
+    animation-duration: 1ms;
+  }
 }

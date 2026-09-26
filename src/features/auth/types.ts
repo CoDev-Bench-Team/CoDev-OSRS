@@ -5,11 +5,17 @@
  *  the backend team. When the contract publishes, its shapes are mapped INTO
  *  these types by a new `SessionSource`; the shell keeps speaking this language. */
 
-/** Constitution II: three human roles, one per user. A closed union, so a
- *  combined or elevated role cannot be expressed anywhere in the SPA (FR-005). */
-export type Role = 'employee' | 'approver' | 'supply_admin';
+/** Constitution 3.0.0 II: two human roles, one per user (ADR-0005). The Admin
+ *  both decides a request and fulfils it; `approver` and `supply_admin` are
+ *  retired. A closed union, so an elevated or combined role cannot be
+ *  expressed anywhere in the SPA (FR-005). */
+export type Role = 'employee' | 'admin';
 
-export const ROLES: readonly Role[] = ['employee', 'approver', 'supply_admin'];
+export const ROLES: readonly Role[] = ['employee', 'admin'];
+
+/** A home office, in the published contract's own vocabulary — the current
+ *  user's `location` enum, transcribed rather than invented (spec 006 D3). */
+export type Office = 'Cebu' | 'Bacolod' | 'Makati' | 'Pasig' | 'Davao';
 
 /** What the account cluster needs to name the signed-in person, and nothing
  *  more. `initials` is carried rather than derived: a name is not reliably two
@@ -22,6 +28,10 @@ export type User = {
   role: Role;
   /** A token colour for the avatar. Optional — Avatar has its own default. */
   avatarColor?: string;
+  /** The person's home office, shown on Profile. Optional: a user without one
+   *  renders their email alone (spec 006 Edge Cases). A contract-backed source
+   *  maps the contract's `location` into it. */
+  office?: Office;
 };
 
 export type Session = {
@@ -34,9 +44,8 @@ export type Session = {
 export type SessionStatus = 'unknown' | 'signed-out' | 'signed-in';
 
 /** Human-readable role names for the account cluster and navigation copy.
- *  The process flow's words, not invented ones (docs/process-flow.md). */
+ *  The design file's words — its account cluster reads "Ethan Cruz — Admin". */
 export const ROLE_LABEL: Record<Role, string> = {
   employee: 'Employee',
-  approver: 'Approver',
-  supply_admin: 'Supply Admin',
+  admin: 'Admin',
 };

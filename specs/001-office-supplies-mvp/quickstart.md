@@ -26,20 +26,19 @@ renders the designed Google control and delegates to the **session boundary**,
 `src/features/auth/session-source.ts`.
 
 Until the backend contract publishes, that boundary is satisfied by
-`src/features/auth/seeded-source.ts`, which resolves one of these three seeded
+`src/features/auth/seeded-source.ts`, which resolves one of these two seeded
 identities — one per role, so every role's landing screen and every refusal can
 be exercised:
 
 | Name | Role | Lands on |
 |------|------|----------|
 | Maya Santos · mayas@codev.com | `employee` | `/catalog` |
-| Samantha Reyes · samanthar@codev.com | `approver` | `/approvals` |
-| Ethan Cruz · ethanc@codev.com | `supply_admin` | `/fulfillment` |
+| Ethan Cruz · ethanc@codev.com | `admin` | `/queue` |
 
 Choose one on the sign-in screen before pressing the Google control — the
 chooser is the seeded source's stand-in for Google's account picker, and it
 disappears on its own once a source backed by the published contract replaces
-it. A fourth entry, **Refused account**, makes sign-in fail, so the refusal path
+it. A third entry, **Refused account**, makes sign-in fail, so the refusal path
 can be demonstrated.
 
 **There is no role switcher inside the application** (spec 003 D5). Changing role
@@ -89,17 +88,19 @@ npx playwright test   # when e2e/ exists; API must be up
 
 Playwright MUST cover:
 
-1. Happy path to `Completed` with stock decremented once
-2. Reject path with stock restored and a new request
-3. Notifications as the backend contract exposes them
-4. Role cannot perform another role’s transition
+1. Happy path to `Completed`, with the reservation released and `Total` reduced once
+2. Reject path with the reservation released and a new request
+3. Cancel paths from both sides, each requiring a reason
+4. Notifications as the backend contract exposes them
+5. Role cannot perform the other role's transition
 
 ## Demo script (human)
 
-1. Supply Admin encodes pens (10) and notebooks (5)
-2. Employee requests 3 pens — stock 7, status Pending Approval, submitted notification
-3. Approver rejects “Duplicate of last week” — stock 10, rejected notification
-4. Employee submits 3 pens again — stock 7
-5. Approver approves — approved notifications to employee and supply
-6. Supply Admin prepare → For Release; release at “GS Counter”
-7. Employee confirms receipt — Completed; completed notifications to employee and approver
+1. Admin adds a Laptop asset, then sets Cebu stock to 10 — Total 10 / Available 10 / Reserved 0
+2. Employee (Cebu) adds 3 to the Request List and submits — Available 7 / Reserved 3, status Pending Approval, `Request received` email
+3. Admin rejects with reason “Duplicate of last week” — Available 10 / Reserved 0, `Request declined` email
+4. Employee submits 3 again — Available 7 / Reserved 3
+5. Admin approves — `Request approved` email; quantities unchanged
+6. Admin sets **Ready for Pickup** at “GS Counter” — `Status changed` email carrying the location
+7. Admin presses **Complete** — Total 7 / Available 7 / Reserved 0, `Status changed` email
+8. Employee cancels a second pending request with a reason — reservation released, `Status changed` email

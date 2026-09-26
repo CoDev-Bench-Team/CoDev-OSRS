@@ -3,18 +3,18 @@ import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { NotFoundScreen } from '../shared/ui';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { RequireAccess } from '../features/auth/RequireAccess';
+import { CatalogPage } from '../features/catalog/CatalogPage';
+import { ProfilePage } from '../features/profile/ProfilePage';
+import { MyRequestsPage } from '../features/requests/history/MyRequestsPage';
 import { useSession } from '../features/auth/session-context';
+import { QueuePage } from '../features/requests/queue/QueuePage';
 import { AppLayout } from './AppLayout';
 import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './destinations';
 import { NavButton } from './NavButton';
 import {
-  ApprovalsPlaceholder,
-  CatalogPlaceholder,
-  FulfillmentPlaceholder,
+  AssetsPlaceholder,
   HistoryPlaceholder,
-  ProfilePlaceholder,
   RequestDetailPlaceholder,
-  RequestsPlaceholder,
 } from './placeholders';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { AddCatalogItemRoute, UpdateStockRoute } from '../features/inventory/drawer-routes';
@@ -70,25 +70,25 @@ export function AppRoutes() {
         }
       >
         <Route index element={<LandingRedirect />} />
-        <Route path={DESTINATIONS.catalog.path} element={guarded('catalog', <CatalogPlaceholder />)} />
-        <Route path={DESTINATIONS.requests.path} element={guarded('requests', <RequestsPlaceholder />)} />
+        <Route path={DESTINATIONS.catalog.path} element={guarded('catalog', <CatalogPage />)} />
+        <Route path={DESTINATIONS.requests.path} element={guarded('requests', <MyRequestsPage />)} />
         <Route
           path={DESTINATIONS.requestDetail.path}
           element={guarded('requestDetail', <RequestDetailPlaceholder />)}
         />
-        <Route path={DESTINATIONS.approvals.path} element={guarded('approvals', <ApprovalsPlaceholder />)} />
-        <Route path={DESTINATIONS.fulfillment.path} element={guarded('fulfillment', <FulfillmentPlaceholder />)} />
-        {/* Inventory is the one destination whose own screen has shipped. Its
-            two drawers are nested addresses rather than component state (FR-008),
-            so they can be linked, reloaded, and closed with browser back; they
-            render through the screen's own `<Outlet/>`, which is why inventory
-            stays visible behind the scrim as the frames draw it. */}
+        <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
+        <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
+        {/* Inventory's two drawers are nested addresses rather than component
+            state (FR-008), so they can be linked, reloaded, and closed with
+            browser back; they render through the screen's own `<Outlet/>`,
+            which is why inventory stays visible behind the scrim as the frames
+            draw it. */}
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPage />)}>
           <Route path="new" element={<AddCatalogItemRoute />} />
           <Route path=":itemId/stock" element={<UpdateStockRoute />} />
         </Route>
         <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />
-        <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePlaceholder />)} />
+        <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePage />)} />
         <Route path="*" element={<NotFoundRoute />} />
       </Route>
     </Routes>

@@ -1,147 +1,264 @@
-# Process Flow — Inventory and Notifications
+# Process Flow — Status, Stock and Notifications
 
-Transcribed from the Office Supplies Request System process diagram. This is the canonical status, inventory, and notification behavior.
+Canonical status, stock and notification behavior.
 
-**Purpose:** Clear path for requesting, approving, and releasing office supplies, including inventory updates and notifications.
+**Baseline**: the 2026-09-22 `.fig` export. The 2026-09-11 process diagram is
+historical: it drew three roles and a confirm-receipt step that the design no
+longer has. Where this document departs from it, the departure is recorded in
+[design-system/drift-2026-09-22.md](design-system/drift-2026-09-22.md) and
+carried by [ADR-0005](adr/0005-two-role-model.md),
+[ADR-0006](adr/0006-assets-and-inventory.md) and
+[ADR-0007](adr/0007-fulfilment-status-vocabulary.md).
+
+**Purpose:** Clear path for requesting, approving and handing over office
+supplies, including stock movements and notifications.
+
+## Actors
+
+| Actor | Job |
+|-------|-----|
+| **Employee** | Browses the catalog, builds a request list, submits, tracks their own requests, cancels their own request while it is `Pending Approval` |
+| **Admin** | Reviews the queue, approves or rejects, sets `For Delivery` or `Ready for Pickup`, completes, cancels what cannot be fulfilled, owns Assets and Inventory |
+| **System** | Moves stock, sends mail, records the notification log |
+
+Two human roles, not three. See [ADR-0005](adr/0005-two-role-model.md).
 
 ## Swimlanes
 
-### 1. Check Inventory & Create Request (Employee)
+### 1. Browse Catalog & Create Request (Employee)
 
 1. Start
-2. **Check Available Inventory** — view current stock number per item
-3. **Fill Out Request** — select items, enter quantity, optional purpose, submit
-4. System: **Deduct inventory**; status becomes **Pending Approval**
-5. Notification: **Request Submitted** (to Employee)
+2. **Browse the catalog** — `Supply Catalog`, filtered by category chip and by
+   **office**, each card showing a model select, an availability pill and a
+   quantity stepper. `View specs >` opens the spec panel.
+3. **Add to Request List** — the card's action; the top bar carries the count.
+4. **Submit** — the Request List drawer holds the lines, a quantity stepper and
+   **Remove** per line, and a free-text **Note to Approver (optional)**.
+5. System: **reserve stock** — for each line, move the requested quantity from
+   `Available` to `Reserved` at the requesting office; status becomes
+   **Pending Approval**.
+6. Confirmation: `REQ-…` · "Request submitted" · "Your request has been sent to
+   your approver. We'll email you whenever its status changes."
+7. Notification: **Request received** (to Employee).
 
-### 2. Review & Approve (Approver)
+### 2. Review (Admin)
 
-1. **Review Request** — check items, verify inventory and necessity
-2. Decision: Approve?
-   - **No** → **Reject Request (with reason)** → System **increments inventory**; status **Rejected** → notification **Request Rejected** (to Employee) → Employee may submit a **new** request
-   - **Yes** → **Approve Request** → notification **Request Approved** (to Employee and Supply Admin) → inventory stays deducted
+The `Requests Queue` is one screen for the whole admin half: summary cards for
+*Pending approval*, *In Processing* and *Low stock alerts*; filter chips
+`All requests · Pending Approval · Approved · For Delivery · Ready for Pickup`;
+search by request ID, employee name, email or item; sort by
+*Newest First / Oldest First / Employee (A-Z)*. **Review** opens the request
+panel.
 
-### 3. Prepare & Release (Supply Admin)
+The panel shows **REQUESTED BY** (avatar, name, `email • office`), the lines as
+**ITEM / QTY / CURRENT INVENTORY**, the **Note to Approver**, and a status
+timeline. Under the actions it states: *"The employee will receive an email with
+your decision."*
 
-1. **Prepare Items** — check inventory, pick and pack, status **For Release**
-2. **Release Items to Employee** — hand over, status **Released**
-3. Notification: **Items Ready for Pickup / Released** (to Employee)
-4. System: inventory already deducted; no further qty change
+1. Decision: Approve?
+   - **No** → **Reject Request** → a dialog with **Reason for rejection \***
+     (required) and **Confirm Rejection** → System **releases the reservation**
+     (Reserved → Available); status **Rejected** → notification **Request
+     declined** (to Employee) → the Employee may submit a **new** request.
+   - **Yes** → **Approve Request** → status **Approved**; stock stays reserved
+     → notification **Request approved** (to Employee).
 
-### 3b. Cancel (Employee or Supply Admin)
+### 3. Hand over (Admin)
+
+1. **Update Status** on an approved request opens a `Status *` select.
+2. Choose **For Delivery** or **Ready for Pickup**. These are peers, not a sequence.
+   Choosing `Ready for Pickup` records a **pickup location**.
+3. Notification: **Status changed** (to Employee), carrying *Previous status* →
+   *New status*, and the **Pickup** location when there is one.
+4. System: stock is still reserved; no quantity changes.
+5. **Complete** → status **Completed**. System: `Total` and `Reserved` both
+   fall by the requested quantity — this is when the items leave the store.
+6. Notification: **Status changed** (to Employee).
+
+The Admin completes the request. The Employee is not asked to confirm receipt;
+no such control exists in the design. See
+[ADR-0007](adr/0007-fulfilment-status-vocabulary.md), which names that as a
+cost.
+
+### 3b. Cancel (Employee or Admin)
 
 A cancellation stops a request that has **not** been refused. It is not a
-rejection: rejection is the Approver's decision on a request awaiting one.
+rejection: rejection is the Admin's decision on a request awaiting one.
 
-1. **Employee cancels** — only their own request, and only while it is `Pending Approval`, i.e. before anyone has decided. A reason is optional.
-2. **Supply Admin cancels** — an `Approved` or `For Release` request that cannot be fulfilled (item unavailable, no longer needed). A reason is **required**.
-3. A `Released` request cannot be cancelled; the items are already with the employee.
-4. System: **increment inventory**; status **Cancelled**.
-5. Notification: **Request Cancelled** (to Employee and Approver; also to the Supply Admin when the request had reached them).
-6. `Cancelled` is terminal. The employee submits a **new** request if they still need the items.
+1. **Employee cancels** — only their own request, and only while it is
+   `Pending Approval`. The dialog asks for **Reason for cancellation \*** and is
+   confirmed with **Confirm Cancellation**.
+2. **Admin cancels** — an `Approved`, `For Delivery` or `Ready for Pickup` request
+   that cannot be fulfilled. A reason is required.
+3. A **reason is required from whoever cancels**.
+4. A `Completed` request cannot be cancelled; the items are already with the
+   employee.
+5. System: **release the reservation** (Reserved → Available); status
+   **Cancelled**.
+6. Notification: **Status changed** (to Employee; to the Admin queue when the
+   Employee cancelled).
+7. `Cancelled` is terminal. The employee submits a **new** request if they still
+   need the items.
 
-### 4. Complete (Employee)
+### 4. History (Admin)
 
-1. **Receive Items**
-2. **Confirm Receipt in System** → status **Completed**
-3. Notification: **Request Completed** (to Employee and Approver)
-4. System: no inventory change
+`History` is the audit trail — "Full audit trail — completed, cancelled, and
+rejected requests" — across all requestors, with chips
+`All requests · Completed · Cancelled · Rejected` and columns
+REQUEST ID · REQUESTER · ITEMS · STATUS · RESOLVED · ACTION. **Review** opens a
+read-only panel that shows the stored **Reason for rejection** or **Reason for
+cancellation** and a **Close** button.
 
 ## Status Values
 
-| Status | Set when | Inventory |
-|--------|----------|-----------|
-| `Pending Approval` | Employee submits | Decremented |
-| `Rejected` | Approver rejects with reason | Incremented back |
-| `Approved` | Approver approves | Already deducted |
-| `For Release` | Supply Admin finishes prepare | Already deducted |
-| `Released` | Supply Admin hands over | Already deducted |
-| `Completed` | Employee confirms receipt | No change |
-| `Cancelled` | Employee cancels their own `Pending Approval` request, or a Supply Admin cancels an `Approved` or `For Release` one | Incremented back |
+| Status | Set by | Set when | Total | Available | Reserved |
+|--------|--------|----------|-------|-----------|----------|
+| `Pending Approval` | Employee | submit | — | −qty | +qty |
+| `Rejected` | Admin | reject, reason required | — | +qty | −qty |
+| `Approved` | Admin | approve | — | — | — |
+| `For Delivery` | Admin | update status | — | — | — |
+| `Ready for Pickup` | Admin | update status, location recorded | — | — | — |
+| `Completed` | Admin | complete | −qty | — | −qty |
+| `Cancelled` | Employee or Admin | cancel, reason required | — | +qty | −qty |
 
-## Inventory Rules
+`For Delivery` and `Ready for Pickup` are alternatives, not stages.
+`Rejected`, `Cancelled` and `Completed` are terminal.
 
-1. Inventory MUST be encoded in the system before requests can be submitted.
-2. When a request is submitted, on-hand quantity is decremented by the requested quantity (`Pending Approval`).
-3. When a request is rejected, on-hand quantity is incremented by the requested quantity (`Rejected`).
-4. When a request is approved and items are released, quantity stays decremented (`Released` / `Completed`).
-5. When a request is cancelled, on-hand quantity is incremented by the requested quantity (`Cancelled`), in the same transaction as the status change. The stock was deducted at submit and the items are not leaving the store, so it goes back — exactly as it does on rejection.
+`For Release` and `Released` are **retired**. So is the Employee's
+confirm-receipt step.
+
+## Stock Rules
+
+1. An **Asset** must exist and hold stock before it can be requested.
+2. Stock is held per **(asset, office)** — Cebu, Bacolod, Makati, Ortigas,
+   Davao — as three numbers: **Total**, **Available**, **Reserved**.
+3. `Total = Available + Reserved` at all times. None of the three may be
+   negative.
+4. **Submit reserves**: Available → Reserved, in the same transaction as the
+   status change to `Pending Approval`.
+5. **Reject and cancel release**: Reserved → Available, in the same transaction
+   as the status change.
+6. **Approve, For Delivery and Ready for Pickup change nothing.** The quantity is
+   already reserved.
+7. **Complete consumes**: Total and Reserved both fall, in the same transaction
+   as the status change to `Completed`. The Assets screen counts the difference
+   as *Deployed units*.
+8. A line quantity must not exceed `Available` at the requesting office at
+   submit time. Concurrent submits for the last unit must serialize so
+   `Available` never goes negative.
+9. Each asset carries a **Low-stock threshold** per office, which drives the
+   `In Stock` / `Low Stock` / `Out of Stock` pill and the chip counts.
+
+> `Ortigas` is the design file's fifth office; the published `CreateAssetDto`
+> says `Pasig`. Unresolved — see
+> [drift-2026-09-22 §4c](design-system/drift-2026-09-22.md). The SPA uses
+> whatever the contract exposes and invents no third spelling.
 
 ## Notification Catalog
 
-### 1. Request Submitted
+Four transactional templates cover every transition, plus two the design draws
+that are not transitions. All share a 600px card: logo header with
+`REQUEST MANAGEMENT`, semantic icon, eyebrow, headline, message copy, an
+optional **Current status** row carrying a real status pill, a detail table, a
+primary action, support copy, footer.
 
-- **When:** Submit
+### 1. Request received
+
+- **When:** submit
 - **To:** Employee
-- **Subject:** Office Supplies Request Submitted
-- **Body pattern:** Hi [Name]. Your office supplies request has been submitted. Request ID: #[id]. Items / Quantity. Current inventory has been updated.
+- **Eyebrow / Headline:** Request received — "We've received your equipment request"
+- **Body:** "Hi [Name] - your request has been submitted successfully. The Workplace team will review it and notify you when the status changes."
+- **Current status:** `Pending Approval`
+- **Details:** Request · Request ID · Submitted · Owner
+- **Action:** View request
+- **Support:** "Typical review time is 1-2 business days. You can add a comment or attachment from the request page."
 
-### 2. Request Approved
+### 2. Request approved
 
-- **When:** Approve
-- **To:** Employee and Supply Admin
-- **Subject:** Office Supplies Request Approved
-- **Body pattern:** Request #[id] has been approved. The supply team will now prepare your items. Items / Quantity. Inventory remains deducted.
-
-### 3. Request Rejected
-
-- **When:** Reject
+- **When:** approve
 - **To:** Employee
-- **Subject:** Office Supplies Request Rejected
-- **Body pattern:** Request #[id] has been rejected. Reason: [reason]. Inventory has been returned. You may submit a new request if needed.
+- **Eyebrow / Headline:** Request approved — "Your equipment request is approved"
+- **Body:** "Good news, [Name] - [Approver] approved your [request] request. Procurement can now begin fulfillment."
+- **Current status:** `Approved`
+- **Details:** Request · Request ID · Approved by · Approved
+- **Action:** View approval
+- **Support:** "We'll notify you again when fulfillment begins. No action is needed from you right now."
 
-### 4. Items Ready for Pickup / Released
+### 3. Request declined
 
-- **When:** Release
+- **When:** reject
 - **To:** Employee
-- **Subject:** Office Supplies Ready for Pickup
-- **Body pattern:** Items are ready for pickup at [Location] / have been released. Items / Quantity. Please collect them at your earliest convenience.
+- **Eyebrow / Headline:** Request declined — "Your equipment request wasn't approved"
+- **Body:** "Hi [Name] - [Admin] declined this request because [reason]."
+- **Current status:** `Rejected`
+- **Details:** Request · Request ID · Decision by · **Reason**
+- **Action:** Review decision
+- **Support:** "Have additional context? Add a comment to the request or contact Workplace Operations for guidance."
 
-### 5. Request Completed
+### 4. Status changed
 
-- **When:** Confirm receipt
-- **To:** Employee and Approver
-- **Subject:** Office Supplies Request Completed
-- **Body pattern:** Request #[id] has been completed.
+The template for **every other transition** — `For Delivery`, `Ready for Pickup`,
+`Completed`, `Cancelled`.
 
-### 6. Request Cancelled
+- **When:** any transition not covered by 1–3
+- **To:** Employee (and the Admin queue when the Employee cancelled)
+- **Eyebrow:** Status update
+- **Headline:** states the new status, e.g. "Your request is ready for pickup"
+- **Body:** "Hi [Name] - the Workplace team changed the status of your [request] request from [previous] to [new]."
+- **Details:** Request · Request ID · **Previous status** · **New status** · **Pickup** (when `Ready for Pickup`)
+- **Action:** View request
+- **Support:** e.g. "Bring your employee badge when you collect the device. Pickup hours are Monday-Friday, 9 AM-5 PM."
 
-- **When:** Cancel
-- **To:** Employee and Approver (and the Supply Admin when the request had reached them)
-- **Subject:** Office Supplies Request Cancelled
-- **Body pattern:** Request #[id] has been cancelled by [Name]. Reason: [reason, when one was given]. Inventory has been returned. You may submit a new request if needed.
+### 5. Welcome — not a transition
 
-> **Invented copy.** The design file defines the `Cancelled` status but no
-> cancellation email. Subject and body follow the five the file does define, and
-> are flagged for the designer in
-> [design-system/drift-2026-09-15.md](design-system/drift-2026-09-15.md).
+- **When:** account created
+- **To:** the new user
+- **Headline:** "Your portal is ready"
+- **Action:** Open your workspace
 
-## Mermaid (happy path, reject, cancel)
+### 6. Action required — designed, not buildable yet
+
+- **Headline:** "More information is needed"
+- **Details:** Request · Request ID · **Requested detail** · **Respond by**
+- **Action:** Provide information
+
+> No screen lets a reviewer raise a request for information or set a respond-by
+> date, and no status covers it. **Out of scope for the MVP** and flagged to the
+> designer — see [drift-2026-09-22 §5](design-system/drift-2026-09-22.md).
+
+> The 2026-09-15 amendment invented a "Request Cancelled" email because the file
+> defined the status and no mail. That copy is **withdrawn**: cancellation now
+> sends **Status changed**, which the file does define.
+
+## Mermaid
 
 ```mermaid
 flowchart TD
-  start([Start]) --> inv[Check available inventory]
-  inv --> form[Fill out and submit request]
-  form --> deduct[Deduct inventory / Pending Approval]
-  deduct --> mail1[Email: Request Submitted]
-  mail1 --> review[Approver reviews]
-  review -->|No| reject[Reject with reason]
-  reject --> inc[Increment inventory / Rejected]
-  inc --> mailR[Email: Request Rejected]
+  start([Start]) --> browse[Browse catalog by category and office]
+  browse --> list[Add to Request List]
+  list --> submit[Submit with note to approver]
+  submit --> reserve[Reserve stock / Pending Approval]
+  reserve --> mail1[Email: Request received]
+  mail1 --> review[Admin reviews]
+  review -->|Reject + reason| rel1[Release reservation / Rejected]
+  rel1 --> mailR[Email: Request declined]
   mailR --> newReq[Employee may submit a new request]
-  review -->|Yes| approve[Approve]
-  approve --> mailA[Email: Request Approved]
-  mailA --> prep[Supply Admin prepares / For Release]
-  prep --> rel[Release to employee / Released]
-  rel --> mailP[Email: Items Ready for Pickup]
-  mailP --> recv[Employee receives items]
-  recv --> conf[Confirm receipt / Completed]
-  conf --> mailC[Email: Request Completed]
+  review -->|Approve| approve[Approved]
+  approve --> mailA[Email: Request approved]
+  mailA --> handover{Update Status}
+  handover -->|For Delivery| fd[For Delivery]
+  handover -->|Ready for Pickup| fp[Ready for Pickup / location recorded]
+  fd --> mailS1[Email: Status changed]
+  fp --> mailS1
+  mailS1 --> complete[Admin completes / Completed]
+  complete --> consume[Total and Reserved fall by qty]
+  consume --> mailC[Email: Status changed]
   mailC --> endNode([End])
 
-  deduct -.->|Employee cancels| canc[Increment inventory / Cancelled]
-  approve -.->|Supply Admin cannot fulfil| canc
-  prep -.->|Supply Admin cannot fulfil| canc
-  canc --> mailX[Email: Request Cancelled]
+  reserve -.->|Employee cancels + reason| canc[Release reservation / Cancelled]
+  approve -.->|Admin cannot fulfil + reason| canc
+  fd -.->|Admin cannot fulfil + reason| canc
+  fp -.->|Admin cannot fulfil + reason| canc
+  canc --> mailX[Email: Status changed]
   mailX --> endNode
 ```

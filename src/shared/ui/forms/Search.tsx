@@ -1,7 +1,21 @@
 import type { InputHTMLAttributes } from 'react';
 
 /** The 46px catalog / inventory search field. Ringed rather than shadowed,
- *  following the source's rule that interactive inputs get the ring. */
+ *  following the source's rule that interactive inputs get the ring.
+ *
+ *  The input is stretched over the whole field, so the global `:focus-visible`
+ *  outline wraps the field exactly as it wraps `Select`'s trigger. It used to
+ *  carry `outline-none` and rely on the wrapper's ring alone. That failed the
+ *  shell's keyboard gate (spec 003 FR-014), which asks the focused element
+ *  itself for an indicator, as soon as the Requests Queue put a search on
+ *  `/queue`. The wrapper's old `focus-within:ring-brand` went with it: the
+ *  outline is the one indicator, not a second red ring inside it.
+ *
+ *  The input's left padding is the wrapper's `px-16`, the icon's `w-18` and the
+ *  wrapper's `gap-10`, written as the sum of those same tokens so the text
+ *  cannot sit on the glyph; change one of the three and change the sum. An
+ *  absolute input gives the field no intrinsic width, so the source's 226px
+ *  default is restated as a minimum. */
 export function Search({
   placeholder = 'Search supplies by name or category',
   className,
@@ -9,7 +23,7 @@ export function Search({
 }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div
-      className={`flex h-control-height-lg items-center gap-10 overflow-hidden rounded-10 bg-surface-card px-16 ring-default text-ink-secondary transition-osrs focus-within:ring-brand ${className ?? ''}`}
+      className={`relative flex h-control-height-lg min-w-[226px] items-center gap-10 rounded-10 bg-surface-card px-16 ring-default text-ink-secondary transition-osrs ${className ?? ''}`}
     >
       {/* The source's exact path, not a redrawn magnifier: a 13.5x13.5 glyph
           inset 2.25px inside an 18x18 box. A hand-drawn circle-and-handle
@@ -30,7 +44,7 @@ export function Search({
       <input
         type="search"
         placeholder={placeholder}
-        className="min-w-0 flex-1 appearance-none border-none bg-transparent font-sans text-14 leading-tight text-ink-primary outline-none placeholder:text-ink-secondary [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+        className="absolute inset-0 min-w-0 appearance-none rounded-10 border-none bg-transparent pr-16 pl-[calc(var(--spacing-16)+var(--spacing-18)+var(--spacing-10))] font-sans text-14 leading-tight text-ink-primary placeholder:text-ink-secondary [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
         {...rest}
       />
     </div>

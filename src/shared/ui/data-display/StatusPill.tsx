@@ -1,9 +1,8 @@
 import {
-  HANDOVER_LABEL,
   REQUEST_TONE,
   STOCK_TONE,
   type Availability,
-  type Handover,
+  type InventoryStatus,
   type RequestStatus,
   type StatusTone,
   type StockStatus,
@@ -14,15 +13,10 @@ const TONE: Record<StatusTone, string> = {
   ready: 'bg-status-ready-bg text-status-ready-fg',
   rejected: 'bg-status-rejected-bg text-status-rejected-fg',
   completed: 'bg-status-completed-bg text-status-completed-fg',
-  cancelled: 'bg-status-cancelled-bg text-status-cancelled-fg',
-};
-
-/** A handover label carries its own palette, not the status tone: pickup is the
- *  blue pair the design file already defines, delivery the pink one added for
- *  it (docs/design-system/additions.md). */
-const HANDOVER_TONE: Record<Handover, string> = {
-  pickup: 'bg-status-pickup-bg text-status-pickup-fg',
+  // Struck through, as the design's `Status/Cancelled` pill draws it.
+  cancelled: 'bg-status-cancelled-bg text-status-cancelled-fg line-through',
   delivery: 'bg-status-delivery-bg text-status-delivery-fg',
+  pickup: 'bg-status-pickup-bg text-status-pickup-fg',
 };
 
 const AVAILABILITY: Record<Availability, { cls: string; label: string }> = {
@@ -30,41 +24,46 @@ const AVAILABILITY: Record<Availability, { cls: string; label: string }> = {
   unavailable: { cls: 'bg-status-unavailable-bg text-status-unavailable-fg', label: 'Unavailable' },
 };
 
+/** The design's `Inventory Status` variants, on the same chip geometry as
+ *  availability: green, amber and red text on a 10% tint of the same colour. */
+const INVENTORY: Record<InventoryStatus, string> = {
+  Available: 'bg-status-available-bg text-status-available-fg',
+  'Low in Stock': 'bg-status-low-bg text-status-low-fg',
+  'Out of Stock': 'bg-status-unavailable-bg text-status-unavailable-fg',
+};
+
 /** The pill carries two geometries, chosen by which kind of status it is given
  *  (spec 002 FR-009):
  *
  *  - request and stock  — 999px radius, 12px bold, 6x10 padding
- *  - catalog availability — 8px radius, 11.5px bold, 10px padding, on 10% tints
+ *  - catalog availability and inventory status — 8px radius, 11.5px bold,
+ *    10px padding, on 10% tints
  *
- *  Passing a `handover` renders `Released` as "Ready for Pickup" or "For
- *  Delivery", in that label's own colours, without changing the status
- *  itself. */
+ *  A request status always reads as its own name, in its own tone. */
 type Props =
-  | { status: RequestStatus; stock?: never; availability?: never; handover?: Handover; className?: string }
-  | { stock: StockStatus; status?: never; availability?: never; handover?: never; className?: string }
-  | { availability: Availability; status?: never; stock?: never; handover?: never; className?: string };
+  | { status: RequestStatus; stock?: never; availability?: never; inventory?: never; className?: string }
+  | { stock: StockStatus; status?: never; availability?: never; inventory?: never; className?: string }
+  | { availability: Availability; status?: never; stock?: never; inventory?: never; className?: string }
+  | { inventory: InventoryStatus; status?: never; stock?: never; availability?: never; className?: string };
 
 export function StatusPill(props: Props) {
   const { className } = props;
 
-  if (props.availability) {
-    const a = AVAILABILITY[props.availability];
+  if (props.availability || props.inventory) {
+    const { cls, label } = props.inventory
+      ? { cls: INVENTORY[props.inventory], label: props.inventory }
+      : AVAILABILITY[props.availability!];
     return (
       <span
-        className={`inline-flex items-center justify-center rounded-8 p-10 font-sans text-11-5 font-bold leading-display whitespace-nowrap ${a.cls} ${className ?? ''}`}
+        className={`inline-flex items-center justify-center rounded-8 p-10 font-sans text-11-5 font-bold leading-display whitespace-nowrap ${cls} ${className ?? ''}`}
       >
-        {a.label}
+        {label}
       </span>
     );
   }
 
-  const value = props.status ?? props.stock!;
-  const handoverLabel =
-    props.status && props.handover ? HANDOVER_LABEL[props.handover][props.status] : undefined;
-  const label = handoverLabel ?? value;
-  const tone = handoverLabel
-    ? HANDOVER_TONE[props.handover!]
-    : TONE[props.status ? REQUEST_TONE[props.status] : STOCK_TONE[props.stock!]];
+  const label = props.status ?? props.stock!;
+  const tone = TONE[props.status ? REQUEST_TONE[props.status] : STOCK_TONE[props.stock!]];
 
   return (
     <span

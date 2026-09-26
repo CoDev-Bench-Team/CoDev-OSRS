@@ -196,7 +196,7 @@ has), `BytesizeClose`, `MdiLightBell`, the three heroicons chevrons the imported
 pager uses, and `LoadingState`, `Placeholder`, `NotFoundScreen`,
 `ForbiddenScreen`. `TopBar` stopped being a redesign and became a port of the
 `Top Navigation` component. See
-[additions.md §3d and §3e](docs/design-system/additions.md).
+[additions.md §3d and §3g](docs/design-system/additions.md).
 
 | Group | Components |
 |-------|------------|
