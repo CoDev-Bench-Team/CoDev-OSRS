@@ -41,7 +41,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - `?review=changes|failing|reload-fails`
 
   Wire it into verify — `scripts/check-review-panel.mjs`, `scripts/verify.mjs`
-- [ ] T019 [BEN-78] `npm run lint`, `npm run build`, `npm run verify` green, including the unchanged `scripts/check-request-detail.mjs`. Fidelity against `02.2`, `02.2.2` and `02.2.2.1` at 1440px and 360px. PR to `dev` *(all 14 gates green 2026-09-26; PR not opened)*
+- [ ] T019 [BEN-78] `npm run lint`, `npm run build`, `npm run verify` green, including the unchanged `scripts/check-request-detail.mjs`. Fidelity against `02.2`, `02.2.2` and `02.2.2.1` at 1440px and 360px. PR to `dev` *(all 15 gates green; PR #46 open against `dev`. What remains: the designer's fidelity sign-off.)*
 
 ## Phase 3: G3a — Hand over (US3) (BEN-79)
 
@@ -56,7 +56,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - the preselected office is always in the list (accepted risk R4)
 
   — `scripts/check-review-panel.mjs`
-- [ ] T024 [BEN-79] Lint, build, verify; fidelity against `02.2.1 Approve` and `02.2.1 Update Status`; PR to `dev` *(gates green; PR not opened)*
+- [ ] T024 [BEN-79] Lint, build, verify; fidelity against `02.2.1 Approve` and `02.2.1 Update Status`; PR to `dev` *(gates green; PR #46 open against `dev`. What remains: the designer's fidelity sign-off.)*
 
 ## Phase 3b: `/requests/:id` deep link (BEN-47, 2026-09-26)
 

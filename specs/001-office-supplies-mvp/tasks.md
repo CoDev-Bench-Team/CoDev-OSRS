@@ -19,7 +19,8 @@ current types.
 `Office` in `src/features/auth/types.ts` keeps **`Pasig`**, not the design's
 `Ortigas`, until the contract moves — spec 006 D3 transcribed the published
 enum, which is the right call under constitution VII. Conflict 2 in
-`contracts/README.md` tracks it.
+`contracts/README.md` tracks it. *(Moved 2026-09-26: the contract says `Ortigas`
+since 2026-09-25, so `Office` says `Ortigas` too — spec 008, PR #46.)*
 
 - [x] T000 Collapse `Role` to `'employee' | 'admin'`; drop `approver` / `supply_admin` — `src/features/auth/types.ts`
 - [x] T000a Rework navigation sets and role home for two roles: Employee → Catalog · My Requests; Admin → Requests Queue · Assets · Inventory · History — `src/features/auth/navigation.ts`, `src/app/destinations.ts`

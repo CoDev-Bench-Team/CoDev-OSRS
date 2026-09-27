@@ -77,7 +77,7 @@ function seed(): ReviewRequest[] {
     },
     {
       id: 'REQ-2026-1831',
-      ...person('Carla Mercado', 'Marketing', 'carlam@codev.com', 'Pasig'),
+      ...person('Carla Mercado', 'Marketing', 'carlam@codev.com', 'Ortigas'),
       items: ['Wireless Mouse', 'Headset', 'Laptop Stand', 'Keyboard'],
       lines: [
         line('Wireless Mouse - Logitech M185', 1, 18),
@@ -130,7 +130,7 @@ function seed(): ReviewRequest[] {
     },
     {
       id: 'REQ-2026-1726',
-      ...person('Bea Reyes', 'People Operations', 'bear@codev.com', 'Pasig'),
+      ...person('Bea Reyes', 'People Operations', 'bear@codev.com', 'Ortigas'),
       items: ['Headset'],
       lines: [line('Headset - Jabra Evolve2 30', 1, 2)],
       submittedAt: '2026-08-09T07:40:00Z',
@@ -190,7 +190,7 @@ function seed(): ReviewRequest[] {
     },
     {
       id: 'REQ-2026-1684',
-      ...person('Gia Castillo', 'Marketing', 'giac@codev.com', 'Pasig'),
+      ...person('Gia Castillo', 'Marketing', 'giac@codev.com', 'Ortigas'),
       items: ['Headset'],
       lines: [line('Headset - Jabra Evolve2 30', 1, 2)],
       submittedAt: '2026-07-30T04:00:00Z',

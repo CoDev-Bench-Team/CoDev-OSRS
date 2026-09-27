@@ -338,7 +338,7 @@ try {
   await closed();
 
   // ---- the preselected office is always offered (accepted risk R4) ----
-  console.log('\nEvery request’s office is in the pickup list (Pasig / Ortigas, contracts conflict 2)');
+  console.log('\nEvery request’s office is in the pickup list (the contract’s offices)');
   await go('/queue');
   for (const id of ['REQ-2026-1805', 'REQ-2026-1748']) {
     await open(id);

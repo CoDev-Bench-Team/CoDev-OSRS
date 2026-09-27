@@ -79,7 +79,7 @@ interface AdminRequestSource extends QueueSource {
 }
 ```
 
-`Office` is `src/features/auth/types.ts`'s, which holds the contract's enum (`Pasig`), now also exported as the `OFFICES` list. `ReviewSnapshot` narrows `QueueSnapshot`, and `ReviewRequest` is a structural superset of `QueueRequest`, so the existing `buildQueueViewModel` is untouched. *(As built: the planned `get(id)` was dropped. The panel reads its request from the snapshot the table shows, which removes a second read that could disagree with it.)*
+`Office` is `src/features/auth/types.ts`'s, which holds the contract's enum (`Ortigas` since 2026-09-26), now also exported as the `OFFICES` list. `ReviewSnapshot` narrows `QueueSnapshot`, and `ReviewRequest` is a structural superset of `QueueRequest`, so the existing `buildQueueViewModel` is untouched. *(As built: the planned `get(id)` was dropped. The panel reads its request from the snapshot the table shows, which removes a second read that could disagree with it.)*
 
 ## API Contracts
 
@@ -183,7 +183,7 @@ scripts/check-review-panel.mjs        # new; wired into scripts/verify.mjs
   - Update Status: `Ready for Pickup` with no location is refused. With an office it succeeds. With `Other…` and empty text it is refused. `For Delivery` ↔ `Ready for Pickup` swaps.
   - `?review=changes`: a refusal names the current status. `?review=failing`: status unchanged and input kept.
   - No handover state renders **Complete** (SC-005, pre-4.0.0).
-- `scripts/check-shell.mjs`: the Admin and Employee `/requests/:id` cases are updated to expect not-found (D10).
+- `scripts/check-shell.mjs`: `/requests/:id` opens the panel for both roles, including a decided request; a missing id and, for an Employee, a foreign one open nothing and get the same notice without echoing the id; the link survives sign-in (D10).
 - `scripts/check-request-detail.mjs`: unchanged and still green, which proves the `ReasonForm` extraction.
 - Manual: compare with `02.2`, `02.2.1 Approve`, `02.2.1 Update Status` and `02.2.2`/`02.2.2.1` at 1440px, and check 360px for overflow.
 
@@ -238,7 +238,7 @@ None dismissed. The two findings were applied: (1) reload continuity is now bind
 
 ## Known Risks
 
-- **Pasig vs Ortigas** (contracts conflict 2) stays open. The panel follows the contract enum.
+- ~~**Pasig vs Ortigas** (contracts conflict 2) stays open.~~ Closed: the contract says `Ortigas`, and `Office` follows it (PR #46 review).
 - The **pickup-location UI** and the **Complete confirm** are undrawn and flagged to the designer (D12).
 - **R1 (accepted)**: the seed could harden into a de facto contract. Suggested mitigation: SPA-vocabulary names only, and cite contracts conflict 1.
 - **R3 (accepted)**: retiring `/requests/:id` could break email deep links. Suggested mitigation: ask the backend before G2 merges.

@@ -60,7 +60,7 @@ An Admin sets an approved request to `For Delivery` or `Ready for Pickup`, and c
 
 1. **Given** an `Approved` request, **When** the panel renders, **Then** it offers **Update Status** and no other action.
 2. **Given** the Admin activates **Update Status**, **When** the form opens, **Then** it shows a required **Status \*** select offering `For Delivery` and `Ready for Pickup`, with **Cancel** and **Update Status**.
-3. **Given** `Ready for Pickup` is selected, **When** the form renders, **Then** a required **Pickup location \*** select appears. It lists the offices the data source exposes, preselects the request's office, and ends with a last option, **Other…**, which reveals a required free-text field.
+3. **Given** `Ready for Pickup` is selected, **When** the form renders, **Then** a required **Pickup location \*** select appears. It lists the offices the data source exposes, preselects the location the request already has, or else the request's office, and ends with a last option, **Other…**, which reveals a required free-text field.
 4. **Given** `Ready for Pickup` with no location, or **Other…** with an empty or whitespace-only text, **When** the Admin confirms, **Then** the form shows its invalid state and nothing is sent.
 5. **Given** a valid choice, **When** the source accepts it, **Then** the pill and timeline show the new status, the handover node names it, and a `Ready for Pickup` request reads back its pickup location.
 6. **Given** a `For Delivery` or `Ready for Pickup` request, **When** the panel renders, **Then** it offers **Update Status** only. The Status select offers the other handover state as well as the current one, because they are peers.
@@ -88,7 +88,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 - **Terminal request reached by id.** An Admin opens a `Rejected`, `Cancelled` or `Completed` request (for example, just after deciding it). The panel is read-only: rejection or cancellation reason read back where there is one, and **Close**.
 - **Employee.** An Employee cannot reach `/queue` (spec 003 guard), so no action in this feature is reachable as an Employee.
 - **Unavailable stock figure.** The source gives no Available figure for a line's (asset, office). CURRENT INVENTORY shows an explicit unavailable marker, not `0 in stock`.
-- **Office enum.** The pickup-location list uses the office names the contract exposes. `Pasig` vs `Ortigas` stays unresolved (contracts conflict 2), and the SPA invents no third spelling.
+- **Office enum.** The pickup-location list uses the office names the contract exposes. The contract settled on `Ortigas` on 2026-09-25 (contracts conflict 2 closed), and the SPA's `Office` follows it; the SPA invents no third spelling.
 
 ## Functional Requirements
 
@@ -168,7 +168,7 @@ Inferred from existing specs, not asked:
 
 - The reject reason is an **inline block in the panel**, not a modal. That is how `02.2.2` draws it (drift-2026-09-24 §5).
 - The open panel is component state, not part of the address, as in spec 007. *(Later the same day `/requests/:id` became a deep link that opens the panel; see below.)*
-- The pickup-location select preselects the request's office, which is the most likely pickup point. This is our default, not drawn.
+- The pickup-location select preselects the request's office, which is the most likely pickup point. This is our default, not drawn. *(Refined in review: a request that already has a location opens on it, so confirming without looking never moves it.)*
 
 ### Session 2026-09-26 — after merging `dev`
 
