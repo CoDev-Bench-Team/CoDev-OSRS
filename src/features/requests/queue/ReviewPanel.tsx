@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   Button,
   SidePanel,
@@ -13,7 +13,7 @@ import {
 import type { Office } from '../../auth/types';
 import { keyedLines, NO_VALUE } from '../format';
 import { ReasonForm } from '../ReasonForm';
-import { RequesterBlock, StoppedReason } from '../review-parts';
+import { Card, RequesterBlock, StoppedReason } from '../review-parts';
 import { requestTimeline } from '../request-timeline';
 import { reviewActions } from './review-actions';
 import {
@@ -66,15 +66,6 @@ function StockBadge({ available }: { available: number | null }) {
   }
   const tone = available > 0 ? 'bg-status-available-bg text-status-available-fg' : 'bg-status-unavailable-bg text-status-unavailable-fg';
   return <span className={`inline-flex rounded-8 px-10 py-4 type-pill tabular-nums ${tone}`}>{available} in stock</span>;
-}
-
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-20 shadow-card">
-      <h3 className="type-ui-bold text-ink-primary">{title}</h3>
-      {children}
-    </section>
-  );
 }
 
 export function ReviewPanel({

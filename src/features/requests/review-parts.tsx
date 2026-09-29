@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Avatar, TABLE_ROW_PADDING_CLASS, TableCard, TableHead, tableColumnStyle, type ColumnWidth } from '../../shared/ui';
 import type { Office } from '../auth/types';
 import { keyedLines, NO_VALUE } from './format';
@@ -47,6 +47,17 @@ export function RequesterBlock({
           </span>
         </div>
       </div>
+    </section>
+  );
+}
+
+/** A titled card: the Note to Approver and the pickup location (frames `02.2`,
+ *  `04 - History`). */
+export function Card({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-20 shadow-card">
+      <h3 className="type-ui-bold text-ink-primary">{title}</h3>
+      {children}
     </section>
   );
 }

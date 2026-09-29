@@ -1,4 +1,5 @@
 import type { AdminRequestSource, ReviewRequest, ReviewSnapshot } from '../../queue/review-types';
+import { isResolved } from '../history-model';
 import type { HistorySource } from '../history-source';
 
 /** DEV-ONLY STUB. It is reached only through `history-source.ts`, behind
@@ -27,8 +28,6 @@ declare global {
     __releaseHistory?: () => void;
   }
 }
-
-const TERMINAL = new Set<ReviewRequest['status']>(['Completed', 'Rejected', 'Cancelled']);
 
 function mapped(fresh: () => AdminRequestSource, change: (requests: ReviewRequest[]) => ReviewRequest[]): HistorySource {
   const seeded = fresh();
@@ -59,7 +58,7 @@ export function historyStub(mode: string | null, fresh: () => AdminRequestSource
       };
     }
     case 'empty':
-      return mapped(fresh, (requests) => requests.filter((request) => !TERMINAL.has(request.status)));
+      return mapped(fresh, (requests) => requests.filter((request) => !isResolved(request)));
     case 'no-reason':
       // Decided per load, not once: StrictMode and Try Again both load again,
       // and each load must drop the same two reasons.

@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { SidePanel, StatusPill, StatusTimeline } from '../../../shared/ui';
 import { requestTimeline } from '../request-timeline';
-import { ItemsRequested, RequesterBlock, StoppedReason } from '../review-parts';
+import { Card, ItemsRequested, RequesterBlock, StoppedReason } from '../review-parts';
 import type { ResolvedRequest } from './history-model';
 
 /** The Admin's read-only view of a resolved request, a side panel over
@@ -29,10 +29,9 @@ export function HistoryPanel({ request, onClose }: { request: ResolvedRequest; o
       <ItemsRequested lines={request.lines} />
 
       {request.noteToApprover ? (
-        <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-20 shadow-card">
-          <h3 className="type-ui-bold text-ink-primary">Note to Approver</h3>
+        <Card title="Note to Approver">
           <p className="type-meta text-ink-body">{request.noteToApprover}</p>
-        </section>
+        </Card>
       ) : null}
 
       <section className="flex flex-col gap-18" aria-labelledby={statusHeadingId}>

@@ -72,7 +72,6 @@ async function signIn({ account, landing }) {
   await cdp.waitFor(new Function(`return location.pathname === ${JSON.stringify(landing)}`), 8000, landing);
 }
 
-const PAGES = 'nav[aria-label="History pages"]';
 const historyState = () => {
   const pages = document.querySelector('nav[aria-label="History pages"]');
   const chips = Object.fromEntries(
@@ -93,9 +92,6 @@ const historyState = () => {
     names: rows.map((r) => r.children[1].firstElementChild?.textContent.trim() ?? ''),
     statuses: rows.map((r) => r.children[3].textContent.trim()),
     resolved: rows.map((r) => r.children[4].textContent.trim()),
-    headers: [...(table?.querySelectorAll('[role="columnheader"], thead th, div:first-child > span') ?? [])]
-      .map((h) => h.textContent.trim())
-      .filter((t) => /^[A-Z ]+$/.test(t)),
     range: pages?.querySelector('p')?.textContent.trim() ?? null,
     current: pages?.querySelector('[aria-current="page"]')?.textContent.trim() ?? null,
     text: table?.innerText ?? '',
@@ -191,6 +187,8 @@ try {
   console.log('\nThe page (Story 1, FR-002 to FR-004)');
   check(s.heading === 'History', 'heading History', s.heading);
   check(s.subtitle === 'Full audit trail — completed, cancelled, and rejected requests', 'the drawn subheading', s.subtitle);
+  const columns = ['REQUEST ID', 'REQUESTER', 'ITEMS', 'STATUS', 'RESOLVED', 'ACTION'];
+  check(columns.every((c) => s.text.toUpperCase().includes(c)), 'the six drawn columns (FR-003)');
   check(same(sorted(s.ids), sorted(NEWEST)), 'lists exactly the fourteen resolved requests', `got ${s.ids.length}`);
   check(s.statuses.every((t) => ['Completed', 'Cancelled', 'Rejected'].includes(t)), 'every row is Completed, Cancelled or Rejected', [...new Set(s.statuses)].join(', '));
   check(same(s.ids, NEWEST), 'newest resolved first by default (not newest submitted)', s.ids.slice(0, 4).join(', '));
