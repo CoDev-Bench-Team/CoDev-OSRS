@@ -14,18 +14,24 @@ export interface StoppedFacts {
 
 export interface Stopped {
   label: 'Reason for rejection' | 'Reason for cancellation';
-  reason: string;
+  /** `null` when the source stored none. Constitution IV requires one, but a
+   *  source can still omit it, and the panel says so rather than showing an
+   *  empty callout (spec 012 edge case, additions.md §3i). */
+  reason: string | null;
   tone: string;
 }
 
+/** Said in place of a reason the source did not store. */
+export const NO_REASON = 'No reason recorded';
+
 /** Why a stopped request stopped, with the label and tone its status takes.
- *  `null` for any other status, and for one with no stored reason. */
+ *  `null` for any status other than `Rejected` and `Cancelled`. */
 export function stoppedReason(request: StoppedFacts): Stopped | null {
-  if (request.status === 'Rejected' && request.rejection) {
-    return { label: 'Reason for rejection', reason: request.rejection.reason, tone: REJECTED_TONE };
+  if (request.status === 'Rejected') {
+    return { label: 'Reason for rejection', reason: request.rejection?.reason.trim() || null, tone: REJECTED_TONE };
   }
-  if (request.status === 'Cancelled' && request.cancellation) {
-    return { label: 'Reason for cancellation', reason: request.cancellation.reason, tone: CANCELLED_TONE };
+  if (request.status === 'Cancelled') {
+    return { label: 'Reason for cancellation', reason: request.cancellation?.reason.trim() || null, tone: CANCELLED_TONE };
   }
   return null;
 }

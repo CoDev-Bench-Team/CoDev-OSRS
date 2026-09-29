@@ -33,6 +33,7 @@ import { adminRequestSource } from './admin-request-source';
 import { RefusalAlert } from '../detail/RefusalAlert';
 import { REQUEST_NOT_FOUND, useDeepLinkedRequest } from '../deep-link';
 import { ReviewPanel } from './ReviewPanel';
+import { isResolved } from '../history/history-model';
 import type { AdminRequestSource, ReviewSnapshot, TransitionResult } from './review-types';
 
 type LoadState =
@@ -179,14 +180,19 @@ export function QueuePage({
     }
   };
 
-  // `/requests/:id` lands here for an Admin and opens that request's panel. The
-  // snapshot holds every request, terminal ones included, so a link to a
-  // decided request opens it read-only.
+  // `/requests/:id` lands here for an Admin. The snapshot holds every request:
+  // a live one opens its review panel, and a resolved one is forwarded to
+  // History, which owns its read-only panel (spec 012 FR-016, plan D14).
   const allIds = useMemo(
     () => (state.kind === 'loaded' ? state.snapshot.requests.map((request) => request.id) : null),
     [state],
   );
-  const { unavailable, dismiss } = useDeepLinkedRequest(allIds, setOpenId, REQUEST_NOT_FOUND);
+  const openLinked = (id: string): string | void => {
+    const request = state.kind === 'loaded' ? state.snapshot.requests.find((r) => r.id === id) : undefined;
+    if (request && isResolved(request)) return DESTINATIONS.history.path;
+    setOpenId(id);
+  };
+  const { unavailable, dismiss } = useDeepLinkedRequest(allIds, openLinked, REQUEST_NOT_FOUND);
   const review = (id: string) => {
     dismiss();
     setOpenId(id);

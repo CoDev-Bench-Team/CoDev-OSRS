@@ -22,10 +22,14 @@ export const REQUEST_NOT_FOUND = 'That request is not available. It may not exis
  *  `message` as the notice. The navigation state is consumed on arrival, so
  *  Back, a reload or a later render never reopens it. `dismiss` clears the
  *  notice; the page calls it when the Admin or Employee opens a panel, so an
- *  old notice does not sit above a request that did open. */
+ *  old notice does not sit above a request that did open.
+ *
+ *  `open` may instead return a path: the request belongs to another page, and
+ *  the link is forwarded there with the same state, for that page to open. The
+ *  Requests Queue forwards a resolved request to History (spec 012 FR-016). */
 export function useDeepLinkedRequest(
   ids: readonly string[] | null,
-  open: (id: string) => void,
+  open: (id: string) => string | void,
   message: string,
 ): { unavailable: string | null; dismiss: () => void } {
   const location = useLocation();
@@ -46,8 +50,14 @@ export function useDeepLinkedRequest(
     const id = wanted.current;
     if (!id || !ids) return;
     wanted.current = null;
-    if (ids.includes(id)) openRef.current(id);
-    else setMissed(true);
+    if (ids.includes(id)) {
+      const forward = openRef.current(id);
+      if (forward) {
+        const state: DeepLinkState = { openRequest: id };
+        navigate(forward, { replace: true, state });
+        return;
+      }
+    } else setMissed(true);
     navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
   }, [ids, navigate, location.pathname, location.search]);
 

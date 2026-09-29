@@ -3,7 +3,7 @@ import { Avatar, TABLE_ROW_PADDING_CLASS, TableCard, TableHead, tableColumnStyle
 import type { Office } from '../auth/types';
 import { keyedLines, NO_VALUE } from './format';
 import { officeLabel } from './queue/review-types';
-import { stoppedReason, type StoppedFacts } from './stopped-reason';
+import { NO_REASON, stoppedReason, type StoppedFacts } from './stopped-reason';
 
 /** The read-back parts more than one request panel draws: the Admin's review
  *  panel (spec 008), the Employee's request panel (spec 007) and the Admin's
@@ -59,7 +59,7 @@ export function StoppedReason({ request }: { request: StoppedFacts }) {
   return (
     <section className={`flex flex-col gap-9 rounded-10 border p-20 ${stopped.tone}`}>
       <h3 className="type-ui-bold">{stopped.label}</h3>
-      <p className="font-sans text-12-5 font-regular">{stopped.reason}</p>
+      <p className={`font-sans text-12-5 font-regular ${stopped.reason ? '' : 'italic'}`}>{stopped.reason ?? NO_REASON}</p>
     </section>
   );
 }

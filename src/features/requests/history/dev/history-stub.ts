@@ -1,0 +1,85 @@
+import type { AdminRequestSource, ReviewRequest, ReviewSnapshot } from '../../queue/review-types';
+import type { HistorySource } from '../history-source';
+
+/** DEV-ONLY STUB. It is reached only through `history-source.ts`, behind
+ *  `import.meta.env.DEV`, so a production build drops it.
+ *
+ *  `?history=<mode>` on `/history` reaches what the seed cannot:
+ *
+ *  - `failing`: every load fails, so the page shows its failure notice and
+ *    **Try again** (spec 012 FR-012).
+ *  - `slow`: the load is held until `window.__releaseHistory()` is called, so
+ *    the loading state can be seen and checked.
+ *  - `empty`: no request has been resolved yet; the table shows its empty state.
+ *  - `no-reason`: the first Rejected and the first Cancelled request lose their
+ *    stored reason, so the panel shows *No reason recorded* (spec 012 edge
+ *    case). The seed always stores one, as constitution IV requires.
+ *  - `no-resolved-date`: the first Completed request in the seed loses its completed time,
+ *    so RESOLVED shows the em dash and it sorts last under both date orders
+ *    (spec 012 plan R3).
+ *
+ *  Each mode builds its own seed, so a stubbed session never disturbs the
+ *  shared one. */
+
+declare global {
+  interface Window {
+    /** Set by `?history=slow` while a load is held. */
+    __releaseHistory?: () => void;
+  }
+}
+
+const TERMINAL = new Set<ReviewRequest['status']>(['Completed', 'Rejected', 'Cancelled']);
+
+function mapped(fresh: () => AdminRequestSource, change: (requests: ReviewRequest[]) => ReviewRequest[]): HistorySource {
+  const seeded = fresh();
+  return {
+    async load(): Promise<ReviewSnapshot> {
+      const snapshot = await seeded.load();
+      return { ...snapshot, requests: change([...snapshot.requests]) };
+    },
+  };
+}
+
+export function historyStub(mode: string | null, fresh: () => AdminRequestSource): HistorySource | null {
+  switch (mode) {
+    case 'failing':
+      return {
+        load: () => Promise.reject(new Error('history stub: load failed')),
+      };
+    case 'slow': {
+      const seeded = fresh();
+      return {
+        load: () =>
+          new Promise<void>((resolve) => {
+            window.__releaseHistory = () => {
+              window.__releaseHistory = undefined;
+              resolve();
+            };
+          }).then(() => seeded.load()),
+      };
+    }
+    case 'empty':
+      return mapped(fresh, (requests) => requests.filter((request) => !TERMINAL.has(request.status)));
+    case 'no-reason':
+      // Decided per load, not once: StrictMode and Try Again both load again,
+      // and each load must drop the same two reasons.
+      return mapped(fresh, (requests) => {
+        const rejected = requests.find((request) => request.status === 'Rejected');
+        const cancelled = requests.find((request) => request.status === 'Cancelled');
+        return requests.map((request) =>
+          request === rejected
+            ? { ...request, rejection: undefined }
+            : request === cancelled
+              ? { ...request, cancellation: undefined }
+              : request,
+        );
+      });
+    case 'no-resolved-date':
+      return mapped(fresh, (requests) => {
+        const completed = requests.find((request) => request.status === 'Completed');
+        return requests.map((request) => (request === completed ? { ...request, completedAt: undefined } : request));
+      });
+    default:
+      return null;
+  }
+}

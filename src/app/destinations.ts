@@ -101,7 +101,8 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     path: '/history',
     navLabel: 'History',
     title: 'History',
-    purpose: 'Every resolved request — completed, rejected and cancelled — across all requestors',
+    /** `04 - History`'s drawn subheading (spec 012 Story 1). */
+    purpose: 'Full audit trail — completed, cancelled, and rejected requests',
     roles: ['admin'],
   },
   profile: {

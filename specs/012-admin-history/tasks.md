@@ -28,11 +28,11 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
 ## Phase 3: US1 — Browse resolved requests (BEN-146)
 
-- [ ] T010 [US1] [BEN-146] `TERMINAL_STATUSES` (`Completed · Cancelled · Rejected`), `HistoryChip`, `HISTORY_SORTS` (the queue's three), `HistoryQuery` + `INITIAL_HISTORY_QUERY`, `HistoryRow`, `HistoryViewModel`; `PAGE_SIZES` imported from the queue (D4) — `src/features/requests/history/history-types.ts`
-- [ ] T011 [US1] [BEN-146] `resolvedAt(request)`, the only reader of the resolved time (D2, R3), and `buildHistoryViewModel(snapshot, query)`: de-duplicate, keep terminal statuses, search, count every chip over the matches, filter, sort by `resolvedAt` / Employee (A-Z), clamp and slice, via `list-query.ts` (D3) — `src/features/requests/history/history-model.ts`
-- [ ] T012 [P] [US1] [BEN-146] Add about 11 terminal rows to the shared seed so it reaches about 14: Completed by delivery and by pickup; Rejected; Cancelled from pending, `Approved`, `For Delivery` and `Ready for Pickup`; one with no note; several requesters and dates. Every stored reason is present. REQ-2026-1847 is untouched (D9) — `src/features/requests/queue/seeded-admin-request-source.ts`
-- [ ] T013 [US1] [BEN-146] `HistorySource = Pick<AdminRequestSource, 'load'>` and `historySource(search)` over `adminRequestSource`. On the dev server only, a `?history=` stub with `failing`, `slow`, `empty`, `no-reason` and `no-resolved-date` modes, each on a fresh seed (D1, D9) — `src/features/requests/history/history-source.ts`, `src/features/requests/history/dev/history-stub.ts`
-- [ ] T014 [US1] [BEN-146] `HistoryPage`:
+- [x] T010 [US1] [BEN-146] `TERMINAL_STATUSES` (`Completed · Cancelled · Rejected`), `HistoryChip`, `HISTORY_SORTS` (the queue's three), `HistoryQuery` + `INITIAL_HISTORY_QUERY`, `HistoryRow`, `HistoryViewModel`; `PAGE_SIZES` imported from the queue (D4) — `src/features/requests/history/history-types.ts`
+- [x] T011 [US1] [BEN-146] `resolvedAt(request)`, the only reader of the resolved time (D2, R3), and `buildHistoryViewModel(snapshot, query)`: de-duplicate, keep terminal statuses, search, count every chip over the matches, filter, sort by `resolvedAt` / Employee (A-Z), clamp and slice, via `list-query.ts` (D3) — `src/features/requests/history/history-model.ts`
+- [x] T012 [P] [US1] [BEN-146] Add about 11 terminal rows to the shared seed so it reaches about 14: Completed by delivery and by pickup; Rejected; Cancelled from pending, `Approved`, `For Delivery` and `Ready for Pickup`; one with no note; several requesters and dates. Every stored reason is present. REQ-2026-1847 is untouched (D9) — `src/features/requests/queue/seeded-admin-request-source.ts`
+- [x] T013 [US1] [BEN-146] `HistorySource = Pick<AdminRequestSource, 'load'>` and `historySource(search)` over `adminRequestSource`. On the dev server only, a `?history=` stub with `failing`, `slow`, `empty`, `no-reason` and `no-resolved-date` modes, each on a fresh seed (D1, D9) — `src/features/requests/history/history-source.ts`, `src/features/requests/history/dev/history-stub.ts`
+- [x] T014 [US1] [BEN-146] `HistoryPage`:
   - `LoadState`: `LoadingState` while loading, a `Notice` + **Try again** on failure, and the empty state on no match.
   - Header from `DESTINATIONS.history`; the toolbar holds `Search` (the drawn placeholder) and the sort `Select`.
   - `FilterChip`s with counts and pressed state.
@@ -40,18 +40,18 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - `Pagination` with page-size reset (D5, FR-003 to FR-007, FR-012, FR-015).
 
   File: `src/features/requests/history/HistoryPage.tsx`
-- [ ] T015 [US1] [BEN-146] Route `/history` to `guarded('history', <HistoryPage />)` and delete `HistoryPlaceholder` (D11) — `src/app/routes.tsx`, `src/app/placeholders.tsx`
+- [x] T015 [US1] [BEN-146] Route `/history` to `guarded('history', <HistoryPage />)` and delete `HistoryPlaceholder` (D11) — `src/app/routes.tsx`, `src/app/placeholders.tsx`
 
 ## Phase 4: US2 — Read a resolved request (BEN-147)
 
-- [ ] T016 [US2] [BEN-147] `StoppedReason` renders for every `Rejected` or `Cancelled` request, with *No reason recorded* when the reason is absent. Cancelled stays slate and Rejected stays red (D7, A3) — `src/features/requests/review-parts.tsx`
-- [ ] T017 [US2] [BEN-147] `HistoryPanel`:
+- [x] T016 [US2] [BEN-147] `StoppedReason` renders for every `Rejected` or `Cancelled` request, with *No reason recorded* when the reason is absent. Cancelled stays slate and Rejected stays red (D7, A3) — `src/features/requests/review-parts.tsx`
+- [x] T017 [US2] [BEN-147] `HistoryPanel`:
   - `SidePanel` titled `Request <id>`; the header is an id heading plus `StatusPill`; **no footer**.
   - Body order: `RequesterBlock`, `ItemsRequested` (`ITEM · QTY`, no current inventory), Note to Approver when present, `STATUS` timeline, `StoppedReason` (D6, FR-008 to FR-011).
 
   File: `src/features/requests/history/HistoryPanel.tsx`
-- [ ] T018 [US2] [BEN-147] Wire the panel. **Review** sets the open id and the panel reads its request from the loaded snapshot. Closing via ✕, Esc or the scrim returns focus to that row's **Review**, and the chip, search, sort and page are kept (FR-008) — `src/features/requests/history/HistoryPage.tsx`
-- [ ] T019 [US2] [BEN-147] Terminal deep link:
+- [x] T018 [US2] [BEN-147] Wire the panel. **Review** sets the open id and the panel reads its request from the loaded snapshot. Closing via ✕, Esc or the scrim returns focus to that row's **Review**, and the chip, search, sort and page are kept (FR-008) — `src/features/requests/history/HistoryPage.tsx`
+- [x] T019 [US2] [BEN-147] Terminal deep link:
   - `QueuePage` forwards a deep-linked `Completed` / `Rejected` / `Cancelled` id to `/history` (`replace`, same `DeepLinkState`).
   - `HistoryPage` resolves it with `useDeepLinkedRequest(terminalIds, open, REQUEST_NOT_FOUND)`.
   - A live id and a missing id behave as before (D14, FR-016).
@@ -60,7 +60,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
 ## Phase 5: US3 + checks and PR (BEN-148)
 
-- [ ] T020 [US3] [BEN-148] New check `check-history.mjs`, covering:
+- [x] T020 [US3] [BEN-148] New check `check-history.mjs`, covering:
   - The Employee: no History nav item, and `/history` refused with a route back (spec 003 FR-011).
   - Terminal statuses only; each chip's list and count; search by id, name, email and item.
   - The three sorts by resolved time; pagination range, Back/Next ends, and page-size reset; re-pressing the selected chip keeps the page.
@@ -71,10 +71,10 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - No page-level overflow at 360px and 1440px; keyboard reach to chips, search, sort, **Review** and pagination (D13).
 
   File: `scripts/check-history.mjs`
-- [ ] T021 [BEN-148] Wire `history (spec 012)` into the gates and update the header comment — `scripts/verify.mjs`
-- [ ] T022 [P] [BEN-148] Confirm the shell check still refuses `/history` for the Employee and offers it to the Admin; add the assertion if it is missing — `scripts/check-shell.mjs`
-- [ ] T023 [BEN-148] Full `npm run verify` passes; screenshots at 1440px against both `04 - History` frames are attached to the PR — `scripts/verify.mjs`
-- [ ] T024 [BEN-148] Tick T022 `[x]` in spec 001 tasks and T001–T023 here — `specs/001-office-supplies-mvp/tasks.md`, `specs/012-admin-history/tasks.md`
+- [x] T021 [BEN-148] Wire `history (spec 012)` into the gates and update the header comment — `scripts/verify.mjs`
+- [x] T022 [P] [BEN-148] Confirm the shell check still refuses `/history` for the Employee and offers it to the Admin; add the assertion if it is missing — `scripts/check-shell.mjs`
+- [x] T023 [BEN-148] Full `npm run verify` passes; screenshots at 1440px against both `04 - History` frames are attached to the PR — `scripts/verify.mjs`
+- [x] T024 [BEN-148] Tick T022 `[x]` in spec 001 tasks and T001–T023 here — `specs/001-office-supplies-mvp/tasks.md`, `specs/012-admin-history/tasks.md`
 - [ ] T025 [BEN-148] PR to `dev` linking BEN-144, and attach it to the Linear issue — `specs/012-admin-history/`
 
 ## Dependencies
