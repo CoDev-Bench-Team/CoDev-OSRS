@@ -1,8 +1,8 @@
 import { StatusTimeline } from '../../../shared/ui';
 import { SECTION_HEADING } from './detail-typography';
 import type { EmployeeRequest } from './request-detail-types';
-import { RequestLinesTable } from './RequestLinesTable';
 import { requestTimeline } from '../request-timeline';
+import { ItemsRequested } from '../review-parts';
 
 /** The read-back of one request as the system holds it: Items Requested, the
  *  Note to Approver, a stopped request's reason, and the Status timeline.
@@ -28,12 +28,7 @@ export function RequestReadBack({ request }: { request: EmployeeRequest }) {
 
   return (
     <div className="flex flex-col gap-18">
-      <section className="flex flex-col gap-18" aria-labelledby="items-requested">
-        <h3 id="items-requested" className={SECTION_HEADING}>
-          Items Requested
-        </h3>
-        <RequestLinesTable lines={request.lines} />
-      </section>
+      <ItemsRequested lines={request.lines} />
 
       {request.noteToApprover ? (
         <section className="flex flex-col gap-12 rounded-10 bg-surface-card p-20 shadow-card">

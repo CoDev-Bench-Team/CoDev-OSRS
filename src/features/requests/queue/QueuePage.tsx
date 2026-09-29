@@ -18,7 +18,8 @@ import {
   type ColumnWidth,
 } from '../../../shared/ui';
 import { DESTINATIONS } from '../../../app/destinations';
-import { buildQueueViewModel, NO_VALUE, updateQuery } from './queue-model';
+import { buildQueueViewModel, NO_VALUE } from './queue-model';
+import { updateQuery } from '../list-query';
 import {
   INITIAL_QUERY,
   PAGE_SIZES,
