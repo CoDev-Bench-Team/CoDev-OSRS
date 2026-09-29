@@ -47,11 +47,11 @@ An Employee stops their own request before anyone has decided on it, and says wh
 4. **Given** a non-empty reason, **When** the Employee confirms, **Then** the panel's pill and timeline show `Cancelled`, the panel reads the reason back under *Reason for cancellation*, and the row's pill on My Requests shows `Cancelled` too.
 5. **Given** the request changed while the panel was open (for example, it was approved), **When** the Employee confirms, **Then** the cancel is refused, the panel says so, and it shows the request's current status.
 
-### Story 3 — No direct receipt or completion (Priority: P1)
+### Story 3 — No completion control (Priority: P1)
 
 *(Amended 2026-09-26 and 2026-09-29, spec 012.)* An Employee is never offered a control that sets a request `Completed`. Their receipt controls are spec 012's: **Mark as Received** on their own `For Delivery` / `Ready for Pickup` request, behind a confirmation step, and the **Accountability Form** on their own unsigned `Received` request (constitution 6.0.0).
 
-**Why this priority**: Spec 001 FR-012a forbids it, and adding it back requires amending that spec first.
+**Why this priority**: Spec 001 FR-012a and constitution IV give completion to the Admin only, and changing that requires amending both first.
 
 **Acceptance Criteria**:
 
@@ -115,7 +115,7 @@ An Employee stops their own request before anyone has decided on it, and says wh
 
 Raised by [spec 012](../012-accountability-form/spec.md). Spec 012 puts the Accountability Form in this panel, and this spec's Story 3 said no control may mention receipt.
 
-- Q: Does Story 3 still forbid every receipt control? → A: **No.** It forbids controls that set `Received` or `Completed` **directly**. Spec 012's **Sign accountability form** is the Employee's one receipt control; since 2026-09-29 it records the acknowledgement on a `Received` request, which the Admin or the Employee set; the Employee's **Mark as Received** is the other receipt control (constitution 6.0.0 IV). `check-request-detail`'s no-receipt pattern is narrowed to completion and to receipt controls outside those states. Story 3, FR-009 and SC-005 are reworded in place. `scripts/check-request-detail.mjs` needs no change, because its patterns match no copy the form uses.
+- Q: Does Story 3 still forbid every receipt control? → A: **No.** It forbids any control that sets `Completed`. The Employee's receipt controls are spec 012's: **Mark as Received** on their own `For Delivery` / `Ready for Pickup` request, and **Sign accountability form** on their own unsigned `Received` request, which records the acknowledgement and changes no status (amended 2026-09-29, constitution 6.0.0 IV). `check-request-detail`'s no-receipt pattern is narrowed to completion and to receipt controls outside those states. Story 3, FR-009 and SC-005 are reworded in place.
 
 ### Session 2026-09-26 — Amendment (constitution 5.0.0)
 
