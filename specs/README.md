@@ -11,6 +11,7 @@ AI-SDD feature folders. Do not put application code here.
 | [009-my-requests](009-my-requests/spec.md) | My Requests (Employee history) | Draft |
 | [011-request-list-drawer](011-request-list-drawer/spec.md) | Request List drawer & submit | Draft |
 | [012-accountability-form](012-accountability-form/spec.md) | Accountability Form — Employee confirms receipt on `Received` (BEN-136) | Draft |
+| [012-admin-history](012-admin-history/spec.md) | Admin History — resolved requests, read-only panel (BEN-144) | Draft |
 | [010-design-ratification](010-design-ratification/spec.md) | Ratify the 2026-09-22 export's open questions; unit-register amendment (BEN-116) | Draft |
 | [constitution.md](constitution.md) | Governing principles (also in AGENTS.md) | 7.0.0 |
 

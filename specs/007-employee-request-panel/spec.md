@@ -31,7 +31,7 @@ An Employee opens one of their requests from My Requests and sees what they aske
 1. **Given** an Employee on `/requests`, **When** they activate *View details* on a row, **Then** a side panel opens over the page showing the request id, its status pill, the Items Requested table, the Note to Approver when one exists, and the status timeline.
 2. **Given** the panel is open, **When** the Employee activates ✕, presses Esc, or clicks the scrim, **Then** the panel closes, focus returns to that row's *View details*, and the address is still `/requests`.
 3. **Given** a `Cancelled` or `Rejected` request, **When** the panel renders, **Then** it reads back the stored reason under *Reason for cancellation* or *Reason for rejection*. No other state shows a reason.
-4. **Given** a request in any of the seven states, **When** the panel renders its timeline, **Then** the nodes follow the mapping in `plan.md` (D5): the forward states fill Submitted → Approved → handover → Complete in order, and `Cancelled` or `Rejected` collapses the timeline to Submitted and that ending.
+4. **Given** a request in any of the seven states, **When** the panel renders its timeline, **Then** the nodes follow the mapping in `plan.md` (D5): the forward states fill Submitted → Approved → handover → Complete in order, and ~~`Cancelled` or `Rejected` collapses the timeline to Submitted and that ending~~ `Cancelled` or `Rejected` shows every node the request reached, dated, then that ending, so one cancelled while `Pending Approval` still reads Submitted → Cancelled. *(Amended 2026-09-29 by [spec 012](../012-admin-history/spec.md) FR-009a.)*
 
 ### Story 2 — Cancel a pending request (Priority: P1)
 
