@@ -6,6 +6,9 @@ Accepted — 2026-09-26. **Amends [ADR-0007](0007-fulfilment-status-vocabulary.m
 (decision 2's "the employee's confirm-receipt step is withdrawn") and
 **amends [ADR-0008](0008-per-unit-inventory-register.md)** (the reserved units
 move to `Assigned` on `Received`, not on completion). Constitution **5.0.0**.
+**Amended by [ADR-0010](0010-admin-marks-received.md)** (2026-09-29): an
+Admin may also set `Received` with Update Status; decision 2's "No one can set
+`Received` by hand" is withdrawn.
 
 ## Context
 

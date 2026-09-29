@@ -153,7 +153,7 @@ The shell remains usable from a phone up to the 1440px design width, carrying fo
 
 - A user's role changes while they are signed in and viewing a screen their new role may not use → navigation and access re-evaluate rather than stranding them on a forbidden screen.
 - Two tabs open, the user signs out in one → the other does not continue to act as signed in.
-- A deep link to a request that does not exist, versus one that exists but belongs to someone else → both produce the same response (for an Employee, the role refusal the address gives every id since 2026-09-23), so request identifiers cannot be enumerated (FR-012a), while a mistyped address still produces a diagnosable not-found (FR-012).
+- A deep link to a request that does not exist, versus one that exists but belongs to someone else → both produce the same response (since 2026-09-26, the same notice on the list, never echoing the id), so request identifiers cannot be enumerated (FR-012a), while a mistyped address still produces a diagnosable not-found (FR-012).
 - The address for a destination whose feature has not shipped yet → renders a placeholder inside the shell, not a not-found screen.
 - A user signs in on a device where a previous session was left behind → the stale session is not silently reused.
 - Navigation labels grow long (a localized or renamed queue) → the bar reflows rather than overlapping the account cluster.
@@ -205,7 +205,7 @@ The complete set of addressable destinations and the roles permitted to reach ea
 | Sign-in | signed-out only | signed-out only | No shell chrome |
 | Catalog | yes | yes (by address; not in the Admin bar) | Only an Employee is offered the action that starts a request |
 | My requests | yes | no | The signed-in Employee's own history. Their request detail is a side panel here, not an address (amended 2026-09-23) |
-| Request detail | no | any request | Actions gated by status and role; FR-012a applies. Replaced by the Admin review panel in BEN-47 |
+| Request detail | own requests (deep link) | any request | **A deep link since 2026-09-26** (spec 008): opens the review panel over `/queue` for an Admin, or the request panel over `/requests` for its owning Employee. FR-012a applies |
 | Requests Queue | no | yes | Admin landing destination — review, approve, and fulfill (replaces the pending-requests and fulfillment queues) |
 | Assets | no | yes | Added 2026-09-24 |
 | Inventory | no | yes | |
@@ -289,6 +289,13 @@ No constitution version bump is required — no principle changes. `docs/product
 None dismissed. One consistency defect (CHK007, not-found versus record-existence leakage) and three gaps (CHK001, CHK002, CHK003) were found and all four resolved into requirements above.
 
 ## Clarifications
+
+### Session 2026-09-26 — Amendment
+
+Raised by spec 008 (BEN-47), which replaces the Admin's request-detail placeholder with the review panel over `/queue`. Decided by the project owner.
+
+- Q: Session 2026-09-23 kept `/requests/:id` for the Admin "until BEN-47 replaces it". Now that both roles read a request in a panel, what does the address do? → A: **It is a deep link that opens the panel.** It is not a screen of its own. An Admin lands on `/queue` with that request's review panel open; an Employee lands on `/requests` with their request panel open. The address the page settles on is the list's, because the panel itself has no address (spec 007 FR-001, spec 008 FR-001). The link survives sign-in (FR-013), so a `View request` button in an email works for either role.
+- Q: FR-012a must not reveal whether a request exists. → A: A request that does not exist, and, for an Employee, a request that is not theirs, open no panel and show the **same** notice, word for word, on the list, without echoing the id. An owned id opens its panel; a foreign and a missing id are indistinguishable to an Employee.
 
 ### Session 2026-09-25 — Amendment
 

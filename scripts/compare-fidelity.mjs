@@ -84,7 +84,7 @@ if (pairs.length < EXPECTED_PAIRS) {
       'A comparison that silently tests nothing is worse than no comparison.\n' +
       'Check that the dev server is running and that /#compare mounts the harness.',
   );
-  cdp.close();
+  await cdp.close();
   process.exit(1);
 }
 
@@ -129,5 +129,5 @@ for (const r of report) {
   for (const l of r.lines) console.log(l);
 }
 console.log(`\n${pairs.length} pairs · ${checked} properties compared · ${diffs} differences`);
-cdp.close();
+await cdp.close();
 process.exit(diffs ? 1 : 0);

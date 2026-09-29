@@ -32,6 +32,7 @@ export { StatusTimeline, type TimelineNode, type TimelineNodeState } from './dat
 // Overlay
 export { Backdrop } from './overlay/Backdrop';
 export { SidePanel } from './overlay/SidePanel';
+export { ConfirmDialog } from './overlay/ConfirmDialog';
 
 // Layout
 export { TopBar, type NavItem } from './layout/TopBar';
@@ -46,7 +47,6 @@ export {
   type NoticeTone,
   LoadingState,
   NotFoundScreen,
-  RecordUnavailableScreen,
   ForbiddenScreen,
   Placeholder,
   ErrorBoundary,

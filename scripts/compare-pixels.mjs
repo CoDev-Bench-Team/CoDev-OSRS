@@ -191,5 +191,5 @@ for (const box of boxes) {
 
 console.log(`\n${boxes.length} pairs compared at ${THRESHOLD}% threshold · ${failures} failure(s)`);
 if (saved.length) console.log(`images written to /tmp/osrs-pixels/ for: ${saved.join(', ')}`);
-cdp.close();
+await cdp.close();
 process.exit(failures ? 1 : 0);

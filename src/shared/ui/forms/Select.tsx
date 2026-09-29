@@ -23,6 +23,9 @@ export function Select({
   label,
   placeholder = 'Select',
   disabled,
+  required,
+  invalid,
+  describedBy,
   className,
 }: {
   value?: string;
@@ -33,6 +36,12 @@ export function Select({
   /** Disables the control. Option count has no bearing on this: a select with
    *  one option opens and shows it, the way a native select does. */
   disabled?: boolean;
+  /** Announced to assistive technology; the visible asterisk is the caller's. */
+  required?: boolean;
+  /** Announced as invalid; the message that says why is the caller's. */
+  invalid?: boolean;
+  /** The id of the element that explains the current error, if any. */
+  describedBy?: string;
   className?: string;
 }) {
   // Disabled only when asked. A single option is not a reason to disable: the
@@ -43,6 +52,8 @@ export function Select({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(() => Math.max(0, options.indexOf(value ?? '')));
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  // Where the open list is portalled; resolved when it opens, not in render.
+  const [layer, setLayer] = useState<HTMLElement | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -102,15 +113,23 @@ export function Select({
    *  the panel off inside the card. No z-index can escape a clipping ancestor. */
   useLayoutEffect(() => {
     if (!open) return;
+    // Inside an open modal <dialog> (SidePanel) everything outside the dialog
+    // is inert and below the top layer, so the list goes into the dialog.
+    // Anywhere else it goes to <body>, clear of clipping cards. The dialog is
+    // the containing block for `position: fixed` (SidePanel says why), so
+    // coordinates there are measured from its box, not the viewport.
+    const host = triggerRef.current?.closest<HTMLElement>('dialog[open]') ?? null;
+    setLayer(host ?? document.body);
     const place = () => {
       const r = triggerRef.current?.getBoundingClientRect();
       if (!r) return;
+      const origin = host?.getBoundingClientRect() ?? { top: 0, left: 0 };
       const needed = Math.min(options.length, 6) * 42 + 8;
       const below = window.innerHeight - r.bottom;
       const flip = below < needed && r.top > below;
       setRect({
-        top: flip ? r.top - needed - 4 : r.bottom + 4,
-        left: r.left,
+        top: (flip ? r.top - needed - 4 : r.bottom + 4) - origin.top,
+        left: r.left - origin.left,
         width: r.width,
       });
     };
@@ -201,6 +220,9 @@ export function Select({
         aria-expanded={isDisabled ? undefined : open}
         aria-controls={isDisabled ? undefined : `${id}-list`}
         aria-label={label}
+        aria-required={required || undefined}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
         aria-activedescendant={open ? `${id}-opt-${active}` : undefined}
         disabled={isDisabled}
         aria-disabled={isDisabled || undefined}
@@ -224,6 +246,7 @@ export function Select({
       {open &&
         !isDisabled &&
         rect &&
+        layer &&
         createPortal(
           <ul
             ref={listRef}
@@ -255,7 +278,7 @@ export function Select({
               );
             })}
           </ul>,
-          document.body,
+          layer,
         )}
     </div>
   );

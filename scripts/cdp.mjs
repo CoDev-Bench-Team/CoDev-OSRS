@@ -45,11 +45,65 @@ async function ensureChrome(port) {
   throw new Error(`could not start Chrome on :${port} (set CHROME_PATH if it lives elsewhere)`);
 }
 
+/** Close tabs that earlier runs left behind.
+ *
+ *  The browser is kept between runs on purpose (see `ensureChrome`), but each
+ *  run's tab must not be. A run that crashed before `close()`, or that exited
+ *  before its close request was sent, leaves its tab open, and every open tab
+ *  is a live renderer process. They piled up to hundreds of processes and
+ *  slowed later runs until checks timed out at random.
+ *
+ *  A leaked tab is one no client is attached to (`Target.getTargets`) and
+ *  that is on a localhost / 127.0.0.1 origin, where every check runs. Attached tabs belong to live
+ *  runs, including runs from other worktrees on the same port, and are never
+ *  touched. A blank tab may be one another run has just created and is about
+ *  to attach to, so blank tabs are left alone too. */
+async function sweepLeakedTabs(port) {
+  let ws;
+  try {
+    const { webSocketDebuggerUrl } = await (await fetch(`http://localhost:${port}/json/version`)).json();
+    ws = new WebSocket(webSocketDebuggerUrl);
+    await new Promise((res, rej) => {
+      ws.addEventListener('open', res, { once: true });
+      ws.addEventListener('error', rej, { once: true });
+    });
+    // A reply that never comes must not hang `connect()`: give up after 2s.
+    const { targetInfos } = await Promise.race([
+      new Promise((resolve) => {
+        ws.addEventListener('message', (e) => {
+          const msg = JSON.parse(e.data);
+          if (msg.id === 1) resolve(msg.result);
+        });
+        ws.send(JSON.stringify({ id: 1, method: 'Target.getTargets' }));
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Target.getTargets timed out')), 2000).unref()),
+    ]);
+    // Only pages on a local dev server, on any port: a tab someone opened by
+    // hand in a shared debug Chrome is not ours to close.
+    const local = (url) => {
+      try {
+        return ['localhost', '127.0.0.1'].includes(new URL(url).hostname);
+      } catch {
+        return false;
+      }
+    };
+    const leaked = targetInfos.filter((t) => t.type === 'page' && !t.attached && local(t.url));
+    await Promise.all(
+      leaked.map((t) => fetch(`http://localhost:${port}/json/close/${t.targetId}`).catch(() => {})),
+    );
+  } catch {
+    // Housekeeping only: a failed sweep must never fail the check itself.
+  } finally {
+    ws?.close();
+  }
+}
+
 /** Each connection takes a tab of ITS OWN by default: reusing whatever page
  *  happened to be first is how two concurrent runs end up driving each other.
  *  Pass `newTab: false` only to attach to an existing tab deliberately. */
 export async function connect(port = DEFAULT_PORT, { newTab = true } = {}) {
   await ensureChrome(port);
+  await sweepLeakedTabs(port);
   let page;
   if (newTab) {
     page = await (await fetch(`http://localhost:${port}/json/new?about:blank`, { method: 'PUT' })).json();
@@ -87,12 +141,11 @@ export async function connect(port = DEFAULT_PORT, { newTab = true } = {}) {
     send,
     events,
     targetId: page.id,
-    /** Closes the tab as well as the socket, so runs do not leave tabs behind. */
-    close: () => {
-      ws.close();
-      void fetch(`http://localhost:${port}/json/close/${page.id}`).catch(() => {});
-    },
-    closeTab: async () => {
+    /** Closes the tab as well as the socket, and resolves once Chrome has
+     *  closed it. AWAIT it: every check calls `process.exit()` next, and an
+     *  un-awaited close was killed before its request went out, leaving the
+     *  tab open. That was the leak `sweepLeakedTabs` now cleans up after. */
+    close: async () => {
       ws.close();
       await fetch(`http://localhost:${port}/json/close/${page.id}`).catch(() => {});
     },

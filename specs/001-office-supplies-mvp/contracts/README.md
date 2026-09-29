@@ -176,12 +176,36 @@ published contract has neither the status nor a way to reach it.
   the typed full name and optional notes, which sets `Received` and moves
   the reserved units to `Assigned` (`Total` and `Reserved` fall) in one
   transaction;
+- an Admin transition to `Received` from `For Delivery` / `Ready for Pickup`,
+  with the same unit move (constitution 6.0.0,
+  [ADR-0010](../../../docs/adr/0010-admin-marks-received.md), added
+  2026-09-29);
 - **Complete** narrowed to `Received` only, with no unit change;
 - cancel refused on `Received`;
 - the `Status changed` email on `Received`.
 
 Until then the SPA shows `Received` wherever it renders a status or timeline,
-and does not build the form (spec 001 FR-012b, tasks T018b).
+and does not build the form (spec 001 FR-012b, tasks T018b). The Admin's
+**Received** option in Update Status runs against the seeded source only
+(spec 008 FR-008a).
+
+### 6. The Admin's Other Notes on a decision (raised 2026-09-29)
+
+Frame `02.2 - Requests Queue - Review` draws an optional **Other Notes** box
+above **Reject Request** / **Approve Request**
+([drift-2026-09-29](../../../docs/design-system/drift-2026-09-29.md)).
+`PATCH /requests/{id}` takes `UpdateRequestDto` — `purpose`, `status` and
+`rejectionReason` — and has nowhere to put it. `purpose` is the Employee's
+Note to Approver and MUST NOT be overwritten with the Admin's note.
+
+**Needed from the API:** an optional free-text field for the Admin's note on
+approve and reject, stored on the request. Say whether it is returned on
+`GET /requests/{id}` and whether the `Request approved` / `Request declined`
+emails carry it.
+
+Until then the SPA collects the note and sends it only to the seeded source
+(spec 008 FR-007a). A contract-backed source MUST NOT send it until the field is
+published.
 
 ### Also worth a word
 

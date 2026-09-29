@@ -114,12 +114,398 @@ const REASONS = ['Item on hold', 'Insufficient justification', 'Out of budget', 
 
 const LAPTOP_MODELS = ['Dell Latitude 5440', 'Lenovo ThinkPad T14', 'HP EliteBook 840', 'MacBook Pro 14"'];
 
-export function Gallery() {
+/** Each gallery section is its own component, so the page is a table of
+ *  contents rather than one 350-line render. */
+function ColourSection() {
+  return (
+    <Section id="colour" title="Colour" note="One accent, and it is red. Nothing else in the UI is coloured except status.">
+      <Row label="Brand">
+        <Swatch token="--color-brand-primary" name="Primary" />
+        <Swatch token="--color-brand-primary-alt" name="Primary alt" />
+      </Row>
+      <Row label="Surfaces — the warm page / cool header pairing is the signature">
+        <Swatch token="--color-surface-page" name="Page" />
+        <Swatch token="--color-surface-card" name="Card" />
+        <Swatch token="--color-surface-table-header" name="Table header" />
+        <Swatch token="--color-line-default" name="Border" />
+      </Row>
+      <Row label="Ink">
+        <Swatch token="--color-ink-primary" name="Primary" />
+        <Swatch token="--color-ink-body" name="Body" />
+        <Swatch token="--color-ink-secondary" name="Secondary" />
+        <Swatch token="--color-ink-muted" name="Muted" />
+      </Row>
+    </Section>
+  );
+}
+
+function TypeSection() {
+  return (
+    <Section id="type" title="Type" note="Space Grotesk for display, Inter for everything else. The odd sizes are deliberate — 11.5px and 13px are transcribed, not rounded.">
+      <div className="flex flex-col gap-12">
+        <span className="type-page-title text-ink-heading">Page title — Space Grotesk 32/1.3</span>
+        <span className="type-section-title text-ink-heading">Section title — 19/1.3</span>
+        <span className="type-metric text-brand-primary">28 — summary metric</span>
+        <span className="type-card-title text-ink-primary">Card title — Inter 700/17</span>
+        <span className="type-body text-ink-body">Body — Inter 400/14/1.5, the only text that breathes</span>
+        <span className="type-ui text-ink-primary">UI row — 13px, the dominant size</span>
+        <span className="type-eyebrow uppercase text-ink-secondary">Eyebrow — 11px bold caps</span>
+      </div>
+      <Row label="Size ladder">
+        {SIZES.map(([cls, px, use]) => (
+          <div key={cls} className="flex w-[150px] flex-col gap-2">
+            <span className={`${cls} font-sans text-ink-primary`}>Aa</span>
+            <code className="font-sans text-11 text-ink-secondary">{cls}</code>
+            <span className="font-sans text-11 text-ink-muted">
+              {px} — {use}
+            </span>
+          </div>
+        ))}
+      </Row>
+    </Section>
+  );
+}
+
+function SpacingSection() {
+  return (
+    <Section id="spacing" title="Spacing & radii" note="The scale is irregular on purpose: 4, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 28, 32. Note that p-4 means 4px here, not Tailwind's 16px.">
+      <Row label="Spacing">
+        {STEPS.map(([cls, n]) => (
+          <div key={n} className="flex flex-col items-center gap-4">
+            <span className={`block bg-brand-primary ${cls}`} />
+            <code className="font-sans text-11 text-ink-secondary">{n}</code>
+          </div>
+        ))}
+      </Row>
+      <Row label="Radii — by role">
+        {[
+          ['rounded-4', 'steppers'],
+          ['rounded-6', 'fields'],
+          ['rounded-8', 'chips'],
+          ['rounded-10', 'structural'],
+          ['rounded-24', 'login card'],
+          ['rounded-pill', 'pills'],
+        ].map(([r, use]) => (
+          <div key={r} className="flex w-[120px] flex-col items-center gap-4">
+            <span className={`block h-[48px] w-[48px] bg-surface-card ring-default ${r}`} />
+            <code className="font-sans text-11 text-ink-secondary">{r}</code>
+            <span className="font-sans text-11 text-ink-muted">{use}</span>
+          </div>
+        ))}
+      </Row>
+      <Row label="Elevation — exactly one shadow, exactly one ring">
+        <span className="block h-[72px] w-[160px] rounded-10 bg-surface-card shadow-card" />
+        <span className="block h-[72px] w-[160px] rounded-10 bg-surface-card ring-default" />
+      </Row>
+    </Section>
+  );
+}
+
+function StatusSection() {
+  return (
+    <Section id="status" title="Status" note="Amber waits on a human, green is moving, red is stopped by a decision, purple is closed and done, slate is stopped without one. Request status is the seven legal states — no other value can be expressed. For Delivery (pink) and Ready for Pickup (blue) are peers, not a sequence — the design's own pill variants, adopted 2026-09-24 (drift-2026-09-24 §6).">
+      <Row label="Request — the seven legal states">
+        {REQUEST_STATUSES.map((s) => (
+          <StatusPill key={s} status={s} />
+        ))}
+      </Row>
+      <Row label="Stock">
+        {STOCK_STATUSES.map((s) => (
+          <StatusPill key={s} stock={s} />
+        ))}
+      </Row>
+      <Row label="Availability — the squarer 8px chip at 11.5px">
+        <StatusPill availability="available" />
+        <StatusPill availability="unavailable" />
+      </Row>
+      <Row label="Inventory status — the catalog's stock band, same chip">
+        {INVENTORY_STATUSES.map((s) => (
+          <StatusPill key={s} inventory={s} />
+        ))}
+      </Row>
+    </Section>
+  );
+}
+
+function ActionsSection() {
+  return (
+    <Section id="actions" title="Actions">
+      <Row label="Button">
+        <Button>Add to Request List</Button>
+        <Button variant="accent">+ Add Catalog Item</Button>
+        <Button variant="ghost">Cancel</Button>
+        <Button disabled>Disabled</Button>
+      </Row>
+      <Row label="Imported library — different ink, different fonts, no OSRS screen uses these">
+        <ButtonTemplate />
+        <ButtonTemplate state="saved" />
+        <ButtonWithIcon />
+      </Row>
+      <Row label="Google sign-in — third-party brand asset, never restyled">
+        <SignInButton />
+        <SignInButton darkmode={false} />
+      </Row>
+    </Section>
+  );
+}
+
+function FormsSection({ model, onModelChange }: { model: string; onModelChange: (model: string) => void }) {
+  return (
+    <Section
+      id="forms"
+      title="Forms"
+      note="Option count does not affect availability — a select with one option opens and shows it, the way a native select does. Disabled is set explicitly, and follows the source's one precedent: ButtonTemplate's saved state at 40% opacity."
+    >
+      <div className="max-w-[420px]">
+        <Search />
+      </div>
+      <Row label="Select — several options">
+        <div className="w-[420px] max-w-full">
+          <Select label="Model" value={model} options={LAPTOP_MODELS} onChange={onModelChange} />
+        </div>
+      </Row>
+      <Row label="Select — one option, still interactive">
+        <div className="w-[420px] max-w-full">
+          <Select label="Model" value="Dell Latitude 5440" options={['Dell Latitude 5440']} />
+        </div>
+      </Row>
+      <Row label="Select — disabled explicitly">
+        <div className="w-[420px] max-w-full">
+          <Select label="Model" value={model} options={LAPTOP_MODELS} disabled />
+        </div>
+      </Row>
+      <Row label="Text field, danger — required, then refused empty (04.2 cancel form)">
+        <div className="flex w-[420px] max-w-full flex-col gap-12">
+          <TextField tone="danger" label="Reason for cancellation" required placeholder="e.g duplicate request..." />
+          <TextField
+            tone="danger"
+            label="Reason for cancellation"
+            required
+            invalid
+            message="Enter a reason for cancelling this request."
+            placeholder="e.g duplicate request..."
+          />
+        </div>
+      </Row>
+      <Row label="Text field, neutral — the default, then refused empty">
+        <div className="flex w-[420px] max-w-full flex-col gap-12">
+          <TextField label="Label" required placeholder="Placeholder" />
+          <TextField label="Label" required invalid message="Say what is missing." placeholder="Placeholder" />
+        </div>
+      </Row>
+    </Section>
+  );
+}
+
+function DataSection({ model, onModelChange }: { model: string; onModelChange: (model: string) => void }) {
   const [qty, setQty] = useState(1);
-  const [model, setModel] = useState(LAPTOP_MODELS[0]);
+  return (
+    <Section id="data" title="Data display">
+      <Row label="Status timeline — in progress, cancelled, rejected">
+        <StatusTimeline
+          nodes={[
+            { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
+            { label: 'Approved', state: 'reached', tone: 'ready', when: 'Sep 11, 2026, 1:05 PM' },
+            { label: 'For Delivery', state: 'reached', tone: 'delivery', when: 'Sep 12, 2026, 9:42 AM' },
+            { label: 'Received', state: 'pending' },
+            { label: 'Complete', state: 'pending' },
+          ]}
+        />
+        <StatusTimeline
+          nodes={[
+            { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
+            { label: 'Cancelled', state: 'cancelled', when: 'Sep 11, 2026, 9:58 AM' },
+          ]}
+        />
+        <StatusTimeline
+          nodes={[
+            { label: 'Submitted', state: 'reached', when: 'Aug 14, 2026, 11:05 AM' },
+            { label: 'Rejected', state: 'rejected', when: 'Aug 15, 2026, 9:20 AM' },
+          ]}
+        />
+      </Row>
+      <Row label="Summary cards">
+        <SummaryCard value="12" label="Pending approval" />
+        <SummaryCard value="108" label="Available units" />
+        <SummaryCard value="2" label="Low stock alerts" />
+      </Row>
+      <Row label="Supply card">
+        <SupplyCard
+          quantity={qty}
+          onQuantityChange={setQty}
+          model={model}
+          models={LAPTOP_MODELS}
+          onModelChange={onModelChange}
+        />
+        <SupplyCard
+          category="Devices"
+          name="Monitor"
+          model='LG UltraFine 27"'
+          availability="unavailable"
+          image={itemMonitor}
+        />
+      </Row>
+      <Row label="Table">
+        <TableCard className="w-full">
+          <TableHead cols={REQUEST_COLS} />
+          {[
+            ['REQ-2026-1847', 'Maya Santos', 'Laptop, Keyboard + 1 more', 'Pending Approval'],
+            ['REQ-2026-1842', 'Daniel Santos', 'Monitor, Dock', 'Ready for Pickup'],
+            ['REQ-2026-1760', 'Isabella Mendoza', 'Laptop Stand', 'Rejected'],
+          ].map(([id, who, items, status]) => (
+            <div key={id} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
+              <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">{id}</span>
+              <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">{who}</span>
+              <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">{items}</span>
+              <span style={tableColumnStyle(REQUEST_COLUMNS.status)}>
+                <StatusPill status={status as (typeof REQUEST_STATUSES)[number]} />
+              </span>
+            </div>
+          ))}
+        </TableCard>
+      </Row>
+    </Section>
+  );
+}
+
+function LayoutSection() {
+  return (
+    <Section id="layout" title="Layout" note="The top bar and page header are redesigns, not ports — the source positions them by absolute coordinate.">
+      <Row label="Avatar">
+        <Avatar initials="MS" />
+        <Avatar initials="EC" color="var(--color-osrs-avatar-green)" />
+        <Avatar initials="MS" size={56} />
+      </Row>
+      <Row label="Page header">
+        <PageHeader title="Inventory management" subtitle="Monitor stock levels, manage reservations, and keep office essentials ready for every team" />
+      </Row>
+    </Section>
+  );
+}
+
+function IconsSection() {
+  return (
+    <Section id="icons" title="Icons" note="Material Design Icons at 24px and a set of 30px library glyphs. All paint with currentColor.">
+      <Row label="MDI — 24px">
+        <span className="text-ink-primary"><MdiLightClipboardText /></span>
+        <span className="text-brand-primary"><MdiLightClipboardText /></span>
+        <span className="text-ink-primary"><MdiClipboardTextOutline /></span>
+      </Row>
+      <Row label="Library glyphs — 30px">
+        <span className="text-osrs-template-ink"><ArrowCircleDownFill /></span>
+        <span className="text-osrs-template-ink"><ArrowCounterClockwise /></span>
+        <span className="text-osrs-template-ink"><CaretRight /></span>
+        <span className="text-osrs-template-ink"><CheckCircleFill /></span>
+      </Row>
+      <Row label="Google mark — renders monochrome, as the source exported it">
+        <GoogleIcon size="32x32" />
+        <GoogleIcon size="40x40" />
+        <GoogleIcon size="48x48" />
+      </Row>
+    </Section>
+  );
+}
+
+function BrandSection() {
+  return (
+    <Section id="brand" title="Brand">
+      <Row>
+        <CoDevRedMasterLogo />
+        <span className="flex items-center bg-osrs-ink-900 p-16">
+          <CoDevWhiteMasterLogo />
+        </span>
+        <CoDevSupplyRequestsLogo />
+      </Row>
+    </Section>
+  );
+}
+
+function OverlaySection() {
   const [scrim, setScrim] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [reason, setReason] = useState(REASONS[0]);
+  return (
+    <Section id="overlay" title="Overlay">
+      <Button variant="ghost" onClick={() => setScrim(true)}>
+        Show the scrim
+      </Button>
+      {scrim && (
+        <Backdrop>
+          <div className="flex w-[420px] max-w-full flex-col gap-16 rounded-10 bg-surface-card p-22 shadow-card">
+            <span className="type-card-title text-ink-primary">Confirm Rejection</span>
+            <p className="type-body text-ink-body">
+              50% black, no blur. The only transparency in the file besides the card shadow and the status tints.
+            </p>
+            {/* A select inside a dialog: the popover layer sits above the
+                dialog layer on purpose, so this stays usable. A select left
+                open outside the dialog is dismissed when the scrim mounts. */}
+            <Select label="Reason" value={reason} options={REASONS} onChange={setReason} />
+            <Button onClick={() => setScrim(false)}>Close</Button>
+          </div>
+        </Backdrop>
+      )}
+      <Row label="Side panel — a 400px sheet from the right over the same scrim; Esc, the ✕ or a scrim click closes it">
+        <Button variant="ghost" onClick={() => setSheet(true)}>
+          Show the side panel
+        </Button>
+      </Row>
+      {sheet && (
+        <SidePanel
+          title="Request REQ-2026-1847"
+          onClose={() => setSheet(false)}
+          header={
+            <>
+              <h2 className="type-section-title truncate text-ink-heading">REQ-2026-1847</h2>
+              <StatusPill status="Pending Approval" />
+            </>
+          }
+          footer={
+            <Button variant="ghost" className="w-full" onClick={() => setSheet(false)}>
+              Close
+            </Button>
+          }
+        >
+          <p className="type-body text-ink-body">
+            Focus moves in on open, is held here, and returns to the button that opened it.
+          </p>
+        </SidePanel>
+      )}
+    </Section>
+  );
+}
+
+function OverflowSection() {
+  return (
+    <Section id="overflow" title="Overflow" note="Every component that renders supplied text, shown with realistic and deliberately overlong data. Designed geometry must be identical in both.">
+      <Row label="Realistic">
+        <SupplyCard name="Business Laptop" model="Dell Latitude 5440" />
+      </Row>
+      <Row label="Overlong — the card must not grow">
+        <SupplyCard
+          name="Ergonomic Adjustable Standing Desk Converter with Monitor Arm"
+          model="Manufacturer Model Number XZ-99400-ULTRA-LONG-VARIANT"
+          category="Devices and peripherals and accessories"
+        />
+      </Row>
+      <Row label="Table rows — overlong">
+        <TableCard className="w-full">
+          <TableHead cols={REQUEST_COLS} />
+          <div className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
+            <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">REQ-2026-1847</span>
+            <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">Maria Isabella Concepcion Mendoza-Villanueva</span>
+            <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">Laptop, Wireless Keyboard, USB-C Headset, Monitor, Dock, Laptop Stand, Ergonomic Mouse</span>
+            <span style={tableColumnStyle(REQUEST_COLUMNS.status)}><StatusPill status="Pending Approval" /></span>
+          </div>
+        </TableCard>
+      </Row>
+    </Section>
+  );
+}
+
+export function Gallery() {
+  // Shared by Forms and Data display: choosing a model in the Select updates
+  // the supply card, as it always has.
+  const [model, setModel] = useState(LAPTOP_MODELS[0]);
 
   return (
     <div className="min-h-screen bg-surface-page">
@@ -143,339 +529,18 @@ export function Gallery() {
           ))}
         </nav>
 
-        <Section id="colour" title="Colour" note="One accent, and it is red. Nothing else in the UI is coloured except status.">
-          <Row label="Brand">
-            <Swatch token="--color-brand-primary" name="Primary" />
-            <Swatch token="--color-brand-primary-alt" name="Primary alt" />
-          </Row>
-          <Row label="Surfaces — the warm page / cool header pairing is the signature">
-            <Swatch token="--color-surface-page" name="Page" />
-            <Swatch token="--color-surface-card" name="Card" />
-            <Swatch token="--color-surface-table-header" name="Table header" />
-            <Swatch token="--color-line-default" name="Border" />
-          </Row>
-          <Row label="Ink">
-            <Swatch token="--color-ink-primary" name="Primary" />
-            <Swatch token="--color-ink-body" name="Body" />
-            <Swatch token="--color-ink-secondary" name="Secondary" />
-            <Swatch token="--color-ink-muted" name="Muted" />
-          </Row>
-        </Section>
-
-        <Section id="type" title="Type" note="Space Grotesk for display, Inter for everything else. The odd sizes are deliberate — 11.5px and 13px are transcribed, not rounded.">
-          <div className="flex flex-col gap-12">
-            <span className="type-page-title text-ink-heading">Page title — Space Grotesk 32/1.3</span>
-            <span className="type-section-title text-ink-heading">Section title — 19/1.3</span>
-            <span className="type-metric text-brand-primary">28 — summary metric</span>
-            <span className="type-card-title text-ink-primary">Card title — Inter 700/17</span>
-            <span className="type-body text-ink-body">Body — Inter 400/14/1.5, the only text that breathes</span>
-            <span className="type-ui text-ink-primary">UI row — 13px, the dominant size</span>
-            <span className="type-eyebrow uppercase text-ink-secondary">Eyebrow — 11px bold caps</span>
-          </div>
-          <Row label="Size ladder">
-            {SIZES.map(([cls, px, use]) => (
-              <div key={cls} className="flex w-[150px] flex-col gap-2">
-                <span className={`${cls} font-sans text-ink-primary`}>Aa</span>
-                <code className="font-sans text-11 text-ink-secondary">{cls}</code>
-                <span className="font-sans text-11 text-ink-muted">
-                  {px} — {use}
-                </span>
-              </div>
-            ))}
-          </Row>
-        </Section>
-
-        <Section id="spacing" title="Spacing & radii" note="The scale is irregular on purpose: 4, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 28, 32. Note that p-4 means 4px here, not Tailwind's 16px.">
-          <Row label="Spacing">
-            {STEPS.map(([cls, n]) => (
-              <div key={n} className="flex flex-col items-center gap-4">
-                <span className={`block bg-brand-primary ${cls}`} />
-                <code className="font-sans text-11 text-ink-secondary">{n}</code>
-              </div>
-            ))}
-          </Row>
-          <Row label="Radii — by role">
-            {[
-              ['rounded-4', 'steppers'],
-              ['rounded-6', 'fields'],
-              ['rounded-8', 'chips'],
-              ['rounded-10', 'structural'],
-              ['rounded-24', 'login card'],
-              ['rounded-pill', 'pills'],
-            ].map(([r, use]) => (
-              <div key={r} className="flex w-[120px] flex-col items-center gap-4">
-                <span className={`block h-[48px] w-[48px] bg-surface-card ring-default ${r}`} />
-                <code className="font-sans text-11 text-ink-secondary">{r}</code>
-                <span className="font-sans text-11 text-ink-muted">{use}</span>
-              </div>
-            ))}
-          </Row>
-          <Row label="Elevation — exactly one shadow, exactly one ring">
-            <span className="block h-[72px] w-[160px] rounded-10 bg-surface-card shadow-card" />
-            <span className="block h-[72px] w-[160px] rounded-10 bg-surface-card ring-default" />
-          </Row>
-        </Section>
-
-        <Section id="status" title="Status" note="Amber waits on a human, green is moving, red is stopped by a decision, purple is closed and done, slate is stopped without one. Request status is the seven legal states — no other value can be expressed. For Delivery (pink) and Ready for Pickup (blue) are peers, not a sequence — the design's own pill variants, adopted 2026-09-24 (drift-2026-09-24 §6).">
-          <Row label="Request — the seven legal states">
-            {REQUEST_STATUSES.map((s) => (
-              <StatusPill key={s} status={s} />
-            ))}
-          </Row>
-          <Row label="Stock">
-            {STOCK_STATUSES.map((s) => (
-              <StatusPill key={s} stock={s} />
-            ))}
-          </Row>
-          <Row label="Availability — the squarer 8px chip at 11.5px">
-            <StatusPill availability="available" />
-            <StatusPill availability="unavailable" />
-          </Row>
-          <Row label="Inventory status — the catalog's stock band, same chip">
-            {INVENTORY_STATUSES.map((s) => (
-              <StatusPill key={s} inventory={s} />
-            ))}
-          </Row>
-        </Section>
-
-        <Section id="actions" title="Actions">
-          <Row label="Button">
-            <Button>Add to Request List</Button>
-            <Button variant="accent">+ Add Catalog Item</Button>
-            <Button variant="ghost">Cancel</Button>
-            <Button disabled>Disabled</Button>
-          </Row>
-          <Row label="Imported library — different ink, different fonts, no OSRS screen uses these">
-            <ButtonTemplate />
-            <ButtonTemplate state="saved" />
-            <ButtonWithIcon />
-          </Row>
-          <Row label="Google sign-in — third-party brand asset, never restyled">
-            <SignInButton />
-            <SignInButton darkmode={false} />
-          </Row>
-        </Section>
-
-        <Section
-          id="forms"
-          title="Forms"
-          note="Option count does not affect availability — a select with one option opens and shows it, the way a native select does. Disabled is set explicitly, and follows the source's one precedent: ButtonTemplate's saved state at 40% opacity."
-        >
-          <div className="max-w-[420px]">
-            <Search />
-          </div>
-          <Row label="Select — several options">
-            <div className="w-[420px] max-w-full">
-              <Select label="Model" value={model} options={LAPTOP_MODELS} onChange={setModel} />
-            </div>
-          </Row>
-          <Row label="Select — one option, still interactive">
-            <div className="w-[420px] max-w-full">
-              <Select label="Model" value="Dell Latitude 5440" options={['Dell Latitude 5440']} />
-            </div>
-          </Row>
-          <Row label="Select — disabled explicitly">
-            <div className="w-[420px] max-w-full">
-              <Select label="Model" value={model} options={LAPTOP_MODELS} disabled />
-            </div>
-          </Row>
-          <Row label="Text field, danger — required, then refused empty (04.2 cancel form)">
-            <div className="flex w-[420px] max-w-full flex-col gap-12">
-              <TextField tone="danger" label="Reason for cancellation" required placeholder="e.g duplicate request..." />
-              <TextField
-                tone="danger"
-                label="Reason for cancellation"
-                required
-                invalid
-                message="Enter a reason for cancelling this request."
-                placeholder="e.g duplicate request..."
-              />
-            </div>
-          </Row>
-          <Row label="Text field, neutral — the default, then refused empty">
-            <div className="flex w-[420px] max-w-full flex-col gap-12">
-              <TextField label="Label" required placeholder="Placeholder" />
-              <TextField label="Label" required invalid message="Say what is missing." placeholder="Placeholder" />
-            </div>
-          </Row>
-        </Section>
-
-        <Section id="data" title="Data display">
-          <Row label="Status timeline — in progress, cancelled, rejected">
-            <StatusTimeline
-              nodes={[
-                { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
-                { label: 'Approved', state: 'reached', when: 'Sep 11, 2026, 1:05 PM' },
-                { label: 'For Delivery/For Pickup', state: 'pending' },
-                { label: 'Received', state: 'pending' },
-                { label: 'Complete', state: 'pending' },
-              ]}
-            />
-            <StatusTimeline
-              nodes={[
-                { label: 'Submitted', state: 'reached', when: 'Sep 11, 2026, 9:42 AM' },
-                { label: 'Cancelled', state: 'cancelled', when: 'Sep 11, 2026, 9:58 AM' },
-              ]}
-            />
-            <StatusTimeline
-              nodes={[
-                { label: 'Submitted', state: 'reached', when: 'Aug 14, 2026, 11:05 AM' },
-                { label: 'Rejected', state: 'rejected', when: 'Aug 15, 2026, 9:20 AM' },
-              ]}
-            />
-          </Row>
-          <Row label="Summary cards">
-            <SummaryCard value="12" label="Pending approval" />
-            <SummaryCard value="108" label="Available units" />
-            <SummaryCard value="2" label="Low stock alerts" />
-          </Row>
-          <Row label="Supply card">
-            <SupplyCard
-              quantity={qty}
-              onQuantityChange={setQty}
-              model={model}
-              models={LAPTOP_MODELS}
-              onModelChange={setModel}
-            />
-            <SupplyCard
-              category="Devices"
-              name="Monitor"
-              model='LG UltraFine 27"'
-              availability="unavailable"
-              image={itemMonitor}
-            />
-          </Row>
-          <Row label="Table">
-            <TableCard className="w-full">
-              <TableHead cols={REQUEST_COLS} />
-              {[
-                ['REQ-2026-1847', 'Maya Santos', 'Laptop, Keyboard + 1 more', 'Pending Approval'],
-                ['REQ-2026-1842', 'Daniel Santos', 'Monitor, Dock', 'Ready for Pickup'],
-                ['REQ-2026-1760', 'Isabella Mendoza', 'Laptop Stand', 'Rejected'],
-              ].map(([id, who, items, status]) => (
-                <div key={id} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
-                  <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">{id}</span>
-                  <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">{who}</span>
-                  <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">{items}</span>
-                  <span style={tableColumnStyle(REQUEST_COLUMNS.status)}>
-                    <StatusPill status={status as (typeof REQUEST_STATUSES)[number]} />
-                  </span>
-                </div>
-              ))}
-            </TableCard>
-          </Row>
-        </Section>
-
-        <Section id="layout" title="Layout" note="The top bar and page header are redesigns, not ports — the source positions them by absolute coordinate.">
-          <Row label="Avatar">
-            <Avatar initials="MS" />
-            <Avatar initials="EC" color="var(--color-osrs-avatar-green)" />
-            <Avatar initials="MS" size={56} />
-          </Row>
-          <Row label="Page header">
-            <PageHeader title="Inventory management" subtitle="Monitor stock levels, manage reservations, and keep office essentials ready for every team" />
-          </Row>
-        </Section>
-
-        <Section id="icons" title="Icons" note="Material Design Icons at 24px and a set of 30px library glyphs. All paint with currentColor.">
-          <Row label="MDI — 24px">
-            <span className="text-ink-primary"><MdiLightClipboardText /></span>
-            <span className="text-brand-primary"><MdiLightClipboardText /></span>
-            <span className="text-ink-primary"><MdiClipboardTextOutline /></span>
-          </Row>
-          <Row label="Library glyphs — 30px">
-            <span className="text-osrs-template-ink"><ArrowCircleDownFill /></span>
-            <span className="text-osrs-template-ink"><ArrowCounterClockwise /></span>
-            <span className="text-osrs-template-ink"><CaretRight /></span>
-            <span className="text-osrs-template-ink"><CheckCircleFill /></span>
-          </Row>
-          <Row label="Google mark — renders monochrome, as the source exported it">
-            <GoogleIcon size="32x32" />
-            <GoogleIcon size="40x40" />
-            <GoogleIcon size="48x48" />
-          </Row>
-        </Section>
-
-        <Section id="brand" title="Brand">
-          <Row>
-            <CoDevRedMasterLogo />
-            <span className="flex items-center bg-osrs-ink-900 p-16">
-              <CoDevWhiteMasterLogo />
-            </span>
-            <CoDevSupplyRequestsLogo />
-          </Row>
-        </Section>
-
-        <Section id="overlay" title="Overlay">
-          <Button variant="ghost" onClick={() => setScrim(true)}>
-            Show the scrim
-          </Button>
-          {scrim && (
-            <Backdrop>
-              <div className="flex w-[420px] max-w-full flex-col gap-16 rounded-10 bg-surface-card p-22 shadow-card">
-                <span className="type-card-title text-ink-primary">Confirm Rejection</span>
-                <p className="type-body text-ink-body">
-                  50% black, no blur. The only transparency in the file besides the card shadow and the status tints.
-                </p>
-                {/* A select inside a dialog: the popover layer sits above the
-                    dialog layer on purpose, so this stays usable. A select left
-                    open outside the dialog is dismissed when the scrim mounts. */}
-                <Select label="Reason" value={reason} options={REASONS} onChange={setReason} />
-                <Button onClick={() => setScrim(false)}>Close</Button>
-              </div>
-            </Backdrop>
-          )}
-          <Row label="Side panel — a 400px sheet from the right over the same scrim; Esc, the ✕ or a scrim click closes it">
-            <Button variant="ghost" onClick={() => setSheet(true)}>
-              Show the side panel
-            </Button>
-          </Row>
-          {sheet && (
-            <SidePanel
-              title="Request REQ-2026-1847"
-              onClose={() => setSheet(false)}
-              header={
-                <>
-                  <h2 className="type-section-title truncate text-ink-heading">REQ-2026-1847</h2>
-                  <StatusPill status="Pending Approval" />
-                </>
-              }
-              footer={
-                <Button variant="ghost" className="w-full" onClick={() => setSheet(false)}>
-                  Close
-                </Button>
-              }
-            >
-              <p className="type-body text-ink-body">
-                Focus moves in on open, is held here, and returns to the button that opened it.
-              </p>
-            </SidePanel>
-          )}
-        </Section>
-
-        <Section id="overflow" title="Overflow" note="Every component that renders supplied text, shown with realistic and deliberately overlong data. Designed geometry must be identical in both.">
-          <Row label="Realistic">
-            <SupplyCard name="Business Laptop" model="Dell Latitude 5440" />
-          </Row>
-          <Row label="Overlong — the card must not grow">
-            <SupplyCard
-              name="Ergonomic Adjustable Standing Desk Converter with Monitor Arm"
-              model="Manufacturer Model Number XZ-99400-ULTRA-LONG-VARIANT"
-              category="Devices and peripherals and accessories"
-            />
-          </Row>
-          <Row label="Table rows — overlong">
-            <TableCard className="w-full">
-              <TableHead cols={REQUEST_COLS} />
-              <div className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
-                <span style={tableColumnStyle(REQUEST_COLUMNS.id)} className="type-ui-bold text-ink-primary">REQ-2026-1847</span>
-                <span style={tableColumnStyle(REQUEST_COLUMNS.requester)} className="truncate type-ui text-ink-body">Maria Isabella Concepcion Mendoza-Villanueva</span>
-                <span style={tableColumnStyle(REQUEST_COLUMNS.items)} className="truncate type-ui text-ink-body">Laptop, Wireless Keyboard, USB-C Headset, Monitor, Dock, Laptop Stand, Ergonomic Mouse</span>
-                <span style={tableColumnStyle(REQUEST_COLUMNS.status)}><StatusPill status="Pending Approval" /></span>
-              </div>
-            </TableCard>
-          </Row>
-        </Section>
+        <ColourSection />
+        <TypeSection />
+        <SpacingSection />
+        <StatusSection />
+        <ActionsSection />
+        <FormsSection model={model} onModelChange={setModel} />
+        <DataSection model={model} onModelChange={setModel} />
+        <LayoutSection />
+        <IconsSection />
+        <BrandSection />
+        <OverlaySection />
+        <OverflowSection />
       </main>
     </div>
   );

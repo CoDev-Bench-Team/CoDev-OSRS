@@ -6,7 +6,7 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 5.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-26
+**Version**: 6.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-29
 
 ### I. Spec-Driven Development
 
@@ -42,7 +42,7 @@ Rejection MUST require a reason, and is the Admin's decision on a request awaiti
 
 Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`. An Admin MAY cancel an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled. **A cancellation MUST require a reason, from whoever cancels.** A `Received` or `Completed` request MUST NOT be cancelled.
 
-The owning Employee confirms receipt by submitting the **Accountability Form** while the request is `For Delivery` or `Ready for Pickup`; the System then sets `Received`. No other actor and no other state may set it. `Completed` MUST be set by an Admin, and only from `Received`.
+`Received` MUST be reached only from `For Delivery` or `Ready for Pickup`, in one of two ways: the owning Employee submits the **Accountability Form**, and the System then sets it; or an Admin marks it with Update Status. No other actor and no other state may set it. `Completed` MUST be set by an Admin, and only from `Received`.
 
 `Rejected`, `Cancelled` and `Completed` are terminal. After rejection or cancellation the employee submits a **new** request; neither record is reopened.
 

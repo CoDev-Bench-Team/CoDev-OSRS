@@ -19,7 +19,8 @@ current types.
 `Office` in `src/features/auth/types.ts` keeps **`Pasig`**, not the design's
 `Ortigas`, until the contract moves — spec 006 D3 transcribed the published
 enum, which is the right call under constitution VII. Conflict 2 in
-`contracts/README.md` tracks it.
+`contracts/README.md` tracks it. *(Moved 2026-09-26: the contract says `Ortigas`
+since 2026-09-25, so `Office` says `Ortigas` too — spec 008, PR #46.)*
 
 - [x] T000 Collapse `Role` to `'employee' | 'admin'`; drop `approver` / `supply_admin` — `src/features/auth/types.ts`
 - [x] T000a Rework navigation sets and role home for two roles: Employee → Catalog · My Requests; Admin → Requests Queue · Assets · Inventory · History — `src/features/auth/navigation.ts`, `src/app/destinations.ts`
@@ -70,22 +71,22 @@ Depends on backend auth/session resources.
 **Goal**: Admin queue; reject requires a reason.
 
 - [x] T014 [US3] Requests Queue: summary cards, chips, search, sort, table, pagination — `src/features/requests/queue/QueuePage.tsx`
-- [ ] T015 [US3] Review panel: requester, lines with current inventory, note, timeline, Approve / Reject — `src/features/requests/queue/ReviewPanel.tsx`
-- [ ] T016 [US3] Reject dialog with required reason; rejected read-back state — `src/features/requests/queue/RejectDialog.tsx`
+- [ ] T015 [US3] Review panel: requester, lines with current inventory, note, timeline, Approve / Reject — `src/features/requests/queue/ReviewPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
+- [ ] T016 [US3] Reject dialog with required reason; rejected read-back state — `src/features/requests/queue/RejectDialog.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
 
 ## Phase 6: User Story 4 + 5 — Handover and complete (P1)
 
-**Goal**: Admin sets For Delivery / Ready for Pickup; the Employee signs the Accountability Form (`Received`); the Admin completes.
+**Goal**: Admin sets For Delivery / Ready for Pickup; the Employee signs the Accountability Form, or the Admin marks it with Update Status ([ADR-0010](../../docs/adr/0010-admin-marks-received.md)) (`Received`); the Admin completes.
 
-- [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx`
-- [ ] T018 [US5] Complete action and its confirmation, offered on `Received` only (FR-012) — `src/features/requests/queue/UpdateStatusPanel.tsx`
+- [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
+- [ ] T018 [US5] Complete action and its confirmation, offered on `Received` only (FR-012) — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
 - [ ] T018b [US5] Accountability Form on the Employee's own `For Delivery` / `Ready for Pickup` request (FR-012a, FR-012b) — `src/features/requests/detail/AccountabilityForm.tsx`. **Blocked on contracts/README.md conflict 5.**
 
 ## Phase 7: User Story 6 + 7 — History and cancel (P2)
 
 - [ ] T019 [P] [US6] My Requests table + status pills + detail panel — `src/features/requests/history/MyRequestsPage.tsx`
 - [ ] T020 [US7] Cancel Request dialog with required reason (employee, while pending) — `src/features/requests/history/CancelDialog.tsx`
-- [ ] T021 [US7] Admin cancel from the review panel (approved / for delivery / for pickup) — `src/features/requests/queue/ReviewPanel.tsx`
+- [ ] T021 [US7] Admin cancel from the review panel (approved / for delivery / for pickup) — `src/features/requests/queue/ReviewPanel.tsx` — **moved to BEN-135** (no control drawn; spec 008 Out of Scope)
 - [ ] T022 [US6] History page: chips, table, read-only detail panel showing the stored reason — `src/features/requests/history/HistoryPage.tsx`
 
 ## Phase 8: User Story 8 — Profile (P3)
