@@ -2,7 +2,7 @@
 
 Canonical copy of the project constitution for version tracking. The binding text also lives in `AGENTS.md` under `## Constitution`. If the two drift, `AGENTS.md` wins until they are reconciled in the same change.
 
-**Version**: 5.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-26
+**Version**: 6.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-29
 
 ### I. Spec-Driven Development
 
@@ -38,7 +38,7 @@ Rejection MUST require a reason, and is the Admin's decision on a request awaiti
 
 Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`. An Admin MAY cancel an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled. **A cancellation MUST require a reason, from whoever cancels.** A `Received` or `Completed` request MUST NOT be cancelled.
 
-The owning Employee confirms receipt by submitting the **Accountability Form** while the request is `For Delivery` or `Ready for Pickup`; the System then sets `Received`. No other actor and no other state may set it. `Completed` MUST be set by an Admin, and only from `Received`.
+`Received` MUST be reached only from `For Delivery` or `Ready for Pickup`, in one of two ways: the owning Employee submits the **Accountability Form**, and the System then sets it; or an Admin marks it with Update Status. No other actor and no other state may set it. `Completed` MUST be set by an Admin, and only from `Received`.
 
 `Rejected`, `Cancelled` and `Completed` are terminal. After rejection or cancellation the employee submits a **new** request; neither record is reopened.
 
@@ -83,3 +83,4 @@ Credentials and other secrets MUST NOT be committed. Seed users for the demo are
 | 3.0.1 | 2026-09-24 | **IV** wording: the pickup handover state is named **`Ready for Pickup`**, as the design's `Request Status` component names it, not `For Pickup` as the queue's filter chip did. Same state, same transitions, so PATCH. Decided by the project owner. Source: [drift-2026-09-24 §6](../docs/design-system/drift-2026-09-24.md); carried by the [ADR-0007](../docs/adr/0007-fulfilment-status-vocabulary.md) amendment |
 | **4.0.0** | **2026-09-26** | **III** rewritten: stock is a register of units, and per (asset, office) Available / Reserved / Total are counts of units by status. Complete moves reserved units to `Assigned` to the requester; the numbers are unchanged from 3.0.1. The low-stock threshold is per asset; assigned or reserved units cannot be removed; only request transitions move units into or out of `Reserved`, and an Admin may set `Available` ↔ `Inactive` or record an existing assignment. **VIII** redefined: the per-unit register is in scope, and BitLocker identifier and recovery key/PIN are Admin-only secrets. Decided by the project owner (BEN-116). Source: [drift-2026-09-26 §2](../docs/design-system/drift-2026-09-26.md); carried by [ADR-0008](../docs/adr/0008-per-unit-inventory-register.md) |
 | **5.0.0** | **2026-09-26** | **IV** redefined: a `Received` status between the handover states and `Completed`, set by the System when the owning Employee submits the Accountability Form; `Completed` is set by the Admin only from `Received`; `Received` cannot be cancelled. **III**: the reserved units move to `Assigned` on `Received`, not on `Completed`. **II** gives the System the `Received` transition; **V** sends `Status changed` for it. MAJOR: a principle is redefined and ADR-0007's no-confirm-receipt rule is withdrawn. Decided by the project owner (BEN-43). Source: [drift-2026-09-26 §3](../docs/design-system/drift-2026-09-26.md); carried by [ADR-0009](../docs/adr/0009-received-and-accountability-form.md) |
+| **6.0.0** | **2026-09-29** | **IV** redefined: `Received` is reached from `For Delivery` or `Ready for Pickup` either by the owning Employee's Accountability Form (the System sets it) or by an Admin with Update Status. MAJOR: ADR-0009's "no one can set `Received` by hand" is withdrawn. III, V and the rest of IV are unchanged. Decided by the project owner (BEN-47). Not a design-file change: no frame draws `Received` in the select, and the addition is logged in `docs/design-system/additions.md` §3h. Carried by [ADR-0010](../docs/adr/0010-admin-marks-received.md) |

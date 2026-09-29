@@ -1,7 +1,7 @@
 # Architecture — Office Supplies Request System
 
 **Status**: Accepted for MVP  
-**Date**: 2026-09-11 · **Last amended**: 2026-09-26 (`Received`; constitution 5.0.0)  
+**Date**: 2026-09-11 · **Last amended**: 2026-09-29 (Admin may mark `Received`; constitution 6.0.0)  
 **Companion docs**: [product](docs/product.md), [process flow](docs/process-flow.md), [ADRs](docs/adr/), [feature plan](specs/001-office-supplies-mvp/plan.md)
 
 This file is the cross-cutting HOW. Feature WHAT lives in specs. Do not duplicate user stories here.
@@ -109,7 +109,8 @@ Do not add an API implementation directory until an ADR names the stack. Configu
                     (peers, not a sequence;
                      Ready for Pickup records a location)
                          │
-                         │ Accountability Form (owning Employee) → System
+                         │ Accountability Form (owning Employee) → System,
+                         │ or update status (Admin)
                          ▼
                       Received   (units assigned; not cancellable)
                          │
@@ -122,7 +123,7 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 
 - **Submit**: authenticated Employee; every line qty ≥ 1; qty ≤ `Available` at the requesting office; assets exist and are active.
 - **Approve / Reject**: Admin; request is `Pending Approval`; reject body includes a non-empty reason.
-- **Update status**: Admin; request is `Approved`, `For Delivery` or `Ready for Pickup`; target is `For Delivery` or `Ready for Pickup`; `Ready for Pickup` records a pickup location.
+- **Update status**: Admin; request is `Approved`, `For Delivery` or `Ready for Pickup`; target is `For Delivery` or `Ready for Pickup`, or `Received` when the request is already `For Delivery` or `Ready for Pickup`; `Ready for Pickup` records a pickup location. `Received` moves the reserved units to `Assigned` in the same transaction ([ADR-0010](docs/adr/0010-admin-marks-received.md)).
 - **Accountability Form → Received**: owning Employee; request is `For Delivery` or `Ready for Pickup`; the form is agreed and signed with the Employee's full name. The System sets `Received` and moves the reserved units to `Assigned` in the same transaction.
 - **Complete**: Admin; request is `Received`.
 - **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `Ready for Pickup`. **A reason is required from whoever cancels.** Never once `Received` or `Completed`. Releases the reservation in the same transaction, exactly as reject does.
@@ -144,7 +145,7 @@ Stock is a register of **units** ([ADR-0008](docs/adr/0008-per-unit-inventory-re
 | Request cancelled | Cancelled | those units → `Available` | — | +qty | −qty |
 | Approved | Approved | none | — | — | — |
 | For Delivery / Ready for Pickup | those statuses | none | — | — | — |
-| Accountability Form submitted | Received | those units → `Assigned` to the requester | −qty | — | −qty |
+| Accountability Form submitted, or Admin marks received | Received | those units → `Assigned` to the requester | −qty | — | −qty |
 | Request completed | Completed | none | — | — | — |
 
 `Received` is the only request transition that reduces `Total`; those units are what the Assets screen counts as *Assigned units*. Concurrent submits for the last units MUST serialize so `Available` never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract's choice.
@@ -168,6 +169,7 @@ Each asset carries one **low-stock threshold** (per asset, compared against Avai
 | Approve / reject | no | yes |
 | Set For Delivery / Ready for Pickup | no | yes |
 | Sign the Accountability Form (sets `Received`) | own, while `For Delivery` / `Ready for Pickup` | no |
+| Mark `Received` with Update Status | no | while `For Delivery` / `Ready for Pickup` |
 | Complete a request | no | yes |
 | Cancel a request | own, while `Pending Approval`, reason required | any `Approved` / `For Delivery` / `Ready for Pickup`, reason required |
 | View resolved history | own only (My Requests) | yes (History, all requestors) |
@@ -238,4 +240,5 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 | [0006](docs/adr/0006-assets-and-inventory.md) | Assets and Inventory are separate; per-office Total/Available/Reserved stock — **partly superseded by 0008** |
 | [0007](docs/adr/0007-fulfilment-status-vocabulary.md) | One handover state (For Delivery / For Pickup), completed by the Admin — amended 2026-09-24: `Ready for Pickup`, drawn pink/blue pills; amended by 0009 |
 | [0008](docs/adr/0008-per-unit-inventory-register.md) | Inventory is a per-unit register; stock counted from unit statuses (partly supersedes 0006); amended by 0009 |
-| [0009](docs/adr/0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes |
+| [0009](docs/adr/0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes — **amended by 0010** |
+| [0010](docs/adr/0010-admin-marks-received.md) | The Admin may also mark a handed-over request `Received` |

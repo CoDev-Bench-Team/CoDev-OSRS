@@ -2,12 +2,12 @@ import { OFFICES, type Office } from '../../auth/types';
 import type { RequestStatus } from '../../../shared/ui';
 import type {
   AdminRequestSource,
-  HandoverStatus,
   PickupLocation,
   ReviewLine,
   ReviewRequest,
   ReviewSnapshot,
   TransitionResult,
+  UpdateStatusTarget,
 } from './review-types';
 
 /** Non-production demo data, used only until the backend team publishes its
@@ -211,6 +211,7 @@ function seed(): ReviewRequest[] {
 }
 
 const HANDOVER_FROM = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup']);
+const RECEIVED_FROM = new Set<RequestStatus>(['For Delivery', 'Ready for Pickup']);
 
 /** A fresh, independent store. The app uses the module-level instance below.
  *  Checks and dev stubs can build their own. */
@@ -260,9 +261,16 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
       return { ok: true };
     },
 
-    async updateStatus(id, to: HandoverStatus, pickup?: PickupLocation) {
+    async updateStatus(id, to: UpdateStatusTarget, pickup?: PickupLocation) {
       const request = find(id);
       if (!request) return refused('unavailable');
+      if (to === 'Received') {
+        // Assigning the reserved units to the requester is the API's (FR-016).
+        if (!RECEIVED_FROM.has(request.status)) return refused('status-changed');
+        request.status = 'Received';
+        request.receivedAt = now();
+        return { ok: true };
+      }
       if (!HANDOVER_FROM.has(request.status)) return refused('status-changed');
       let location: PickupLocation | undefined;
       if (to === 'Ready for Pickup') {

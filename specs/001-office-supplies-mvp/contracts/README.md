@@ -176,12 +176,18 @@ published contract has neither the status nor a way to reach it.
   the typed full name and optional notes, which sets `Received` and moves
   the reserved units to `Assigned` (`Total` and `Reserved` fall) in one
   transaction;
+- an Admin transition to `Received` from `For Delivery` / `Ready for Pickup`,
+  with the same unit move (constitution 6.0.0,
+  [ADR-0010](../../../docs/adr/0010-admin-marks-received.md), added
+  2026-09-29);
 - **Complete** narrowed to `Received` only, with no unit change;
 - cancel refused on `Received`;
 - the `Status changed` email on `Received`.
 
 Until then the SPA shows `Received` wherever it renders a status or timeline,
-and does not build the form (spec 001 FR-012b, tasks T018b).
+and does not build the form (spec 001 FR-012b, tasks T018b). The Admin's
+**Received** option in Update Status runs against the seeded source only
+(spec 008 FR-008a).
 
 ### 6. The Admin's Other Notes on a decision (raised 2026-09-29)
 

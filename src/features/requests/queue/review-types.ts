@@ -1,3 +1,4 @@
+import type { RequestStatus } from '../../../shared/ui';
 import type { Office } from '../../auth/types';
 import type { QueueRequest, QueueSnapshot, QueueSource } from './queue-types';
 
@@ -8,6 +9,19 @@ import type { QueueRequest, QueueSnapshot, QueueSource } from './queue-types';
 
 export type HandoverStatus = 'For Delivery' | 'Ready for Pickup';
 export const HANDOVER_STATUSES = ['For Delivery', 'Ready for Pickup'] as const satisfies readonly HandoverStatus[];
+
+/** What **Update Status** can set. `Received` only from a handover state: the
+ *  Admin records a receipt the Employee has not signed for in the app
+ *  (constitution 6.0.0 IV, ADR-0010). */
+export type UpdateStatusTarget = HandoverStatus | 'Received';
+
+/** The Status select's options for a request in `status`. The current status
+ *  is never one of them: choosing it would change nothing. */
+export function updateStatusTargets(status: RequestStatus): readonly UpdateStatusTarget[] {
+  return status === 'For Delivery' || status === 'Ready for Pickup'
+    ? ['Received', ...HANDOVER_STATUSES.filter((s) => s !== status)]
+    : HANDOVER_STATUSES;
+}
 
 export interface ReviewLine {
   /** The line as the panel shows it: "Business Laptop - Dell Latitude". */
@@ -39,8 +53,8 @@ export interface ReviewRequest extends QueueRequest {
   pickupLocation?: PickupLocation;
   approvedAt?: string;
   handedOverAt?: string;
-  /** Set when the Employee's Accountability Form moves it to `Received`
-   *  (constitution 5.0.0 IV). */
+  /** Set when it moves to `Received`: by the Employee's Accountability Form,
+   *  or by the Admin's Update Status (constitution 6.0.0 IV). */
   receivedAt?: string;
   completedAt?: string;
   rejection?: { reason: string; at: string };
@@ -73,10 +87,19 @@ export interface AdminRequestSource extends QueueSource {
   /** `reason` is sent trimmed and non-empty. The source still refuses one that
    *  is not. `notes` is as for `approve`. */
   reject(id: string, reason: string, notes?: string): Promise<TransitionResult>;
-  updateStatus(id: string, to: HandoverStatus, pickup?: PickupLocation): Promise<TransitionResult>;
+  /** `Received` is accepted only from `For Delivery` or `Ready for Pickup`,
+   *  and keeps the handover and pickup location it had. */
+  updateStatus(id: string, to: UpdateStatusTarget, pickup?: PickupLocation): Promise<TransitionResult>;
   // complete(id) lands with BEN-134 (constitution 4.0.0), plan D9.
 }
 
+/** "Cebu Office", as the design labels an office everywhere it names one. */
+export const officeLabel = (office: Office): string => `${office} Office`;
+
 export function pickupLabel(location: PickupLocation): string {
-  return location.kind === 'office' ? `${location.office} Office` : location.text;
+  return location.kind === 'office' ? officeLabel(location.office) : location.text;
 }
+
+/** Said when a `Ready for Pickup` has no location, by the form before it sends
+ *  and by the panel when the source refuses one. */
+export const LOCATION_REQUIRED = 'Choose where the employee collects the items.';

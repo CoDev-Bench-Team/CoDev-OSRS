@@ -108,6 +108,33 @@ const typeInto = async (selector, text) => {
   await cdp.evaluate((s) => document.querySelector(s).focus(), selector);
   await cdp.send('Input.insertText', { text });
 };
+// The Update Status confirmation (FR-008b), a modal stacked above the panel.
+const CONFIRM = 'dialog[open][role="alertdialog"]';
+const submitStatus = () =>
+  cdp.evaluate(() => {
+    [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status' && x.type === 'submit').click();
+  });
+const confirmation = () =>
+  cdp.evaluate((s) => {
+    const d = document.querySelector(s);
+    return d ? { title: d.querySelector('h2')?.textContent.trim(), text: d.textContent, focused: document.activeElement?.textContent.trim() } : null;
+  }, CONFIRM);
+const asked = () => cdp.waitFor(() => !!document.querySelector('dialog[open][role="alertdialog"]'), 3000, 'the confirmation');
+const answer = (label) =>
+  cdp.evaluate(
+    (s, l) => [...document.querySelector(s).querySelectorAll('button')].find((b) => b.textContent.trim() === l).click(),
+    CONFIRM,
+    label,
+  );
+const optionsOf = async (selectLabel) => {
+  await cdp.evaluate((l) => document.querySelector(`dialog[open] button[role="combobox"][aria-label="${l}"]`).click(), selectLabel);
+  await cdp.waitFor(() => !!document.querySelector('[role="listbox"]'), 3000, `the ${selectLabel} list`);
+  const options = await cdp.evaluate(() => [...document.querySelectorAll('[role="listbox"] [role="option"]')].map((x) => x.textContent.trim()));
+  await cdp.evaluate(() => document.querySelector('[role="listbox"]').focus());
+  await esc();
+  await settle();
+  return options;
+};
 const choose = async (selectLabel, option) => {
   await cdp.evaluate((l) => document.querySelector(`dialog[open] button[role="combobox"][aria-label="${l}"]`).click(), selectLabel);
   await cdp.waitFor(() => !!document.querySelector('[role="listbox"]'), 3000, `the ${selectLabel} list`);
@@ -306,22 +333,55 @@ try {
   p = await cdp.evaluate(panel);
   check(p.selects.Status === 'For Delivery', 'from Approved the Status select starts on For Delivery, as drawn', p.selects.Status);
   check(!('Pickup location' in p.selects), 'no location is asked for delivery');
+  let options = await optionsOf('Status');
+  check(JSON.stringify(options) === '["For Delivery","Ready for Pickup"]', 'from Approved the select offers the two peers, and no Received', options);
   await choose('Status', 'Ready for Pickup');
   p = await cdp.evaluate(panel);
   check(p.selects['Pickup location'] === 'Davao Office', 'Ready for Pickup asks for a location, preselecting the request’s office', p.selects['Pickup location']);
   await choose('Pickup location', 'Other…');
-  await cdp.evaluate(() => {
-    const b = [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status' && x.type === 'submit');
-    b.click();
-  });
+  await submitStatus();
   await settle();
   p = await cdp.evaluate(panel);
   check(p.invalid && p.pill === 'Approved', '`Other…` with no text is refused and the status stays');
+  check((await confirmation()) === null, 'an invalid form asks for no confirmation');
   await typeInto('dialog[open] textarea', '6th floor IT desk');
-  await cdp.evaluate(() => {
-    const b = [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status' && x.type === 'submit');
-    b.click();
+  await submitStatus();
+  await asked();
+  let c = await confirmation();
+  check(
+    c.title === 'Update status?' && c.text.includes('from Approved to Ready for Pickup, collected at 6th floor IT desk'),
+    'Update Status asks first, naming the change',
+    c.text,
+  );
+  check(c.focused === 'Cancel', 'the confirmation opens on Cancel', c.focused);
+  await answer('Cancel');
+  await settle();
+  p = await cdp.evaluate(panel);
+  check((await confirmation()) === null && p.pill === 'Approved' && 'Status' in p.selects, 'Cancel sends nothing and keeps the form');
+  await submitStatus();
+  await asked();
+  await esc();
+  await settle();
+  p = await cdp.evaluate(panel);
+  check((await confirmation()) === null && p?.pill === 'Approved' && 'Status' in p.selects, 'Esc closes the confirmation, not the panel');
+  await submitStatus();
+  await asked();
+  const card = await cdp.evaluate(() => {
+    const r = document.querySelector('dialog[open][role="alertdialog"] h2').getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   });
+  await mouse('mousePressed', card.x, card.y);
+  await mouse('mouseMoved', 400, 500);
+  await mouse('mouseReleased', 100, 500);
+  await settle();
+  check((await confirmation()) !== null, 'a drag from the confirmation onto its scrim does not cancel it');
+  await clickScrim();
+  await settle();
+  p = await cdp.evaluate(panel);
+  check((await confirmation()) === null && p?.pill === 'Approved' && 'Status' in p.selects, 'a scrim click cancels the confirmation and keeps the panel');
+  await submitStatus();
+  await asked();
+  await answer('Confirm');
   await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'Ready for Pickup', 5000, 'Ready for Pickup');
   p = await cdp.evaluate(panel);
   check(p.text.includes('Pickup location') && p.text.includes('6th floor IT desk'), 'the pickup location reads back');
@@ -331,11 +391,11 @@ try {
   await click('Update Status');
   await settle();
   p = await cdp.evaluate(panel);
-  check(p.selects.Status === 'For Delivery', 'from a handover state the select starts on its peer', p.selects.Status);
-  await cdp.evaluate(() => {
-    const b = [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status' && x.type === 'submit');
-    b.click();
-  });
+  check(p.selects.Status === 'Received', 'from a handover state the select starts on Received', p.selects.Status);
+  await choose('Status', 'For Delivery');
+  await submitStatus();
+  await asked();
+  await answer('Confirm');
   await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'For Delivery', 5000, 'For Delivery');
   p = await cdp.evaluate(panel);
   check(!p.text.includes('6th floor IT desk'), 'swapping to For Delivery clears the pickup location');
@@ -371,45 +431,55 @@ try {
     await closed();
   }
 
-  // ---- review round 1: stored location, no-op updates, required selects ----
-  console.log('\nA pickup keeps its stored location; an update that changes nothing is refused');
+  // ---- the current status is not offered; both selects are required ----
+  console.log('\nThe Status select never offers the current status');
   await go('/queue');
   await open('REQ-2026-1715');
   await click('Update Status');
   await settle();
-  await choose('Status', 'Ready for Pickup');
-  p = await cdp.evaluate(panel);
-  check(
-    p.selects['Pickup location'] === 'Other…' &&
-      (await cdp.evaluate(() => document.querySelector('dialog[open] textarea')?.value)) === '6th floor IT desk',
-    'a Ready for Pickup request starts on the location it already has',
-    p.selects['Pickup location'],
-  );
-  check(
-    await cdp.evaluate(() =>
-      [...document.querySelectorAll('dialog[open] button[role="combobox"]')].every((b) => b.getAttribute('aria-required') === 'true'),
-    ),
-    'both selects announce that they are required',
-  );
-  await cdp.evaluate(() => {
-    [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status' && x.type === 'submit').click();
-  });
-  await settle();
-  p = await cdp.evaluate(panel);
-  check(p.pill === 'Ready for Pickup' && /already Ready for Pickup at that location/.test(p.text), 'submitting the same status and location is refused, and nothing is sent');
+  options = await optionsOf('Status');
+  check(JSON.stringify(options) === '["Received","For Delivery"]', 'Ready for Pickup offers Received and For Delivery only', options);
   await esc();
   await closed();
 
   await open('REQ-2026-1748');
   await click('Update Status');
   await settle();
-  await choose('Status', 'For Delivery');
-  await cdp.evaluate(() => {
-    [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status' && x.type === 'submit').click();
-  });
+  options = await optionsOf('Status');
+  check(JSON.stringify(options) === '["Received","Ready for Pickup"]', 'For Delivery offers Received and Ready for Pickup only', options);
+  await choose('Status', 'Ready for Pickup');
+  check(
+    await cdp.evaluate(() =>
+      [...document.querySelectorAll('dialog[open] button[role="combobox"]')].every((b) => b.getAttribute('aria-required') === 'true'),
+    ),
+    'both selects announce that they are required',
+  );
+  await esc();
+  await closed();
+
+  // ---- FR-008a: the Admin marks a handed-over request Received ----
+  console.log('\nFR-008a — a handover state can be marked Received');
+  await open('REQ-2026-1703');
+  await click('Update Status');
   await settle();
+  options = await optionsOf('Status');
+  check(JSON.stringify(options) === '["Received","For Delivery"]', 'from a handover state the select offers Received first, then the other peer', options);
   p = await cdp.evaluate(panel);
-  check(/already For Delivery\./.test(p.text), 'For Delivery to For Delivery is refused too');
+  check(p.selects.Status === 'Received', 'Received is preselected', p.selects.Status);
+  check(!('Pickup location' in p.selects), 'Received asks for no location');
+  await submitStatus();
+  await asked();
+  c = await confirmation();
+  check(
+    c.text.includes('from Ready for Pickup to Received') && c.text.includes('cannot be undone'),
+    'the confirmation warns that Received cannot be undone',
+    c.text,
+  );
+  await answer('Confirm');
+  await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'Received', 5000, 'Received');
+  p = await cdp.evaluate(panel);
+  check(p.timeline[2] === 'Ready for Pickup' && p.timeline[3] === 'Received', 'the timeline keeps the handover taken and reaches Received', p.timeline);
+  check(JSON.stringify(p.buttons) === '[]', 'Received offers no action until Complete is built', p.buttons);
   await esc();
   await closed();
 
@@ -436,6 +506,27 @@ try {
   check(p.pill === 'Pending Approval', 'a failed reject leaves the status unchanged');
   check(await cdp.evaluate((sel) => document.querySelector(sel)?.value === 'Budget freeze', REASON), 'and keeps the typed reason for a retry');
   check(await cdp.evaluate(notesValue) === 'Bag and charger', 'and the typed Other Notes too');
+  await esc();
+  await closed();
+
+  await open('REQ-2026-1748');
+  await click('Update Status');
+  await settle();
+  await choose('Status', 'Ready for Pickup');
+  await choose('Pickup location', 'Other…');
+  await typeInto('dialog[open] textarea', 'Gate 2 lobby');
+  await submitStatus();
+  await asked();
+  await answer('Confirm');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the failure');
+  p = await cdp.evaluate(panel);
+  check((await confirmation()) === null, 'a failed update closes the confirmation, so the notice is in view');
+  check(p.pill === 'For Delivery' && p.alert?.includes('could not be updated'), 'and leaves the status unchanged', `${p.pill}: ${p.alert}`);
+  check(
+    p.selects.Status === 'Ready for Pickup' &&
+      (await cdp.evaluate(() => document.querySelector('dialog[open] textarea')?.value)) === 'Gate 2 lobby',
+    'and keeps the chosen status and location for a retry',
+  );
   await esc();
   await closed();
 

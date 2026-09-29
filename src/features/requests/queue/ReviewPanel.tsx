@@ -17,12 +17,14 @@ import { ReasonForm } from '../ReasonForm';
 import { requestTimeline } from '../request-timeline';
 import { reviewActions } from './review-actions';
 import {
+  LOCATION_REQUIRED,
+  officeLabel,
   pickupLabel,
-  type HandoverStatus,
   type PickupLocation,
   type ReviewRefusal,
   type ReviewRequest,
   type TransitionResult,
+  type UpdateStatusTarget,
 } from './review-types';
 import { UpdateStatusForm } from './UpdateStatusForm';
 
@@ -40,7 +42,7 @@ import { UpdateStatusForm } from './UpdateStatusForm';
 const REFUSAL_COPY: Record<ReviewRefusal, string> = {
   'status-changed': 'This request was updated while you were viewing it. Its current status and actions are shown below.',
   'reason-required': 'Enter a reason for rejecting this request.',
-  'location-required': 'Choose where the employee collects the items.',
+  'location-required': LOCATION_REQUIRED,
   unavailable: 'This request could not be updated. Try again.',
 };
 
@@ -57,6 +59,10 @@ const CANCELLED_TONE = 'border-status-cancelled-fg bg-status-cancelled-bg text-s
 
 type Mode = 'idle' | 'rejecting' | 'updating';
 
+/** Derived, where `User.initials` in auth/types.ts is carried: the review read
+ *  model holds only the requestor's name, and the contract has no initials
+ *  field to carry (constitution VII). A name that is not two words still gets
+ *  its first letter, and an empty one the marker. */
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   const first = parts[0]?.[0] ?? '';
@@ -106,7 +112,7 @@ export function ReviewPanel({
   /** `notes` is the trimmed **Other Notes**, or `undefined` when blank. */
   onApprove: (id: string, notes?: string) => Promise<TransitionResult>;
   onReject: (id: string, reason: string, notes?: string) => Promise<TransitionResult>;
-  onUpdateStatus: (id: string, to: HandoverStatus, pickup?: PickupLocation) => Promise<TransitionResult>;
+  onUpdateStatus: (id: string, to: UpdateStatusTarget, pickup?: PickupLocation) => Promise<TransitionResult>;
 }) {
   const [mode, setMode] = useState<Mode>('idle');
   const [submitting, setSubmitting] = useState(false);
@@ -206,7 +212,6 @@ export function ReviewPanel({
       return (
         <UpdateStatusForm
           status={request.status}
-          pickupLocation={request.pickupLocation}
           requestorOffice={request.requestorOffice}
           pickupOffices={pickupOffices}
           submitting={submitting}
@@ -270,6 +275,9 @@ export function ReviewPanel({
     <SidePanel
       title={`Review request ${request.id}`}
       onClose={onClose}
+      // A transition in flight must not be closed out from under: reopening the
+      // request would mount a fresh panel that could send it again (FR-015).
+      dismissible={!submitting}
       header={
         <>
           <h2 ref={heading} tabIndex={-1} className="type-section-title truncate text-ink-heading outline-none">
@@ -303,7 +311,7 @@ export function ReviewPanel({
           <div className="flex min-w-0 flex-col gap-4">
             <span className="truncate type-ui-bold text-ink-primary">{request.requestorName}</span>
             <span className="truncate type-meta text-ink-secondary">
-              {[request.requestorEmail, `${request.requestorOffice} Office`].filter(Boolean).join(' • ')}
+              {[request.requestorEmail, officeLabel(request.requestorOffice)].filter(Boolean).join(' • ')}
             </span>
           </div>
         </div>

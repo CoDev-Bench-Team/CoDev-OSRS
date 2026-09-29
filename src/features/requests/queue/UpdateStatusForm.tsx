@@ -1,34 +1,42 @@
 import { useId, useState, type FormEvent } from 'react';
-import { Button, Select, TextField, type RequestStatus } from '../../../shared/ui';
+import { Button, ConfirmDialog, Select, TextField, type RequestStatus } from '../../../shared/ui';
 import type { Office } from '../../auth/types';
-import { HANDOVER_STATUSES, type HandoverStatus, type PickupLocation } from './review-types';
+import {
+  LOCATION_REQUIRED,
+  officeLabel,
+  pickupLabel,
+  updateStatusTargets,
+  type PickupLocation,
+  type UpdateStatusTarget,
+} from './review-types';
 
-/** `02.2.1 - Update Status`: a required `Status *` select offering the two
- *  handover peers, with Cancel / Update Status (spec 008 Story 3, plan D7).
+/** `02.2.1 - Update Status`: a required `Status *` select, with Cancel /
+ *  Update Status (spec 008 Story 3, plan D7). From `Approved` it offers the two
+ *  handover peers. From a handover state it offers `Received`, first and
+ *  preselected, and the other peer; never the current status (FR-008, FR-008a,
+ *  ADR-0010). A valid submit asks in a confirmation dialog before anything is
+ *  sent (FR-008b).
  *
  *  The frame draws only the status. Choosing `Ready for Pickup` reveals a
  *  required pickup location, because spec 001 FR-011a needs one. The location
  *  is one of the offices the source exposes, with the request's office
  *  preselected, or `Other…`, which reveals a free-text field. This is decided
- *  by the project owner, undrawn, and logged in additions.md §3h.
- *
- *  A request already `Ready for Pickup` starts on the location it has, not the
- *  office, so confirming without looking never silently moves it. A submit that
- *  changes nothing is refused: it is not a transition, and it must not reach
- *  the source (or, later, send a `Status changed` email for no change). */
+ *  by the project owner, undrawn, and logged in additions.md §3h. */
 const OTHER = 'Other…';
-const officeLabel = (office: Office) => `${office} Office`;
-const LOCATION_REQUIRED = 'Choose where the employee collects the items.';
 const OTHER_REQUIRED = 'Enter where the employee collects the items.';
 
-const sameLocation = (a: PickupLocation | undefined, b: PickupLocation | undefined) =>
-  !!a && !!b && (a.kind === 'office' ? b.kind === 'office' && a.office === b.office : b.kind === 'other' && a.text === b.text);
-
-const isHandover = (value: string): value is HandoverStatus => (HANDOVER_STATUSES as readonly string[]).includes(value);
+/** The location the form's fields name, or `undefined` when they name none. */
+function chosenLocation(place: string, other: string, offices: readonly Office[]): PickupLocation | undefined {
+  if (place === OTHER) {
+    const text = other.trim();
+    return text ? { kind: 'other', text } : undefined;
+  }
+  const office = offices.find((o) => officeLabel(o) === place);
+  return office ? { kind: 'office', office } : undefined;
+}
 
 export function UpdateStatusForm({
   status,
-  pickupLocation,
   requestorOffice,
   pickupOffices,
   submitting,
@@ -36,61 +44,48 @@ export function UpdateStatusForm({
   onConfirm,
 }: {
   status: RequestStatus;
-  /** The location a `Ready for Pickup` request already has. */
-  pickupLocation?: PickupLocation;
   requestorOffice: Office;
   pickupOffices: readonly Office[];
   submitting: boolean;
   onBack: () => void;
   /** Resolves `'location-required'` if the source refused the location, which
    *  puts the location back in its invalid state. */
-  onConfirm: (to: HandoverStatus, pickup?: PickupLocation) => Promise<'location-required' | void>;
+  onConfirm: (to: UpdateStatusTarget, pickup?: PickupLocation) => Promise<'location-required' | void>;
 }) {
+  const targets = updateStatusTargets(status);
+  const isTarget = (value: string): value is UpdateStatusTarget => (targets as readonly string[]).includes(value);
   // From `Approved` the frame draws `For Delivery`. From a handover state the
-  // useful default is the peer, since swapping is why the Admin is here.
-  const [to, setTo] = useState<HandoverStatus>(status === 'For Delivery' ? 'Ready for Pickup' : 'For Delivery');
-  const [place, setPlace] = useState<string>(() => {
-    if (pickupLocation?.kind === 'other') return OTHER;
-    if (pickupLocation?.kind === 'office' && pickupOffices.includes(pickupLocation.office)) {
-      return officeLabel(pickupLocation.office);
-    }
-    return pickupOffices.includes(requestorOffice) ? officeLabel(requestorOffice) : '';
-  });
-  const [other, setOther] = useState(pickupLocation?.kind === 'other' ? pickupLocation.text : '');
+  // next step is `Received`, the first option (FR-008).
+  const [to, setTo] = useState<UpdateStatusTarget>(targets[0] ?? 'For Delivery');
+  const [place, setPlace] = useState(() => (pickupOffices.includes(requestorOffice) ? officeLabel(requestorOffice) : ''));
+  const [other, setOther] = useState('');
   const [invalid, setInvalid] = useState(false);
-  const [unchanged, setUnchanged] = useState(false);
+  // The valid change waiting on the confirmation dialog (FR-008b).
+  const [asking, setAsking] = useState<{ to: UpdateStatusTarget; pickup?: PickupLocation } | null>(null);
   const locationError = useId();
 
-  const pickup = (): PickupLocation | undefined => {
-    if (place === OTHER) {
-      const text = other.trim();
-      return text ? { kind: 'other', text } : undefined;
-    }
-    const office = pickupOffices.find((o) => officeLabel(o) === place);
-    return office ? { kind: 'office', office } : undefined;
-  };
-
-  const confirm = async (e: FormEvent) => {
+  const confirm = (e: FormEvent) => {
     e.preventDefault();
     if (submitting) return;
-    if (to === 'Ready for Pickup') {
-      const location = pickup();
-      if (!location) {
-        setInvalid(true);
-        return;
-      }
-      if (status === to && sameLocation(location, pickupLocation)) {
-        setUnchanged(true);
-        return;
-      }
-      if ((await onConfirm(to, location)) === 'location-required') setInvalid(true);
+    if (to !== 'Ready for Pickup') {
+      setAsking({ to });
       return;
     }
-    if (status === to) {
-      setUnchanged(true);
+    const pickup = chosenLocation(place, other, pickupOffices);
+    if (!pickup) {
+      setInvalid(true);
       return;
     }
-    await onConfirm(to);
+    setAsking({ to, pickup });
+  };
+
+  const send = async () => {
+    if (!asking || submitting) return;
+    const refused = await onConfirm(asking.to, asking.pickup);
+    // On success the form is gone. Otherwise the dialog closes so the panel's
+    // notice, or the invalid location, is in view.
+    setAsking(null);
+    if (refused === 'location-required' && asking.pickup) setInvalid(true);
   };
 
   const pickingUp = to === 'Ready for Pickup';
@@ -110,11 +105,10 @@ export function UpdateStatusForm({
           label="Status"
           required
           value={to}
-          options={[...HANDOVER_STATUSES]}
+          options={[...targets]}
           onChange={(value) => {
-            if (isHandover(value)) setTo(value);
+            if (isTarget(value)) setTo(value);
             setInvalid(false);
-            setUnchanged(false);
           }}
         />
       </div>
@@ -135,7 +129,6 @@ export function UpdateStatusForm({
             onChange={(value) => {
               setPlace(value);
               setInvalid(false);
-              setUnchanged(false);
             }}
           />
           {invalid && place !== OTHER ? (
@@ -157,16 +150,9 @@ export function UpdateStatusForm({
           message={OTHER_REQUIRED}
           onChange={(e) => {
             setOther(e.target.value);
-            setUnchanged(false);
             if (invalid && e.target.value.trim()) setInvalid(false);
           }}
         />
-      ) : null}
-
-      {unchanged ? (
-        <p role="alert" className="type-meta text-status-rejected-fg">
-          {`This request is already ${status}${to === 'Ready for Pickup' ? ' at that location' : ''}. Choose a different status or location.`}
-        </p>
       ) : null}
 
       <div className="flex items-center justify-center gap-12">
@@ -177,6 +163,24 @@ export function UpdateStatusForm({
           Update Status
         </Button>
       </div>
+
+      {asking ? (
+        <ConfirmDialog
+          title="Update status?"
+          confirmLabel="Confirm"
+          busy={submitting}
+          onCancel={() => setAsking(null)}
+          onConfirm={() => void send()}
+        >
+          <p>
+            {`Change this request from ${status} to ${asking.to}${asking.pickup ? `, collected at ${pickupLabel(asking.pickup)}` : ''}.`}
+          </p>
+          {asking.to === 'Received' ? (
+            <p>The items will be assigned to the employee. This cannot be undone.</p>
+          ) : null}
+          <p className="text-ink-secondary">The employee will receive an email about the change.</p>
+        </ConfirmDialog>
+      ) : null}
     </form>
   );
 }

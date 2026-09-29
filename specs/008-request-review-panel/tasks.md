@@ -10,7 +10,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
 ## Phase 0: Spec and doc amendments (BEN-77)
 
-- [x] T001 [BEN-77] Amend spec 003, Session 2026-09-26: the Admin's `/requests/:id` is retired and falls to not-found for every role and id (plan D10) — `specs/003-app-shell-routing/spec.md`
+- [x] T001 [BEN-77] Amend spec 003, Session 2026-09-26: the Admin's `/requests/:id` is retired and falls to not-found for every role and id (plan D10) — `specs/003-app-shell-routing/spec.md` *(superseded by T031–T034: the route stays, as a deep link that opens the panel)*
 - [x] T002 [P] [BEN-77] Annotate FR-010 "superseded by spec 008 FR-001" — `specs/004-approver-pending-queue/spec.md`
 - [x] T003 [P] [BEN-77] Log undrawn additions §3h: pickup-location select + `Other…` field, pickup read-back row, Update Status on handover states, Complete confirm (D12) — `docs/design-system/additions.md`
 - [x] T004 [P] [BEN-77] Add spec 008 to the index; tick tasks.md T015/T016/T017/T018 as owned by spec 008 — `specs/README.md`, `specs/001-office-supplies-mvp/tasks.md`
@@ -31,8 +31,8 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 - [x] T013 [US1] [BEN-78] **Review** becomes a button that sets `openId`, and the page renders the panel. Shared `reload()` keeps the snapshot on screen during a post-transition reload (D3, D5). Focus returns to the row, or to the chips' group if the row has gone. Query state is preserved — `src/features/requests/queue/QueuePage.tsx`
 - [x] T014 [US2] [BEN-78] Pending actions **Reject Request** / **Approve Request** with the email note. Panel modes `idle`/`rejecting`/`submitting`. Reject via `ReasonForm` (`Reason for rejection *`, placeholder `e.g item on hold, insufficient justification...`, **Confirm Rejection**). Refusal and failure notices keep the input (FR-014, FR-015) — `src/features/requests/queue/ReviewPanel.tsx`
 - [x] T015 [US2] [BEN-78] Terminal read-only state: reason read-back and **Close** only — `src/features/requests/queue/ReviewPanel.tsx`
-- [x] T016 [BEN-78] Retire `requestDetail`: remove the destination, route and placeholder, and delete the seeded ownership ids (D10) — `src/app/destinations.ts`, `src/app/routes.tsx`, `src/app/placeholders.tsx`, `src/app/seeded-request-ids.ts`
-- [x] T017 [BEN-78] Update the shell check: `/requests/:id` is not-found for both roles and every id — `scripts/check-shell.mjs`
+- [x] T016 [BEN-78] Retire `requestDetail`: remove the destination, route and placeholder, and delete the seeded ownership ids (D10) — `src/app/destinations.ts`, `src/app/routes.tsx`, `src/app/placeholders.tsx`, `src/app/seeded-request-ids.ts` *(superseded by T031–T034: `requestDetail` is kept as a deep link)*
+- [x] T017 [BEN-78] Update the shell check: `/requests/:id` is not-found for both roles and every id — `scripts/check-shell.mjs` *(superseded by T034: the check now asserts the deep link)*
 - [x] T018 [BEN-78] New check, G2 cases:
   - FR-005 actions per seeded status
   - open/close via ✕, Esc and scrim, with address, focus and query kept
@@ -48,6 +48,16 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 - [x] T035 [US2] [BEN-47] Record frame `02.2`'s Other Notes: drift note, FR-007a, contracts conflict 6 — `docs/design-system/drift-2026-09-29.md`, `specs/008-request-review-panel/spec.md`, `specs/001-office-supplies-mvp/contracts/README.md`
 - [x] T036 [US2] [BEN-47] Optional **Other Notes (optional)** box at the bottom of the pending panel, sent trimmed with approve or reject; `approve(id, notes?)` / `reject(id, reason, notes?)`, and the seed stores `otherNotes` — `src/features/requests/queue/ReviewPanel.tsx`, `src/features/requests/queue/review-types.ts`, `src/features/requests/queue/seeded-admin-request-source.ts`, `src/features/requests/queue/QueuePage.tsx`
 - [x] T037 [US2] [BEN-47] Check: field present and optional on a pending request, kept on backing out of a reject and on a failed reject, gone after the decision; the reason selectors target the required box — `scripts/check-review-panel.mjs`
+
+## Phase 2c: The Admin marks `Received` (BEN-47, 2026-09-29)
+
+- [x] T038 [US3] [BEN-47] Amend first: constitution 6.0.0, ADR-0010, process flow, ARCHITECT, spec 001 FR-012a / US5, spec 008 FR-008 / FR-008a, contracts conflict 5, additions §3h — `AGENTS.md`, `specs/constitution.md`, `docs/adr/0010-admin-marks-received.md`, `docs/process-flow.md`, `ARCHITECT.md`, `specs/001-office-supplies-mvp/`, `specs/008-request-review-panel/spec.md`, `docs/design-system/additions.md`
+- [x] T039 [US3] [BEN-47] `UpdateStatusTarget` and `updateStatusTargets(status)`; the Status select offers **Received** from a handover state; seeded `updateStatus(id, 'Received')` from `For Delivery` / `Ready for Pickup` only, setting `receivedAt` and keeping the handover and location — `src/features/requests/queue/review-types.ts`, `src/features/requests/queue/UpdateStatusForm.tsx`, `src/features/requests/queue/ReviewPanel.tsx`, `src/features/requests/queue/seeded-admin-request-source.ts`
+- [x] T040 [US3] [BEN-47] Check: no **Received** from `Approved`; offered from a handover state, asks no location, reaches `Received` with the handover node kept, and offers no action — `scripts/check-review-panel.mjs`
+- [x] T041 [US3] [BEN-47] **Received** first and preselected on a handover state; shared `ConfirmDialog`; every valid Update Status confirms first (FR-008b) — `src/shared/ui/overlay/ConfirmDialog.tsx`, `src/shared/ui/index.ts`, `src/features/requests/queue/review-types.ts`, `src/features/requests/queue/UpdateStatusForm.tsx`, `docs/design-system/additions.md`
+- [x] T042 [US3] [BEN-47] Check: invalid and unchanged submits ask nothing; the dialog names the change and opens on Cancel; Cancel and Esc send nothing and keep the panel and form; Received is preselected and its dialog warns it cannot be undone — `scripts/check-review-panel.mjs`
+- [x] T043 [US3] [BEN-47] The Status select drops the current status; the stored-location start and the no-change refusal go with it — `src/features/requests/queue/review-types.ts`, `src/features/requests/queue/UpdateStatusForm.tsx`, `src/features/requests/queue/ReviewPanel.tsx`, `scripts/check-review-panel.mjs`
+- [x] T044 [BEN-47] Review fixes: `ConfirmDialog` scrim needs press and release on the scrim; checks for the dialog's scrim and a failed Update Status; plan amended (D2, D7, D8, D12, D13, R6, R7) — `src/shared/ui/overlay/ConfirmDialog.tsx`, `scripts/check-review-panel.mjs`, `specs/008-request-review-panel/plan.md`
 
 ## Phase 3: G3a — Hand over (US3) (BEN-79)
 
@@ -77,8 +87,8 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
 - [ ] T025 [US4] [BEN-79] Add the `Received` row (`complete`) to `reviewActions`; the build must fail until it is added (D2) — `src/features/requests/queue/review-actions.ts`
 - [ ] T026 [US4] [BEN-79] Seeded `complete(id)` from `Received` only, setting `completedAt`, with no stock math — `src/features/requests/queue/seeded-admin-request-source.ts`, `src/features/requests/queue/review-types.ts`
-- [ ] T027 [US4] [BEN-79] Inline confirm `Mark this request as completed?` · Cancel / **Complete**, in `confirming-complete` mode (D8) — `src/features/requests/queue/ReviewPanel.tsx`
-- [ ] T028 [US4] [BEN-79] Five-node timeline with a `Received` node — `src/features/requests/request-timeline.ts`
+- [ ] T027 [US4] [BEN-79] Confirm `Mark this request as completed?` · Cancel / **Complete** in the shared `ConfirmDialog` (D8, amended 2026-09-29) — `src/features/requests/queue/ReviewPanel.tsx`
+- [x] T028 [US4] [BEN-79] Five-node timeline with a `Received` node — `src/features/requests/request-timeline.ts` *(arrived via dev: spec 001 T000g / BEN-43; asserted by `scripts/check-review-panel.mjs`)*
 - [ ] T029 [US4] [BEN-79] Check G3b cases: Complete only on `Received`; nothing sent before confirmation; `Completed` → row gone — `scripts/check-review-panel.mjs`
 - [ ] T030 [BEN-79] Lint, build, verify; fidelity against `02.2.1 Update Status` (2); PR to `dev`
 
@@ -87,7 +97,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 - Phase 0 T001 before T016/T017.
 - T006 → T007, T008 → T009. T010 and T011 are independent of T006–T009.
 - Phase 1 → Phase 2 → Phase 3 → Phase 4.
-- Phase 4 needs a `Received` request to act on, which the Accountability Form (spec 001 T018b) produces.
+- Phase 4 needs a `Received` request to act on, which the Admin's **Received** (T039) or the Accountability Form (spec 001 T018b) produces.
 
 ## Parallel opportunities
 

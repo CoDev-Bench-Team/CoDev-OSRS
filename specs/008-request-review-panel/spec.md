@@ -60,11 +60,14 @@ An Admin sets an approved request to `For Delivery` or `Ready for Pickup`, and c
 
 1. **Given** an `Approved` request, **When** the panel renders, **Then** it offers **Update Status** and no other action.
 2. **Given** the Admin activates **Update Status**, **When** the form opens, **Then** it shows a required **Status \*** select offering `For Delivery` and `Ready for Pickup`, with **Cancel** and **Update Status**.
-3. **Given** `Ready for Pickup` is selected, **When** the form renders, **Then** a required **Pickup location \*** select appears. It lists the offices the data source exposes, preselects the location the request already has, or else the request's office, and ends with a last option, **Other…**, which reveals a required free-text field.
+3. **Given** `Ready for Pickup` is selected, **When** the form renders, **Then** a required **Pickup location \*** select appears. It lists the offices the data source exposes, preselects the request's office, and ends with a last option, **Other…**, which reveals a required free-text field.
 4. **Given** `Ready for Pickup` with no location, or **Other…** with an empty or whitespace-only text, **When** the Admin confirms, **Then** the form shows its invalid state and nothing is sent.
 5. **Given** a valid choice, **When** the source accepts it, **Then** the pill and timeline show the new status, the handover node names it, and a `Ready for Pickup` request reads back its pickup location.
-6. **Given** a `For Delivery` or `Ready for Pickup` request, **When** the panel renders, **Then** it offers **Update Status** only. The Status select offers the other handover state as well as the current one, because they are peers.
+6. **Given** a `For Delivery` or `Ready for Pickup` request, **When** the panel renders, **Then** it offers **Update Status** only. The Status select offers **Received** and the other handover state, never the current one (FR-008, FR-008a).
 7. **Given** a handover state, **When** the panel renders, **Then** it does **not** offer **Complete**. Complete waits for `Received` (Story 4).
+8. **Given** a `For Delivery` or `Ready for Pickup` request, **When** the Admin selects **Received** and confirms, **Then** no pickup location is asked for, the pill shows `Received`, the timeline keeps the handover node it had and reaches **Received**, and the panel offers no action until Complete is built.
+9. **Given** an `Approved` request, **When** the Status select opens, **Then** it does not offer **Received**.
+10. **Given** a valid choice, **When** the Admin activates **Update Status**, **Then** a confirmation dialog names the change and nothing is sent until they press **Confirm**; **Cancel** or Esc sends nothing and keeps the form (FR-008b).
 
 ### Story 4 — Complete a received request (Priority: P1, gated)
 
@@ -110,7 +113,9 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 - **FR-006**: Approve MUST move `Pending Approval` → `Approved`.
 - **FR-007**: Reject MUST require a reason that is non-empty after trimming. An empty reason MUST NOT reach the source. A successful reject MUST read the reason back under **Reason for rejection**.
 - **FR-007a**: Where Approve and Reject are offered, the panel MUST show an optional **Other Notes (optional)** field at the bottom of the body, above the actions (frame `02.2`, [drift-2026-09-29](../../docs/design-system/drift-2026-09-29.md)). A non-blank note MUST be sent, trimmed, with whichever decision is taken; a blank one MUST NOT be sent and MUST NOT block either decision. The note MUST survive backing out of a rejection and a failed transition. It is not read back, because no frame draws it. The contract has no field for it (contracts conflict 6), so only the seeded source holds it.
-- **FR-008**: Update Status MUST offer exactly `For Delivery` and `Ready for Pickup`, from `Approved`, `For Delivery` or `Ready for Pickup`.
+- **FR-008**: Update Status MUST offer exactly `For Delivery` and `Ready for Pickup` from `Approved`, and from `For Delivery` or `Ready for Pickup`, `Received` (listed first and preselected) and the other handover state. The current status MUST NOT be offered: choosing it would change nothing, so a `Ready for Pickup` request's location cannot be changed in place.
+- **FR-008b**: A valid Update Status MUST ask in a confirmation dialog (**Update status?** · Cancel / **Confirm**) naming the previous and new status, and the pickup location when there is one, before anything is sent. For `Received` it MUST say the change cannot be undone. Cancel, Esc and the scrim MUST close the dialog, keep the form and its input, and send nothing; Esc MUST NOT close the panel. The dialog opens on Cancel. An invalid or unchanged submit MUST NOT open it.
+- **FR-008a**: Setting `Received` MUST be accepted only from `For Delivery` or `Ready for Pickup` (constitution 6.0.0 IV, [ADR-0010](../../docs/adr/0010-admin-marks-received.md)). It MUST keep the handover state and pickup location the request had, and MUST NOT ask for a location. Unit assignment and the `Status changed` email are the API's (FR-016). The contract has no such transition yet (contracts conflict 5), so only the seeded source accepts it.
 - **FR-009**: `Ready for Pickup` MUST require a pickup location: one of the offices the source exposes (the request's office preselected), or **Other…** with non-empty free text.
 - **FR-010**: The panel MUST NOT offer Complete from `For Delivery` or `Ready for Pickup`.
 - **FR-011**: Complete MUST ask for confirmation before it sends anything.
@@ -134,7 +139,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 ## Out of Scope
 
 - **Admin cancel** (`Approved` / `For Delivery` / `Ready for Pickup` → `Cancelled`). Spec 001 FR-010b stands, but no control is drawn. Deferred to a follow-up ticket by the project owner, 2026-09-26.
-- The Employee's accountability form and the transition to `Received`. They are the amendment's and the Employee panel's.
+- The Employee's accountability form and its transition to `Received`. They are the amendment's and the Employee panel's. The Admin's own path to `Received` is in scope (FR-008a).
 - The `Received` amendment itself, which landed with constitution 5.0.0 (BEN-43, ADR-0009).
 - The queue list, filters, search, sort and pagination (BEN-46).
 - History and its read-only panel (BEN-49 / spec 001 FR-016a).
@@ -169,7 +174,7 @@ Inferred from existing specs, not asked:
 
 - The reject reason is an **inline block in the panel**, not a modal. That is how `02.2.2` draws it (drift-2026-09-24 §5).
 - The open panel is component state, not part of the address, as in spec 007. *(Later the same day `/requests/:id` became a deep link that opens the panel; see below.)*
-- The pickup-location select preselects the request's office, which is the most likely pickup point. This is our default, not drawn. *(Refined in review: a request that already has a location opens on it, so confirming without looking never moves it.)*
+- The pickup-location select preselects the request's office, which is the most likely pickup point. This is our default, not drawn. *(Refined in review: a request that already has a location opened on it. Withdrawn 2026-09-29: the current status is no longer offered, so a `Ready for Pickup` request cannot be re-set to `Ready for Pickup`, and there is no stored location to open on.)*
 
 ### Session 2026-09-26 — after merging `dev`
 
@@ -186,6 +191,9 @@ Raised by frame `02.2` as the project owner supplied it
 ([drift-2026-09-29](../../docs/design-system/drift-2026-09-29.md)), and decided by the project owner.
 
 - Q: `02.2` now draws an **Other Notes** box above Reject / Approve. Required or optional? → A: **Optional**, labelled **Other Notes (optional)** (FR-007a).
+- Q: Once a request is `For Delivery` / `Ready for Pickup`, should the Status select offer **Received**? → A: **Yes.** This redefined constitution IV, so it landed as constitution 6.0.0 and [ADR-0010](../../docs/adr/0010-admin-marks-received.md) first (FR-008, FR-008a, Story 3 criteria 8–9). The Employee's Accountability Form still sets `Received` too.
+- Q: Should the select offer the request's current status? → A: **No.** `For Delivery` offers `Received` · `Ready for Pickup`; `Ready for Pickup` offers `Received` · `For Delivery` (FR-008). Moving a pickup to a new location in place is no longer possible: it takes For Delivery, then Ready for Pickup again, which is two transitions and two `Status changed` emails. Accepted by the project owner (plan R6).
+- Q: Where does **Received** sit in the select, and does Update Status confirm? → A: **First and preselected** on a handover state, and **every** Update Status asks in a confirmation dialog first (FR-008b). Both undrawn, logged in additions.md §3h.
 
 Inferred, not asked:
 
@@ -196,7 +204,7 @@ Inferred, not asked:
 
 - Completeness: PASS. All four P1 stories have acceptance criteria. Story 4 is explicitly gated.
 - Clarity: PASS
-- Consistency: PASS against constitution 5.0.0.
+- Consistency: PASS against constitution 6.0.0.
 - Measurability: PASS
 - Coverage: PASS. Admin cancel is excluded deliberately (Out of Scope).
 - Edge cases: PASS

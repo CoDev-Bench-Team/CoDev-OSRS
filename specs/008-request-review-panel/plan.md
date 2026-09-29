@@ -2,11 +2,12 @@
 
 **Date**: 2026-09-26  
 **Spec**: `specs/008-request-review-panel/spec.md`  
-**Status**: Draft
+**Status**: Draft  
+**Amended**: 2026-09-29: constitution 6.0.0 / ADR-0010 (the Admin may mark `Received`), the Status select's options, and a modal confirmation for Update Status (D2, D7, D8, D12, D13).
 
 ## Summary
 
-**Review** on a Requests Queue row opens the shared `SidePanel` over `/queue` instead of navigating. The panel is one component. A pure function maps the request's status to the actions it offers, and a local "mode" (idle, rejecting, updating, confirming-complete) swaps the action area. It never swaps the body. Every transition goes through one typed Admin request source, the seeded source until the contract publishes. After each attempt the queue reloads from that source, so the panel, rows, chips and summary cards are always one snapshot, never an optimistic guess.
+**Review** on a Requests Queue row opens the shared `SidePanel` over `/queue` instead of navigating. The panel is one component. A pure function maps the request's status to the actions it offers, and a local "mode" (idle, rejecting, updating) swaps the action area. Update Status, and later Complete, confirm in a modal `ConfirmDialog` over the panel (D8). It never swaps the body. Every transition goes through one typed Admin request source, the seeded source until the contract publishes. After each attempt the queue reloads from that source, so the panel, rows, chips and summary cards are always one snapshot, never an optimistic guess.
 
 ## Technical Context
 
@@ -15,24 +16,25 @@
 **Storage**: None in the SPA. The seeded source is a mutable in-memory store that resets on reload.  
 **Target Layer**: Frontend SPA only  
 **Performance Goals**: None beyond the existing queue. The panel reads one request, and the reload after a transition reuses the queue's single `load()`.  
-**Constraints**: Constitution 3.0.1 (`Received` is **not** in `RequestStatus` until BEN-134 lands 4.0.0); no invented REST contract; no stock arithmetic; feature code under `src/features/requests/queue/*` (BEN-47 ownership); Admin cancel is BEN-135's.
+**Constraints**: Constitution 6.0.0 (`Received` is a status since 5.0.0; since 6.0.0 the Admin may set it from a handover state, ADR-0010); no invented REST contract; no stock arithmetic; feature code under `src/features/requests/queue/*` (BEN-47 ownership); Admin cancel is BEN-135's.
 
 ## Decisions
 
 | # | Decision | Why |
 |---|----------|-----|
 | D1 | **One panel, status-driven.** `reviewActions(status)` returns a discriminated union of the actions offered. `ReviewPanel` renders only those. There is no `disabled` branch anywhere. | BEN-77 constraints 1–2; spec FR-005 ("impossible to render, not merely disabled"). |
-| D2 | `reviewActions` is exhaustive over `RequestStatus` via a `satisfies Record<RequestStatus, …>` table. When BEN-134 adds `Received`, the build fails until the table gains its row. | This turns the FR-012 gate into a compile-time checkpoint instead of a memory. |
+| D2 | `reviewActions` is exhaustive over `RequestStatus` via a `satisfies Record<RequestStatus, …>` table. When BEN-134 adds `Received`, the build fails until the table gains its row. *(It did, at the 5.0.0 merge: `Received` has an empty row until Complete is built.)* | This turns the FR-012 gate into a compile-time checkpoint instead of a memory. |
 | D3 | **Refetch, not optimistic.** The source applies the transition, then the page re-runs `load()`. The panel re-reads its request from the fresh snapshot by id. The reload that follows a transition MUST keep the current snapshot on screen (no `loading` state, so the panel never unmounts) and swaps in the new one on success. If that reload fails, the old snapshot stays and the panel shows a notice (spec 007's pattern). | BEN-77 constraint 5: Complete mutates stock, so the `In Processing` card and CURRENT INVENTORY must come from the source. |
 | D4 | The queue and the panel share **one source**. `AdminRequestSource extends QueueSource` with `get(id)` and the transition methods. The seeded queue data moves into it. | A transition and the reload that follows must see the same store (FR-013). Two seeds would drift. |
 | D5 | The panel stays mounted while its request becomes terminal. The page keeps the open id, and after the reload the panel shows the terminal read-only state. The row is gone from the table behind it. | Story 2 AC5: after rejecting, the Admin sees the reason and **Close**. Unmounting would hide the result of the action. |
 | D6 | **One `ReasonForm`** (required, trimmed, `TextField tone="danger"`, Cancel / Confirm) is extracted from `RequestDetailPanel`. It has two callers today (the Employee's cancel and the Admin's reject) and BEN-135 will add a third. | BEN-77 constraint 4. |
-| D7 | The Update Status form is a small `UpdateStatusForm`: `Status *` select, then, for `Ready for Pickup`, a `Pickup location *` select listing `source.pickupOffices` plus a final `Other…`, then a free-text field for `Other…`. The request's office is preselected. The value is a `PickupLocation` union (below). | Spec FR-008/FR-009, Clarifications 2026-09-26. The office list comes from the source, never a literal in the panel (see Known Risks: Pasig/Ortigas). |
-| D8 | The Complete confirm is **inline** in the action area (`Mark this request as completed?` · Cancel / Complete), not a modal over the panel. | FR-011. A dialog on a dialog would double the focus-trap logic. Inline matches how reject is drawn. |
+| D7 | The Update Status form is a small `UpdateStatusForm`: `Status *` select, then, for `Ready for Pickup`, a `Pickup location *` select listing `source.pickupOffices` plus a final `Other…`, then a free-text field for `Other…`. The request's office is preselected. The value is a `PickupLocation` union (below). *(Amended 2026-09-29.)* The options come from `updateStatusTargets(status)`: from `Approved`, `For Delivery` · `Ready for Pickup`; from a handover state, `Received` (first and preselected) and the other peer. The current status is never offered, so there is no "no change" refusal and no stored-location start. | Spec FR-008/FR-009, Clarifications 2026-09-26. The office list comes from the source, never a literal in the panel (see Known Risks: Pasig/Ortigas). |
+| D8 | *(Amended 2026-09-29; was an inline Complete confirm.)* A confirmation is a **modal over the panel**: the shared `ConfirmDialog` (`src/shared/ui/overlay/`), a native `<dialog>` stacked in the top layer. Update Status uses it now (FR-008b) and Complete will reuse it (FR-011). Reject and the Employee's cancel stay inline, because they collect a reason: a form, not a yes/no. | The project owner asked for a dialog on Update Status. The focus-trap cost this decision first avoided is paid once, in `ConfirmDialog`: it handles Esc and Tab itself and stops them before `SidePanel`'s document listener, and uses `SidePanel`'s press-and-release scrim rule. |
 | D9 | Complete code (`CompleteConfirm`, the `complete` source method, the `Received` row) ships in a **separate PR after BEN-134**. G2 and G3a do not contain it. | Spec FR-012. Nothing unreachable ships behind a flag. |
 | D10 | **`/requests/:id` is a deep link** *(amended 2026-09-26, after the `dev` merge; it was first retired)*. `RequestDeepLink` forwards to `/queue` (Admin) or `/requests` (Employee) with the id in navigation state; `useDeepLinkedRequest` opens the panel once the page's list has loaded, or shows one fixed notice for an id it may not show, then consumes the state. The `requestDetail` destination is kept for both roles so the link survives sign-in; `RequestDetailPlaceholder` and `seeded-request-ids.ts` stay deleted. | Email *View request* buttons link to the address (T005). Deciding existence against the page's own list keeps a missing and a foreign id identical (spec 003 FR-012a). |
 | D11 | The timeline mapping is widened to a structural `TimelineFacts` type (the fields it reads), so `requestTimeline` serves both `EmployeeRequest` and `ReviewRequest`. It moves to `src/features/requests/request-timeline.ts`. | FR-018: reuse the 007 timeline, with one mapping for both panels. |
-| D12 | Undrawn additions (pickup-location select, `Other…` field, pickup-location read-back row, Complete confirm, the `Update Status` action on a handover state) are logged in `docs/design-system/additions.md` §3h. | Constitution I: undrawn UI is recorded, not silent. |
+| D12 | Undrawn additions (pickup-location select, `Other…` field, pickup-location read-back row, Complete confirm, the `Update Status` action on a handover state, `Received` in the Status select, the Update Status confirmation) are logged in `docs/design-system/additions.md` §3h. | Constitution I: undrawn UI is recorded, not silent. |
+| D13 | *(2026-09-29.)* **The Admin may set `Received`** through `updateStatus(id, 'Received')`, accepted only from `For Delivery` / `Ready for Pickup`. It keeps `handover` and `pickupLocation`, sets `receivedAt`, and does no stock math. The Employee's Accountability Form stays the other way in. | Constitution 6.0.0 IV, ADR-0010, spec 008 FR-008a. |
 
 ### Actions by status (D1)
 
@@ -41,12 +43,12 @@
 | `Pending Approval` | `approve`, `reject` | G2 |
 | `Approved` | `updateStatus` | G3a |
 | `For Delivery`, `Ready for Pickup` | `updateStatus` | G3a |
-| `Received` *(after BEN-134)* | `complete` | G3b |
+| `Received` | none until Complete; then `complete` | G3b |
 | `Rejected`, `Cancelled`, `Completed` | `close` | G2 |
 
 ### Panel modes (D1, D8)
 
-`idle` → (`rejecting` \| `updating` \| `confirming-complete`) → `submitting` → `idle`. Any form's **Cancel** returns to `idle` and clears that form. Modes change only the action area. The body (header, REQUESTED BY, lines, note, timeline, stop reason, pickup row) is identical in every mode.
+`idle` → (`rejecting` \| `updating`) → `submitting` → `idle`. In `updating`, a valid submit first opens `ConfirmDialog` (D8); Confirm sends, and Cancel, Esc or the scrim returns to the form with its input. Any form's **Cancel** returns to `idle` and clears that form. Modes change only the action area. The body (header, REQUESTED BY, lines, note, timeline, stop reason, pickup row) is identical in every mode.
 
 ## Data Model
 
@@ -62,7 +64,8 @@ interface ReviewRequest extends QueueRequest {          // id, requestor*, items
   noteToApprover?: string;
   handover?: 'For Delivery' | 'Ready for Pickup';
   pickupLocation?: PickupLocation;
-  approvedAt?: string; handedOverAt?: string; completedAt?: string;
+  otherNotes?: string;
+  approvedAt?: string; handedOverAt?: string; receivedAt?: string; completedAt?: string;
   rejection?: { reason: string; at: string };
   cancellation?: { reason: string; at: string };
 }
@@ -72,9 +75,9 @@ interface ReviewSnapshot extends QueueSnapshot { requests: readonly ReviewReques
 interface AdminRequestSource extends QueueSource {
   readonly pickupOffices: readonly Office[];
   load(): Promise<ReviewSnapshot>;   // the panel reads its request from the table's own snapshot
-  approve(id: string): Promise<TransitionResult>;
-  reject(id: string, reason: string): Promise<TransitionResult>;
-  updateStatus(id: string, to: 'For Delivery' | 'Ready for Pickup', pickup?: PickupLocation): Promise<TransitionResult>;
+  approve(id: string, notes?: string): Promise<TransitionResult>;
+  reject(id: string, reason: string, notes?: string): Promise<TransitionResult>;
+  updateStatus(id: string, to: 'For Delivery' | 'Ready for Pickup' | 'Received', pickup?: PickupLocation): Promise<TransitionResult>; // Received: D13
   // complete(id): added in G3b, after BEN-134
 }
 ```
@@ -94,7 +97,7 @@ None added. `AdminRequestSource` is an internal UI seam. The backend's approve, 
 - `seeded-admin-request-source.ts`: replaces `seeded-queue-source.ts`. It keeps the same 15 rows and ids and adds `lines` (with `available`), `requestorOffice`, notes and timestamps. REQ-2026-1847 matches the frame: three lines, "temporary project setup", Davao. The terminal rows carry placeholder reasons, and 1715 carries a pickup location. Transitions guard the from-status and refuse otherwise with `status-changed`, and they trim and require reasons and locations.
 - `admin-request-source.ts`: picks the source. On the dev server only, `?review=changes|failing|reload-fails` wraps it in `dev/review-stub.ts`, which reaches the refusal and failure paths the seed cannot (FR-014). `import.meta.env.DEV` drops it from production.
 - `ReviewPanel.tsx`: the `SidePanel` body plus the action area, driven by `reviewActions` and the panel mode.
-- `UpdateStatusForm.tsx`: D7.
+- `UpdateStatusForm.tsx`: D7, with the D8 confirmation.
 - `QueuePage.tsx` (modify):
   - **Review** becomes a `<button>` that sets `openId`, replacing the `Link`.
   - The page renders `<ReviewPanel>` when `openId` is set.
@@ -116,6 +119,7 @@ None added. `AdminRequestSource` is an internal UI seam. The backend's approve, 
     - Esc is the dialog's `cancel` event. A child that handled Esc itself (an open `Select`) prevents it.
     - A close the browser forces (Chrome makes `cancel` un-cancellable on repeated Esc without user activation) still reports `onClose`.
     - `will-change-transform` makes the dialog the containing block for fixed descendants.
+- `src/shared/ui/overlay/ConfirmDialog.tsx`: the modal confirmation (D8).
 - `src/shared/ui/forms/Select.tsx`: inside an open `<dialog>`, the list is portalled into the dialog (outside it would be inert and under the top layer) and positioned against the dialog's box.
 - `src/shared/ui/gallery/Gallery.tsx`: split into one component per section (react-doctor `no-giant-component`, approved by the owner). It renders the same thing, and the fidelity and pixel gates pass.
 - `scripts/check-catalog.mjs`, `scripts/check-request-detail.mjs`: they select `dialog[open]`, send a real Esc (a synthetic `KeyboardEvent` never raises a native `cancel`), and wait for the dialog to leave the DOM.
@@ -163,12 +167,13 @@ scripts/check-review-panel.mjs        # new; wired into scripts/verify.mjs
 |-------|--------|----------|
 | G2 | BEN-78 | Source + seed, `reviewActions`, `ReviewPanel` read body, approve, reject via `ReasonForm`, terminal read-only, Review-opens-panel, D10 retirement, check script |
 | G3a | BEN-79 | `UpdateStatusForm`, pickup location, handover-state actions, pickup read-back |
-| G3b | BEN-79, **blocked by BEN-134** | `Received` row, `complete`, inline confirm, five-node timeline |
+| G3a+ | BEN-47, 2026-09-29 | Constitution 6.0.0 / ADR-0010 docs, `Received` in the Status select (D7, D13), `ConfirmDialog` on Update Status (D8) |
+| G3b | BEN-79 *(unblocked: 5.0.0 landed)* | `complete` in the `Received` row, `ConfirmDialog` for it, five-node timeline *(timeline already arrived with 5.0.0)* |
 
 ## Dependencies
 
 - Merged: BEN-46 queue (spec 004), BEN-45 panel pieces (spec 007: `SidePanel`, `StatusTimeline`, `TextField`).
-- BEN-134 (constitution 4.0.0) gates G3b only.
+- ~~BEN-134 (constitution 4.0.0) gates G3b only.~~ Met: `Received` landed as constitution 5.0.0 (BEN-43).
 - BEN-135 (Admin cancel) adds a `cancel` action and reuses `ReasonForm`. It is not a dependency.
 - The backend contract, for replacing the seeded source later.
 
@@ -180,7 +185,8 @@ scripts/check-review-panel.mjs        # new; wired into scripts/verify.mjs
   - Open and close via ✕, Esc and scrim: the address is `/queue`, focus is back on the row, and chip/search/page are preserved.
   - Reject with an empty or whitespace reason: invalid, no status change. With a valid reason: `Rejected`, reason read back, **Close** only, and the row is gone and the chip counts drop.
   - Approve: the pill reads `Approved`, the panel offers Update Status, and the `Pending approval` card drops by 1.
-  - Update Status: `Ready for Pickup` with no location is refused. With an office it succeeds. With `Other…` and empty text it is refused. `For Delivery` ↔ `Ready for Pickup` swaps.
+  - Update Status: `Ready for Pickup` with no location is refused. With an office it succeeds. With `Other…` and empty text it is refused. `For Delivery` ↔ `Ready for Pickup` swaps. The current status is not offered. From a handover state `Received` is first and preselected, asks no location, and keeps the handover node.
+  - Confirmation (FR-008b): an invalid submit asks nothing; a valid one names the change and opens on Cancel; Cancel, Esc and a scrim click send nothing and keep the panel and form; a drag onto the scrim does not cancel; `Received` warns it cannot be undone; a failed update closes the dialog and keeps the input.
   - `?review=changes`: a refusal names the current status. `?review=failing`: status unchanged and input kept.
   - No handover state renders **Complete** (SC-005, pre-4.0.0).
 - `scripts/check-shell.mjs`: `/requests/:id` opens the panel for both roles, including a decided request; a missing id and, for an Employee, a foreign one open nothing and get the same notice without echoing the id; the link survives sign-in (D10).
@@ -195,7 +201,9 @@ scripts/check-review-panel.mjs        # new; wired into scripts/verify.mjs
 | FR-003, FR-004 | `ReviewPanel` body; `ReviewLine.available` from the source |
 | FR-005 | `review-actions.ts` + `ReviewPanel` |
 | FR-006, FR-007 | `approve`, `reject` + `ReasonForm` |
-| FR-008, FR-009 | `UpdateStatusForm`, `pickupOffices`, `PickupLocation` |
+| FR-008, FR-009 | `UpdateStatusForm`, `updateStatusTargets`, `pickupOffices`, `PickupLocation` |
+| FR-008a | D13: seeded `updateStatus(id, 'Received')` |
+| FR-008b | D8: `ConfirmDialog` in `UpdateStatusForm` |
 | FR-010 | `reviewActions` handover rows have no `complete` |
 | FR-011, FR-012 | G3b `CompleteConfirm`, gated by D2/D9 |
 | FR-013 | D3 refetch + D5 |
@@ -204,16 +212,16 @@ scripts/check-review-panel.mjs        # new; wired into scripts/verify.mjs
 | FR-018 | Shared UI + D11 timeline |
 | FR-019 | `SidePanel` focus trap; check-a11y-responsive |
 
-19 of 19 covered. FR-011 and FR-012 are covered by G3b, which is blocked by BEN-134.
+21 of 21 covered. FR-011 and FR-012 are covered by G3b, not built yet.
 
 ## Constitution Compliance
 
 | Principle | Status | Reason |
 |---|---|---|
-| I. Spec-Driven | PASS | Spec 008 is recorded. Specs 003 and 004 are amended in the same change. Undrawn UI is logged (D12). `Received` waits for its own amendment. |
+| I. Spec-Driven | PASS | Spec 008 is recorded. Specs 003 and 004 are amended in the same change. Undrawn UI is logged (D12). The Admin's `Received` landed as constitution 6.0.0 and ADR-0010 before the code (D13). |
 | II. Two Roles | PASS | `/queue` is Admin-only. There is no Employee path to any action. |
 | III. Inventory Integrity | PASS | The SPA does no stock math, and CURRENT INVENTORY is read from the source. |
-| IV. State Machine | PASS | Only 3.0.1 transitions until BEN-134. Illegal actions are unrenderable (D1/D2). |
+| IV. State Machine | PASS | 6.0.0 transitions: `Received` only from a handover state, by the Admin (D13) or the Employee's form. Illegal actions and targets are unrenderable (D1/D2, D7). |
 | V. Notifications | PASS | Emails are the API's. The SPA sends none. |
 | VI. Testable Increments | PASS | G2, G3a and G3b each demo on the seed. |
 | VII. Typed Contracts | PASS | Internal read model only. Offices come from the contract enum. |
@@ -244,4 +252,6 @@ None dismissed. The two findings were applied: (1) reload continuity is now bind
 - **R3 (accepted)**: retiring `/requests/:id` could break email deep links. Suggested mitigation: ask the backend before G2 merges.
 - **R4 (accepted)**: the Pasig/Ortigas conflict could leave the pickup preselection empty. Suggested mitigation: add a check that the preselected office is in the list.
 - **R5 (accepted)**: G3b is stranded if BEN-134 stalls. Suggested fallback: revert Complete to the handover states, a one-row change to `reviewActions`.
+- **R6 (accepted, 2026-09-29)**: the current status is not offered, so a wrong pickup location is corrected only by For Delivery → Ready for Pickup, which is two transitions and two `Status changed` emails (FR-016). Decided by the project owner; a location-only edit would need its own spec.
+- **R7 (accepted, 2026-09-29)**: `Received` is preselected on a handover state and irreversible (ADR-0010). The confirmation's "cannot be undone" line is the only guard.
 - **CURRENT INVENTORY** freshness depends on the source. With the seed it never moves, because the seed does no stock math by design.

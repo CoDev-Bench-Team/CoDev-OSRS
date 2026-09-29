@@ -23,7 +23,7 @@ supplies, including stock movements and notifications.
 | Actor | Job |
 |-------|-----|
 | **Employee** | Browses the catalog, builds a request list, submits, tracks their own requests, cancels their own request while it is `Pending Approval` |
-| **Admin** | Reviews the queue, approves or rejects, sets `For Delivery` or `Ready for Pickup`, completes, cancels what cannot be fulfilled, owns Assets and Inventory |
+| **Admin** | Reviews the queue, approves or rejects, sets `For Delivery` or `Ready for Pickup`, may mark `Received`, completes, cancels what cannot be fulfilled, owns Assets and Inventory |
 | **System** | Moves stock, sends mail, records the notification log |
 
 Two human roles, not three. See [ADR-0005](adr/0005-two-role-model.md).
@@ -80,6 +80,9 @@ your decision."*
    request is `For Delivery` or `Ready for Pickup`: ticks *I have read and agree
    to the above*, types their full name, optionally adds *Other Notes*, and
    presses **I acknowledge and sign**.
+   *Or* the **Admin marks it Received**: **Update Status** on a `For Delivery`
+   or `Ready for Pickup` request also offers **Received**
+   ([ADR-0010](adr/0010-admin-marks-received.md)). Whichever comes first wins.
 6. System: status **Received**. The reserved units become `Assigned` to the
    Employee, so `Total` and `Reserved` both fall by the requested quantity —
    this is when the items leave the store.
@@ -89,8 +92,9 @@ your decision."*
    quantity changes.
 9. Notification: **Status changed** (to Employee).
 
-The Employee confirms receipt; the Admin closes the request. See
-[ADR-0009](adr/0009-received-and-accountability-form.md), which amends
+The Employee confirms receipt, or the Admin records it; the Admin closes the
+request. See [ADR-0009](adr/0009-received-and-accountability-form.md), as
+amended by [ADR-0010](adr/0010-admin-marks-received.md), which amends
 [ADR-0007](adr/0007-fulfilment-status-vocabulary.md) and
 [ADR-0008](adr/0008-per-unit-inventory-register.md).
 
@@ -132,7 +136,7 @@ cancellation** and a **Close** button.
 | `Approved` | Admin | approve | — | — | — |
 | `For Delivery` | Admin | update status | — | — | — |
 | `Ready for Pickup` | Admin | update status, location recorded | — | — | — |
-| `Received` | System | the owning Employee submits the Accountability Form, from `For Delivery` or `Ready for Pickup` | −qty | — | −qty |
+| `Received` | System or Admin | from `For Delivery` or `Ready for Pickup`: the owning Employee submits the Accountability Form (System), or an Admin marks it with Update Status | −qty | — | −qty |
 | `Completed` | Admin | complete, from `Received` only | — | — | — |
 | `Cancelled` | Employee or Admin | cancel, reason required | — | +qty | −qty |
 
@@ -280,6 +284,7 @@ flowchart TD
   fp --> mailS1
   mailS1 --> sign[Employee signs the Accountability Form]
   sign --> received[System: Received]
+  mailS1 -.->|Admin marks Received| received
   received --> consume[Total and Reserved fall by qty]
   consume --> mailRc[Email: Status changed]
   mailRc --> complete[Admin completes / Completed]
