@@ -342,7 +342,8 @@ function seed(): ReviewRequest[] {
     },
     {
       id: 'REQ-2026-1612',
-      ...person('Isabella Mendoza', 'Engineering', 'isabellam@codev.com', 'Cebu'),
+      // Paolo's second resolved request, so Employee (A-Z) has a tie to break.
+      ...person('Paolo Navarro', 'Engineering', 'paolon@codev.com', 'Cebu'),
       items: ['Laptop Stand'],
       lines: [line('Laptop Stand - Rain Design mStand', 1, 9)],
       noteToApprover: 'posture',

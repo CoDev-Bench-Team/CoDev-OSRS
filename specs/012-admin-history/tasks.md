@@ -23,7 +23,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 ## Phase 2: Timeline for a stopped request (BEN-146)
 
 - [x] T007 [BEN-146] `Cancelled` returns Submitted, Approved when `approvedAt` is set, the handover node only when `approvedAt`, `handover` and `handedOverAt` are all set, then Cancelled, each reached, toned and dated. `Rejected` is unchanged (D8, R2) — `src/features/requests/request-timeline.ts`
-- [x] T008 [BEN-146] Update the Cancelled-timeline expectations: pending-cancelled still reads Submitted → Cancelled, and an approved-then-cancelled row reads its reached nodes — `scripts/check-request-detail.mjs`, `scripts/check-review-panel.mjs`
+- [x] T008 [BEN-146] Update the Cancelled-timeline expectations: pending-cancelled still reads Submitted → Cancelled, and an approved-then-cancelled row reads its reached nodes — `scripts/check-request-detail.mjs`, `scripts/check-review-panel.mjs` *(Done in `check-request-detail.mjs` only. `check-review-panel.mjs` needed no change: it opens no cancelled request, and without Admin cancel (BEN-135) the review panel cannot reach an approved-then-cancelled one. `check-history.mjs` covers that shape.)*
 - [x] T009 [BEN-146] Gate: full `npm run verify` passes, and Phase 2 is its own commit — `scripts/verify.mjs`
 
 ## Phase 3: US1 — Browse resolved requests (BEN-146)
@@ -73,9 +73,9 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   File: `scripts/check-history.mjs`
 - [x] T021 [BEN-148] Wire `history (spec 012)` into the gates and update the header comment — `scripts/verify.mjs`
 - [x] T022 [P] [BEN-148] Confirm the shell check still refuses `/history` for the Employee and offers it to the Admin; add the assertion if it is missing — `scripts/check-shell.mjs`
-- [x] T023 [BEN-148] Full `npm run verify` passes; screenshots at 1440px against both `04 - History` frames are attached to the PR — `scripts/verify.mjs`
+- [x] T023 [BEN-148] Full `npm run verify` passes; screenshots at 1440px against both `04 - History` frames are attached to the PR — `scripts/verify.mjs` *(Verify passes and the screenshots are taken. Attaching them moves to T025, since the PR does not exist yet.)*
 - [x] T024 [BEN-148] Tick T022 `[x]` in spec 001 tasks and T001–T023 here — `specs/001-office-supplies-mvp/tasks.md`, `specs/012-admin-history/tasks.md`
-- [ ] T025 [BEN-148] PR to `dev` linking BEN-144, and attach it to the Linear issue — `specs/012-admin-history/`
+- [ ] T025 [BEN-148] PR to `dev` linking BEN-144, and attach it to the Linear issue — `specs/012-admin-history/` Attach the 1440px screenshots of both `04 - History` frames (T023).
 
 ## Dependencies
 

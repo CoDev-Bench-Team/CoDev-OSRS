@@ -31,7 +31,7 @@ import {
 } from './queue-types';
 import { adminRequestSource } from './admin-request-source';
 import { RefusalAlert } from '../detail/RefusalAlert';
-import { REQUEST_NOT_FOUND, useDeepLinkedRequest } from '../deep-link';
+import { REQUEST_NOT_FOUND, useDeepLinkedRequest, type DeepLinkState } from '../deep-link';
 import { ReviewPanel } from './ReviewPanel';
 import { isResolved } from '../history/history-model';
 import type { AdminRequestSource, ReviewSnapshot, TransitionResult } from './review-types';
@@ -92,7 +92,12 @@ export function QueuePage({
 }: {
   source?: AdminRequestSource;
 }) {
-  const { search } = useLocation();
+  const { search, state: navigation } = useLocation();
+  /** A `/requests/:id` link still being resolved. Until it is, the queue shows
+   *  its loading state rather than a table it may be about to leave: a
+   *  resolved request's link is forwarded to History, and the queue must not
+   *  flash or announce its rows on the way (spec 012 plan D14). */
+  const linking = !!(navigation as DeepLinkState | null)?.openRequest;
   const source = useMemo(() => given ?? adminRequestSource(search), [given, search]);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
@@ -225,10 +230,10 @@ export function QueuePage({
           place is routinely missed — only a change WITHIN an existing region
           announces reliably, and `loading` is the state the page opens in. */}
       <div role="status" aria-live="polite" className="sr-only">
-        {announce(state, queue)}
+        {announce(linking ? { kind: 'loading' } : state, queue)}
       </div>
 
-      {state.kind === 'loading' ? (
+      {state.kind === 'loading' || (linking && state.kind === 'loaded') ? (
         <Notice
           eyebrow="Loading"
           tone="info"
@@ -259,7 +264,7 @@ export function QueuePage({
 
       {unavailable ? <RefusalAlert messages={[unavailable]} /> : null}
 
-      {queue ? (
+      {queue && !linking ? (
         <LoadedQueue queue={queue} query={query} onChange={change} focusRef={recoveredFocus} onReview={review} />
       ) : null}
 

@@ -148,6 +148,15 @@ const open = async (id) => {
   }, id);
   await cdp.waitFor(() => !!document.querySelector('dialog[open] h2'), 5000, `the panel for ${id}`);
 };
+const closeButton = () => cdp.evaluate(() => document.querySelector('dialog[open] button[aria-label="Close"]').click());
+// A real press and release on the scrim, left of the 400px sheet: the panel
+// closes only when both land there.
+const clickScrim = async () => {
+  for (const type of ['mousePressed', 'mouseReleased']) {
+    await cdp.send('Input.dispatchMouseEvent', { type, x: 100, y: 500, button: 'left', clickCount: 1 });
+  }
+};
+const sortValue = () => cdp.evaluate(() => document.querySelector('[role="combobox"][aria-label="Sort history"], [aria-label="Sort history"] [role="combobox"]')?.textContent.trim());
 const closed = () => cdp.waitFor(() => !document.querySelector('dialog'), 5000, 'the panel to close');
 const key = async (k, code, keyCode, modifiers = 0) => {
   for (const type of ['keyDown', 'keyUp']) {
@@ -173,6 +182,9 @@ try {
     table: !!document.querySelector('[aria-label="History table"]'),
   }));
   check(refusal.eyebrow === 'No access' && !refusal.table, 'the Employee is refused /history, and no part of it renders', JSON.stringify(refusal));
+  await cdp.evaluate(() => [...document.querySelectorAll('main button')].find((b) => b.textContent.startsWith('Go to')).click());
+  await cdp.waitFor(() => location.pathname === '/catalog', 5000, 'the route back');
+  check(true, 'and the refusal offers a working route back to the Employee\'s landing screen (spec 003 FR-011)');
 
   await signIn(ADMIN);
   const adminNav = await cdp.evaluate(() =>
@@ -190,6 +202,12 @@ try {
   const columns = ['REQUEST ID', 'REQUESTER', 'ITEMS', 'STATUS', 'RESOLVED', 'ACTION'];
   check(columns.every((c) => s.text.toUpperCase().includes(c)), 'the six drawn columns (FR-003)');
   check(same(sorted(s.ids), sorted(NEWEST)), 'lists exactly the fourteen resolved requests', `got ${s.ids.length}`);
+  const rowButtons = await cdp.evaluate(() =>
+    [...document.querySelectorAll('[aria-label="History table"] button[aria-label^="Review request "]')].map(
+      (b) => [...b.closest('div').querySelectorAll('button, input, select, a')].length,
+    ),
+  );
+  check(rowButtons.length === 14 && rowButtons.every((n) => n === 1), 'each row holds exactly one control, its Review (SC-004)', rowButtons.join(','));
   check(s.statuses.every((t) => ['Completed', 'Cancelled', 'Rejected'].includes(t)), 'every row is Completed, Cancelled or Rejected', [...new Set(s.statuses)].join(', '));
   check(same(s.ids, NEWEST), 'newest resolved first by default (not newest submitted)', s.ids.slice(0, 4).join(', '));
   check(s.resolved[0] === 'Sep 11, 2026', 'RESOLVED prints the date it was resolved', s.resolved[0]);
@@ -246,6 +264,8 @@ try {
   s = await state();
   const byName = [...s.names].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
   check(same(s.names, byName), 'Employee (A-Z) orders by name', s.names.slice(0, 3).join(', '));
+  const paolo = s.ids.filter((id) => ['REQ-2026-1669', 'REQ-2026-1612'].includes(id));
+  check(same(paolo, ['REQ-2026-1669', 'REQ-2026-1612']), 'a tie on name falls back to newest resolved first', paolo.join(', '));
   await pickSort('Newest First');
   await settle();
 
@@ -275,6 +295,18 @@ try {
   await settle();
   s = await state();
   check(s.current === '1', 'changing the sort returns to page 1', `page ${s.current}`);
+  await clickPage('2');
+  await setPageSize(25);
+  await settle();
+  s = await state();
+  check(s.current === '1', 'changing the page size returns to page 1', `page ${s.current}`);
+  await setPageSize(10);
+  await clickPage('2');
+  await setSearch('REQ');
+  await settle();
+  s = await state();
+  check(s.current === '1', 'changing the search returns to page 1', `page ${s.current}`);
+  await setSearch('');
   await pickSort('Newest First');
   await setPageSize(50);
   await settle();
@@ -305,8 +337,42 @@ try {
   check(p.text.includes('Duplicate of request SR-1042') && p.text.includes('temporary project setup'), 'the frame\'s sample: its reason and Note to Approver');
   await esc();
   await closed();
+
+  // Closing keeps a query that is NOT the default, so a reset cannot pass.
+  await pickSort('Oldest First');
+  await setPageSize(10);
+  await clickPage('2');
+  await settle();
+  await open('REQ-2026-1644');
+  await closeButton();
+  await closed();
   s = await state();
-  check(s.range === '1-14 of 14' && s.pressed?.startsWith('All requests'), 'closing keeps the chip, search, sort and page');
+  check(
+    s.range === '11-14 of 14' && s.current === '2' && (await sortValue()) === 'Oldest First',
+    'closing with ✕ keeps the sort, page size and page',
+    `${s.range}, page ${s.current}, ${await sortValue()}`,
+  );
+  check(await cdp.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Review request REQ-2026-1644'), 'and focus returns to its Review');
+  await clickChip('Cancelled');
+  await setSearch('o');
+  await settle();
+  s = await state();
+  const first = s.ids[0];
+  await open(first);
+  await clickScrim();
+  await closed();
+  s = await state();
+  const searchValue = await cdp.evaluate(() => document.querySelector('input[type="search"]').value);
+  check(
+    s.pressed?.startsWith('Cancelled') && searchValue === 'o' && s.ids[0] === first,
+    'closing on the scrim keeps the chip and search',
+    `${s.pressed}, "${searchValue}"`,
+  );
+  await setSearch('');
+  await clickChip('All requests');
+  await pickSort('Newest First');
+  await setPageSize(50);
+  await settle();
 
   // ---- Stopped timelines (FR-009a) ----
   console.log('\nA cancelled request\'s timeline keeps what it reached (FR-009a)');
@@ -325,6 +391,13 @@ try {
   p = await cdp.evaluate(panel);
   check(p.heading === 'REQ-2026-1644', 'a resolved request\'s link opens its History panel', p.heading);
   check(!(await cdp.evaluate(() => history.state?.usr ?? null)), 'the link\'s state is consumed');
+  await esc();
+  await closed();
+  await settle();
+  check(
+    await cdp.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Filter by status'),
+    'closing a deep-linked panel, which no Review opened, puts focus on the chips',
+  );
   await go('/requests/REQ-2026-1842');
   await cdp.waitFor(() => location.pathname === '/queue' && !!document.querySelector('dialog[open] h2'), 8000, 'the queue with the review panel');
   p = await cdp.evaluate(panel);
@@ -406,6 +479,10 @@ try {
     const overflow = await cdp.evaluate(() => document.scrollingElement.scrollWidth - window.innerWidth);
     check(overflow <= 0, `no page-level horizontal overflow at ${width}px`, `${overflow}px`);
   }
+  await cdp.setViewport(360, 900);
+  await open('REQ-2026-1650');
+  const panelOverflow = await cdp.evaluate(() => document.scrollingElement.scrollWidth - window.innerWidth);
+  check(panelOverflow <= 0, 'nor at 360px with the panel open', `${panelOverflow}px`);
 } catch (error) {
   check(false, `the run stopped: ${error.message}`);
 } finally {
