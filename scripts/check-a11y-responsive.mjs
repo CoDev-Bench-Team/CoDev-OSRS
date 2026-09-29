@@ -291,6 +291,80 @@ else {
   else pass(`a select inside a dialog renders above the scrim (z ${r.listZ} over ${r.scrimZ})`);
 }
 
+// ---- The Accountability Form (spec 012 D3, plan risk 2) ----
+// The widest sheet in the product. At every width it must fit the viewport,
+// every control in it must be reachable by Tab with a visible indicator, and
+// the locked agreement must say it is disabled while staying focusable.
+console.log('\nAccountability Form: fits every width, reachable by Tab, locked agreement announced (spec 012)');
+await cdp.setViewport(1440, 1024);
+await cdp.goto(`${ORIGIN}/login`);
+await cdp.evaluate(() => localStorage.clear());
+await cdp.goto(`${ORIGIN}/login`);
+await cdp.evaluate(() => {
+  document.querySelector('input[value="maya.santos"]').click();
+  [...document.querySelectorAll('button')].find((b) => b.textContent.includes('Sign in with Google')).click();
+});
+await cdp.waitFor(() => location.pathname === '/catalog', 8000, 'the employee landing');
+await cdp.goto(`${ORIGIN}/requests`);
+await cdp.waitFor(() => !!document.querySelector('button[aria-label="View details of REQ-2026-1820"]'), 8000, 'the rows');
+await cdp.evaluate(() => document.querySelector('button[aria-label="View details of REQ-2026-1820"]').click());
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"]'), 5000, 'the panel');
+await cdp.evaluate(() => [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent.trim() === 'Sign accountability form').click());
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="region"]'), 5000, 'the form');
+const locked = await cdp.evaluate(() => {
+  const cb = document.querySelector('[role="dialog"] input[type="checkbox"]');
+  return { aria: cb.getAttribute('aria-disabled'), native: cb.disabled, tabbable: cb.tabIndex >= 0 };
+});
+locked.aria === 'true' && !locked.native && locked.tabbable
+  ? pass('the locked agreement is aria-disabled, not disabled, and stays in the Tab order')
+  : fail(`the locked agreement: aria-disabled=${locked.aria}, disabled=${locked.native}, tabbable=${locked.tabbable}`);
+for (const w of [360, 768, 1440]) {
+  await cdp.setViewport(w, 900);
+  await new Promise((r) => setTimeout(r, 350));
+  const r = await cdp.evaluate((width) => {
+    const d = document.querySelector('[role="dialog"]');
+    const b = d.getBoundingClientRect();
+    const out = [...d.querySelectorAll('*')].filter((el) => el.getBoundingClientRect().right > width + 1).map((el) => el.tagName + '.' + String(el.className).slice(0, 30)).slice(0, 4);
+    const small = [...d.querySelectorAll('button:not([disabled])')]
+      .map((el) => {
+        const rr = el.getBoundingClientRect();
+        const p = getComputedStyle(el, '::before');
+        const wd = p.content !== 'none' && p.position === 'absolute' ? Math.max(rr.width, parseFloat(p.width) || 0) : rr.width;
+        const ht = p.content !== 'none' && p.position === 'absolute' ? Math.max(rr.height, parseFloat(p.height) || 0) : rr.height;
+        return { t: el.textContent.trim().slice(0, 20), wd, ht };
+      })
+      .filter((x) => x.wd > 0 && (x.wd < 44 || x.ht < 44))
+      .map((x) => `${x.t} ${Math.round(x.wd)}x${Math.round(x.ht)}`);
+    return { width: Math.round(b.width), scrollW: document.documentElement.scrollWidth, out, small };
+  }, w);
+  r.scrollW > w + 1 || r.out.length
+    ? fail(`${w}px: the form overflows (sheet ${r.width}px) — ${r.out.join(' | ')}`)
+    : pass(`${w}px: the form fits (sheet ${r.width}px), no horizontal overflow`);
+  if (w < 1440) r.small.length ? fail(`${w}px: form targets under 44px — ${r.small.join(' | ')}`) : pass(`${w}px: every form target at least 44px`);
+}
+await cdp.setViewport(1440, 900);
+await new Promise((r) => setTimeout(r, 300));
+const formStops = [];
+for (let i = 0; i < 12; i++) {
+  await tab();
+  const r = await cdp.evaluate(() => {
+    const el = document.activeElement;
+    // The checkbox's input is invisible over its drawn box; its indicator is
+    // the box's own `has-focus-visible` ring, a box-shadow.
+    const ring = (x) => getComputedStyle(x).outlineStyle !== 'none' && parseFloat(getComputedStyle(x).outlineWidth) > 0;
+    const shown = el.type === 'checkbox' ? getComputedStyle(el.parentElement).boxShadow !== 'none' : ring(el);
+    return { name: el.getAttribute('aria-label') || el.textContent.trim().slice(0, 24) || el.type, shown: shown && el.matches(':focus-visible'), inside: !!document.querySelector('[role="dialog"]').contains(el) };
+  });
+  formStops.push(r);
+}
+const names = formStops.map((s) => s.name);
+const need = ['Acknowledgement', 'checkbox', 'text', 'Cancel', 'I acknowledge and sign', 'Close'];
+const missing = need.filter((n) => !names.includes(n));
+missing.length ? fail(`Tab never reaches: ${missing.join(', ')} (reached ${[...new Set(names)].join(' → ')})`) : pass('Tab reaches the acknowledgement, the agreement, the name, both buttons and ✕');
+formStops.every((s) => s.inside) ? pass('Tab stays inside the form') : fail('Tab left the form');
+const unshown = [...new Set(formStops.filter((s) => !s.shown).map((s) => s.name))];
+unshown.length ? fail(`no focus indicator on: ${unshown.join(', ')}`) : pass('every form stop shows a focus indicator');
+
 console.log(`\n${failures} failure(s)`);
 await cdp.close();
 process.exit(failures ? 1 : 0);

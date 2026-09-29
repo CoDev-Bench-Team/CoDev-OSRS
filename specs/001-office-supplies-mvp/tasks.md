@@ -76,11 +76,11 @@ Depends on backend auth/session resources.
 
 ## Phase 6: User Story 4 + 5 — Handover and complete (P1)
 
-**Goal**: Admin sets For Delivery / Ready for Pickup; the Employee signs the Accountability Form, or the Admin marks it with Update Status ([ADR-0010](../../docs/adr/0010-admin-marks-received.md)) (`Received`); the Admin completes.
+**Goal**: Admin sets For Delivery / Ready for Pickup; the Admin or the Employee marks it `Received`; the Employee signs the Accountability Form; the Admin completes once it is signed.
 
-- [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
-- [ ] T018 [US5] Complete action and its confirmation, offered on `Received` only (FR-012) — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
-- [ ] T018b [US5] Accountability Form on the Employee's own `For Delivery` / `Ready for Pickup` request (FR-012a, FR-012b) — `src/features/requests/detail/AccountabilityForm.tsx`. **Blocked on contracts/README.md conflict 5.**
+- [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup, and **`Received`** as a target from `For Delivery` / `Ready for Pickup` (FR-011, FR-012a; constitution 6.0.0) — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
+- [ ] T018 [US5] Complete action and its confirmation, offered on `Received` only **and only once the Accountability Form is signed** (FR-012, amended 2026-09-29) — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
+- [ ] T018b [US5] **Mark as Received** on the Employee's own `For Delivery` / `Ready for Pickup` request (FR-012a), and the Accountability Form on their own unsigned `Received` request (FR-012b) — `src/features/requests/detail/AccountabilityForm.tsx`. ~~Blocked on contracts/README.md conflict 5.~~ Built against a seeded source first ([spec 012](../012-accountability-form/spec.md), BEN-136); only the contract-backed source waits on conflict 5. Breakdown: [spec 012 tasks](../012-accountability-form/tasks.md).
 
 ## Phase 7: User Story 6 + 7 — History and cancel (P2)
 

@@ -3,7 +3,7 @@ import type { EmployeeRequest, EmployeeRequestSource } from '../request-detail-t
 /** DEV-ONLY STUB — reached only through `employee-request-source.ts`, behind
  *  `import.meta.env.DEV`, so a production build drops it.
  *
- *  The seed answers at once, always has Maya's seven requests, and never refuses
+ *  The seed answers at once, always has Maya's eight requests, and never refuses
  *  a cancel for a changed status or fails a reload. `?requests=<mode>` on
  *  `/requests` reaches what it cannot:
  *
@@ -20,7 +20,26 @@ import type { EmployeeRequest, EmployeeRequestSource } from '../request-detail-t
  *  - `blank-items` — one request with no item names and one with a blank name
  *    among real ones, so the shared `summarizeItems` guard shows on My Requests.
  *  - `changes-reload-fails` — both: refused, and the reload fails, so the panel
- *    cannot show a current status and must not claim to (second review). */
+ *    cannot show a current status and must not claim to (second review).
+ *
+ *  The Accountability Form (spec 012 D15):
+ *
+ *  - `sign-changes` — the request is signed from another tab while the form is
+ *    open. The signature is refused `status-changed`, with the system's own
+ *    words, and the reload shows it signed (Story 3 AC1).
+ *  - `sign-invalid` — refused with BEN-98 problems: one at the whole document
+ *    and one at a pointer the form has no field for. Both land at the top of
+ *    the form (Story 3 AC2, SC-004a).
+ *  - `sign-fails` — `sign` rejects: the system did not answer. The form stays
+ *    open with what was typed (Story 3 AC3).
+ *  - `sign-slow` — `sign` takes two seconds, so a second press lands while the
+ *    first is in flight (Story 1 AC5, FR-008).
+ *
+ *  **Mark as Received** (spec 012 D19):
+ *
+ *  - `receive-changes` — an Admin cancels the request while the panel is open.
+ *    Marking it received is refused `status-changed`, with the system's own
+ *    words, and the reload shows it `Cancelled` (Story 0 AC5). */
 const LOADING_MS = 2000;
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -69,6 +88,8 @@ export function requestStub(mode: string | null, seeded: EmployeeRequestSource):
           refused = true;
           return { ok: false, refusal: 'status-changed' };
         },
+        sign: seeded.sign,
+        markReceived: seeded.markReceived,
       };
     }
     case 'refresh-fails': {
@@ -82,8 +103,77 @@ export function requestStub(mode: string | null, seeded: EmployeeRequestSource):
           if (result.ok) cancelled = true;
           return result;
         },
+        async sign(user, id, signature) {
+          const result = await seeded.sign(user, id, signature);
+          if (result.ok) cancelled = true;
+          return result;
+        },
+        async markReceived(user, id) {
+          const result = await seeded.markReceived(user, id);
+          if (result.ok) cancelled = true;
+          return result;
+        },
       };
     }
+    case 'sign-changes': {
+      const signedElsewhere = new Map<string, EmployeeRequest>();
+      return {
+        ...seeded,
+        async list(user) {
+          return (await seeded.list(user)).map((r) => signedElsewhere.get(r.id) ?? r);
+        },
+        async sign(user, id) {
+          const request = (await seeded.list(user)).find((r) => r.id === id);
+          if (!request) return { ok: false, refusal: 'unavailable' };
+          signedElsewhere.set(id, { ...request, signedAt: new Date().toISOString() });
+          return {
+            ok: false,
+            refusal: 'status-changed',
+            detail: 'This accountability form was already signed from another session.',
+          };
+        },
+      };
+    }
+    case 'receive-changes': {
+      const cancelled = new Map<string, EmployeeRequest>();
+      return {
+        ...seeded,
+        async list(user) {
+          return (await seeded.list(user)).map((r) => cancelled.get(r.id) ?? r);
+        },
+        async markReceived(user, id) {
+          const request = (await seeded.list(user)).find((r) => r.id === id);
+          if (!request) return { ok: false, refusal: 'unavailable' };
+          const at = new Date().toISOString();
+          cancelled.set(id, { ...request, status: 'Cancelled', cancellation: { reason: 'The monitor failed its handover check', at } });
+          return { ok: false, refusal: 'status-changed', detail: 'This request was cancelled, so it can no longer be marked received.' };
+        },
+      };
+    }
+    case 'sign-invalid':
+      return {
+        ...seeded,
+        async sign() {
+          return {
+            ok: false,
+            refusal: 'invalid',
+            problems: [
+              { path: [], detail: 'The acknowledgement could not be recorded.' },
+              { path: ['signature', 'channel'], detail: 'Sign from the portal, not a shared device.' },
+            ],
+          };
+        },
+      };
+    case 'sign-fails':
+      return { ...seeded, sign: () => Promise.reject(new Error('stubbed sign failure')) };
+    case 'sign-slow':
+      return {
+        ...seeded,
+        async sign(user, id, signature) {
+          await delay(LOADING_MS);
+          return seeded.sign(user, id, signature);
+        },
+      };
     default:
       return null;
   }

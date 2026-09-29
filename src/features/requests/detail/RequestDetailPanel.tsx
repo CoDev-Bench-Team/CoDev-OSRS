@@ -1,19 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
-import { Button, SidePanel, StatusPill } from '../../../shared/ui';
+import { useEffect, useId, useRef, useState } from 'react';
+import { BoxiconsPenAlt, Button, SidePanel, StatusPill } from '../../../shared/ui';
+import { formatDateTime } from '../format';
 import { ReasonForm } from '../ReasonForm';
-import type { CancelResult, EmployeeRequest } from './request-detail-types';
+import { AccountabilityForm } from './AccountabilityForm';
+import { NO_SIGN_PROBLEMS, placeSignProblems, type PlacedSignProblems } from './place-sign-problems';
+import type { CancelResult, EmployeeRequest, ReceiveResult, Signature, SignResult } from './request-detail-types';
 import { RefusalAlert } from './RefusalAlert';
 import { RequestReadBack } from './RequestReadBack';
 
 /** The Employee's request detail — a side panel over My Requests (BEN-45,
  *  frames `04.1`, `04.2 - Cancel Request`, `04.2 - Cancelled`).
  *
- *  It reads the request back and offers exactly one action: **Cancel Request**,
- *  and only while the request is `Pending Approval` (spec 001 FR-009a). There
- *  is no confirm-receipt control in any state — an Admin completes a
- *  request (FR-012a, ADR-0007). A cancelled or rejected request reads back
- *  its reason. Ownership needs no check here: the page only
- *  ever holds the signed-in Employee's own requests. */
+ *  It reads the request back and offers at most one action, by status:
+ *
+ *  - **Cancel Request**, only while `Pending Approval` (spec 001 FR-009a);
+ *  - **Mark as Received**, only while `For Delivery` or `Ready for Pickup`
+ *    (spec 012 Story 0). It asks for confirmation first, because it assigns
+ *    the items and cannot be undone; then the request is `Received`;
+ *  - **Sign accountability form**, only on a `Received` request not yet signed
+ *    (spec 012 FR-001). It turns the panel into the Accountability Form, 564px
+ *    wide. A signature the system accepts is recorded on the request; the
+ *    status stays `Received`, and the panel says it was signed (FR-009).
+ *
+ *  The Employee or an Admin sets `Received` (constitution 6.0.0 IV). Nothing
+ *  here sets `Completed`, and there is no
+ *  *Complete Request* control: `04.1` draws one, but only an Admin completes
+ *  (spec 012 FR-001a). A cancelled or rejected request reads back its reason.
+ *  Ownership needs no check here: the page only ever holds the signed-in
+ *  Employee's own requests. */
 const REFUSAL_COPY: Record<Exclude<CancelResult, { ok: true }>['refusal'], string> = {
   'status-changed':
     'This request was updated while you were viewing it and can no longer be cancelled. Its current status is shown above.',
@@ -21,35 +35,88 @@ const REFUSAL_COPY: Record<Exclude<CancelResult, { ok: true }>['refusal'], strin
   unavailable: 'This request could not be cancelled. Close the panel and try again.',
 };
 
+/** What the panel says for a refused signature when the system gave no words
+ *  of its own (spec 012 D12). */
+const SIGN_REFUSAL_COPY = {
+  'status-changed':
+    'This request changed while you were signing and there is nothing left to sign. Its current state is shown above.',
+  unavailable: 'Your signature was not sent. Try again.',
+} as const;
+
+/** What the panel says when marking received is refused and the system gave
+ *  no words of its own (spec 012 D19). */
+const RECEIVE_REFUSAL_COPY = {
+  'status-changed': 'This request was updated while you were viewing it and can no longer be marked received. Its current status is shown above.',
+  unavailable: 'This request was not marked received. Try again.',
+} as const;
+
+type Mode = 'read' | 'cancel' | 'sign' | 'receive';
+/** Where focus goes after the panel changes mode (spec 012 D9a): the control
+ *  that held it has just unmounted. */
+type FocusTarget = 'heading' | 'sign-link' | 'alert' | 'receive-button';
+
 export function RequestDetailPanel({
   request,
   onClose,
   onCancel,
+  onSign,
+  onMarkReceived,
 }: {
   request: EmployeeRequest;
   onClose: () => void;
   /** Performs the cancel and refreshes the page's copy of the request. */
   onCancel: (id: string, reason: string) => Promise<CancelResult>;
+  /** Sends the Accountability Form and refreshes the page's copy of the
+   *  request (spec 012). */
+  onSign: (id: string, signature: Signature) => Promise<SignResult>;
+  /** Marks the request `Received` and refreshes the page's copy of it
+   *  (spec 012 Story 0). */
+  onMarkReceived: (id: string) => Promise<ReceiveResult>;
 }) {
-  const [confirming, setConfirming] = useState(false);
+  const formId = useId();
+  const [mode, setMode] = useState<Mode>('read');
   const [submitting, setSubmitting] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
-  // Closing the cancel form unmounts the control that held focus. Put focus
-  // back on the panel's heading rather than leaving it on <body>, so a
-  // screen-reader user stays inside the dialog (FR-002).
+  const [signing, setSigning] = useState(false);
+  // A second press can land before the re-render disables the button; this
+  // drops it, so one open form sends at most one signature (FR-008).
+  const signInFlight = useRef(false);
+  const [signProblems, setSignProblems] = useState<PlacedSignProblems>(NO_SIGN_PROBLEMS);
+  const [signRefusal, setSignRefusal] = useState<string | null>(null);
+  const [receiving, setReceiving] = useState(false);
+  const receiveInFlight = useRef(false);
+
   const heading = useRef<HTMLHeadingElement>(null);
-  const refocus = useRef(false);
+  const signLink = useRef<HTMLButtonElement>(null);
+  const alert = useRef<HTMLDivElement>(null);
+  const receiveButton = useRef<HTMLButtonElement>(null);
+  const focusNext = useRef<FocusTarget | null>(null);
+  // Changing mode unmounts the control that held focus. Put focus where the
+  // Employee expects it rather than leaving it on <body>, so a screen-reader
+  // user stays inside the dialog (spec 007 FR-002, spec 012 D9a).
   useEffect(() => {
-    if (!refocus.current) return;
-    refocus.current = false;
-    const active = document.activeElement;
-    if (!active || active === document.body) heading.current?.focus();
+    const target = focusNext.current;
+    if (!target) return;
+    focusNext.current = null;
+    const el =
+      target === 'sign-link'
+        ? signLink.current
+        : target === 'alert'
+          ? alert.current
+          : target === 'receive-button'
+            ? receiveButton.current
+            : null;
+    (el ?? heading.current)?.focus();
   });
 
   const cancellable = request.status === 'Pending Approval';
+  const receivable = request.status === 'For Delivery' || request.status === 'Ready for Pickup';
+  const signable = request.status === 'Received' && !request.signedAt;
+  const signed = request.status === 'Received' && request.signedAt;
+
   const backOut = () => {
-    refocus.current = true;
-    setConfirming(false);
+    focusNext.current = 'heading';
+    setMode('read');
   };
 
   // Acceptance 3: `ReasonForm` refuses an empty or whitespace-only reason
@@ -76,39 +143,189 @@ export function RequestDetailPanel({
     setRefusal(REFUSAL_COPY[result.refusal]);
   };
 
-  const footer = !cancellable ? undefined : confirming ? (
-    <ReasonForm
-      label="Reason for cancellation"
-      placeholder="e.g duplicate request..."
-      confirmLabel="Confirm Cancellation"
-      requiredMessage={REFUSAL_COPY['reason-required']}
-      submitting={submitting}
-      onBack={backOut}
-      onConfirm={confirm}
-    />
-  ) : (
-    <Button variant="ghost" className="w-full" onClick={() => setConfirming(true)}>
-      Cancel Request
-    </Button>
-  );
+  const confirmReceived = async () => {
+    if (receiveInFlight.current) return;
+    receiveInFlight.current = true;
+    setReceiving(true);
+    setRefusal(null);
+    let result: ReceiveResult;
+    try {
+      result = await onMarkReceived(request.id);
+    } catch {
+      result = { ok: false, refusal: 'unavailable' };
+    } finally {
+      receiveInFlight.current = false;
+      setReceiving(false);
+    }
+    setMode('read');
+    if (result.ok) {
+      // The next step is the signature, so that is where focus goes.
+      focusNext.current = 'sign-link';
+      return;
+    }
+    focusNext.current = 'alert';
+    setRefusal(result.detail ?? RECEIVE_REFUSAL_COPY[result.refusal]);
+  };
+
+  const openSign = () => {
+    setRefusal(null);
+    setSignProblems(NO_SIGN_PROBLEMS);
+    setSignRefusal(null);
+    focusNext.current = 'heading';
+    setMode('sign');
+  };
+
+  const leaveSign = (focus: FocusTarget) => {
+    focusNext.current = focus;
+    setMode('read');
+    setSignProblems(NO_SIGN_PROBLEMS);
+    setSignRefusal(null);
+  };
+
+  const sign = async (signature: Signature) => {
+    if (signInFlight.current) return;
+    signInFlight.current = true;
+    setSigning(true);
+    setSignProblems(NO_SIGN_PROBLEMS);
+    setSignRefusal(null);
+    let result: SignResult;
+    try {
+      result = await onSign(request.id, signature);
+    } catch {
+      result = { ok: false, refusal: 'unavailable' };
+    } finally {
+      signInFlight.current = false;
+      setSigning(false);
+    }
+    // FR-009: the page has reloaded; the panel reads `Received` back.
+    if (result.ok) {
+      leaveSign('heading');
+      return;
+    }
+    // FR-011: the system refused the fields; the form stays, messages placed.
+    if (result.refusal === 'invalid') {
+      setSignProblems(placeSignProblems(result.problems));
+      return;
+    }
+    // FR-012: the system did not answer; keep what was typed, allow a retry.
+    if (result.refusal === 'unavailable') {
+      setSignRefusal(result.detail ?? SIGN_REFUSAL_COPY.unavailable);
+      return;
+    }
+    // FR-010: the request changed underneath; show it as it is now.
+    leaveSign('alert');
+    setRefusal(result.detail ?? SIGN_REFUSAL_COPY['status-changed']);
+  };
+
+  const footer =
+    mode === 'sign' ? (
+      <div className="flex items-center justify-center gap-12">
+        <Button variant="ghost" onClick={() => leaveSign('sign-link')} disabled={signing}>
+          Cancel
+        </Button>
+        <Button type="submit" form={formId} disabled={signing}>
+          I acknowledge and sign
+        </Button>
+      </div>
+    ) : receivable ? (
+      mode === 'receive' ? (
+        <div className="flex flex-col gap-12">
+          <p className="type-body text-ink-strong">Confirm you have received every item listed above. This can't be undone.</p>
+          <div className="flex items-center justify-center gap-12">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                focusNext.current = 'receive-button';
+                setMode('read');
+              }}
+              disabled={receiving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => void confirmReceived()} disabled={receiving} autoFocus>
+              Confirm Received
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button ref={receiveButton} variant="ghost" className="w-full" onClick={() => setMode('receive')}>
+          Mark as Received
+        </Button>
+      )
+    ) : !cancellable ? undefined : mode === 'cancel' ? (
+      <ReasonForm
+        label="Reason for cancellation"
+        placeholder="e.g duplicate request..."
+        confirmLabel="Confirm Cancellation"
+        requiredMessage={REFUSAL_COPY['reason-required']}
+        submitting={submitting}
+        onBack={backOut}
+        onConfirm={confirm}
+      />
+    ) : (
+      <Button variant="ghost" className="w-full" onClick={() => setMode('cancel')}>
+        Cancel Request
+      </Button>
+    );
 
   return (
     <SidePanel
-      title={`Request ${request.id}`}
+      title={mode === 'sign' ? `Accountability Form for ${request.id}` : `Request ${request.id}`}
       onClose={onClose}
+      width={mode === 'sign' ? 'wide' : 'default'}
+      dismissible={!signing && !receiving}
       header={
-        <>
+        mode === 'sign' ? (
           <h2 ref={heading} tabIndex={-1} className="type-section-title truncate text-ink-heading outline-none">
-            {request.id}
+            Accountability Form
           </h2>
-          <StatusPill status={request.status} />
-        </>
+        ) : (
+          <>
+            <h2 ref={heading} tabIndex={-1} className="type-section-title truncate text-ink-heading outline-none">
+              {request.id}
+            </h2>
+            <StatusPill status={request.status} />
+          </>
+        )
       }
       footer={footer}
     >
-      {refusal ? <RefusalAlert messages={[refusal]} /> : null}
+      {mode === 'sign' ? (
+        <AccountabilityForm
+          id={formId}
+          request={request}
+          submitting={signing}
+          problems={signProblems}
+          refusal={signRefusal}
+          onSign={(signature) => void sign(signature)}
+        />
+      ) : (
+        <>
+          {refusal ? <RefusalAlert ref={alert} messages={[refusal]} /> : null}
 
-      <RequestReadBack request={request} />
+          <RequestReadBack request={request} />
+
+          {signable ? (
+            <button
+              ref={signLink}
+              type="button"
+              onClick={openSign}
+              className="hit-area inline-flex cursor-pointer items-center gap-4 self-start border-none bg-transparent p-0 font-sans text-11-5 font-bold leading-[1.3] text-brand-primary-alt transition-osrs hover:text-brand-primary"
+            >
+              <BoxiconsPenAlt />
+              Sign accountability form
+            </button>
+          ) : null}
+
+          {/* D18: signing changes no status, so this says it landed. */}
+          {signed ? (
+            <p className="inline-flex items-center gap-4 self-start font-sans text-11-5 font-bold leading-[1.3] text-ink-muted">
+              <BoxiconsPenAlt />
+              Accountability form signed · {formatDateTime(request.signedAt)}
+            </p>
+          ) : null}
+        </>
+      )}
     </SidePanel>
   );
 }

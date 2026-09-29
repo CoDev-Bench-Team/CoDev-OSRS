@@ -15,7 +15,7 @@ import {
 import { DESTINATIONS } from '../../../app/destinations';
 import { useSession } from '../../auth/session-context';
 import { RequestDetailPanel } from '../detail/RequestDetailPanel';
-import type { CancelResult, EmployeeRequest, EmployeeRequestSource } from '../detail/request-detail-types';
+import type { CancelResult, EmployeeRequest, EmployeeRequestSource, ReceiveResult, SignResult, Signature } from '../detail/request-detail-types';
 import { employeeRequestSource } from '../detail/employee-request-source';
 import { RefusalAlert } from '../detail/RefusalAlert';
 import { REQUEST_UNAVAILABLE, useDeepLinkedRequest } from '../deep-link';
@@ -125,6 +125,58 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
     return result;
   };
 
+  /** The Accountability Form's submission (spec 012 D1, D12), handled as the
+   *  cancel above is: a source that throws is `unavailable`; the list reloads
+   *  either way, so on success the panel reads the signature back (FR-009) and
+   *  on `status-changed` the panel shows what the request is now (FR-010). */
+  const sign = async (id: string, signature: Signature): Promise<SignResult> => {
+    let result: SignResult;
+    try {
+      result = await source.sign(user!, id, signature);
+    } catch {
+      result = { ok: false, refusal: 'unavailable' };
+    }
+    // An `invalid` refusal changed nothing on the system; no reload needed.
+    if (!result.ok && result.refusal === 'invalid') return result;
+    const next = await fetchRequests();
+    // Refused because the request changed, but the reload that would show how
+    // failed: the panel cannot show a current status, so report the plain
+    // failure instead, as cancel does.
+    if (!result.ok && result.refusal === 'status-changed' && next.state !== 'ready') {
+      result = { ok: false, refusal: 'unavailable' };
+    }
+    const outcome = result;
+    setLoad((prev) => {
+      if (next.state === 'ready' || prev.state !== 'ready') return next;
+      // The reload failed: keep the list we had, with the signed request in it
+      // when the signature went through, rather than unmount the open panel.
+      if (!outcome.ok) return prev;
+      return { state: 'ready', requests: prev.requests.map((r) => (r.id === id ? outcome.request : r)) };
+    });
+    return result;
+  };
+
+  /** **Mark as Received** (spec 012 D19), handled exactly as `cancel` is. */
+  const markReceived = async (id: string): Promise<ReceiveResult> => {
+    let result: ReceiveResult;
+    try {
+      result = await source.markReceived(user!, id);
+    } catch {
+      result = { ok: false, refusal: 'unavailable' };
+    }
+    const next = await fetchRequests();
+    if (!result.ok && result.refusal === 'status-changed' && next.state !== 'ready') {
+      result = { ok: false, refusal: 'unavailable' };
+    }
+    const outcome = result;
+    setLoad((prev) => {
+      if (next.state === 'ready' || prev.state !== 'ready') return next;
+      if (!outcome.ok) return prev;
+      return { state: 'ready', requests: prev.requests.map((r) => (r.id === id ? outcome.request : r)) };
+    });
+    return result;
+  };
+
   // `/requests/:id` lands here for an Employee and opens their own request.
   // Only their own ids are in the list, so another Employee's request and a
   // missing one get the same notice (spec 003 FR-012a).
@@ -205,7 +257,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
         </TableCard>
       ) : null}
 
-      {open ? <RequestDetailPanel request={open} onClose={() => setOpenId(null)} onCancel={cancel} /> : null}
+      {open ? <RequestDetailPanel request={open} onClose={() => setOpenId(null)} onCancel={cancel} onSign={sign} onMarkReceived={markReceived} /> : null}
     </div>
   );
 }

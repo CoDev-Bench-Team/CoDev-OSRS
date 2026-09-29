@@ -6,7 +6,7 @@
  *  OSRS_DEV_ORIGIN when the dev server took a port other than 5173.
  *
  *  Every run starts from a fresh document, so the seeded source's in-memory
- *  store is back to its seven seeded requests. */
+ *  store is back to its eight seeded requests. */
 import { connect } from './cdp.mjs';
 
 const ORIGIN = process.env.OSRS_DEV_ORIGIN ?? 'http://localhost:5173';
@@ -106,10 +106,10 @@ await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View deta
 
 const initial = await cdp.evaluate(rows);
 console.log('\nMy Requests lists the seeded requests with a View details on each (stand-in for BEN-44)');
-check(initial.length === 7, 'seven requests, one per status', `got ${initial.length}`);
+check(initial.length === 8, 'eight requests, one per status', `got ${initial.length}`);
 check(
-  new Set(initial.map((r) => r.pill)).size === 7,
-  'every one of the seven statuses has a row, Cancelled included',
+  new Set(initial.map((r) => r.pill)).size === 8,
+  'every one of the eight statuses has a row, Cancelled and Received included',
   initial.map((r) => r.pill).join(', '),
 );
 check(new Set(initial.map((r) => r.id)).size === initial.length, 'every request id is unique');
@@ -142,7 +142,7 @@ pass('a click on the scrim closes it');
 check((await cdp.evaluate(() => location.pathname)) === '/requests', 'and the address never changed');
 
 // ---- AC2 + AC5: one action, only while pending; no confirm receipt anywhere ----
-console.log('\nAC2 / AC5 — Cancel Request only while Pending Approval; no confirm-receipt control in any state');
+console.log('\nAC2 / AC5 — Cancel Request only while Pending Approval; no completion control; Mark as Received only while handed over');
 for (const row of initial) {
   await openRow(row.id);
   p = await cdp.evaluate(panel);
@@ -151,9 +151,19 @@ for (const row of initial) {
     offersCancel === (row.pill === 'Pending Approval'),
     `${row.id} (${row.pill}): Cancel Request ${row.pill === 'Pending Approval' ? 'offered' : 'absent'}`,
   );
+  // Spec 007 SC-005, amended 2026-09-29 (spec 012, constitution 6.0.0): no
+  // control ever sets Completed, and the Employee's one way to set Received —
+  // Mark as Received — appears only on their For Delivery / Ready for Pickup
+  // requests.
+  const handedOver = row.pill === 'For Delivery' || row.pill === 'Ready for Pickup';
   check(
-    !/confirm receipt|mark (as )?received|received it|confirm received/i.test(p.text),
-    `${row.id}: no confirm-receipt control or copy`,
+    !/mark (as )?complete|complete request|confirm complet/i.test(p.buttons.join('|')),
+    `${row.id}: no control sets Completed`,
+  );
+  check(
+    p.buttons.includes('Mark as Received') === handedOver &&
+      !/confirm receipt|received it|confirm received/i.test(p.text),
+    `${row.id}: Mark as Received ${handedOver ? 'offered' : 'absent'}, and no other receipt control`,
   );
   check(p.timeline.length > 0 && p.timeline[0][1] === 'Submitted', `${row.id}: the status timeline starts at Submitted`);
   // BEN-67: a stopped request reads back its reason; no other state shows one.
@@ -300,7 +310,7 @@ let l = await cdp.evaluate(listState);
 check(l.loading && !l.rows && !l.empty && !l.failed, 'while loading it says so, and shows no table, empty state or failure', JSON.stringify(l));
 await cdp.waitFor(() => document.querySelectorAll('button[aria-label^="View details"]').length > 0, 8000, 'the rows after loading');
 l = await cdp.evaluate(listState);
-check(!l.loading && l.rows === 7, 'then the rows replace it', JSON.stringify(l));
+check(!l.loading && l.rows === 8, 'then the rows replace it', JSON.stringify(l));
 
 await go('/requests?requests=empty');
 await cdp.waitFor(() => document.body.textContent.includes('You have not submitted any requests yet'), 5000, 'the empty state');

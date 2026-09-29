@@ -1,5 +1,12 @@
 import type { User } from '../../auth/types';
-import type { CancelResult, EmployeeRequest, EmployeeRequestSource } from './request-detail-types';
+import type {
+  CancelResult,
+  EmployeeRequest,
+  EmployeeRequestSource,
+  ReceiveResult,
+  Signature,
+  SignResult,
+} from './request-detail-types';
 
 /** Non-production demo data, used only until the backend team publishes the
  *  request contract (constitution IX permits seeded placeholders).
@@ -8,8 +15,13 @@ import type { CancelResult, EmployeeRequest, EmployeeRequestSource } from './req
  *  frame, in its order, one per status the list draws. The seventh,
  *  REQ-2026-1791, is `Cancelled`: the list draws no cancelled row, but
  *  `04.2 - Cancelled` draws the panel for one, so the seed carries one to open
- *  it from without cancelling first. `sam.torres` owns one request so the
- *  list can prove it shows only the signed-in Employee's. The file gives REQ-2026-1842 to
+ *  it from without cancelling first. The eighth, REQ-2026-1820, is
+ *  `Received`: an Admin has marked it handed over and it is not yet signed,
+ *  so it is the one request that offers spec 012's Accountability Form
+ *  (constitution 6.0.0). The Completed request counts as signed. The For
+ *  Delivery and Ready for Pickup requests offer **Mark as Received**.
+ *  `sam.torres` owns one request so the list can prove it shows only the
+ *  signed-in Employee's. The file gives REQ-2026-1842 to
  *  two rows — Ready for Pickup and For Delivery — so the delivery row carries
  *  REQ-2026-1838 instead; an id is unique or it is not an id
  *  (docs/design-system/additions.md). REQ-2026-1847's lines and note are
@@ -85,6 +97,7 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
       approvedAt: '2026-07-28T06:15:00Z',
       handedOverAt: '2026-07-29T02:30:00Z',
       receivedAt: '2026-07-29T03:10:00Z',
+      signedAt: '2026-07-29T05:30:00Z',
       completedAt: '2026-07-29T08:45:00Z',
     },
     {
@@ -98,6 +111,20 @@ const SEED: Record<string, readonly EmployeeRequest[]> = {
       status: 'Cancelled',
       // The frame draws no reason; this one is placeholder copy.
       cancellation: { reason: 'IT lent me a spare webcam and headset', at: '2026-08-20T02:40:00Z' },
+    },
+    {
+      id: 'REQ-2026-1820',
+      submittedAt: '2026-09-02T01:30:00Z',
+      lines: [
+        { name: 'Wireless Mouse', description: 'Wireless Mouse - Logitech M185', qty: 1 },
+        { name: 'Headset', description: 'Headset - Jabra Evolve2 40', qty: 1 },
+      ],
+      noteToApprover: 'replacing a broken headset',
+      status: 'Received',
+      handover: 'For Delivery',
+      approvedAt: '2026-09-02T05:10:00Z',
+      handedOverAt: '2026-09-03T02:00:00Z',
+      receivedAt: '2026-09-04T06:25:00Z',
     },
   ],
   // A second Employee with no sign-in account. Nothing here is ever Maya's, so
@@ -161,5 +188,46 @@ export const seededEmployeeRequestSource: EmployeeRequestSource = {
     };
     own[index] = cancelled;
     return { ok: true, request: cancelled };
+  },
+
+  /** **Mark as Received** (spec 012 D19): the owning Employee only, and only
+   *  while the request is handed over. Sets `Received` with its time; the
+   *  units the backend would assign are not modelled (constitution III). */
+  async markReceived(user: User, id: string): Promise<ReceiveResult> {
+    const own = store.get(user.id) ?? [];
+    const index = own.findIndex((r) => r.id === id);
+    if (user.role !== 'employee' || index === -1) return { ok: false, refusal: 'unavailable' };
+    const { status } = own[index];
+    if (status !== 'For Delivery' && status !== 'Ready for Pickup') return { ok: false, refusal: 'status-changed' };
+
+    const received: EmployeeRequest = { ...own[index], status: 'Received', receivedAt: new Date().toISOString() };
+    own[index] = received;
+    return { ok: true, request: received };
+  },
+
+  /** The Accountability Form (spec 012 D14), holding the guards the API will:
+   *  the owning Employee only, a real agreement and name, and only on a
+   *  `Received` request not yet signed. On success it records the time and
+   *  leaves the status alone (constitution 6.0.0 IV). The typed name is not
+   *  kept: nothing reads it back (spec 012, Out of Scope), and a demo store is
+   *  no place for one. Stock is the backend's (constitution III); this source
+   *  models none. */
+  async sign(user: User, id: string, signature: Signature): Promise<SignResult> {
+    const own = store.get(user.id) ?? [];
+    const index = own.findIndex((r) => r.id === id);
+    if (user.role !== 'employee' || index === -1) return { ok: false, refusal: 'unavailable' };
+    // The type makes `agreed` true; a caller outside TypeScript may not.
+    if (signature.agreed !== true || !signature.fullName.trim()) {
+      return {
+        ok: false,
+        refusal: 'invalid',
+        problems: [{ path: [], detail: 'Agree to the conditions and type your full name to sign.' }],
+      };
+    }
+    if (own[index].status !== 'Received' || own[index].signedAt) return { ok: false, refusal: 'status-changed' };
+
+    const signed: EmployeeRequest = { ...own[index], signedAt: new Date().toISOString() };
+    own[index] = signed;
+    return { ok: true, request: signed };
   },
 };

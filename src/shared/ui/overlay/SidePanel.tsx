@@ -19,6 +19,11 @@ import { useScrollLock } from './scroll-lock';
  *  motion token ever outgrows it. */
 const EXIT_BACKSTOP_MS = 400;
 
+/** The two sheet widths the file draws: 400px for every request panel, 564px
+ *  for `04.1`'s Accountability Form (spec 012 D3). Each is capped at the
+ *  viewport, so the sheet never overflows a narrow screen. */
+const WIDTH = { default: 'max-w-[400px]', wide: 'max-w-[564px]' } as const;
+
 export function SidePanel({
   title,
   header,
@@ -26,6 +31,7 @@ export function SidePanel({
   children,
   footer,
   dismissible = true,
+  width = 'default',
 }: {
   /** The dialog's accessible name, applied as `aria-label`. */
   title: string;
@@ -45,6 +51,8 @@ export function SidePanel({
    *  ignored until it is `true` again, so the panel cannot unmount mid-submit.
    *  The ✕ stays in place, disabled, so the header does not reflow. */
   dismissible?: boolean;
+  /** `wide` is the Accountability Form's 564px sheet (spec 012 D3). */
+  width?: keyof typeof WIDTH;
 }) {
   const panel = useRef<HTMLDialogElement>(null);
   // The page behind the scrim stays put while the panel is open.
@@ -170,7 +178,7 @@ export function SidePanel({
       onAnimationEnd={(e) => {
         if (leaving && e.target === e.currentTarget) finish();
       }}
-      className={`fixed inset-y-0 right-0 left-auto m-0 flex h-dvh max-h-none w-full max-w-[400px] flex-col overflow-hidden border-none will-change-transform bg-surface-card p-0 outline-none backdrop:bg-backdrop ${
+      className={`fixed inset-y-0 right-0 left-auto m-0 flex h-dvh max-h-none w-full ${WIDTH[width]} flex-col overflow-hidden border-none will-change-transform bg-surface-card p-0 outline-none backdrop:bg-backdrop ${
         leaving ? 'animate-sheet-out backdrop:animate-fade-out' : 'animate-sheet-in backdrop:animate-fade-in'
       }`}
     >

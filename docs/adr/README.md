@@ -14,5 +14,6 @@ Significant HOW decisions for OSRS. New ADRs get the next number and `Accepted` 
 | [0008](0008-per-unit-inventory-register.md) | Inventory is a per-unit register; stock is counted from unit statuses — **amended by 0009** |
 | [0009](0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes — **amended by 0010** |
 | [0010](0010-admin-marks-received.md) | The Admin may also mark a handed-over request `Received` |
+| [0010](0010-admin-sets-received-employee-signs.md) | The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it (no status change); the Admin completes once signed |
 
 Template: context, decision, consequences, alternatives. See `ARCHITECT.md` §13.

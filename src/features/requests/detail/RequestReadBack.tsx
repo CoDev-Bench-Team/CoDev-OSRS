@@ -1,16 +1,7 @@
-import {
-  StatusTimeline,
-  TABLE_ROW_PADDING_CLASS,
-  TableCard,
-  TableHead,
-  tableColumnStyle,
-  type ColumnWidth,
-} from '../../../shared/ui';
+import { StatusTimeline } from '../../../shared/ui';
 import type { EmployeeRequest } from './request-detail-types';
-import { keyedLines } from '../format';
+import { RequestLinesTable } from './RequestLinesTable';
 import { requestTimeline } from '../request-timeline';
-
-const QTY_WIDTH: ColumnWidth = '50px';
 
 /** The read-back of one request as the system holds it: Items Requested, the
  *  Note to Approver, a stopped request's reason, and the Status timeline.
@@ -40,21 +31,7 @@ export function RequestReadBack({ request }: { request: EmployeeRequest }) {
         <h3 id="items-requested" className="font-sans text-14 font-bold leading-body uppercase text-ink-muted">
           Items Requested
         </h3>
-        <TableCard>
-          <TableHead cols={[['Item'], ['Qty', QTY_WIDTH]]} />
-          <ul>
-            {keyedLines(request.lines).map(({ key, line }) => (
-              <li key={key} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
-                <span style={tableColumnStyle()} className="type-ui-bold-wrap text-ink-primary">
-                  {line.description}
-                </span>
-                <span style={tableColumnStyle(QTY_WIDTH)} className="type-ui-bold tabular-nums text-ink-primary">
-                  {line.qty}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </TableCard>
+        <RequestLinesTable lines={request.lines} />
       </section>
 
       {request.noteToApprover ? (

@@ -15,6 +15,8 @@ Amended 2026-09-26: Inventory is a **register of units**, and the per-office qua
 
 Amended again 2026-09-26: the Employee signs an **Accountability Form** on receipt, which moves the request to **`Received`** and assigns the reserved units to them; the Admin then completes. See Session 2026-09-26 (`Received`) and [ADR-0009](../../docs/adr/0009-received-and-accountability-form.md).
 
+Amended 2026-09-29: an **Admin**, or the owning **Employee**, sets `Received` (the units are assigned then); the Employee signs the Accountability Form on the `Received` request, which records the acknowledgement without changing the status; the Admin completes only once it is signed. See Session 2026-09-29 and [ADR-0010](../../docs/adr/0010-admin-sets-received-employee-signs.md).
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Encode assets and add units (Priority: P1)
@@ -73,20 +75,23 @@ An Admin opens an approved request and uses **Update Status** to set **For Deliv
 
 ### User Story 5 - Confirm receipt and complete (Priority: P1)
 
-*(Rewritten 2026-09-26, constitution 5.0.0.)* The owning Employee opens a handed-over request and signs the **Accountability Form**: they agree to its conditions, type their full name, and may add notes. The System moves the request to **Received**, and this is when the stock actually leaves: the reserved units become `Assigned` to the Employee, so `Total` and `Reserved` both fall by the requested quantity. The Employee receives a **Status changed** email. If the Employee has not signed, an Admin may instead set **Received** with Update Status, behind a confirmation, with the same stock movement and email; whichever comes first wins *(amended 2026-09-29, ADR-0010)*. An Admin then marks the request **Complete**; no quantity changes.
+*(Rewritten 2026-09-29, constitution 6.0.0; was 2026-09-26, 5.0.0.)* Once the items are handed over, an Admin — or the owning Employee, with **Mark as Received** on their own request — marks the request **Received**; the Admin's Update Status asks in a confirmation first *(spec 008 FR-008b)*. This is when the stock actually leaves: the reserved units become `Assigned` to the Employee, so `Total` and `Reserved` both fall by the requested quantity, and the Employee receives a **Status changed** email asking them to sign. The owning Employee then opens the request and signs the **Accountability Form**: they agree to its conditions and type their full name. Signing records the acknowledgement; the status stays `Received`. An Admin then marks the request **Complete**, which is possible only once the form is signed; no quantity changes.
 
 **Why this priority**: Closes the documented pipeline; `Received` is the only request transition that takes units out of the store.
-**Independent Test**: Sign the form on a `Ready for Pickup` request and assert the quantities; complete it as the Admin; confirm neither actor can take the other's step.
+**Independent Test**: Mark a `Ready for Pickup` request `Received` as the Admin and assert the quantities; sign the form as the Employee; complete it as the Admin; confirm neither actor can take the other's step, and that Complete is refused before the signature.
 **Acceptance Scenarios**:
 
-1. **Given** a `Ready for Pickup` request for qty 3 on an asset at Total 10 / Available 7 / Reserved 3, **When** the owning Employee signs the Accountability Form, **Then** status is `Received`, the asset shows Total 7 / Available 7 / Reserved 0, and a `Status changed` email is recorded.
-2. **Given** a `Received` request, **When** an Admin completes it, **Then** status is `Completed` and quantities are unchanged.
-3. **Given** a `For Delivery` request, **When** an Admin attempts to complete it, **Then** the system refuses — it must be `Received` first.
-4. **Given** a `For Delivery` request, **When** anyone other than the owning Employee attempts to submit its Accountability Form, **Then** the system refuses.
-5. **Given** the form, **When** the agreement is unticked or the full name is empty, **Then** submission is refused and status is unchanged.
-6. **Given** a `Completed` request, **When** anyone attempts any transition, **Then** the system refuses.
-7. **Given** a `For Delivery` request for qty 1, **When** an Admin sets `Received` with Update Status, **Then** status is `Received`, `Total` and `Reserved` fall by 1, and a `Status changed` email is recorded. *(Added 2026-09-29, ADR-0010.)*
-8. **Given** an `Approved` request, **When** an Admin attempts to set `Received`, **Then** the system refuses — it must be handed over first. *(Added 2026-09-29.)*
+1. **Given** a `Ready for Pickup` request for qty 3 on an asset at Total 10 / Available 7 / Reserved 3, **When** an Admin marks it `Received`, **Then** status is `Received`, the asset shows Total 7 / Available 7 / Reserved 0, and a `Status changed` email is recorded.
+1a. **Given** the Employee's own `For Delivery` request, **When** they mark it received and confirm, **Then** status is `Received`, with the same stock movement and email as scenario 1.
+1b. **Given** another Employee's `For Delivery` request, **When** an Employee attempts to mark it received, **Then** the system refuses.
+1c. **Given** an `Approved` request, **When** an Admin attempts to set `Received`, **Then** the system refuses — it must be handed over first. *(Added 2026-09-29, BEN-47.)*
+2. **Given** a `Received` request, **When** the owning Employee signs the Accountability Form, **Then** the acknowledgement is recorded, status stays `Received`, and quantities are unchanged.
+3. **Given** a `Received` request that has not been signed, **When** an Admin attempts to complete it, **Then** the system refuses.
+4. **Given** a signed `Received` request, **When** an Admin completes it, **Then** status is `Completed` and quantities are unchanged.
+5. **Given** a `For Delivery` request, **When** an Admin attempts to complete it, **Then** the system refuses — it must be `Received` first.
+6. **Given** a `Received` request, **When** anyone other than the owning Employee attempts to sign its Accountability Form, **Then** the system refuses.
+7. **Given** the form, **When** the agreement is unticked or the full name is empty, **Then** submission is refused and nothing is recorded.
+8. **Given** a `Completed` request, **When** anyone attempts any transition, **Then** the system refuses.
 
 ### User Story 6 - Track status and history (Priority: P2)
 
@@ -131,10 +136,11 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - Inactive or deleted-looking assets: employees cannot submit them (MVP: an Admin can mark an asset inactive).
 - An asset that exists but holds no stock at the selected office: not requestable from that office, requestable from another.
 - Actor uses the wrong role's action (Employee approves, Employee completes): refused.
-- Duplicate Accountability Form on an already `Received` request: refused, the units are assigned once.
+- Duplicate Accountability Form on an already signed request: refused; the acknowledgement is recorded once.
+- Admin marks `Received` twice: refused; the units are assigned once.
 - Duplicate complete on an already completed request: refused, status stays `Completed`.
 - Cancel attempted on a request that is already `Received`, `Completed`, `Rejected` or `Cancelled`: refused, status unchanged.
-- An Employee never signs the form: the request stays `For Delivery` / `Ready for Pickup` with its stock reserved; an Admin may cancel it with a reason.
+- An Employee never signs the form: the request stays `Received` with its units assigned; the Admin cannot complete it and cannot cancel it. No reminder or timeout in the MVP.
 - Employee attempts to cancel a request that has already been approved: refused — after a decision, only an Admin may cancel.
 - Cancellation submitted with an empty reason, by either role: refused.
 - Two actors cancel the same request at once: the reservation is released once, never twice.
@@ -161,11 +167,11 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - **FR-010a**: System MUST allow the owning Employee to cancel their own request while it is `Pending Approval`, **only when a non-empty reason is provided**, with the same atomic status change and reservation release.
 - **FR-010b**: System MUST allow an Admin to cancel an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled, only when a non-empty reason is provided, with the same atomic status change and reservation release.
 - **FR-010c**: System MUST refuse cancellation of a `Received`, `Completed`, `Rejected` or already-`Cancelled` request.
-- **FR-011**: System MUST allow Admins to move an `Approved`, `For Delivery` or `Ready for Pickup` request to `For Delivery` or `Ready for Pickup` without changing any quantity. The two are peers, not a sequence.
+- **FR-011**: System MUST allow Admins to move an `Approved`, `For Delivery` or `Ready for Pickup` request to `For Delivery` or `Ready for Pickup` without changing any quantity, and a `For Delivery` or `Ready for Pickup` request to `Received` (FR-012a). The two are peers, not a sequence.
 - **FR-011a**: System MUST record a pickup location when the target status is `Ready for Pickup`, and MUST carry it in the resulting notification.
-- **FR-012**: System MUST allow Admins to move a `Received` request to `Completed`, without changing any quantity. *(Rewritten 2026-09-26.)*
-- **FR-012a**: System MUST move a `For Delivery` or `Ready for Pickup` request to `Received` when, and only when, its owning Employee submits the Accountability Form or an Admin marks it `Received` with Update Status, decreasing `Total` and `Reserved` by each line quantity (the reserved units become `Assigned` to the requester) in the same atomic operation. No other actor and no other state may set `Received`. *(Rewritten 2026-09-26; was "no confirm-receipt action". Amended 2026-09-29, ADR-0010: the Admin's path is added.)*
-- **FR-012b**: System MUST show the owning Employee an **Accountability Form** on their own `For Delivery` or `Ready for Pickup` request, as `04.1` draws it: the request's items and quantities (not unit tags), the acknowledgement conditions, a required **I have read and agree to the above** checkbox, a required **Type full name to sign** field, optional **Other Notes**, and **Cancel** / **I acknowledge and sign**.
+- **FR-012**: System MUST allow Admins to move a `Received` request to `Completed`, without changing any quantity, **only once its Accountability Form has been signed**. *(Rewritten 2026-09-26; narrowed 2026-09-29.)*
+- **FR-012a**: System MUST allow an Admin, or the owning Employee on their own request, to move a `For Delivery` or `Ready for Pickup` request to `Received`, decreasing `Total` and `Reserved` by each line quantity (the reserved units become `Assigned` to the requester) in the same atomic operation. No other actor may set `Received`. *(Rewritten 2026-09-29, constitution 6.0.0; was: set by the System when the Employee submits the form.)*
+- **FR-012b**: System MUST show the owning Employee an **Accountability Form** on their own `Received` request that has not yet been signed, as `04.1` draws it: the request's items and quantities (not unit tags), the acknowledgement conditions (the project owner's eleven; spec 012 FR-004), a required **I have read and agree to the above** checkbox that unlocks once the conditions have been scrolled to their end, a required **Type full name to sign** field, and **Cancel** / **I acknowledge and sign**. Signing records the acknowledgement (signed name, signed time) and does not change the status. *(Rewritten 2026-09-29, [spec 012](../012-accountability-form/spec.md); Other Notes withdrawn 2026-09-26, pending the design.)*
 - **FR-013**: System MUST refuse illegal status transitions and actions not allowed for the caller's role.
 - **FR-014**: System MUST send an email on every defined transition using the design's templates: **Request received** on submit (Employee); **Request approved** on approve (Employee); **Request declined** on reject (Employee); **Status changed** on every other transition — `For Delivery`, `Ready for Pickup`, `Received`, `Completed`, `Cancelled` — carrying previous status, new status, and the pickup location when there is one.
 - **FR-014a**: System MAY send the **Welcome** template on account creation. It is not a transition.
@@ -182,7 +188,7 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - **Asset**: Requestable model — name, category, model, description, image, active flag, low-stock threshold, category-dependent specification pairs. Must exist before it can be requested.
 - **Unit**: One physical item of an asset at one office: tag, serial number, status, optional assignee and assigned-on date, purchase details, device details (secret fields Admin-only), notes.
 - **Stock**: ~~Held per (asset, office): `total`, `available`, `reserved`, `lowStockThreshold`.~~ Derived per (asset, office) from units: `available`, `reserved`, `total` = available + reserved; `lowStockThreshold` is on the Asset. Derived stock status: `In Stock` | `Low Stock` | `Out of Stock`.
-- **Request**: Header with requestor, requesting office, status, optional note to approver, optional rejection reason, optional cancellation reason and who cancelled, optional pickup location, the Accountability Form acknowledgement (signed name, notes, signed time), and timestamps per transition.
+- **Request**: Header with requestor, requesting office, status, optional note to approver, optional rejection reason, optional cancellation reason and who cancelled, optional pickup location, the Accountability Form acknowledgement (signed name, signed time — present once signed, and required before `Completed`), and timestamps per transition.
 - **Request line**: Asset + selected model + quantity captured at submit (quantity does not change after submit).
 - **Notification log**: Template, recipients, request id, payload facts, send outcome.
 
@@ -212,7 +218,7 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 
 ### Measurable Outcomes
 
-- **SC-001**: A tester can complete the documented happy path (encode asset → set stock → request → approve → Ready for Pickup → Employee signs the Accountability Form → complete) in one sitting using only the UI, ending in `Completed` with `Total` reduced by the requested quantity and `Reserved` back to its pre-submit value.
+- **SC-001**: A tester can complete the documented happy path (encode asset → set stock → request → approve → Ready for Pickup → Admin marks Received → Employee signs the Accountability Form → complete) in one sitting using only the UI, ending in `Completed` with `Total` reduced by the requested quantity and `Reserved` back to its pre-submit value.
 - **SC-002**: A tester can complete the reject path and observe the reservation released — `Available` back to the pre-submit quantity — plus a visible rejection reason, then submit a new request for the same asset.
 - **SC-002a**: A tester can complete the cancel path from both sides: as the Employee while `Pending Approval`, and as the Admin on an `Approved` request; both require a reason and both release the reservation.
 - **SC-003**: For each of the four transactional templates, a test run produces a recorded notification to the specified recipients with request id and item facts; `Status changed` carries a previous/new status pair.
@@ -231,6 +237,16 @@ Resolved from the Linear brief and process diagram with MVP defaults (no blockin
 - Q: Resubmit after reject? → A: New request, not reopen.
 - Q: Who can approve? → A: ~~Any user with Approver role~~ **any Admin** (small internal team).
 - Q: Auth for MVP? → A: ~~Username/password (email + password) with seeded demo users; SSO later.~~ **Superseded 2026-09-12 — see Session 2026-09-12 below.**
+
+### Session 2026-09-29 — Amendment (the Admin sets `Received`)
+
+Raised while building the Accountability Form (BEN-136, [spec 012](../012-accountability-form/spec.md)) and decided by the project owner. It follows the design's order, which the 2026-09-26 session had rejected: `04.1` draws **Sign accountability form** on a request that is already `Received`, and the *Equipment Delivered/Claimed* email asks the Employee to sign after IT has issued the items ([drift-2026-09-26 §3](../../docs/design-system/drift-2026-09-26.md)).
+
+- Q: Who sets `Received`? → A: **The Admin**, with Update Status, **or the owning Employee**, with **Mark as Received** (after a confirmation step) on their own request — from `For Delivery` or `Ready for Pickup`.
+- Q: What does signing do? → A: **It records the acknowledgement; the request stays `Received`.** The Admin still completes, and **Complete is refused until the form is signed.**
+- Q: When do the units become `Assigned`? → A: **On `Received`**, as before; only who triggers it changed.
+
+Constitution **6.0.0** (MAJOR: IV redefined; II, III and VI follow). [ADR-0010](../../docs/adr/0010-admin-sets-received-employee-signs.md) amends ADR-0009. US5, FR-011, FR-012, FR-012a, FR-012b, the Request entity, the edge cases and SC-001 are reworded in place. The contract gap grows: the API must also carry whether a request is signed ([contracts/README.md](contracts/README.md) conflict 5).
 
 ### Session 2026-09-29 — Amendment (Admin marks `Received`)
 
@@ -258,7 +274,7 @@ the project owner (BEN-43), after the unit-register amendment below.
 
 Recorded as defaults, not asked: `Received` cannot be cancelled; the form signs for request lines, not units, because the contract exposes no units on a request.
 
-Constitution **5.0.0** (MAJOR: IV redefined; III's assignment point moves from `Completed` to `Received`; II and V extended). [ADR-0009](../../docs/adr/0009-received-and-accountability-form.md) amends ADR-0007 and ADR-0008. US5, FR-010c, FR-012, FR-012a, FR-014, FR-016, the Request entity and SC-001 are reworded in place; FR-012b is new. The published contract has neither the status nor the form ([contracts/README.md](contracts/README.md) conflict 5), so the form is specced and not built.
+Constitution **5.0.0** (MAJOR: IV redefined; III's assignment point moves from `Completed` to `Received`; II and V extended). [ADR-0009](../../docs/adr/0009-received-and-accountability-form.md) amends ADR-0007 and ADR-0008. US5, FR-010c, FR-012, FR-012a, FR-014, FR-016, the Request entity and SC-001 are reworded in place; FR-012b is new. The published contract has neither the status nor the form ([contracts/README.md](contracts/README.md) conflict 5), so the form is specced and not built. *(Amended 2026-09-26 by [spec 012](../012-accountability-form/spec.md), BEN-136: the form is built against a seeded source behind a seam until the contract carries it; the gap stays open.)*
 
 ### Session 2026-09-26 — Amendment (unit register)
 

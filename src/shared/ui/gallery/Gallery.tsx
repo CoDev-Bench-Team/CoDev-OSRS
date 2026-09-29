@@ -33,6 +33,9 @@ import {
   TABLE_ROW_PADDING_CLASS,
   tableColumnStyle,
   TextField,
+  InputField,
+  Checkbox,
+  BoxiconsPenAlt,
   TopBar,
   type ColumnWidth,
 } from '../index';
@@ -293,6 +296,31 @@ function FormsSection({ model, onModelChange }: { model: string; onModelChange: 
           <TextField label="Label" required invalid message="Say what is missing." placeholder="Placeholder" />
         </div>
       </Row>
+      <Row label="Input field — one line (04.1 Type full name to sign), then refused blank">
+        <div className="flex w-[420px] max-w-full flex-col gap-12">
+          <InputField label="Type full name to sign" defaultValue="Maya Santos" />
+          <InputField label="Type full name to sign" invalid message="Type your full name to sign." />
+        </div>
+      </Row>
+      <Row label="Checkbox — unticked, ticked, refused, unavailable until read (04.1; the last two are additions §3h)">
+        <div className="flex w-[420px] max-w-full flex-col gap-12">
+          <Checkbox label="I have read and agree to the above" checked={false} onChange={() => {}} />
+          <Checkbox label="I have read and agree to the above" checked onChange={() => {}} />
+          <Checkbox
+            label="I have read and agree to the above"
+            checked={false}
+            invalid
+            message="Tick the box to confirm you agree to the conditions."
+            onChange={() => {}}
+          />
+          <Checkbox
+            label="I have read and agree to the above"
+            checked={false}
+            unavailable
+            message="Scroll to the end of the acknowledgement and read it before agreeing."
+          />
+        </div>
+      </Row>
     </Section>
   );
 }
@@ -390,6 +418,9 @@ function IconsSection() {
         <span className="text-ink-primary"><MdiLightClipboardText /></span>
         <span className="text-brand-primary"><MdiLightClipboardText /></span>
         <span className="text-ink-primary"><MdiClipboardTextOutline /></span>
+      </Row>
+      <Row label="Boxicons pen-alt — 16px (04.1 Sign accountability form)">
+        <span className="text-brand-primary-alt"><BoxiconsPenAlt /></span>
       </Row>
       <Row label="Library glyphs — 30px">
         <span className="text-osrs-template-ink"><ArrowCircleDownFill /></span>

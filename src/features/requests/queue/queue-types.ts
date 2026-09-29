@@ -25,7 +25,9 @@ export interface QueueSource {
 
 /** The statuses the queue lists. Terminal ones — `Rejected`, `Cancelled`,
  *  `Completed` — belong to History (spec 001 FR-016a). `Received` is live: it
- *  waits on the Admin's Complete (constitution 5.0.0; spec 004 amendment 5). */
+ *  waits on the Admin's Complete (constitution 5.0.0; spec 004 amendment 5).
+ *  Nothing on the Admin side sets it: a request reaches `Received` only through
+ *  the owning Employee's Accountability Form (spec 012 FR-013). */
 export const LIVE_STATUSES = [
   'Pending Approval',
   'Approved',
