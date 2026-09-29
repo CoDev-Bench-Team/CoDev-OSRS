@@ -35,7 +35,7 @@ An Employee opens **My Requests** and sees `My Requests` over `Track every reque
 3. **Given** a request with three items, **Then** `ITEMS` reads the first two and a count, e.g. `Laptop, Keyboard + 1 more`; with two or fewer, their names.
 4. **Given** each of the seven statuses, **Then** its pill reads the state name in that state's tone.
 5. **Given** any row, **When** **View details** is activated, **Then** the request panel opens over the page and the address does not change.
-6. **Given** an Employee with no requests, **Then** the page says so instead of drawing an empty table.
+6. **Given** an Employee with no requests, **Then** the table keeps its header and its only row reads `You have not submitted any requests yet`, rather than showing no rows.
 
 ## Requirements
 
@@ -54,8 +54,8 @@ Filters, search and pagination (D3). The panel and cancel (spec 007). Real data:
 ## Open questions for the designer
 
 1. The frame lists its sample rows out of date order; confirm newest first (D2).
-3. The *View details* arrow is stroked in one red and its label bound to the other (drift-2026-09-22 §9).
 2. The frame gives `REQ-2026-1842` to two rows (already flagged by spec 007).
+3. The *View details* arrow is stroked in one red and its label bound to the other (drift-2026-09-22 §9).
 
 ## Success Criteria
 

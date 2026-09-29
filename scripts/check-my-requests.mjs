@@ -102,6 +102,47 @@ check(
 );
 check(page.rows[0]?.date === 'Sep 11, 2026', 'the first row is the newest (Sep 11, 2026)', page.rows[0]?.date);
 
+// The seed has no ties and no bad dates, so D2's other two rules are held
+// against newestFirst directly.
+const order = await cdp.evaluate(async () => {
+  const { newestFirst } = await import('/src/features/requests/history/order.ts');
+  const ids = (rs) => newestFirst(rs).map((r) => r.id);
+  const at = '2026-09-10T09:00:00Z';
+  return {
+    tie: ids([
+      { id: 'REQ-2026-0001', submittedAt: at },
+      { id: 'REQ-2026-0003', submittedAt: at },
+      { id: 'REQ-2026-0002', submittedAt: at },
+    ]),
+    // Every input order, so a NaN comparison cannot land the right answer by luck.
+    bad: [
+      [0, 1, 2],
+      [0, 2, 1],
+      [1, 0, 2],
+      [1, 2, 0],
+      [2, 0, 1],
+      [2, 1, 0],
+    ].map((perm) => {
+      const rs = [
+        { id: 'REQ-2026-0001', submittedAt: 'not a date' },
+        { id: 'REQ-2026-0002', submittedAt: '2026-09-01T09:00:00Z' },
+        { id: 'REQ-2026-0003', submittedAt: at },
+      ];
+      return ids(perm.map((i) => rs[i])).join();
+    }),
+  };
+});
+check(
+  order.tie.join() === 'REQ-2026-0003,REQ-2026-0002,REQ-2026-0001',
+  'same-instant requests break the tie on id, descending',
+  order.tie.join(', '),
+);
+check(
+  order.bad.every((o) => o === 'REQ-2026-0003,REQ-2026-0002,REQ-2026-0001'),
+  'an unparseable submission time sorts last, whatever the input order',
+  order.bad.join(' | '),
+);
+
 console.log('\nAC3 / FR-003 — ITEMS summary');
 const r1847 = page.rows.find((r) => r.id === 'REQ-2026-1847');
 check(r1847?.items === 'Laptop, Keyboard + 1 more', 'three items read "Laptop, Keyboard + 1 more"', r1847?.items);
