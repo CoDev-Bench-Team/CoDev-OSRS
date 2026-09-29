@@ -4,10 +4,10 @@ import { Notice } from './Notice';
 /** FR-012: an address that matches no destination.
  *
  *  Distinguishable from a refusal on purpose — a mistyped address has to stay
- *  diagnosable. There are no record addresses since 2026-09-26: requests open
- *  in panels, and `/requests/:id` lands here for every role and every id, so
- *  the response never reveals whether a request exists (FR-012a; spec 003,
- *  Session 2026-09-26). */
+ *  diagnosable. `/requests/:id` does not land here: it is a deep link that
+ *  forwards to the Queue or My Requests, which open the request or show a
+ *  notice that never echoes the id, so a foreign and a missing request read
+ *  the same (FR-012a; spec 003, Session 2026-09-26). */
 export function NotFoundScreen({ path, action }: { path?: string; action?: ReactNode }) {
   return (
     <Notice

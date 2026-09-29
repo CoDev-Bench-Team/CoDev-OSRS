@@ -393,7 +393,7 @@ try {
     `nav ${afterRoleChange.nav.join(',')}`,
   );
 } finally {
-  await second.closeTab();
+  await second.close();
 }
 
 // ---- T050: the loading state, and no sign-in flash ----

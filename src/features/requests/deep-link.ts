@@ -30,7 +30,9 @@ export function useDeepLinkedRequest(
 ): { unavailable: string | null; dismiss: () => void } {
   const location = useLocation();
   const navigate = useNavigate();
-  const [unavailable, setUnavailable] = useState<string | null>(null);
+  // Whether the link asked for a request this page cannot show. The notice
+  // itself is derived in render, from `message`.
+  const [missed, setMissed] = useState(false);
   // The id is read once, on arrival, before the state is cleared below.
   const wanted = useRef((location.state as DeepLinkState | null)?.openRequest ?? null);
   const openRef = useRef(open);
@@ -38,14 +40,16 @@ export function useDeepLinkedRequest(
     openRef.current = open;
   });
 
+  // An effect, not render: the id is one-shot navigation state that can only
+  // be resolved once the list's data arrives, and consuming it navigates.
   useEffect(() => {
     const id = wanted.current;
     if (!id || !ids) return;
     wanted.current = null;
     if (ids.includes(id)) openRef.current(id);
-    else setUnavailable(message);
+    else setMissed(true);
     navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
-  }, [ids, navigate, location.pathname, location.search, message]);
+  }, [ids, navigate, location.pathname, location.search]);
 
-  return { unavailable, dismiss: () => setUnavailable(null) };
+  return { unavailable: missed ? message : null, dismiss: () => setMissed(false) };
 }

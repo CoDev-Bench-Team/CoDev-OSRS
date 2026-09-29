@@ -8,8 +8,8 @@ import type { AdminRequestSource, TransitionResult } from '../review-types';
  *
  *  - `changes`: another Admin approved the request first. Approve, reject and
  *    update-status are refused `status-changed`, and the reload shows the
- *    request `Approved` (or, if it already was, `For Delivery`) (spec 008
- *    FR-014).
+ *    request `Approved` (or, if it already was, `For Delivery`; if that too,
+ *    `Ready for Pickup` at the requestor's office) (spec 008 FR-014).
  *  - `failing`: every transition fails outright. The status is unchanged and
  *    the form keeps its input (FR-014).
  *  - `reload-fails`: the transition goes through, then the reload fails. The
@@ -30,7 +30,10 @@ export function reviewStub(mode: string | null, fresh: () => AdminRequestSource)
         const request = (await seeded.load()).requests.find((r) => r.id === id);
         if (!request) return { ok: false, refusal: 'unavailable' };
         if (request.status === 'Pending Approval') await seeded.approve(id);
-        else await seeded.updateStatus(id, 'For Delivery');
+        // Already `For Delivery`, moving it there again would change nothing.
+        else if (request.status === 'For Delivery') {
+          await seeded.updateStatus(id, 'Ready for Pickup', { kind: 'office', office: request.requestorOffice });
+        } else await seeded.updateStatus(id, 'For Delivery');
         return { ok: false, refusal: 'status-changed' };
       };
       return { ...seeded, approve: overtaken, reject: overtaken, updateStatus: overtaken };

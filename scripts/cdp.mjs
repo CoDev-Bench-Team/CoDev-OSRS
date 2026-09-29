@@ -54,7 +54,7 @@ async function ensureChrome(port) {
  *  slowed later runs until checks timed out at random.
  *
  *  A leaked tab is one no client is attached to (`Target.getTargets`) and
- *  that has navigated away from `about:blank`. Attached tabs belong to live
+ *  that is on a localhost / 127.0.0.1 origin, where every check runs. Attached tabs belong to live
  *  runs, including runs from other worktrees on the same port, and are never
  *  touched. A blank tab may be one another run has just created and is about
  *  to attach to, so blank tabs are left alone too. */
@@ -67,14 +67,27 @@ async function sweepLeakedTabs(port) {
       ws.addEventListener('open', res, { once: true });
       ws.addEventListener('error', rej, { once: true });
     });
-    const { targetInfos } = await new Promise((resolve) => {
-      ws.addEventListener('message', (e) => {
-        const msg = JSON.parse(e.data);
-        if (msg.id === 1) resolve(msg.result);
-      });
-      ws.send(JSON.stringify({ id: 1, method: 'Target.getTargets' }));
-    });
-    const leaked = targetInfos.filter((t) => t.type === 'page' && !t.attached && t.url !== 'about:blank');
+    // A reply that never comes must not hang `connect()`: give up after 2s.
+    const { targetInfos } = await Promise.race([
+      new Promise((resolve) => {
+        ws.addEventListener('message', (e) => {
+          const msg = JSON.parse(e.data);
+          if (msg.id === 1) resolve(msg.result);
+        });
+        ws.send(JSON.stringify({ id: 1, method: 'Target.getTargets' }));
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Target.getTargets timed out')), 2000).unref()),
+    ]);
+    // Only pages on a local dev server, on any port: a tab someone opened by
+    // hand in a shared debug Chrome is not ours to close.
+    const local = (url) => {
+      try {
+        return ['localhost', '127.0.0.1'].includes(new URL(url).hostname);
+      } catch {
+        return false;
+      }
+    };
+    const leaked = targetInfos.filter((t) => t.type === 'page' && !t.attached && local(t.url));
     await Promise.all(
       leaked.map((t) => fetch(`http://localhost:${port}/json/close/${t.targetId}`).catch(() => {})),
     );
@@ -133,11 +146,6 @@ export async function connect(port = DEFAULT_PORT, { newTab = true } = {}) {
      *  un-awaited close was killed before its request went out, leaving the
      *  tab open. That was the leak `sweepLeakedTabs` now cleans up after. */
     close: async () => {
-      ws.close();
-      await fetch(`http://localhost:${port}/json/close/${page.id}`).catch(() => {});
-    },
-    /** The same as `close`, kept for existing callers. */
-    closeTab: async () => {
       ws.close();
       await fetch(`http://localhost:${port}/json/close/${page.id}`).catch(() => {});
     },
