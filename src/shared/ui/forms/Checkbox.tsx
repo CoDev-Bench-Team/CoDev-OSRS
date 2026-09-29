@@ -19,7 +19,9 @@ import { useId, type InputHTMLAttributes, type KeyboardEvent, type MouseEvent, t
  *    tell anyone why it will not tick. While unavailable, the box stays
  *    focusable, refuses to change, and calls `onBlockedAttempt` on a click or
  *    Space, so the caller can say why. The thumb takes `Border-Strong` and the
- *    label `Ink-400`.
+ *    label `Ink-400`. `unavailableHint`, when given, is read out as the box's
+ *    description until a `message` replaces it, so a screen-reader user hears
+ *    why it is locked before trying it (review of #47).
  *
  *  The tick is not drawn: the ticked state's icon slot holds the library's
  *  `favorite` placeholder in black on a black thumb. A white check stands in. */
@@ -29,6 +31,7 @@ export function Checkbox({
   invalid,
   unavailable,
   message,
+  unavailableHint,
   onBlockedAttempt,
   onChange,
   className,
@@ -40,11 +43,16 @@ export function Checkbox({
   invalid?: boolean;
   unavailable?: boolean;
   message?: string;
+  /** Read out while unavailable and no `message` is showing. */
+  unavailableHint?: string;
   onBlockedAttempt?: () => void;
   ref?: Ref<HTMLInputElement>;
 }) {
   const id = useId();
   const messageId = `${id}-message`;
+  const hintId = `${id}-hint`;
+  const shownMessage = message && (invalid || unavailable) ? message : undefined;
+  const shownHint = unavailable && !shownMessage ? unavailableHint : undefined;
 
   // A click on the input or its label toggles the box before `change` fires,
   // so the refusal belongs here: cancel the toggle and say why.
@@ -82,7 +90,7 @@ export function Checkbox({
             checked={checked}
             aria-disabled={unavailable || undefined}
             aria-invalid={invalid || undefined}
-            aria-describedby={message && (invalid || unavailable) ? messageId : undefined}
+            aria-describedby={shownMessage ? messageId : shownHint ? hintId : undefined}
             onClick={blockClick}
             onChange={(e) => {
               if (!unavailable) onChange?.(e);
@@ -103,9 +111,14 @@ export function Checkbox({
         </span>
         <span className={`type-body ${unavailable ? 'text-ink-muted' : 'text-ink-strong'}`}>{label}</span>
       </label>
-      {message && (invalid || unavailable) ? (
+      {shownMessage ? (
         <span id={messageId} role={unavailable ? 'status' : undefined} className="type-meta text-status-rejected-fg">
-          {message}
+          {shownMessage}
+        </span>
+      ) : null}
+      {shownHint ? (
+        <span id={hintId} className="sr-only">
+          {shownHint}
         </span>
       ) : null}
     </div>

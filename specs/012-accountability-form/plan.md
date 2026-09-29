@@ -3,7 +3,7 @@
 **Date**: 2026-09-26
 **Spec**: `specs/012-accountability-form/spec.md`
 **Linear**: [BEN-136](https://linear.app/bench-synergy-project/issue/BEN-136); this plan is K1 ([BEN-138](https://linear.app/bench-synergy-project/issue/BEN-138))
-**Amended**: 2026-09-29 (constitution 6.0.0, [ADR-0010](../../docs/adr/0010-admin-sets-received-employee-signs.md): the Admin sets `Received`; the form is offered on an unsigned `Received` request and records the acknowledgement without changing the status)
+**Amended**: 2026-09-29 (constitution 6.0.0, [ADR-0010](../../docs/adr/0010-admin-sets-received-employee-signs.md): the Admin or the owning Employee sets `Received`; the form is offered on an unsigned `Received` request and records the acknowledgement without changing the status)
 **Status**: Draft
 
 ## Summary
@@ -17,7 +17,7 @@ Add the Accountability Form to the Employee request panel of spec 007. A **Sign 
 **Storage**: none in the SPA. The seeded source's in-memory store is mutable and resets on reload (as spec 007).
 **Target Layer**: frontend SPA only
 **Performance Goals**: none beyond the panel's existing behaviour; no new network call in K2
-**Constraints**: constitution 6.0.0 II/IV (owner-only, unsigned `Received` only, signing changes no status; the Admin sets `Received`) and VII (no invented route, field or error code). No per-unit tags, no *Other Notes*, and no Employee *Complete Request* control (spec 012 FR-001a, Out of Scope). Feature code stays under `src/features/requests/detail/`.
+**Constraints**: constitution 6.0.0 II/IV (owner-only, unsigned `Received` only, signing changes no status; the Admin or the owning Employee sets `Received`) and VII (no invented route, field or error code). No per-unit tags, no *Other Notes*, and no Employee *Complete Request* control (spec 012 FR-001a, Out of Scope). Feature code stays under `src/features/requests/detail/`.
 
 **Design source**: `04.1 - My Requests - View Request`, the 2026-09-26 `.fig`, decoded node by node during planning. Three variants: the pending read view (400px), the read view with the sign link (400px), and the form view (**564×1079**). Type is taken from the **bound style, not the cached value** (drift-2026-09-22 §9). The acknowledgement text caches Inter Bold 11.5, binds **`Body 3`** (Inter Regular 12.5 / 1.45), and has no character overrides, so it is `Body 3`.
 

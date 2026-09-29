@@ -11,7 +11,7 @@ Admin may also set `Received` with Update Status; decision 2's "No one can set
 `Received` by hand" is withdrawn.
 
 **Amended 2026-09-29 by [ADR-0010](0010-admin-sets-received-employee-signs.md)**:
-the Admin sets `Received` (decision 2 reversed), the Employee signs on a
+the Admin or the owning Employee sets `Received` (decision 2 reversed), the Employee signs on a
 `Received` request without changing its status, and the Admin completes only
 once the form is signed (decision 3 narrowed). Constitution **6.0.0**.
 

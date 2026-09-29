@@ -7,6 +7,7 @@ import { NO_SIGN_PROBLEMS, placeSignProblems, type PlacedSignProblems } from './
 import type { CancelResult, EmployeeRequest, ReceiveResult, Signature, SignResult } from './request-detail-types';
 import { RefusalAlert } from './RefusalAlert';
 import { RequestReadBack } from './RequestReadBack';
+import { useSingleFlight } from './use-single-flight';
 
 /** The Employee's request detail — a side panel over My Requests (BEN-45,
  *  frames `04.1`, `04.2 - Cancel Request`, `04.2 - Cancelled`).
@@ -53,7 +54,7 @@ const RECEIVE_REFUSAL_COPY = {
 type Mode = 'read' | 'cancel' | 'sign' | 'receive';
 /** Where focus goes after the panel changes mode (spec 012 D9a): the control
  *  that held it has just unmounted. */
-type FocusTarget = 'heading' | 'sign-link' | 'alert' | 'receive-button';
+type FocusTarget = 'heading' | 'sign-link' | 'alert' | 'receive-button' | 'receive-prompt';
 
 export function RequestDetailPanel({
   request,
@@ -77,19 +78,17 @@ export function RequestDetailPanel({
   const [mode, setMode] = useState<Mode>('read');
   const [submitting, setSubmitting] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
-  const [signing, setSigning] = useState(false);
-  // A second press can land before the re-render disables the button; this
-  // drops it, so one open form sends at most one signature (FR-008).
-  const signInFlight = useRef(false);
+  // One signature per open form (FR-008), one mark per confirmation (FR-018).
+  const [signing, runSign] = useSingleFlight();
+  const [receiving, runReceive] = useSingleFlight();
   const [signProblems, setSignProblems] = useState<PlacedSignProblems>(NO_SIGN_PROBLEMS);
   const [signRefusal, setSignRefusal] = useState<string | null>(null);
-  const [receiving, setReceiving] = useState(false);
-  const receiveInFlight = useRef(false);
 
   const heading = useRef<HTMLHeadingElement>(null);
   const signLink = useRef<HTMLButtonElement>(null);
   const alert = useRef<HTMLDivElement>(null);
   const receiveButton = useRef<HTMLButtonElement>(null);
+  const receivePrompt = useRef<HTMLParagraphElement>(null);
   const focusNext = useRef<FocusTarget | null>(null);
   // Changing mode unmounts the control that held focus. Put focus where the
   // Employee expects it rather than leaving it on <body>, so a screen-reader
@@ -105,14 +104,16 @@ export function RequestDetailPanel({
           ? alert.current
           : target === 'receive-button'
             ? receiveButton.current
-            : null;
+            : target === 'receive-prompt'
+              ? receivePrompt.current
+              : null;
     (el ?? heading.current)?.focus();
   });
 
   const cancellable = request.status === 'Pending Approval';
   const receivable = request.status === 'For Delivery' || request.status === 'Ready for Pickup';
   const signable = request.status === 'Received' && !request.signedAt;
-  const signed = request.status === 'Received' && request.signedAt;
+  const isSigned = request.status === 'Received' && Boolean(request.signedAt);
 
   const backOut = () => {
     focusNext.current = 'heading';
@@ -144,19 +145,15 @@ export function RequestDetailPanel({
   };
 
   const confirmReceived = async () => {
-    if (receiveInFlight.current) return;
-    receiveInFlight.current = true;
-    setReceiving(true);
-    setRefusal(null);
-    let result: ReceiveResult;
-    try {
-      result = await onMarkReceived(request.id);
-    } catch {
-      result = { ok: false, refusal: 'unavailable' };
-    } finally {
-      receiveInFlight.current = false;
-      setReceiving(false);
-    }
+    const result = await runReceive(async (): Promise<ReceiveResult> => {
+      setRefusal(null);
+      try {
+        return await onMarkReceived(request.id);
+      } catch {
+        return { ok: false, refusal: 'unavailable' };
+      }
+    });
+    if (!result) return; // a second press, dropped
     setMode('read');
     if (result.ok) {
       // The next step is the signature, so that is where focus goes.
@@ -183,20 +180,16 @@ export function RequestDetailPanel({
   };
 
   const sign = async (signature: Signature) => {
-    if (signInFlight.current) return;
-    signInFlight.current = true;
-    setSigning(true);
-    setSignProblems(NO_SIGN_PROBLEMS);
-    setSignRefusal(null);
-    let result: SignResult;
-    try {
-      result = await onSign(request.id, signature);
-    } catch {
-      result = { ok: false, refusal: 'unavailable' };
-    } finally {
-      signInFlight.current = false;
-      setSigning(false);
-    }
+    const result = await runSign(async (): Promise<SignResult> => {
+      setSignProblems(NO_SIGN_PROBLEMS);
+      setSignRefusal(null);
+      try {
+        return await onSign(request.id, signature);
+      } catch {
+        return { ok: false, refusal: 'unavailable' };
+      }
+    });
+    if (!result) return; // a second press, dropped
     // FR-009: the page has reloaded; the panel reads `Received` back.
     if (result.ok) {
       leaveSign('heading');
@@ -230,7 +223,11 @@ export function RequestDetailPanel({
     ) : receivable ? (
       mode === 'receive' ? (
         <div className="flex flex-col gap-12">
-          <p className="type-body text-ink-strong">Confirm you have received every item listed above. This can't be undone.</p>
+          {/* Focus lands on the prompt, not on Confirm: a second Enter must not
+              assign the items by accident (review of #47). */}
+          <p ref={receivePrompt} tabIndex={-1} className="type-body text-ink-strong outline-none">
+            Confirm you have received every item listed above. This can't be undone.
+          </p>
           <div className="flex items-center justify-center gap-12">
             <Button
               variant="ghost"
@@ -242,13 +239,21 @@ export function RequestDetailPanel({
             >
               Cancel
             </Button>
-            <Button onClick={() => void confirmReceived()} disabled={receiving} autoFocus>
+            <Button onClick={() => void confirmReceived()} disabled={receiving}>
               Confirm Received
             </Button>
           </div>
         </div>
       ) : (
-        <Button ref={receiveButton} variant="ghost" className="w-full" onClick={() => setMode('receive')}>
+        <Button
+          ref={receiveButton}
+          variant="ghost"
+          className="w-full"
+          onClick={() => {
+            focusNext.current = 'receive-prompt';
+            setMode('receive');
+          }}
+        >
           Mark as Received
         </Button>
       )
@@ -318,7 +323,7 @@ export function RequestDetailPanel({
           ) : null}
 
           {/* D18: signing changes no status, so this says it landed. */}
-          {signed ? (
+          {isSigned ? (
             <p className="inline-flex items-center gap-4 self-start font-sans text-11-5 font-bold leading-[1.3] text-ink-muted">
               <BoxiconsPenAlt />
               Accountability form signed · {formatDateTime(request.signedAt)}

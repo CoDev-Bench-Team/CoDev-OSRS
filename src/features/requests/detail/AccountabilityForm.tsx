@@ -13,6 +13,7 @@ const SIGN_COPY = {
   agree: 'Tick the box to confirm you agree to the conditions.',
   readFirst: 'Scroll to the end of the acknowledgement and read it before agreeing.',
   name: 'Type your full name to sign.',
+  lockedHint: 'Scroll the acknowledgement to the end to enable this.',
 } as const;
 
 const HEADING = 'font-sans text-14 font-bold leading-body uppercase text-ink-muted';
@@ -121,10 +122,15 @@ export function AccountabilityForm({
           ref={checkbox}
           label="I have read and agree to the above"
           checked={agreed}
-          unavailable={!read}
+          // Locked until read (FR-005a), and while a signature is sending, so
+          // the box cannot change under a payload already sent (review of #47).
+          unavailable={!read || submitting}
           invalid={Boolean(agreedShown) && read}
           message={agreedShown}
-          onBlockedAttempt={() => setAgreedMessage(SIGN_COPY.readFirst)}
+          unavailableHint={read ? undefined : SIGN_COPY.lockedHint}
+          onBlockedAttempt={() => {
+            if (!read) setAgreedMessage(SIGN_COPY.readFirst);
+          }}
           onChange={(e) => {
             setAgreed(e.target.checked);
             if (e.target.checked) setAgreedMessage(null);

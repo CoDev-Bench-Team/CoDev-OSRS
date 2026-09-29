@@ -59,6 +59,11 @@ function ArrowRight() {
   );
 }
 
+/** The shape every panel action's result shares (cancel, sign, mark received). */
+type ActionResult = { ok: true; request: EmployeeRequest } | { ok: false; refusal: string };
+type Unavailable = { ok: false; refusal: 'unavailable' };
+const UNAVAILABLE: Unavailable = { ok: false, refusal: 'unavailable' };
+
 type Load = { state: 'loading' } | { state: 'failed' } | { state: 'ready'; requests: readonly EmployeeRequest[] };
 
 export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSource }) {
@@ -93,89 +98,60 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
     };
   }, [fetchRequests]);
 
-  const cancel = async (id: string, reason: string): Promise<CancelResult> => {
-    // A contract-backed source can reject (network, 5xx). Treat that as the
-    // `unavailable` refusal the panel already explains, rather than leaving
-    // the form disabled and the rejection unhandled.
-    let result: CancelResult;
+  /** One rule for every action the panel takes on a request — cancel, sign,
+   *  mark received — so a fix to it reaches all three.
+   *
+   *  - A source that throws is the system not answering: `unavailable`, never
+   *    an unhandled rejection that leaves the panel's buttons disabled.
+   *  - The list reloads either way: on success the row's pill follows the
+   *    panel's; on a refusal the request changed underneath us, and the panel
+   *    should show what it is now, not what it was.
+   *  - Refused because the request changed, but the reload that would show how
+   *    failed: the panel still holds the old status, so it must not say "its
+   *    current status is shown above". Report it as the plain failure instead.
+   *  - The reload failed: swapping in the failure notice would unmount the open
+   *    panel mid-action and hide an action that went through, so keep the list
+   *    we had — with the updated request in it when the action worked.
+   *
+   *  `skipReload` is for refusals that changed nothing on the system. */
+  const runThenReload = async <R extends ActionResult>(
+    id: string,
+    run: () => Promise<R>,
+    skipReload?: (result: R) => boolean,
+  ): Promise<R | Unavailable> => {
+    let result: R | Unavailable;
     try {
-      result = await source.cancel(user!, id, reason);
+      result = await run();
     } catch {
-      result = { ok: false, refusal: 'unavailable' };
+      result = UNAVAILABLE;
     }
-    // Reload either way: on success the row's pill must follow the panel's
-    // (acceptance 4); on a refusal the request changed underneath us, and the
-    // panel should show what it is now, not what it was.
+    if (skipReload?.(result as R)) return result;
     const next = await fetchRequests();
-    // Refused because the request changed, but the reload that would show how
-    // failed: the panel still holds the old status, so it must not say "its
-    // current status is shown above". Report it as the plain failure instead.
-    if (!result.ok && result.refusal === 'status-changed' && next.state !== 'ready') {
-      result = { ok: false, refusal: 'unavailable' };
-    }
+    if (!result.ok && result.refusal === 'status-changed' && next.state !== 'ready') result = UNAVAILABLE;
     const outcome = result;
     setLoad((prev) => {
       if (next.state === 'ready' || prev.state !== 'ready') return next;
-      // The reload failed. Swapping in the failure notice would unmount the
-      // open panel mid-submit and hide a cancel that went through, so keep the
-      // list we had — with the cancelled request in it when the cancel worked.
       if (!outcome.ok) return prev;
       return { state: 'ready', requests: prev.requests.map((r) => (r.id === id ? outcome.request : r)) };
     });
     return result;
   };
 
-  /** The Accountability Form's submission (spec 012 D1, D12), handled as the
-   *  cancel above is: a source that throws is `unavailable`; the list reloads
-   *  either way, so on success the panel reads the signature back (FR-009) and
-   *  on `status-changed` the panel shows what the request is now (FR-010). */
-  const sign = async (id: string, signature: Signature): Promise<SignResult> => {
-    let result: SignResult;
-    try {
-      result = await source.sign(user!, id, signature);
-    } catch {
-      result = { ok: false, refusal: 'unavailable' };
-    }
-    // An `invalid` refusal changed nothing on the system; no reload needed.
-    if (!result.ok && result.refusal === 'invalid') return result;
-    const next = await fetchRequests();
-    // Refused because the request changed, but the reload that would show how
-    // failed: the panel cannot show a current status, so report the plain
-    // failure instead, as cancel does.
-    if (!result.ok && result.refusal === 'status-changed' && next.state !== 'ready') {
-      result = { ok: false, refusal: 'unavailable' };
-    }
-    const outcome = result;
-    setLoad((prev) => {
-      if (next.state === 'ready' || prev.state !== 'ready') return next;
-      // The reload failed: keep the list we had, with the signed request in it
-      // when the signature went through, rather than unmount the open panel.
-      if (!outcome.ok) return prev;
-      return { state: 'ready', requests: prev.requests.map((r) => (r.id === id ? outcome.request : r)) };
-    });
-    return result;
-  };
+  const cancel = (id: string, reason: string): Promise<CancelResult> =>
+    runThenReload(id, () => source.cancel(user!, id, reason));
 
-  /** **Mark as Received** (spec 012 D19), handled exactly as `cancel` is. */
-  const markReceived = async (id: string): Promise<ReceiveResult> => {
-    let result: ReceiveResult;
-    try {
-      result = await source.markReceived(user!, id);
-    } catch {
-      result = { ok: false, refusal: 'unavailable' };
-    }
-    const next = await fetchRequests();
-    if (!result.ok && result.refusal === 'status-changed' && next.state !== 'ready') {
-      result = { ok: false, refusal: 'unavailable' };
-    }
-    const outcome = result;
-    setLoad((prev) => {
-      if (next.state === 'ready' || prev.state !== 'ready') return next;
-      if (!outcome.ok) return prev;
-      return { state: 'ready', requests: prev.requests.map((r) => (r.id === id ? outcome.request : r)) };
-    });
-    return result;
-  };
+  /** The Accountability Form (spec 012 D1, D12). An `invalid` refusal changed
+   *  nothing on the system, so it skips the reload. */
+  const sign = (id: string, signature: Signature): Promise<SignResult> =>
+    runThenReload(
+      id,
+      () => source.sign(user!, id, signature),
+      (r) => !r.ok && r.refusal === 'invalid',
+    );
+
+  /** **Mark as Received** (spec 012 D19). */
+  const markReceived = (id: string): Promise<ReceiveResult> =>
+    runThenReload(id, () => source.markReceived(user!, id));
 
   // `/requests/:id` lands here for an Employee and opens their own request.
   // Only their own ids are in the list, so another Employee's request and a

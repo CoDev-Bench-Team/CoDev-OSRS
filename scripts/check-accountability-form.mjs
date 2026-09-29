@@ -207,6 +207,7 @@ check((await cdp.evaluate(() => document.querySelectorAll('[role="dialog"] [role
 // -------------------------------------------------------------- SC-006a
 console.log('\nStory 2a / SC-006a — the agreement unlocks only at the end of the acknowledgement');
 check(f.cbDisabledAria && !f.cbNativeDisabled, 'the checkbox is announced as disabled but stays focusable (aria-disabled, not disabled)');
+check(f.cbMessage === 'Scroll the acknowledgement to the end to enable this.', 'and its description says why, before anyone tries it (review of #47)', f.cbMessage);
 // A real pointer click, not a scripted one: the global `[aria-disabled]` rule
 // sets `pointer-events: none` on the input, so the click lands on its label.
 // The sheet slides in; measure only once it has stopped moving.
@@ -233,7 +234,7 @@ check(f.checked === false && f.cbMessage === COPY.readFirst, 'Space leaves it un
 await scrollBox('end');
 await cdp.waitFor(() => document.querySelector('[role="dialog"] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'the gate to open');
 f = await cdp.evaluate(form);
-check(!f.cbDisabledAria && f.cbMessage === null, 'scrolling to the end opens it and clears the message');
+check(!f.cbDisabledAria && f.cbMessage === null, 'scrolling to the end opens it and clears the message and the hint');
 await scrollBox('top');
 await sleep(150);
 f = await cdp.evaluate(form);
@@ -367,6 +368,9 @@ await readyToSign();
 await submit();
 f = await cdp.evaluate(form);
 check(f.submitDisabled === true, 'the button is disabled while it sends');
+await clickCheckbox();
+f = await cdp.evaluate(form);
+check(f.cbDisabledAria && f.checked === true, 'the agreement is locked while it sends, and stays ticked (review of #47)');
 // Bypass the disabled button: a second submit of the form itself.
 await cdp.evaluate(() => document.querySelector('[role="dialog"] form').requestSubmit());
 check(
@@ -391,6 +395,10 @@ await clickInPanel('Mark as Received');
 p = await cdp.evaluate(panel);
 check(p.text.includes(CONFIRM_COPY) && p.buttons.includes('Cancel') && p.buttons.includes('Confirm Received'), 'Mark as Received asks for confirmation first');
 check(p.pill === 'Ready for Pickup', 'nothing has been sent yet');
+check(
+  await cdp.evaluate(() => document.activeElement?.tagName === 'P' && document.activeElement.textContent.includes('can\'t be undone')),
+  'focus lands on the prompt, not on Confirm Received (review of #47)',
+);
 await clickInPanel('Cancel');
 await sleep(150);
 p = await cdp.evaluate(panel);
@@ -435,7 +443,23 @@ console.log('\nStory 4 / FR-013 — an Admin is never offered the form');
 await signIn('ethan.cruz');
 await go('/queue');
 await sleep(500);
-check(!(await cdp.evaluate(() => /accountability|acknowledge and sign/i.test(document.body.textContent))), 'the Requests Queue has no form or sign control');
+const EMPLOYEE_ONLY = /accountability|acknowledge and sign|mark as received|confirm received/i;
+check(!(await cdp.evaluate((re) => new RegExp(re, 'i').test(document.body.textContent), EMPLOYEE_ONLY.source)), 'the Requests Queue has no form, sign or Mark as Received control');
+for (const id of [RECEIVED, 'REQ-2026-1842']) {
+  await go(`/requests/${id}`);
+  await sleep(500);
+  // Not a blank page: the check below means nothing unless the view rendered.
+  // Today it is the shell's "Not built yet" Request detail placeholder; BEN-47
+  // builds the Admin panel there, and this then guards it for real.
+  check(
+    await cdp.evaluate(() => /Request detail/.test(document.querySelector('main')?.textContent ?? '')),
+    `the Admin’s view of ${id} renders (placeholder until BEN-47)`,
+  );
+  check(
+    !(await cdp.evaluate((re) => new RegExp(re, 'i').test(document.body.textContent), EMPLOYEE_ONLY.source)),
+    `the Admin’s view of ${id} has no form, sign or Mark as Received control`,
+  );
+}
 
 cdp.close();
 console.log(failures ? `\n${failures} accountability-form check(s) failed` : '\nall accountability-form checks pass');
