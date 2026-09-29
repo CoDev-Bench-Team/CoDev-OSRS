@@ -173,9 +173,9 @@ published contract has neither the status nor a way to reach it.
 - `Received` in the request status vocabulary, with the time it was set;
 - ~~an Employee-only submission of the **Accountability Form** on the owner's
   own `For Delivery` / `Ready for Pickup` request, carrying the agreement,
-  the typed full name ~~and optional notes~~ (withdrawn 2026-09-26, spec 012), which sets `Received` and moves
+  the typed full name and optional notes, which sets `Received` and moves
   the reserved units to `Assigned` (`Total` and `Reserved` fall) in one
-  transaction;~~ **Amended 2026-09-29 (constitution 7.0.0, [ADR-0011](../../../docs/adr/0011-admin-sets-received-employee-signs.md)):**
+  transaction;~~ (the optional notes were withdrawn 2026-09-26, spec 012) **Amended 2026-09-29 (constitution 7.0.0, [ADR-0011](../../../docs/adr/0011-admin-sets-received-employee-signs.md)):**
 - an **Admin or owning-Employee** transition from `For Delivery` /
   `Ready for Pickup` to `Received`, which moves the reserved units to `Assigned` (`Total` and
   `Reserved` fall) in one transaction;

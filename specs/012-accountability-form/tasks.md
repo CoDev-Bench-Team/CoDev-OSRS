@@ -18,7 +18,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - **Done 2026-09-26: no change.** The only export is still `2026-09-26T02:49:27.712Z`, the baseline the plan was read from.
 - [x] T004 [P] [BEN-139] Types: `Signature` (`{ agreed: true; fullName: string }`), `SignResult` (`ok` / `status-changed` / `unavailable` with optional `detail` / `invalid` with `FieldProblem[]`), and `sign(user, id, signature)` on `EmployeeRequestSource` (plan Data Model) — `src/features/requests/detail/request-detail-types.ts`
 - [x] T005 [BEN-139] Extract `RequestLinesTable` (ITEM / QTY) from `RequestReadBack`. **Land it as its own commit**, with the DOM unchanged, and prove it with `node scripts/check-request-detail.mjs` (D7) — `src/features/requests/detail/RequestLinesTable.tsx`, `src/features/requests/detail/RequestReadBack.tsx`
-  - **Done.** `check-request-detail` passed on the extraction alone. Not committed yet, so it is not a separate commit yet; see the PR note.
+  - **Done, with one change.** `check-request-detail` passed on the extraction alone, but it landed inside the feature commit (`da1f245`) rather than as its own commit. The DOM is unchanged, which is what the separate commit was meant to prove.
 - [x] T006 [P] [BEN-139] `SidePanel` `width?: 'default' | 'wide'`, as `min(400px|564px, 100vw)`. Default rendering unchanged (D3) — `src/shared/ui/overlay/SidePanel.tsx`
 - [x] T007 [P] [BEN-139] `Checkbox`: native input, visually hidden; 24px hit, 22px thumb, `r=6`, 1px inside `--color-black` border; ticked: black thumb with a white check. It has an invalid state (a `red-600` ring, a message via `aria-describedby`) and an unavailable state (`aria-disabled="true"`, never `disabled`): the change is cancelled, the thumb is `Border-Strong`, the label is `Ink-400`, and `onBlockedAttempt` fires on click and Space. The JSDoc names the D5 rationale (D5) — `src/shared/ui/forms/Checkbox.tsx`
   - **Done, with one change.** The focus ring sits on the 24px box as a `has-focus-visible:` box-shadow, not a `peer-focus-visible:` outline. `check-utilities` reads the `peer` marker as a dead utility, and the a11y gate's Tab check reads a ringed parent. The ticked state's icon is an undrawn placeholder in the file, so the white check is an addition (§3i).
@@ -105,7 +105,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - D9a's focus targets.
   — `scripts/check-accountability-form.mjs`
 - [x] T030 [BEN-141] Wire the check into verify: `['accountability form (spec 012)', 'node', ['scripts/check-accountability-form.mjs']]`. Depends on T029 — `scripts/verify.mjs`
-- [x] T031 [P] [BEN-141] Add the form view to the a11y/responsive gate at 1440, 768 and 375px: no horizontal page scroll, every control reachable, the checkbox's disabled state announced (D3) — `scripts/check-a11y-responsive.mjs`
+- [x] T031 [P] [BEN-141] Add the form view to the a11y/responsive gate at 1440, 768 and 360px: no horizontal page scroll, every control reachable, the checkbox's disabled state announced (D3) — `scripts/check-a11y-responsive.mjs`
   - **Done.** It caught two missing focus outlines (`outline-none` on the name input and on the acknowledgement box), both fixed. The read view's sign link also gained `hit-area` for the 44px touch minimum below 1440px.
 - [x] T032 [BEN-141] Re-run the `04.1` re-check (T003's procedure) before opening the PR (D16a) — `docs/design-system/drift-2026-09-26.md`
   - **Done 2026-09-27: no change.** The export is still `2026-09-26T02:49:27.712Z`.
