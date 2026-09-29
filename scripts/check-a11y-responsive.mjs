@@ -292,5 +292,5 @@ else {
 }
 
 console.log(`\n${failures} failure(s)`);
-cdp.close();
+await cdp.close();
 process.exit(failures ? 1 : 0);

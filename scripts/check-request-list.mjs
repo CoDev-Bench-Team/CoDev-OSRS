@@ -694,7 +694,7 @@ try {
 } catch (error) {
   check(false, `the run stopped: ${error.message}`);
 } finally {
-  cdp.close();
+  await cdp.close();
 }
 
 console.log(`\n${failures} failure(s)`);

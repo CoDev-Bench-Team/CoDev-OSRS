@@ -466,7 +466,7 @@ try {
     'an Employee on /queue sees no Review and no panel',
   );
 } finally {
-  await cdp.close?.();
+  await cdp.close();
 }
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll review-panel checks passed');

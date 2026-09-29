@@ -325,6 +325,6 @@ const itemsOf = (id) => blanks.find((r) => r.id === id)?.items;
 check(itemsOf('REQ-2026-1805') === '—', 'a request with no item names shows the em dash, not an empty cell', `got "${itemsOf('REQ-2026-1805')}"`);
 check(itemsOf('REQ-2026-1842') === 'Monitor, Dock', 'a blank name is dropped before the summary and its count', `got "${itemsOf('REQ-2026-1842')}"`);
 
-cdp.close();
+await cdp.close();
 console.log(failures ? `\n${failures} check(s) failed` : '\nall request-panel checks pass');
 process.exit(failures ? 1 : 0);
