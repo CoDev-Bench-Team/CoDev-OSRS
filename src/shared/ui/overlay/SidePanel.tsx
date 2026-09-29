@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { listenForScrimClick, wrapTab } from './modal-dialog';
 import { dismissPopovers } from './popover-layer';
 import { useScrollLock } from './scroll-lock';
 
@@ -109,52 +110,15 @@ export function SidePanel({
         return;
       }
       if (e.key !== 'Tab' || !dialog) return;
-      const focusable = [
-        ...dialog.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ];
-      // Nothing enabled — every control disabled while work is in flight: hold
-      // focus on the dialog itself rather than let Tab reach the page behind.
-      if (!focusable.length) {
-        e.preventDefault();
-        dialog.focus();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      // A focused control that unmounts drops focus to <body>. Treat anywhere
-      // outside the panel like the panel itself, so the next Tab comes back in.
-      const active = document.activeElement;
-      const outside = active === dialog || !dialog.contains(active);
-      if (e.shiftKey && (active === first || outside)) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && (active === last || outside)) {
-        e.preventDefault();
-        first.focus();
-      }
+      wrapTab(
+        e,
+        dialog,
+        'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
     };
-    // The sheet's content fills the dialog box, so a click whose target is the
-    // dialog itself landed on the ::backdrop: the scrim. Its keyboard
-    // equivalent is Esc, above.
-    // A click goes to the nearest common ancestor of where the pointer went
-    // down and where it came up. A drag between the sheet and the scrim, in
-    // either direction, therefore also "clicks" the dialog. Both ends must
-    // land on the scrim.
-    let pressedScrim = false;
-    let releasedScrim = false;
-    const onPress = (e: PointerEvent) => {
-      pressedScrim = e.target === dialog;
-    };
-    const onRelease = (e: PointerEvent) => {
-      releasedScrim = e.target === dialog;
-    };
-    const onScrim = (e: MouseEvent) => {
-      if (e.target === dialog && pressedScrim && releasedScrim) leave.current();
-      pressedScrim = false;
-      releasedScrim = false;
-    };
+    // A click on the scrim closes the panel. Its keyboard equivalent is Esc,
+    // above.
+    const stopScrim = dialog ? listenForScrimClick(dialog, () => leave.current()) : () => {};
     // The browser may close the dialog itself: Chrome makes `cancel`
     // un-cancellable when Esc repeats without user activation in between.
     // Then there is no exit animation to wait for, and the panel must still
@@ -174,16 +138,11 @@ export function SidePanel({
       finish();
     };
     dialog?.addEventListener('cancel', onCancel);
-    dialog?.addEventListener('pointerdown', onPress);
-    dialog?.addEventListener('pointerup', onRelease);
-    dialog?.addEventListener('click', onScrim);
     dialog?.addEventListener('close', onNativeClose);
     document.addEventListener('keydown', onKey);
     return () => {
       dialog?.removeEventListener('cancel', onCancel);
-      dialog?.removeEventListener('pointerdown', onPress);
-      dialog?.removeEventListener('pointerup', onRelease);
-      dialog?.removeEventListener('click', onScrim);
+      stopScrim();
       dialog?.removeEventListener('close', onNativeClose);
       document.removeEventListener('keydown', onKey);
       if (dialog?.open) dialog.close();

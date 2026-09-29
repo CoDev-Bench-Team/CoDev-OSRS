@@ -104,15 +104,25 @@ const esc = async () => {
     await cdp.send('Input.dispatchKeyEvent', { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
   }
 };
+const tab = async (shift = false) => {
+  for (const type of ['keyDown', 'keyUp']) {
+    await cdp.send('Input.dispatchKeyEvent', { type, key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, modifiers: shift ? 8 : 0 });
+  }
+};
+const focused = () => cdp.evaluate(() => document.activeElement?.textContent.trim() ?? null);
 const typeInto = async (selector, text) => {
   await cdp.evaluate((s) => document.querySelector(s).focus(), selector);
   await cdp.send('Input.insertText', { text });
 };
 // The Update Status confirmation (FR-008b), a modal stacked above the panel.
 const CONFIRM = 'dialog[open][role="alertdialog"]';
+// Focused first, as a real press focuses it, so the confirmation has an opener
+// to return focus to.
 const submitStatus = () =>
   cdp.evaluate(() => {
-    [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status' && x.type === 'submit').click();
+    const b = [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status' && x.type === 'submit');
+    b.focus();
+    b.click();
   });
 const confirmation = () =>
   cdp.evaluate((s) => {
@@ -354,16 +364,30 @@ try {
     c.text,
   );
   check(c.focused === 'Cancel', 'the confirmation opens on Cancel', c.focused);
+  const stops = [];
+  await tab();
+  stops.push(await focused());
+  await tab();
+  stops.push(await focused());
+  await tab(true);
+  stops.push(await focused());
+  check(
+    JSON.stringify(stops) === '["Confirm","Cancel","Confirm"]',
+    'Tab and Shift+Tab cycle between Cancel and Confirm, inside the confirmation',
+    JSON.stringify(stops),
+  );
   await answer('Cancel');
   await settle();
   p = await cdp.evaluate(panel);
   check((await confirmation()) === null && p.pill === 'Approved' && 'Status' in p.selects, 'Cancel sends nothing and keeps the form');
+  check((await focused()) === 'Update Status', 'Cancel returns focus to Update Status', await focused());
   await submitStatus();
   await asked();
   await esc();
   await settle();
   p = await cdp.evaluate(panel);
   check((await confirmation()) === null && p?.pill === 'Approved' && 'Status' in p.selects, 'Esc closes the confirmation, not the panel');
+  check((await focused()) === 'Update Status', 'Esc returns focus to Update Status', await focused());
   await submitStatus();
   await asked();
   const card = await cdp.evaluate(() => {
@@ -400,6 +424,22 @@ try {
   p = await cdp.evaluate(panel);
   check(!p.text.includes('6th floor IT desk'), 'swapping to For Delivery clears the pickup location');
   pass('the peers swap');
+
+  // The form never offers the current status, so only a race sends it: someone
+  // else got there first. The source says so rather than succeeding (FR-014).
+  const same = await cdp.evaluate(async () => {
+    const { createSeededAdminRequestSource } = await import('/src/features/requests/queue/seeded-admin-request-source.ts');
+    const source = createSeededAdminRequestSource();
+    return [
+      await source.updateStatus('REQ-2026-1748', 'For Delivery'),
+      await source.updateStatus('REQ-2026-1715', 'Ready for Pickup', { kind: 'office', office: 'Makati' }),
+    ];
+  });
+  check(
+    same.every((r) => !r.ok && r.refusal === 'status-changed'),
+    'a handover to the status the request already has is refused status-changed',
+    JSON.stringify(same),
+  );
 
   // Esc on an open Select closes the list, not the panel.
   await click('Update Status');

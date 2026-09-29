@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { Button } from '../actions/Button';
+import { listenForScrimClick, wrapTab } from './modal-dialog';
 
 /** A small modal that asks before an action is sent. Undrawn: logged in
  *  `docs/design-system/additions.md` §3h.
@@ -27,11 +28,9 @@ export function ConfirmDialog({
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const bodyId = useId();
-  // Read by the native `cancel` listener, which is installed once.
+  // Read by the native listeners, which are installed once.
   const dismiss = useRef(onCancel);
   const busyNow = useRef(busy);
-  const pressedScrim = useRef(false);
-  const releasedScrim = useRef(false);
   useLayoutEffect(() => {
     dismiss.current = onCancel;
     busyNow.current = busy;
@@ -43,15 +42,20 @@ export function ConfirmDialog({
     if (el && !el.open) el.showModal();
     // Cancel is the first button: the safe choice has focus.
     el?.querySelector<HTMLButtonElement>('button')?.focus();
+    const cancel = () => {
+      if (!busyNow.current) dismiss.current();
+    };
     // A close request that is not a key (the browser's own) still goes
     // through `onCancel`, so the caller's state never says open when it is not.
     const onNativeCancel = (e: Event) => {
       e.preventDefault();
-      if (!busyNow.current) dismiss.current();
+      cancel();
     };
     el?.addEventListener('cancel', onNativeCancel);
+    const stopScrim = el ? listenForScrimClick(el, cancel) : () => {};
     return () => {
       el?.removeEventListener('cancel', onNativeCancel);
+      stopScrim();
       if (el?.open) el.close();
       if (opener?.isConnected) opener.focus();
     };
@@ -66,20 +70,7 @@ export function ConfirmDialog({
     }
     if (e.key !== 'Tab' || !dialog.current) return;
     e.stopPropagation();
-    const focusable = [...dialog.current.querySelectorAll<HTMLElement>('button:not([disabled])')];
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (!first || !last) {
-      e.preventDefault();
-      return;
-    }
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
+    wrapTab(e, dialog.current, 'button:not([disabled])');
   };
 
   return (
@@ -89,22 +80,6 @@ export function ConfirmDialog({
       aria-labelledby={titleId}
       aria-describedby={bodyId}
       onKeyDown={onKeyDown}
-      // The content fills the box, so the dialog itself is the scrim. A click
-      // goes to the common ancestor of press and release, so a drag between
-      // the card and the scrim also "clicks" the dialog: both ends must land
-      // on the scrim, as in SidePanel.
-      onPointerDown={(e) => {
-        pressedScrim.current = e.target === e.currentTarget;
-      }}
-      onPointerUp={(e) => {
-        releasedScrim.current = e.target === e.currentTarget;
-      }}
-      onClick={(e) => {
-        const scrim = e.target === e.currentTarget && pressedScrim.current && releasedScrim.current;
-        pressedScrim.current = false;
-        releasedScrim.current = false;
-        if (scrim && !busy) onCancel();
-      }}
       className="fixed inset-0 m-auto h-fit w-[calc(100%-32px)] max-w-[360px] rounded-10 border-none bg-surface-card p-0 shadow-card outline-none backdrop:bg-backdrop backdrop:animate-fade-in"
     >
       <div className="flex flex-col gap-16 p-20">

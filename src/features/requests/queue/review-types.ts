@@ -88,7 +88,8 @@ export interface AdminRequestSource extends QueueSource {
    *  is not. `notes` is as for `approve`. */
   reject(id: string, reason: string, notes?: string): Promise<TransitionResult>;
   /** `Received` is accepted only from `For Delivery` or `Ready for Pickup`,
-   *  and keeps the handover and pickup location it had. */
+   *  and keeps the handover and pickup location it had. A target equal to the
+   *  current status is refused `status-changed`: the form never offers it. */
   updateStatus(id: string, to: UpdateStatusTarget, pickup?: PickupLocation): Promise<TransitionResult>;
   // complete(id) lands with BEN-134 (constitution 4.0.0), plan D9.
 }

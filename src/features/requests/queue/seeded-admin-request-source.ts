@@ -271,7 +271,9 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
         request.receivedAt = now();
         return { ok: true };
       }
-      if (!HANDOVER_FROM.has(request.status)) return refused('status-changed');
+      // The form never offers the current status, so a request already there
+      // was moved by someone else while the panel was open (FR-014).
+      if (!HANDOVER_FROM.has(request.status) || request.status === to) return refused('status-changed');
       let location: PickupLocation | undefined;
       if (to === 'Ready for Pickup') {
         if (!pickup) return refused('location-required');
