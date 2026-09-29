@@ -73,7 +73,7 @@ An Admin opens an approved request and uses **Update Status** to set **For Deliv
 
 ### User Story 5 - Confirm receipt and complete (Priority: P1)
 
-*(Rewritten 2026-09-26, constitution 5.0.0.)* The owning Employee opens a handed-over request and signs the **Accountability Form**: they agree to its conditions, type their full name, and may add notes. The System moves the request to **Received**, and this is when the stock actually leaves: the reserved units become `Assigned` to the Employee, so `Total` and `Reserved` both fall by the requested quantity. The Employee receives a **Status changed** email. An Admin then marks the request **Complete**; no quantity changes.
+*(Rewritten 2026-09-26, constitution 5.0.0.)* The owning Employee opens a handed-over request and signs the **Accountability Form**: they agree to its conditions, type their full name, and may add notes. The System moves the request to **Received**, and this is when the stock actually leaves: the reserved units become `Assigned` to the Employee, so `Total` and `Reserved` both fall by the requested quantity. The Employee receives a **Status changed** email. If the Employee has not signed, an Admin may instead set **Received** with Update Status, behind a confirmation, with the same stock movement and email; whichever comes first wins *(amended 2026-09-29, ADR-0010)*. An Admin then marks the request **Complete**; no quantity changes.
 
 **Why this priority**: Closes the documented pipeline; `Received` is the only request transition that takes units out of the store.
 **Independent Test**: Sign the form on a `Ready for Pickup` request and assert the quantities; complete it as the Admin; confirm neither actor can take the other's step.
@@ -239,7 +239,7 @@ project owner.
 
 - Q: A request stalls at the handover if the Employee never signs the Accountability Form. May the Admin set `Received`? → A: **Yes.** Update Status on a `For Delivery` or `Ready for Pickup` request also offers **Received**. The form still sets it too; whichever comes first wins.
 
-Recorded as defaults, not asked: `Received` keeps the handover state and pickup location it had; it is not offered from `Approved`; it has no extra confirm step; stock and email are as for the form's path.
+Recorded as defaults, not asked: `Received` keeps the handover state and pickup location it had; it is not offered from `Approved`; every Update Status, `Received` included, asks in a confirmation dialog before anything is sent, and for `Received` the dialog says it cannot be undone (spec 008 FR-008b); stock and email are as for the form's path.
 
 Constitution **6.0.0** (MAJOR: IV redefined). [ADR-0010](../../docs/adr/0010-admin-marks-received.md) amends ADR-0009. FR-012a and US5 are amended in place. Contracts conflict 5 now also asks for the Admin's transition.
 

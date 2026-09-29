@@ -122,6 +122,8 @@ export function ReviewPanel({
   // it, and a refusal that keeps the status keeps it too (FR-014).
   const [otherNotes, setOtherNotes] = useState('');
   const otherNotesId = useId();
+  const requestedById = useId();
+  const statusHeadingId = useId();
   const sentNotes = () => otherNotes.trim() || undefined;
 
   // Closing a form unmounts the control that held focus. Focus goes back to
@@ -302,8 +304,8 @@ export function ReviewPanel({
         </p>
       ) : null}
 
-      <section className="flex flex-col gap-10" aria-labelledby="requested-by">
-        <h3 id="requested-by" className="type-eyebrow uppercase text-ink-secondary">
+      <section className="flex flex-col gap-10" aria-labelledby={requestedById}>
+        <h3 id={requestedById} className="type-eyebrow uppercase text-ink-secondary">
           Requested by:
         </h3>
         <div className="flex items-center gap-12 rounded-10 bg-surface-card p-20 shadow-card">
@@ -350,8 +352,8 @@ export function ReviewPanel({
         </Card>
       ) : null}
 
-      <section className="flex flex-col gap-18" aria-labelledby="review-status">
-        <h3 id="review-status" className="font-sans text-14 font-bold leading-tight uppercase text-ink-secondary">
+      <section className="flex flex-col gap-18" aria-labelledby={statusHeadingId}>
+        <h3 id={statusHeadingId} className="font-sans text-14 font-bold leading-tight uppercase text-ink-secondary">
           Status
         </h3>
         <StatusTimeline nodes={requestTimeline(request)} />

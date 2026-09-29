@@ -35,6 +35,66 @@ function chosenLocation(place: string, other: string, offices: readonly Office[]
   return office ? { kind: 'office', office } : undefined;
 }
 
+/** The `Pickup location *` select, and the free-text field `Other…` reveals.
+ *  The office select is invalid only while `Other…` is not chosen; otherwise
+ *  the free-text field carries the error. */
+function PickupLocationField({
+  place,
+  other,
+  invalid,
+  pickupOffices,
+  onPlace,
+  onOther,
+}: {
+  place: string;
+  other: string;
+  invalid: boolean;
+  pickupOffices: readonly Office[];
+  onPlace: (value: string) => void;
+  onOther: (value: string) => void;
+}) {
+  const locationError = useId();
+  const officeInvalid = invalid && place !== OTHER;
+
+  return (
+    <>
+      <div className="flex flex-col gap-8">
+        <span className={`type-ui-bold ${officeInvalid ? 'text-status-rejected-fg' : 'text-ink-strong'}`}>
+          Pickup location<span aria-hidden="true"> *</span>
+        </span>
+        <Select
+          label="Pickup location"
+          placeholder="Select a location"
+          required
+          invalid={officeInvalid}
+          describedBy={officeInvalid ? locationError : undefined}
+          value={place || undefined}
+          options={[...pickupOffices.map(officeLabel), OTHER]}
+          onChange={onPlace}
+        />
+        {officeInvalid ? (
+          <p id={locationError} role="alert" className="type-meta text-status-rejected-fg">
+            {LOCATION_REQUIRED}
+          </p>
+        ) : null}
+      </div>
+
+      {place === OTHER ? (
+        <TextField
+          label="Other location"
+          required
+          autoFocus
+          placeholder="e.g 6th floor IT desk"
+          value={other}
+          invalid={invalid}
+          message={OTHER_REQUIRED}
+          onChange={(e) => onOther(e.target.value)}
+        />
+      ) : null}
+    </>
+  );
+}
+
 export function UpdateStatusForm({
   status,
   requestorOffice,
@@ -62,7 +122,6 @@ export function UpdateStatusForm({
   const [invalid, setInvalid] = useState(false);
   // The valid change waiting on the confirmation dialog (FR-008b).
   const [asking, setAsking] = useState<{ to: UpdateStatusTarget; pickup?: PickupLocation } | null>(null);
-  const locationError = useId();
 
   const confirm = (e: FormEvent) => {
     e.preventDefault();
@@ -114,43 +173,18 @@ export function UpdateStatusForm({
       </div>
 
       {pickingUp ? (
-        <div className="flex flex-col gap-8">
-          <span className={`type-ui-bold ${invalid && place !== OTHER ? 'text-status-rejected-fg' : 'text-ink-strong'}`}>
-            Pickup location<span aria-hidden="true"> *</span>
-          </span>
-          <Select
-            label="Pickup location"
-            placeholder="Select a location"
-            required
-            invalid={invalid && place !== OTHER}
-            describedBy={invalid && place !== OTHER ? locationError : undefined}
-            value={place || undefined}
-            options={[...pickupOffices.map(officeLabel), OTHER]}
-            onChange={(value) => {
-              setPlace(value);
-              setInvalid(false);
-            }}
-          />
-          {invalid && place !== OTHER ? (
-            <p id={locationError} role="alert" className="type-meta text-status-rejected-fg">
-              {LOCATION_REQUIRED}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {pickingUp && place === OTHER ? (
-        <TextField
-          label="Other location"
-          required
-          autoFocus
-          placeholder="e.g 6th floor IT desk"
-          value={other}
+        <PickupLocationField
+          place={place}
+          other={other}
           invalid={invalid}
-          message={OTHER_REQUIRED}
-          onChange={(e) => {
-            setOther(e.target.value);
-            if (invalid && e.target.value.trim()) setInvalid(false);
+          pickupOffices={pickupOffices}
+          onPlace={(value) => {
+            setPlace(value);
+            setInvalid(false);
+          }}
+          onOther={(value) => {
+            setOther(value);
+            if (invalid && value.trim()) setInvalid(false);
           }}
         />
       ) : null}

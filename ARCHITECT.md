@@ -128,7 +128,7 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 - **Complete**: Admin; request is `Received`.
 - **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `Ready for Pickup`. **A reason is required from whoever cancels.** Never once `Received` or `Completed`. Releases the reservation in the same transaction, exactly as reject does.
 
-The Employee confirms receipt with the Accountability Form; `Completed` is an Admin action — see [ADR-0009](docs/adr/0009-received-and-accountability-form.md), which amends [ADR-0007](docs/adr/0007-fulfilment-status-vocabulary.md).
+The Employee confirms receipt with the Accountability Form, or an Admin marks `Received` with Update Status, behind a confirmation; `Completed` is an Admin action — see [ADR-0009](docs/adr/0009-received-and-accountability-form.md), which amends [ADR-0007](docs/adr/0007-fulfilment-status-vocabulary.md), and [ADR-0010](docs/adr/0010-admin-marks-received.md), which amends ADR-0009.
 
 ## 6. Stock Coupling
 

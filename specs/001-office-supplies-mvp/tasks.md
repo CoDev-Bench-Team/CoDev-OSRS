@@ -76,7 +76,7 @@ Depends on backend auth/session resources.
 
 ## Phase 6: User Story 4 + 5 — Handover and complete (P1)
 
-**Goal**: Admin sets For Delivery / Ready for Pickup; the Employee signs the Accountability Form (`Received`); the Admin completes.
+**Goal**: Admin sets For Delivery / Ready for Pickup; the Employee signs the Accountability Form, or the Admin marks it with Update Status ([ADR-0010](../../docs/adr/0010-admin-marks-received.md)) (`Received`); the Admin completes.
 
 - [ ] T017 [US4] Update Status panel: `Status *` select, pickup location when Ready for Pickup — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**
 - [ ] T018 [US5] Complete action and its confirmation, offered on `Received` only (FR-012) — `src/features/requests/queue/UpdateStatusPanel.tsx` — **owned by [spec 008](../008-request-review-panel/tasks.md)**

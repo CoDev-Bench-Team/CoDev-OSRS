@@ -23,7 +23,7 @@ A **functional** end-to-end demo — not a perfect procurement suite — that sh
 | Actor | Job |
 |-------|-----|
 | **Employee (Requestor)** | Browse the catalog by category and office, build a request list, submit with a note, see rejection and cancellation reasons, track status and history, cancel their own pending request, sign the Accountability Form on receipt |
-| **Admin** | Review the queue; approve or reject (reason required); set For Delivery or Ready for Pickup; complete; cancel what cannot be fulfilled; own Assets and Inventory, including the unit register (add, review, remove units) |
+| **Admin** | Review the queue; approve or reject (reason required); set For Delivery or Ready for Pickup; mark a handed-over request `Received` from Update Status, behind a confirmation ([ADR-0010](adr/0010-admin-marks-received.md)); complete; cancel what cannot be fulfilled; own Assets and Inventory, including the unit register (add, review, remove units) |
 | **System** | Show availability; reserve units on submit; release on reject or cancel; set `Received` and assign the units to the requester when the Accountability Form is submitted (an Admin may also mark `Received`, ADR-0010); email at each defined step |
 
 The 2026-09-11 process diagram split the old combined “Admin” into **Approver** and **Supply Admin**. The 2026-09-22 design re-export merges them back into a single **Admin**, and permissions follow that merge — see [ADR-0005](adr/0005-two-role-model.md), which names the control point this gives up.
