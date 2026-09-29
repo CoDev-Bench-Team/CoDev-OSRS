@@ -49,10 +49,7 @@ export function Checkbox({
   ref?: Ref<HTMLInputElement>;
 }) {
   const id = useId();
-  const messageId = `${id}-message`;
-  const hintId = `${id}-hint`;
-  const shownMessage = message && (invalid || unavailable) ? message : undefined;
-  const shownHint = unavailable && !shownMessage ? unavailableHint : undefined;
+  const { shownMessage, shownHint, describedBy, thumb } = checkboxLook({ id, checked, invalid, unavailable, message, unavailableHint });
   const [blocked, setBlocked] = useState(false);
   // A box locked again later must wait for a new attempt before it speaks.
   if (blocked && !unavailable) setBlocked(false);
@@ -80,12 +77,6 @@ export function Checkbox({
     rest.onKeyDown?.(e);
   };
 
-  const thumb = unavailable
-    ? 'bg-osrs-border-strong'
-    : checked
-      ? 'bg-black'
-      : `bg-surface-card ${invalid ? 'ring-brand' : 'ring-ink'}`;
-
   return (
     <div className={`flex flex-col gap-6 ${className ?? ''}`}>
       <label htmlFor={id} className={`flex items-center gap-4 ${unavailable ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
@@ -98,7 +89,7 @@ export function Checkbox({
             checked={checked}
             aria-disabled={unavailable || undefined}
             aria-invalid={invalid || undefined}
-            aria-describedby={shownMessage ? messageId : shownHint ? hintId : undefined}
+            aria-describedby={describedBy}
             onClick={blockClick}
             onChange={(e) => {
               if (!unavailable) onChange?.(e);
@@ -120,7 +111,7 @@ export function Checkbox({
         <span className={`type-body ${unavailable ? 'text-ink-muted' : 'text-ink-strong'}`}>{label}</span>
       </label>
       {shownMessage ? (
-        <span id={messageId} className="type-meta text-status-rejected-fg">
+        <span id={`${id}-message`} className="type-meta text-status-rejected-fg">
           {shownMessage}
         </span>
       ) : null}
@@ -132,10 +123,39 @@ export function Checkbox({
         {blocked && unavailable ? shownMessage : null}
       </span>
       {shownHint ? (
-        <span id={hintId} className="sr-only">
+        <span id={`${id}-hint`} className="sr-only">
           {shownHint}
         </span>
       ) : null}
     </div>
   );
+}
+
+/** What the box shows for its state: which message or hint is out, what
+ *  describes the input, and the thumb's paint. */
+function checkboxLook({
+  id,
+  checked,
+  invalid,
+  unavailable,
+  message,
+  unavailableHint,
+}: {
+  id: string;
+  checked: boolean;
+  invalid?: boolean;
+  unavailable?: boolean;
+  message?: string;
+  unavailableHint?: string;
+}) {
+  const shownMessage = message && (invalid || unavailable) ? message : undefined;
+  const shownHint = unavailable && !shownMessage ? unavailableHint : undefined;
+  let describedBy: string | undefined;
+  if (shownMessage) describedBy = `${id}-message`;
+  else if (shownHint) describedBy = `${id}-hint`;
+  let thumb: string;
+  if (unavailable) thumb = 'bg-osrs-border-strong';
+  else if (checked) thumb = 'bg-black';
+  else thumb = `bg-surface-card ${invalid ? 'ring-brand' : 'ring-ink'}`;
+  return { shownMessage, shownHint, describedBy, thumb };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import { BoxiconsPenAlt, Button, SidePanel, StatusPill } from '../../../shared/ui';
 import { formatDateTime } from '../format';
 import { ReasonForm } from '../ReasonForm';
@@ -97,17 +97,14 @@ export function RequestDetailPanel({
     const target = focusNext.current;
     if (!target) return;
     focusNext.current = null;
-    const el =
-      target === 'sign-link'
-        ? signLink.current
-        : target === 'alert'
-          ? alert.current
-          : target === 'receive-button'
-            ? receiveButton.current
-            : target === 'receive-prompt'
-              ? receivePrompt.current
-              : null;
-    (el ?? heading.current)?.focus();
+    const refs: Record<FocusTarget, RefObject<HTMLElement | null>> = {
+      heading,
+      'sign-link': signLink,
+      alert,
+      'receive-button': receiveButton,
+      'receive-prompt': receivePrompt,
+    };
+    (refs[target].current ?? heading.current)?.focus();
   });
 
   const cancellable = request.status === 'Pending Approval';

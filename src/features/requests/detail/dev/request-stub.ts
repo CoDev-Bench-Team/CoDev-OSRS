@@ -95,24 +95,24 @@ export function requestStub(mode: string | null, seeded: EmployeeRequestSource):
       };
     }
     case 'refresh-fails': {
-      let cancelled = false;
+      let acted = false;
       return {
         list(user) {
-          return cancelled ? fail() : seeded.list(user);
+          return acted ? fail() : seeded.list(user);
         },
         async cancel(user, id, reason) {
           const result = await seeded.cancel(user, id, reason);
-          if (result.ok) cancelled = true;
+          if (result.ok) acted = true;
           return result;
         },
         async sign(user, id, signature) {
           const result = await seeded.sign(user, id, signature);
-          if (result.ok) cancelled = true;
+          if (result.ok) acted = true;
           return result;
         },
         async markReceived(user, id) {
           const result = await seeded.markReceived(user, id);
-          if (result.ok) cancelled = true;
+          if (result.ok) acted = true;
           return result;
         },
       };

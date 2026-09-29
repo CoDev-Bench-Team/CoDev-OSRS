@@ -315,9 +315,8 @@ const locked = await cdp.evaluate(() => {
   const cb = document.querySelector('dialog[open] input[type="checkbox"]');
   return { aria: cb.getAttribute('aria-disabled'), native: cb.disabled, tabbable: cb.tabIndex >= 0 };
 });
-locked.aria === 'true' && !locked.native && locked.tabbable
-  ? pass('the locked agreement is aria-disabled, not disabled, and stays in the Tab order')
-  : fail(`the locked agreement: aria-disabled=${locked.aria}, disabled=${locked.native}, tabbable=${locked.tabbable}`);
+if (locked.aria === 'true' && !locked.native && locked.tabbable) pass('the locked agreement is aria-disabled, not disabled, and stays in the Tab order');
+else fail(`the locked agreement: aria-disabled=${locked.aria}, disabled=${locked.native}, tabbable=${locked.tabbable}`);
 for (const w of [360, 768, 1440]) {
   await cdp.setViewport(w, 900);
   await new Promise((r) => setTimeout(r, 350));
@@ -337,10 +336,12 @@ for (const w of [360, 768, 1440]) {
       .map((x) => `${x.t} ${Math.round(x.wd)}x${Math.round(x.ht)}`);
     return { width: Math.round(b.width), scrollW: document.documentElement.scrollWidth, out, small };
   }, w);
-  r.scrollW > w + 1 || r.out.length
-    ? fail(`${w}px: the form overflows (sheet ${r.width}px) — ${r.out.join(' | ')}`)
-    : pass(`${w}px: the form fits (sheet ${r.width}px), no horizontal overflow`);
-  if (w < 1440) r.small.length ? fail(`${w}px: form targets under 44px — ${r.small.join(' | ')}`) : pass(`${w}px: every form target at least 44px`);
+  if (r.scrollW > w + 1 || r.out.length) fail(`${w}px: the form overflows (sheet ${r.width}px) — ${r.out.join(' | ')}`);
+  else pass(`${w}px: the form fits (sheet ${r.width}px), no horizontal overflow`);
+  if (w < 1440) {
+    if (r.small.length) fail(`${w}px: form targets under 44px — ${r.small.join(' | ')}`);
+    else pass(`${w}px: every form target at least 44px`);
+  }
 }
 await cdp.setViewport(1440, 900);
 await new Promise((r) => setTimeout(r, 300));
@@ -360,10 +361,13 @@ for (let i = 0; i < 12; i++) {
 const names = formStops.map((s) => s.name);
 const need = ['Acknowledgement', 'checkbox', 'text', 'Cancel', 'I acknowledge and sign', 'Close'];
 const missing = need.filter((n) => !names.includes(n));
-missing.length ? fail(`Tab never reaches: ${missing.join(', ')} (reached ${[...new Set(names)].join(' → ')})`) : pass('Tab reaches the acknowledgement, the agreement, the name, both buttons and ✕');
-formStops.every((s) => s.inside) ? pass('Tab stays inside the form') : fail('Tab left the form');
+if (missing.length) fail(`Tab never reaches: ${missing.join(', ')} (reached ${[...new Set(names)].join(' → ')})`);
+else pass('Tab reaches the acknowledgement, the agreement, the name, both buttons and ✕');
+if (formStops.every((s) => s.inside)) pass('Tab stays inside the form');
+else fail('Tab left the form');
 const unshown = [...new Set(formStops.filter((s) => !s.shown).map((s) => s.name))];
-unshown.length ? fail(`no focus indicator on: ${unshown.join(', ')}`) : pass('every form stop shows a focus indicator');
+if (unshown.length) fail(`no focus indicator on: ${unshown.join(', ')}`);
+else pass('every form stop shows a focus indicator');
 
 console.log(`\n${failures} failure(s)`);
 await cdp.close();
