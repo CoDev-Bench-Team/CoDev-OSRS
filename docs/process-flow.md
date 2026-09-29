@@ -13,8 +13,8 @@ register of units ([drift-2026-09-26](design-system/drift-2026-09-26.md),
 [ADR-0008](adr/0008-per-unit-inventory-register.md)). The numbers below are
 counts of unit statuses and are unchanged. The same re-export added
 `Received` ([drift-2026-09-26 §3](design-system/drift-2026-09-26.md),
-[ADR-0009](adr/0009-received-and-accountability-form.md)); since 2026-09-29 the Admin sets it and the
-Employee signs on it ([ADR-0011](adr/0011-admin-sets-received-employee-signs.md)).
+[ADR-0009](adr/0009-received-and-accountability-form.md)); since 2026-09-29 an Admin or the owning
+Employee sets it, and the Employee signs on it ([ADR-0011](adr/0011-admin-sets-received-employee-signs.md)).
 
 **Purpose:** Clear path for requesting, approving and handing over office
 supplies, including stock movements and notifications.
@@ -23,7 +23,7 @@ supplies, including stock movements and notifications.
 
 | Actor | Job |
 |-------|-----|
-| **Employee** | Browses the catalog, builds a request list, submits, tracks their own requests, cancels their own request while it is `Pending Approval` |
+| **Employee** | Browses the catalog, builds a request list, submits, tracks their own requests, cancels their own request while it is `Pending Approval`, marks their own handed-over request `Received`, and signs the Accountability Form on it |
 | **Admin** | Reviews the queue, approves or rejects, sets `For Delivery` or `Ready for Pickup`, may mark `Received`, completes, cancels what cannot be fulfilled, owns Assets and Inventory |
 | **System** | Moves stock, sends mail, records the notification log |
 

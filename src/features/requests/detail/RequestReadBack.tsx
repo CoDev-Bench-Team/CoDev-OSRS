@@ -1,4 +1,5 @@
 import { StatusTimeline } from '../../../shared/ui';
+import { SECTION_HEADING } from './detail-type';
 import type { EmployeeRequest } from './request-detail-types';
 import { RequestLinesTable } from './RequestLinesTable';
 import { requestTimeline } from '../request-timeline';
@@ -28,7 +29,7 @@ export function RequestReadBack({ request }: { request: EmployeeRequest }) {
   return (
     <div className="flex flex-col gap-18">
       <section className="flex flex-col gap-18" aria-labelledby="items-requested">
-        <h3 id="items-requested" className="font-sans text-14 font-bold leading-body uppercase text-ink-muted">
+        <h3 id="items-requested" className={SECTION_HEADING}>
           Items Requested
         </h3>
         <RequestLinesTable lines={request.lines} />
@@ -49,7 +50,7 @@ export function RequestReadBack({ request }: { request: EmployeeRequest }) {
       ) : null}
 
       <section className="flex flex-col gap-18" aria-labelledby="request-status">
-        <h3 id="request-status" className="font-sans text-14 font-bold leading-body uppercase text-ink-muted">
+        <h3 id="request-status" className={SECTION_HEADING}>
           Status
         </h3>
         <StatusTimeline nodes={requestTimeline(request)} />

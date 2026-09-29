@@ -117,7 +117,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   const runThenReload = async <R extends ActionResult>(
     id: string,
     run: () => Promise<R>,
-    skipReload?: (result: R) => boolean,
+    skipReload?: (result: R | Unavailable) => boolean,
   ): Promise<R | Unavailable> => {
     let result: R | Unavailable;
     try {
@@ -125,7 +125,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
     } catch {
       result = UNAVAILABLE;
     }
-    if (skipReload?.(result as R)) return result;
+    if (skipReload?.(result)) return result;
     const next = await fetchRequests();
     if (!result.ok && result.refusal === 'status-changed' && next.state !== 'ready') result = UNAVAILABLE;
     const outcome = result;

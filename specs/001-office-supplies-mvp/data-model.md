@@ -6,6 +6,8 @@ Amended 2026-09-22 to the design re-export — see [drift-2026-09-22](../../docs
 
 Amended 2026-09-26: stock is a **register of units**, and `Stock` is a projection over them. See [drift-2026-09-26](../../docs/design-system/drift-2026-09-26.md) and [ADR-0008](../../docs/adr/0008-per-unit-inventory-register.md).
 
+Amended 2026-09-29 to constitution 7.0.0: a **`received`** status between the handover states and `completed`, set by an Admin or the owning Employee; the units become `Assigned` then, not on `completed`. The owning Employee signs the Accountability Form on the `received` request, which records a signature and changes no status; `completed` needs it. See [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md), which amends [ADR-0009](../../docs/adr/0009-received-and-accountability-form.md) and [ADR-0010](../../docs/adr/0010-admin-marks-received.md). The pickup state is spelled `ready_for_pickup`, after its 2026-09-24 rename (constitution 3.0.1); this file still said `for_pickup`.
+
 ## Entities
 
 ### User
@@ -107,16 +109,18 @@ One physical item of an asset, held at one office. Added 2026-09-26 (ADR-0008).
 | rejectionReason | string | Required when rejected |
 | cancellationReason | string | Required when cancelled, from either actor |
 | cancelledBy | User ref? | |
-| pickupLocation | string? | Required when status is `for_pickup` |
+| pickupLocation | string? | Required when status is `ready_for_pickup` |
 | submittedAt | datetime | Same as create for MVP (no draft) |
 | approvedAt / approvedBy | datetime? / User ref? | |
 | rejectedAt / rejectedBy | datetime? / User ref? | |
-| handoverSetAt / handoverSetBy | datetime? / User ref? | When `for_delivery` / `for_pickup` was set |
+| handoverSetAt / handoverSetBy | datetime? / User ref? | When `for_delivery` / `ready_for_pickup` was set |
+| receivedAt / receivedBy | datetime? / User ref? | An **admin** or the owning **employee** (2026-09-29) |
+| signedName / signedAt | string? / datetime? | The Accountability Form's signature: the owning employee's typed full name and when they signed. Set once; required before `completed` |
 | completedAt / completedBy | datetime? / User ref? | Completer is an **admin** |
 | cancelledAt | datetime? | |
 | createdAt / updatedAt | datetime | |
 
-**Status**: `pending_approval` \| `approved` \| `rejected` \| `for_delivery` \| `for_pickup` \| `completed` \| `cancelled`
+**Status**: `pending_approval` \| `approved` \| `rejected` \| `for_delivery` \| `ready_for_pickup` \| `received` \| `completed` \| `cancelled`
 
 **Legal transitions**
 
@@ -127,13 +131,16 @@ One physical item of an asset, held at one office. Added 2026-09-26 (ADR-0008).
 | pending_approval | rejected | admin | non-empty reason |
 | pending_approval | cancelled | owning employee | non-empty reason |
 | approved | for_delivery | admin | |
-| approved | for_pickup | admin | pickup location |
-| for_delivery | for_pickup | admin | pickup location |
-| for_pickup | for_delivery | admin | |
-| for_delivery \| for_pickup | completed | admin | |
-| approved \| for_delivery \| for_pickup | cancelled | admin | non-empty reason |
+| approved | ready_for_pickup | admin | pickup location |
+| for_delivery | ready_for_pickup | admin | pickup location |
+| ready_for_pickup | for_delivery | admin | |
+| for_delivery \| ready_for_pickup | received | admin, or owning employee | |
+| received | completed | admin | the Accountability Form is signed |
+| approved \| for_delivery \| ready_for_pickup | cancelled | admin | non-empty reason |
 
-`rejected`, `cancelled` and `completed` are terminal. There is **no** confirm-receipt transition.
+`rejected`, `cancelled` and `completed` are terminal. `received` cannot be cancelled.
+
+**Accountability Form** (not a transition): the owning employee signs their own `received` request, once, agreeing to its conditions and typing their full name. It records `signedName` / `signedAt`; the status stays `received`. ~~There is **no** confirm-receipt transition.~~ (withdrawn 2026-09-26, ADR-0009)
 
 ### Request line
 
@@ -167,7 +174,7 @@ One physical item of an asset, held at one office. Added 2026-09-26 (ADR-0008).
 
 ```
 User 1──* Request (requestor)
-User 1──* Request (actor on review / handover / complete / cancel)
+User 1──* Request (actor on review / handover / receipt / complete / cancel)
 Asset 1──* Unit
 User 1──* Unit (assignee)
 Stock ⇐ Unit (derived per asset, office)
@@ -186,8 +193,10 @@ Per line, at the requesting office. The API chooses which units.
 | → rejected | those units `Reserved` → `Available` | — | +qty | −qty |
 | → cancelled | those units `Reserved` → `Available` | — | +qty | −qty |
 | → approved | none | — | — | — |
-| → for_delivery / for_pickup | none | — | — | — |
-| → completed | those units `Reserved` → `Assigned`, assignee = requester | −qty | — | −qty |
+| → for_delivery / ready_for_pickup | none | — | — | — |
+| → received | those units `Reserved` → `Assigned`, assignee = requester | −qty | — | −qty |
+| Accountability Form signed | none | — | — | — |
+| → completed | none | — | — | — |
 
 Outside a request (Admin unit edits): `Available` → `Inactive` or removed: total −n, available −n; `Inactive` → `Available`: +n, +n; existing assignment recorded (`Available` → `Assigned`): −n, −n. Removing an `Inactive` unit, or adding one directly as `Assigned`, changes no count.
 

@@ -12,6 +12,11 @@
 > The Admin completes only from `Received`, and Complete changes no quantity.
 > Story 4 is therefore unblocked, but is **not built yet**. See Session
 > 2026-09-26 (after the `dev` merge) in Clarifications.
+>
+> **Amended 2026-09-29 (constitution 7.0.0, [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md))**:
+> the Accountability Form no longer sets `Received`. The Admin (Update Status)
+> or the owning Employee (**Mark as Received**, [spec 012](../012-accountability-form/spec.md))
+> sets it; signing records the acknowledgement and changes no status.
 
 ## Overview
 
@@ -191,7 +196,7 @@ Raised by frame `02.2` as the project owner supplied it
 ([drift-2026-09-29](../../docs/design-system/drift-2026-09-29.md)), and decided by the project owner.
 
 - Q: `02.2` now draws an **Other Notes** box above Reject / Approve. Required or optional? → A: **Optional**, labelled **Other Notes (optional)** (FR-007a).
-- Q: Once a request is `For Delivery` / `Ready for Pickup`, should the Status select offer **Received**? → A: **Yes.** This redefined constitution IV, so it landed as constitution 6.0.0 and [ADR-0010](../../docs/adr/0010-admin-marks-received.md) first (FR-008, FR-008a, Story 3 criteria 8–9). The Employee's Accountability Form still sets `Received` too.
+- Q: Once a request is `For Delivery` / `Ready for Pickup`, should the Status select offer **Received**? → A: **Yes.** This redefined constitution IV, so it landed as constitution 6.0.0 and [ADR-0010](../../docs/adr/0010-admin-marks-received.md) first (FR-008, FR-008a, Story 3 criteria 8–9). ~~The Employee's Accountability Form still sets `Received` too.~~ **Amended 2026-09-29 (constitution 7.0.0, [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md))**: the owning Employee now sets `Received` with **Mark as Received** ([spec 012](../012-accountability-form/spec.md)); signing the Accountability Form records the acknowledgement and changes no status.
 - Q: Should the select offer the request's current status? → A: **No.** `For Delivery` offers `Received` · `Ready for Pickup`; `Ready for Pickup` offers `Received` · `For Delivery` (FR-008). Moving a pickup to a new location in place is no longer possible: it takes For Delivery, then Ready for Pickup again, which is two transitions and two `Status changed` emails. Accepted by the project owner (plan R6).
 - Q: Where does **Received** sit in the select, and does Update Status confirm? → A: **First and preselected** on a handover state, and **every** Update Status asks in a confirmation dialog first (FR-008b). Both undrawn, logged in additions.md §3h.
 

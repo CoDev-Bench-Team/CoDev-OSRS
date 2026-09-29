@@ -3,6 +3,7 @@ import { BoxiconsPenAlt, Button, SidePanel, StatusPill } from '../../../shared/u
 import { formatDateTime } from '../format';
 import { ReasonForm } from '../ReasonForm';
 import { AccountabilityForm } from './AccountabilityForm';
+import { ACTION_LINE } from './detail-type';
 import { NO_SIGN_PROBLEMS, placeSignProblems, type PlacedSignProblems } from './place-sign-problems';
 import type { CancelResult, EmployeeRequest, ReceiveResult, Signature, SignResult } from './request-detail-types';
 import { RefusalAlert } from './RefusalAlert';
@@ -332,7 +333,7 @@ export function RequestDetailPanel({
               ref={signLink}
               type="button"
               onClick={openSign}
-              className="hit-area inline-flex cursor-pointer items-center gap-4 self-start border-none bg-transparent p-0 font-sans text-11-5 font-bold leading-[1.3] text-brand-primary-alt transition-osrs hover:text-brand-primary"
+              className={`hit-area ${ACTION_LINE} cursor-pointer border-none bg-transparent p-0 text-brand-primary-alt transition-osrs hover:text-brand-primary`}
             >
               <BoxiconsPenAlt />
               Sign accountability form
@@ -341,7 +342,7 @@ export function RequestDetailPanel({
 
           {/* D18: signing changes no status, so this says it landed. */}
           {isSigned ? (
-            <p className="inline-flex items-center gap-4 self-start font-sans text-11-5 font-bold leading-[1.3] text-ink-muted">
+            <p className={`${ACTION_LINE} text-ink-muted`}>
               <BoxiconsPenAlt />
               Accountability form signed · {formatDateTime(request.signedAt)}
             </p>

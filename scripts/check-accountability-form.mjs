@@ -118,6 +118,9 @@ const form = () => {
     cbNativeDisabled: cb?.disabled,
     cbMessage: msg(cb),
     cbInvalid: cb?.getAttribute('aria-invalid') === 'true',
+    cbRequired: cb?.required === true,
+    nameRequired: name?.required === true,
+    formNoValidate: d.querySelector('form')?.noValidate === true,
     nameMessage: msg(name),
     nameValue: name?.value,
     submitDisabled: [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === 'I acknowledge and sign')?.disabled,
@@ -180,6 +183,8 @@ check(/Wireless Mouse - Logitech M185/.test(p.text) && /Headset - Jabra Evolve2 
 check(!/CODEV-/.test(p.text), 'no per-unit tags');
 check(!/Other Notes/i.test(p.text), 'no Other Notes');
 check(f.checked === false && f.nameValue === '', 'the checkbox starts unticked and the name empty');
+check(f.cbRequired && f.nameRequired, 'the agreement checkbox and the name are announced as required (FR-005, FR-014)');
+check(f.formNoValidate, 'the form is noValidate, so the browser’s own bubbles never replace the drawn messages');
 check(p.buttons.includes('Cancel') && p.buttons.includes(SUBMIT), 'Cancel and I acknowledge and sign');
 check(f.boxScrolls, 'the acknowledgement box scrolls');
 
@@ -222,6 +227,21 @@ check(
       ?.textContent.trim(),
   )) === COPY.readFirst,
   'and announces it, since focus stays on the box',
+);
+// Every blocked attempt says why, not only the first (FR-005a): a second Space
+// replaces the live region's text node, so it is read out again.
+const STATUS_TEXT = 'dialog[open] label:has(input[type="checkbox"]) ~ [role="status"] > *';
+await cdp.evaluate((sel) => {
+  window.__firstAnnouncement = document.querySelector(sel);
+}, STATUS_TEXT);
+await spaceOnCheckbox();
+check(
+  await cdp.evaluate((sel) => {
+    const now = document.querySelector(sel);
+    const first = window.__firstAnnouncement;
+    return !!now && !!first && now !== first && now.textContent.trim() === first.textContent.trim();
+  }, STATUS_TEXT),
+  'a second attempt announces it again, with the same words (review of #47)',
 );
 // A fresh form again, so the click below has to raise the message itself.
 await clickInPanel('Cancel');
@@ -472,6 +492,28 @@ check(
 );
 check((await cdp.evaluate(() => document.activeElement?.getAttribute('role'))) === 'alert', 'focus goes to the refusal');
 check((await cdp.evaluate(rows)).find((r) => r.id === HANDED_OVER)?.pill === 'Ready for Pickup', 'the row pill still reads Ready for Pickup');
+
+// A Mark as Received and a signature that went through survive a failed
+// reload: the list keeps the updated request rather than the failure notice.
+console.log('\nStory 0 / Story 1 — an accepted action survives a failed reload (review of #47)');
+await freshRequests('refresh-fails');
+await openRow(HANDED_OVER);
+await clickInPanel('Mark as Received');
+await clickInPanel('Confirm Received');
+await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'Received', 5000, 'Received');
+p = await cdp.evaluate(panel);
+check(p.pill === 'Received' && p.alert === null && p.buttons.includes(LINK), 'marked received: the panel reads Received and offers Sign accountability form', `${p.pill} / ${p.alert}`);
+check((await cdp.evaluate(rows)).find((r) => r.id === HANDED_OVER)?.pill === 'Received', 'the row reads Received');
+check(!(await cdp.evaluate(() => document.body.textContent.includes('could not be loaded'))), 'the list is not swapped for the failure notice');
+
+await freshRequests('refresh-fails');
+await openForm(RECEIVED);
+await readyToSign();
+await submit();
+await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.textContent.trim() !== 'Accountability Form', 5000, 'the read view');
+p = await cdp.evaluate(panel);
+check(p.pill === 'Received' && p.alert === null && /Accountability form signed/.test(p.text) && !p.buttons.includes(LINK), 'signed: the panel shows the signed line', `${p.pill} / ${p.alert}`);
+check(!(await cdp.evaluate(() => document.body.textContent.includes('could not be loaded'))), 'the list is not swapped for the failure notice');
 
 // ---------------------------------------------------------------- FR-013
 console.log('\nStory 4 / FR-013 — an Admin is never offered the form');

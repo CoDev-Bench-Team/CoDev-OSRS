@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Checkbox, InputField } from '../../../shared/ui';
 import { ACKNOWLEDGEMENT } from './accountability-conditions';
+import { SECTION_HEADING } from './detail-type';
 import type { PlacedSignProblems } from './place-sign-problems';
 import type { EmployeeRequest, Signature } from './request-detail-types';
 import { RefusalAlert } from './RefusalAlert';
@@ -15,8 +16,6 @@ const SIGN_COPY = {
   name: 'Type your full name to sign.',
   lockedHint: 'Scroll the acknowledgement to the end to enable this.',
 } as const;
-
-const HEADING = 'font-sans text-14 font-bold leading-body uppercase text-ink-muted';
 
 /** The Accountability Form's body (spec 012, `04.1`'s form view): EQUIPMENT
  *  ASSIGNED, the ACKNOWLEDGEMENT in its scrolling box, the agreement, and the
@@ -89,14 +88,14 @@ export function AccountabilityForm({
       {topMessages.length ? <RefusalAlert messages={topMessages} /> : null}
 
       <section className="flex flex-col gap-8" aria-labelledby={`${id}-equipment`}>
-        <h3 id={`${id}-equipment`} className={HEADING}>
+        <h3 id={`${id}-equipment`} className={SECTION_HEADING}>
           Equipment Assigned
         </h3>
         <RequestLinesTable lines={request.lines} />
       </section>
 
       <section className="flex flex-col gap-8" aria-labelledby={`${id}-acknowledgement`}>
-        <h3 id={`${id}-acknowledgement`} className={HEADING}>
+        <h3 id={`${id}-acknowledgement`} className={SECTION_HEADING}>
           Acknowledgement
         </h3>
         {/* 412px, as drawn; the text runs longer, so the box scrolls, and it
@@ -121,6 +120,7 @@ export function AccountabilityForm({
         <Checkbox
           ref={checkbox}
           label="I have read and agree to the above"
+          required
           checked={agreed}
           unavailable={!read}
           invalid={Boolean(agreedShown) && read}

@@ -15,8 +15,11 @@ import type { EmployeeRequest, EmployeeRequestSource } from '../request-detail-t
  *  - `changes` — the Admin approves the request while the panel is open. The
  *    cancel is refused `status-changed` and the reload shows it `Approved`
  *    (Story 2 AC5, FR-008).
- *  - `refresh-fails` — the cancel goes through, then the reload after it fails.
- *    The panel stays open and shows `Cancelled` (review of #38).
+ *  - `refresh-fails` — a cancel, a signature or a Mark as Received goes
+ *    through, then the reload after it fails. The panel stays open and shows
+ *    what the action returned: `Cancelled` after the cancel (review of #38);
+ *    `Received` with the Sign link after Mark as Received; the signed line
+ *    after the signature (spec 012).
  *  - `blank-items` — one request with no item names and one with a blank name
  *    among real ones, so the shared `summarizeItems` guard shows on My Requests.
  *  - `changes-reload-fails` — both: refused, and the reload fails, so the panel

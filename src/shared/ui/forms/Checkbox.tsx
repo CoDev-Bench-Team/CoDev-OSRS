@@ -9,6 +9,8 @@ import { useId, useState, type InputHTMLAttributes, type KeyboardEvent, type Mou
  *
  *  The input is a real `<input type="checkbox">`, visually hidden over the
  *  drawn box, so keyboard, form and screen-reader behaviour are the platform's.
+ *  Native attributes pass through to it: `required` is announced as required
+ *  (spec 012 FR-014); no asterisk is drawn, as the file draws none.
  *
  *  Two states the file does not draw (additions §3i):
  *
@@ -50,9 +52,10 @@ export function Checkbox({
 }) {
   const id = useId();
   const { shownMessage, shownHint, describedBy, thumb } = checkboxLook({ id, checked, invalid, unavailable, message, unavailableHint });
-  const [blocked, setBlocked] = useState(false);
+  // Counts blocked attempts, so each one is announced, not only the first.
+  const [attempts, setAttempts] = useState(0);
   // A box locked again later must wait for a new attempt before it speaks.
-  if (blocked && !unavailable) setBlocked(false);
+  if (attempts > 0 && !unavailable) setAttempts(0);
 
   // A click on the input or its label toggles the box before `change` fires,
   // so the refusal belongs here: cancel the toggle and say why.
@@ -62,7 +65,7 @@ export function Checkbox({
       return;
     }
     e.preventDefault();
-    setBlocked(true);
+    setAttempts((n) => n + 1);
     onBlockedAttempt?.();
   };
   // Cancelling Space on keydown stops Chromium from synthesising the click,
@@ -71,7 +74,7 @@ export function Checkbox({
   const blockKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (unavailable && e.key === ' ') {
       e.preventDefault();
-      setBlocked(true);
+      setAttempts((n) => n + 1);
       onBlockedAttempt?.();
     }
     rest.onKeyDown?.(e);
@@ -118,9 +121,10 @@ export function Checkbox({
       {/* A blocked attempt keeps focus on the box, so its message is announced
           here. Only after one: a message that arrives with focus is already
           read as the description. Always mounted: a live region that appears
-          with its text is not reliably read out. */}
+          with its text is not reliably read out. Its text is keyed by the
+          attempt, so a repeated attempt replaces the node and is read again. */}
       <span role="status" className="sr-only">
-        {blocked && unavailable ? shownMessage : null}
+        {attempts > 0 && unavailable ? <span key={attempts}>{shownMessage}</span> : null}
       </span>
       {shownHint ? (
         <span id={`${id}-hint`} className="sr-only">
