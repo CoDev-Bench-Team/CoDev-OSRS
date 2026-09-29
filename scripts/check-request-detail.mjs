@@ -173,10 +173,12 @@ for (const row of initial) {
     `${row.id}: ${row.pill === 'Rejected' ? 'reads back its rejection reason' : row.pill === 'Cancelled' ? 'reads back its cancellation reason' : 'shows no stop reason'}`,
   );
   if (row.pill === 'Cancelled') {
-    // `04.2 - Cancelled`: the timeline collapses to Submitted → Cancelled.
+    // `04.2 - Cancelled`: an Employee cancels only while pending, so the
+    // timeline reads Submitted → Cancelled. A request cancelled after approval
+    // would keep the nodes it reached (spec 012 FR-009a); check-history covers it.
     check(
       JSON.stringify(p.timeline) === JSON.stringify([['reached', 'Submitted'], ['cancelled', 'Cancelled']]),
-      `${row.id}: the timeline collapses to Submitted → Cancelled`,
+      `${row.id}: cancelled while pending, the timeline reads Submitted → Cancelled`,
       JSON.stringify(p.timeline),
     );
   }
@@ -221,7 +223,7 @@ p = await cdp.evaluate(panel);
 pass('the panel pill reads Cancelled');
 check(
   JSON.stringify(p.timeline.map(([s, l]) => [s, l])) === JSON.stringify([['reached', 'Submitted'], ['cancelled', 'Cancelled']]),
-  'the timeline collapses to Submitted → Cancelled, as 04.2 draws it',
+  'cancelled while pending, the timeline reads Submitted → Cancelled, as 04.2 draws it',
   JSON.stringify(p.timeline),
 );
 check(!p.buttons.includes('Cancel Request'), 'Cancel Request is gone once cancelled');

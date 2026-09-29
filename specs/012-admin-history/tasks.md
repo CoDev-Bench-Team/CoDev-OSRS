@@ -22,9 +22,9 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
 ## Phase 2: Timeline for a stopped request (BEN-146)
 
-- [ ] T007 [BEN-146] `Cancelled` returns Submitted, Approved when `approvedAt` is set, the handover node only when `approvedAt`, `handover` and `handedOverAt` are all set, then Cancelled, each reached, toned and dated. `Rejected` is unchanged (D8, R2) — `src/features/requests/request-timeline.ts`
-- [ ] T008 [BEN-146] Update the Cancelled-timeline expectations: pending-cancelled still reads Submitted → Cancelled, and an approved-then-cancelled row reads its reached nodes — `scripts/check-request-detail.mjs`, `scripts/check-review-panel.mjs`
-- [ ] T009 [BEN-146] Gate: full `npm run verify` passes, and Phase 2 is its own commit — `scripts/verify.mjs`
+- [x] T007 [BEN-146] `Cancelled` returns Submitted, Approved when `approvedAt` is set, the handover node only when `approvedAt`, `handover` and `handedOverAt` are all set, then Cancelled, each reached, toned and dated. `Rejected` is unchanged (D8, R2) — `src/features/requests/request-timeline.ts`
+- [x] T008 [BEN-146] Update the Cancelled-timeline expectations: pending-cancelled still reads Submitted → Cancelled, and an approved-then-cancelled row reads its reached nodes — `scripts/check-request-detail.mjs`, `scripts/check-review-panel.mjs`
+- [x] T009 [BEN-146] Gate: full `npm run verify` passes, and Phase 2 is its own commit — `scripts/verify.mjs`
 
 ## Phase 3: US1 — Browse resolved requests (BEN-146)
 
