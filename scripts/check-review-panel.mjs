@@ -35,6 +35,12 @@ const go = async (path) => {
 };
 
 // ---- helpers that read the page ----
+// While a request is pending the panel holds two text boxes: the optional
+// Other Notes and, once rejecting, the required reason.
+const REASON = 'dialog[open] textarea[required]';
+const NOTES = 'dialog[open] textarea:not([required])';
+const notesValue = () => document.querySelector('dialog[open] textarea:not([required])')?.value ?? null;
+
 const page = () => ({
   path: location.pathname + location.search,
   ids: [...document.querySelectorAll('button[aria-label^="Review request "]')].map((b) =>
@@ -232,15 +238,24 @@ try {
   await go('/queue');
   const before = await cdp.evaluate(page);
   await open('REQ-2026-1842');
+  p = await cdp.evaluate(panel);
+  check(
+    await cdp.evaluate((sel) => {
+      const t = document.querySelector(sel);
+      return !!t && !t.required && t.labels?.[0]?.textContent.trim() === 'Other Notes (optional)';
+    }, NOTES),
+    'a pending request offers an optional Other Notes field over the decision (FR-007a)',
+  );
+  await typeInto(NOTES, 'Reuse the returned dock');
   await click('Reject Request');
-  await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea'), 3000, 'the reason field');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea[required]'), 3000, 'the reason field');
   p = await cdp.evaluate(panel);
   check(p.text.includes('Reason for rejection') && p.buttons.join('/') === 'Cancel/Confirm Rejection', 'the reason block offers Cancel / Confirm Rejection');
   await click('Confirm Rejection');
   await settle();
   p = await cdp.evaluate(panel);
   check(p.invalid && p.pill === 'Pending Approval', 'an empty reason is refused and the status stays');
-  await typeInto('dialog[open] textarea', '   ');
+  await typeInto(REASON, '   ');
   await click('Confirm Rejection');
   await settle();
   p = await cdp.evaluate(panel);
@@ -250,13 +265,15 @@ try {
   p = await cdp.evaluate(panel);
   check(JSON.stringify(p.buttons) === JSON.stringify(EXPECTED['Pending Approval']), 'Cancel backs out to the pending actions');
   check(p.focusInside, 'and focus stays inside the panel');
+  check(await cdp.evaluate(notesValue) === 'Reuse the returned dock', 'backing out keeps the typed Other Notes');
   await click('Reject Request');
-  await typeInto('dialog[open] textarea', 'Duplicate of request SR-1042');
+  await typeInto(REASON, 'Duplicate of request SR-1042');
   await click('Confirm Rejection');
   await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'Rejected', 5000, 'Rejected');
   p = await cdp.evaluate(panel);
   check(p.text.includes('Reason for rejection') && p.text.includes('Duplicate of request SR-1042'), 'the reason reads back');
   check(JSON.stringify(p.buttons) === '["Close"]', 'Close is the only action', p.buttons.join(' / '));
+  check(await cdp.evaluate(notesValue) === null, 'Other Notes goes with the decision');
   check(p.timeline.join(' → ') === 'Submitted → Rejected', 'the timeline collapses to Submitted → Rejected', p.timeline.join(' → '));
   let after = await cdp.evaluate(page);
   check(!after.ids.includes('REQ-2026-1842'), 'the request has left the queue behind the panel');
@@ -276,6 +293,7 @@ try {
   await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'Approved', 5000, 'Approved');
   p = await cdp.evaluate(panel);
   check(JSON.stringify(p.buttons) === '["Update Status"]', 'the panel now offers Update Status');
+  check(await cdp.evaluate(notesValue) === null, 'an empty Other Notes does not stop approval, and the field goes with the decision');
   check(p.timeline[1] === 'Approved', 'the timeline reaches Approved');
   after = await cdp.evaluate(page);
   check(after.cards.includes('3 Pending approval') && after.cards.includes('9 In Processing'), 'the summary cards follow the source', after.cards);
@@ -408,13 +426,15 @@ try {
 
   await go('/queue?review=failing');
   await open('REQ-2026-1847');
+  await typeInto(NOTES, 'Bag and charger');
   await click('Reject Request');
-  await typeInto('dialog[open] textarea', 'Budget freeze');
+  await typeInto(REASON, 'Budget freeze');
   await click('Confirm Rejection');
   await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the failure');
   p = await cdp.evaluate(panel);
   check(p.pill === 'Pending Approval', 'a failed reject leaves the status unchanged');
-  check(await cdp.evaluate(() => document.querySelector('dialog[open] textarea')?.value === 'Budget freeze'), 'and keeps the typed reason for a retry');
+  check(await cdp.evaluate((sel) => document.querySelector(sel)?.value === 'Budget freeze', REASON), 'and keeps the typed reason for a retry');
+  check(await cdp.evaluate(notesValue) === 'Bag and charger', 'and the typed Other Notes too');
   await esc();
   await closed();
 

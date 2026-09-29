@@ -265,8 +265,8 @@ export function QueuePage({
           pickupOffices={source.pickupOffices}
           reloadFailed={staleId === openRequest.id}
           onClose={closePanel}
-          onApprove={(id) => transition(id, () => source.approve(id))}
-          onReject={(id, reason) => transition(id, () => source.reject(id, reason))}
+          onApprove={(id, notes) => transition(id, () => source.approve(id, notes))}
+          onReject={(id, reason, notes) => transition(id, () => source.reject(id, reason, notes))}
           onUpdateStatus={(id, to, pickup) => transition(id, () => source.updateStatus(id, to, pickup))}
         />
       ) : null}

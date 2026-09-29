@@ -183,6 +183,24 @@ published contract has neither the status nor a way to reach it.
 Until then the SPA shows `Received` wherever it renders a status or timeline,
 and does not build the form (spec 001 FR-012b, tasks T018b).
 
+### 6. The Admin's Other Notes on a decision (raised 2026-09-29)
+
+Frame `02.2 - Requests Queue - Review` draws an optional **Other Notes** box
+above **Reject Request** / **Approve Request**
+([drift-2026-09-29](../../../docs/design-system/drift-2026-09-29.md)).
+`PATCH /requests/{id}` takes `UpdateRequestDto` — `purpose`, `status` and
+`rejectionReason` — and has nowhere to put it. `purpose` is the Employee's
+Note to Approver and MUST NOT be overwritten with the Admin's note.
+
+**Needed from the API:** an optional free-text field for the Admin's note on
+approve and reject, stored on the request. Say whether it is returned on
+`GET /requests/{id}` and whether the `Request approved` / `Request declined`
+emails carry it.
+
+Until then the SPA collects the note and sends it only to the seeded source
+(spec 008 FR-007a). A contract-backed source MUST NOT send it until the field is
+published.
+
 ### Also worth a word
 
 The design's emails print request ids as `REQ-10482`; every SPA screen prints

@@ -218,6 +218,11 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
   const store = seed();
   const find = (id: string) => store.find((request) => request.id === id);
   const now = () => new Date().toISOString();
+  // Blank notes are no notes: the key is left off rather than stored empty.
+  const withNotes = (request: ReviewRequest, notes: string | undefined) => {
+    const trimmed = notes?.trim();
+    if (trimmed) request.otherNotes = trimmed;
+  };
   const refused = (refusal: Exclude<TransitionResult, { ok: true }>['refusal']): TransitionResult => ({
     ok: false,
     refusal,
@@ -232,22 +237,24 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
       return { lowStockAlertCount: 2, requests: store.map((request) => ({ ...request })) };
     },
 
-    async approve(id) {
+    async approve(id, notes) {
       const request = find(id);
       if (!request) return refused('unavailable');
       if (request.status !== 'Pending Approval') return refused('status-changed');
+      withNotes(request, notes);
       request.status = 'Approved';
       request.approvedAt = now();
       return { ok: true };
     },
 
-    async reject(id, reason) {
+    async reject(id, reason, notes) {
       const request = find(id);
       if (!request) return refused('unavailable');
       if (request.status !== 'Pending Approval') return refused('status-changed');
       const trimmed = reason.trim();
       if (!trimmed) return refused('reason-required');
       // The reservation is released by the API, not here (FR-016).
+      withNotes(request, notes);
       request.status = 'Rejected';
       request.rejection = { reason: trimmed, at: now() };
       return { ok: true };

@@ -28,6 +28,11 @@ export interface ReviewRequest extends QueueRequest {
   requestorOffice: Office;
   lines: readonly ReviewLine[];
   noteToApprover?: string;
+  /** The Admin's optional **Other Notes**, sent with the decision (frame
+   *  `02.2`, spec 008 FR-007a). Held by the seeded source only: the contract
+   *  has no field for it yet (contracts conflict 6), and no frame reads it
+   *  back. */
+  otherNotes?: string;
   /** The handover state the request took, kept once it moves on, so the
    *  timeline still names it. */
   handover?: HandoverStatus;
@@ -62,10 +67,12 @@ export interface AdminRequestSource extends QueueSource {
    *  source, never a literal in the panel (plan D7; contracts conflict 2). */
   readonly pickupOffices: readonly Office[];
   load(): Promise<ReviewSnapshot>;
-  approve(id: string): Promise<TransitionResult>;
+  /** `notes` is the optional **Other Notes**, sent trimmed, and left out when
+   *  blank (FR-007a). */
+  approve(id: string, notes?: string): Promise<TransitionResult>;
   /** `reason` is sent trimmed and non-empty. The source still refuses one that
-   *  is not. */
-  reject(id: string, reason: string): Promise<TransitionResult>;
+   *  is not. `notes` is as for `approve`. */
+  reject(id: string, reason: string, notes?: string): Promise<TransitionResult>;
   updateStatus(id: string, to: HandoverStatus, pickup?: PickupLocation): Promise<TransitionResult>;
   // complete(id) lands with BEN-134 (constitution 4.0.0), plan D9.
 }

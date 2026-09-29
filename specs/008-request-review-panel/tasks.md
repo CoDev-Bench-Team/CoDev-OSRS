@@ -43,6 +43,12 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   Wire it into verify — `scripts/check-review-panel.mjs`, `scripts/verify.mjs`
 - [ ] T019 [BEN-78] `npm run lint`, `npm run build`, `npm run verify` green, including the unchanged `scripts/check-request-detail.mjs`. Fidelity against `02.2`, `02.2.2` and `02.2.2.1` at 1440px and 360px. PR to `dev` *(all 15 gates green; PR #46 open against `dev`. What remains: the designer's fidelity sign-off.)*
 
+## Phase 2b: Other Notes on a decision (BEN-47, 2026-09-29)
+
+- [x] T035 [US2] [BEN-47] Record frame `02.2`'s Other Notes: drift note, FR-007a, contracts conflict 6 — `docs/design-system/drift-2026-09-29.md`, `specs/008-request-review-panel/spec.md`, `specs/001-office-supplies-mvp/contracts/README.md`
+- [x] T036 [US2] [BEN-47] Optional **Other Notes (optional)** box at the bottom of the pending panel, sent trimmed with approve or reject; `approve(id, notes?)` / `reject(id, reason, notes?)`, and the seed stores `otherNotes` — `src/features/requests/queue/ReviewPanel.tsx`, `src/features/requests/queue/review-types.ts`, `src/features/requests/queue/seeded-admin-request-source.ts`, `src/features/requests/queue/QueuePage.tsx`
+- [x] T037 [US2] [BEN-47] Check: field present and optional on a pending request, kept on backing out of a reject and on a failed reject, gone after the decision; the reason selectors target the required box — `scripts/check-review-panel.mjs`
+
 ## Phase 3: G3a — Hand over (US3) (BEN-79)
 
 - [x] T020 [US3] [BEN-79] Seeded `updateStatus(id, to, pickup?)`: from `Approved`/`For Delivery`/`Ready for Pickup` only; `Ready for Pickup` requires a location (`location-required`); sets `handover`, `handedOverAt`, `pickupLocation` — `src/features/requests/queue/seeded-admin-request-source.ts`, `src/features/requests/queue/review-types.ts`

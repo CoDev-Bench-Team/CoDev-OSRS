@@ -3,7 +3,7 @@
 **Feature Branch**: `emmanuelr/ben-47-p2spa-request-review-panel-admin-transitions`  
 **Created**: 2026-09-26  
 **Status**: Draft  
-**Sources**: BEN-47, BEN-76 (G0), BEN-77/78/79, constitution 3.0.1, `specs/001-office-supplies-mvp/spec.md` (US3–US5, FR-008–FR-014), `specs/004-approver-pending-queue/spec.md` (FR-010 seam), `specs/007-employee-request-panel/spec.md` (timeline, reason read-back), [ADR-0005](../../docs/adr/0005-two-role-model.md), [ADR-0006](../../docs/adr/0006-assets-and-inventory.md), [ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md), [drift-2026-09-22 §2–§3](../../docs/design-system/drift-2026-09-22.md), [drift-2026-09-24 §2, §5, §6](../../docs/design-system/drift-2026-09-24.md), [drift-2026-09-26 §2, §4](../../docs/design-system/drift-2026-09-26.md), Figma *Mockups* frames `02.2 - Requests Queue - Review`, `02.2.1 - … - Review - Approve`, `02.2.1 - … - Review - Update Status` (×2), `02.2.2- … - Review - Reject`, `02.2.2.1 - … - Review - Reject`, component `Status Timeline`
+**Sources**: BEN-47, BEN-76 (G0), BEN-77/78/79, constitution 3.0.1, `specs/001-office-supplies-mvp/spec.md` (US3–US5, FR-008–FR-014), `specs/004-approver-pending-queue/spec.md` (FR-010 seam), `specs/007-employee-request-panel/spec.md` (timeline, reason read-back), [ADR-0005](../../docs/adr/0005-two-role-model.md), [ADR-0006](../../docs/adr/0006-assets-and-inventory.md), [ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md), [drift-2026-09-22 §2–§3](../../docs/design-system/drift-2026-09-22.md), [drift-2026-09-24 §2, §5, §6](../../docs/design-system/drift-2026-09-24.md), [drift-2026-09-26 §2, §4](../../docs/design-system/drift-2026-09-26.md), [drift-2026-09-29](../../docs/design-system/drift-2026-09-29.md), Figma *Mockups* frames `02.2 - Requests Queue - Review`, `02.2.1 - … - Review - Approve`, `02.2.1 - … - Review - Update Status` (×2), `02.2.2- … - Review - Reject`, `02.2.2.1 - … - Review - Reject`, component `Status Timeline`
 
 > **Amended 2026-09-26 after merging `dev`.** The `Received` amendment this
 > spec was gated on has landed: constitution **5.0.0** and ADR-0009 (BEN-43).
@@ -109,6 +109,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 
 - **FR-006**: Approve MUST move `Pending Approval` → `Approved`.
 - **FR-007**: Reject MUST require a reason that is non-empty after trimming. An empty reason MUST NOT reach the source. A successful reject MUST read the reason back under **Reason for rejection**.
+- **FR-007a**: Where Approve and Reject are offered, the panel MUST show an optional **Other Notes (optional)** field at the bottom of the body, above the actions (frame `02.2`, [drift-2026-09-29](../../docs/design-system/drift-2026-09-29.md)). A non-blank note MUST be sent, trimmed, with whichever decision is taken; a blank one MUST NOT be sent and MUST NOT block either decision. The note MUST survive backing out of a rejection and a failed transition. It is not read back, because no frame draws it. The contract has no field for it (contracts conflict 6), so only the seeded source holds it.
 - **FR-008**: Update Status MUST offer exactly `For Delivery` and `Ready for Pickup`, from `Approved`, `For Delivery` or `Ready for Pickup`.
 - **FR-009**: `Ready for Pickup` MUST require a pickup location: one of the offices the source exposes (the request's office preselected), or **Other…** with non-empty free text.
 - **FR-010**: The panel MUST NOT offer Complete from `For Delivery` or `Ready for Pickup`.
@@ -124,7 +125,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 
 ## Key Entities
 
-- **Review request**: The Admin's read model of one request. It holds the id, status, requestor (name, email, office), lines, optional note, handover state taken, pickup location, a timestamp per reached transition, and the rejection or cancellation reason where there is one. It is not an API shape.
+- **Review request**: The Admin's read model of one request. It holds the id, status, requestor (name, email, office), lines, optional note, the Admin's optional Other Notes, handover state taken, pickup location, a timestamp per reached transition, and the rejection or cancellation reason where there is one. It is not an API shape.
 - **Review line**: The item description, the quantity, and the Available figure at the request's office (or unavailable).
 - **Panel action**: One of approve, reject, update status, complete, close. The status determines which are offered.
 - **Transition result**: Either the updated request, or a refusal (`status-changed`, `reason-required`, `location-required`, `unavailable`).
@@ -178,6 +179,18 @@ Decided by the project owner.
 - Q: An email's *View request* button links to `/requests/:id`, which this spec had retired. → A: **Build it as a deep link that opens the panel** (FR-001a). Spec 003 is amended the same day.
 - Q: The Admin can view every request. Should the Admin's notice for an unopenable link also say "or it may not be yours to view"? → A: **No.** The Admin's reads "That request is not available. It may not exist." The Employee's stays identical for missing and foreign ids (FR-001a). Opening any panel clears the notice.
 - Q: The timeline dots: the frames' own shades, or the pills'? → A: **The pills.** A reached dot takes its status pill's ink ([drift-2026-09-26 §4b](../../docs/design-system/drift-2026-09-26.md)).
+
+### Session 2026-09-29
+
+Raised by frame `02.2` as the project owner supplied it
+([drift-2026-09-29](../../docs/design-system/drift-2026-09-29.md)), and decided by the project owner.
+
+- Q: `02.2` now draws an **Other Notes** box above Reject / Approve. Required or optional? → A: **Optional**, labelled **Other Notes (optional)** (FR-007a).
+
+Inferred, not asked:
+
+- The note goes with the decision, approve or reject, because it sits above both buttons. It is shown only where a decision is offered, which is `Pending Approval`.
+- It is built against the seeded source while the contract lacks the field, as the rest of this panel is (FR-017), and the gap is raised as contracts conflict 6 rather than papered over.
 
 ## Validation
 

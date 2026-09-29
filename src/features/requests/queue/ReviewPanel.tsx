@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import {
   Avatar,
   Button,
@@ -103,13 +103,20 @@ export function ReviewPanel({
    *  panel keeps the last snapshot and says so (plan D3). */
   reloadFailed: boolean;
   onClose: () => void;
-  onApprove: (id: string) => Promise<TransitionResult>;
-  onReject: (id: string, reason: string) => Promise<TransitionResult>;
+  /** `notes` is the trimmed **Other Notes**, or `undefined` when blank. */
+  onApprove: (id: string, notes?: string) => Promise<TransitionResult>;
+  onReject: (id: string, reason: string, notes?: string) => Promise<TransitionResult>;
   onUpdateStatus: (id: string, to: HandoverStatus, pickup?: PickupLocation) => Promise<TransitionResult>;
 }) {
   const [mode, setMode] = useState<Mode>('idle');
   const [submitting, setSubmitting] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
+  // Frame `02.2`'s optional **Other Notes**, sent with the decision (FR-007a).
+  // It lives here, not in the reject form, so backing out of a rejection keeps
+  // it, and a refusal that keeps the status keeps it too (FR-014).
+  const [otherNotes, setOtherNotes] = useState('');
+  const otherNotesId = useId();
+  const sentNotes = () => otherNotes.trim() || undefined;
 
   // Closing a form unmounts the control that held focus. Focus goes back to
   // the panel's heading rather than falling to <body>, so a screen-reader
@@ -167,6 +174,9 @@ export function ReviewPanel({
   };
 
   const actions = reviewActions(request.status);
+  // The notes box sits above the decision, so it is shown exactly where a
+  // decision is offered.
+  const deciding = actions.includes('approve') || actions.includes('reject');
 
   const stopped =
     request.status === 'Rejected' && request.rejection
@@ -186,7 +196,7 @@ export function ReviewPanel({
           submitting={submitting}
           onBack={toIdle}
           onConfirm={async (reason) => {
-            const refused = await run(() => onReject(request.id, reason));
+            const refused = await run(() => onReject(request.id, reason, sentNotes()));
             if (refused === 'reason-required') return 'reason-required';
           }}
         />
@@ -215,8 +225,12 @@ export function ReviewPanel({
 
     return (
       <>
-        {actions.includes('approve') || actions.includes('reject') ? (
-          <p className="text-center type-meta text-ink-secondary">The employee will receive an email with your decision.</p>
+        {deciding ? (
+          // `02.2`: a 1px rule across the whole panel, 12px above the line, so
+          // the rule bleeds through the footer's 20px gutter.
+          <p className="-mx-20 border-t border-line-default px-20 pt-12 text-center font-sans text-12 font-semibold text-ink-secondary">
+            The employee will receive an email with your decision.
+          </p>
         ) : null}
         <div className="flex items-center justify-center gap-12">
           {actions.map((action) => {
@@ -229,7 +243,7 @@ export function ReviewPanel({
                 );
               case 'approve':
                 return (
-                  <Button key={action} disabled={submitting} onClick={() => void run(() => onApprove(request.id))}>
+                  <Button key={action} disabled={submitting} onClick={() => void run(() => onApprove(request.id, sentNotes()))}>
                     Approve Request
                   </Button>
                 );
@@ -340,6 +354,26 @@ export function ReviewPanel({
           <h3 className="type-ui-bold">{stopped.label}</h3>
           <p className="font-sans text-12-5 font-regular">{stopped.reason}</p>
         </section>
+      ) : null}
+
+      {deciding ? (
+        // `02.2` draws the same field as the drawer's Note to Approver: Inter
+        // Regular 11 `ink-secondary` label, 6px above a 78px r6 box with 12px
+        // padding and Inter Regular 12 `ink-strong` text. `mt-auto` holds it at
+        // the bottom of the body, over the actions, as drawn.
+        <div className="mt-auto flex flex-col gap-6 pb-20">
+          <label htmlFor={otherNotesId} className="type-caption text-ink-secondary">
+            Other Notes (optional)
+          </label>
+          <textarea
+            id={otherNotesId}
+            rows={4}
+            value={otherNotes}
+            disabled={submitting}
+            onChange={(e) => setOtherNotes(e.target.value)}
+            className="min-h-[78px] w-full resize-y appearance-none rounded-6 border-none bg-surface-card p-12 type-meta text-ink-strong outline-none transition-osrs ring-default placeholder:text-ink-muted focus:ring-brand disabled:opacity-60"
+          />
+        </div>
       ) : null}
     </SidePanel>
   );
