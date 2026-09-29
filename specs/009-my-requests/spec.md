@@ -16,7 +16,7 @@ The Employee's own request history at `/requests`: every request they have submi
 
 | # | Decision | Consequence |
 |---|----------|-------------|
-| D1 | **The pickup state is `Ready for Pickup`.** The issue says to build the queue chip's `For Pickup`; the project owner reversed that on 2026-09-24 and chose the `Request Status` component's label (drift-2026-09-24 §6, constitution 3.0.1). | The seven states are `Pending Approval`, `Approved`, `Rejected`, `For Delivery`, `Ready for Pickup`, `Completed`, `Cancelled` — `REQUEST_STATUSES` in `src/shared/ui/status.ts`. No local status union. |
+| D1 | **The pickup state is `Ready for Pickup`.** The issue says to build the queue chip's `For Pickup`; the project owner reversed that on 2026-09-24 and chose the `Request Status` component's label (drift-2026-09-24 §6, constitution 3.0.1). | The states are `REQUEST_STATUSES` in `src/shared/ui/status.ts` — seven when this was written, eight since `Received` (constitution 5.0.0, ADR-0009). No local status union. |
 | D2 | **Newest first is the page's rule, not the source's.** The list sorts by submission time, descending, whatever order the source returns. Ties break on request id, descending. A request whose time does not parse sorts last. | A contract-backed source does not have to promise an order. The drawn frame lists its sample rows out of date order; the order is the issue's acceptance, not the frame's. |
 | D3 | **No filters, search or pagination.** The frame draws none and the issue asks for none; spec 001 FR-018 paginates the Admin tables only. Spec 007 had deferred "filters and pagination" to this feature; that is withdrawn here. | If an Employee's history grows long enough to need them, that is a spec amendment. |
 | D4 | **Ownership is the source's job, proved by the page.** `EmployeeRequestSource.list(user)` returns the signed-in Employee's requests only (spec 007). The seed carries a request owned by a second Employee, who cannot sign in, so the check can assert it never appears. | No client-side filter by owner: the read model carries no owner, and inventing one would be a field the contract does not expose. |
@@ -33,7 +33,7 @@ An Employee opens **My Requests** and sees `My Requests` over `Track every reque
 1. **Given** Maya has seven requests, **When** she opens `/requests`, **Then** exactly her seven are listed, and a request owned by anyone else is not.
 2. **Given** requests submitted on different days, **Then** the newest is first and the oldest last.
 3. **Given** a request with three items, **Then** `ITEMS` reads the first two and a count, e.g. `Laptop, Keyboard + 1 more`; with two or fewer, their names.
-4. **Given** each of the seven statuses, **Then** its pill reads the state name in that state's tone.
+4. **Given** each status Maya's seven requests hold, **Then** its pill reads the state name in that state's tone. `Received` (constitution 5.0.0, ADR-0009) is the eighth status; the frame draws no row for it, so the seed carries none.
 5. **Given** any row, **When** **View details** is activated, **Then** the request panel opens over the page and the address does not change.
 6. **Given** an Employee with no requests, **Then** the table keeps its header and its only row reads `You have not submitted any requests yet`, rather than showing no rows.
 

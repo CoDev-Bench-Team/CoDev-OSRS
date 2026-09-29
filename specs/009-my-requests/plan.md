@@ -26,7 +26,7 @@ src/features/requests/history/
 src/features/requests/detail/
   seeded-employee-request-source.ts   + one request owned by `sam.torres`, who has no sign-in  (D4)
 scripts/
-  check-my-requests.mjs   order · ownership · items summary · seven pills and tones · no navigation
+  check-my-requests.mjs   order · ownership · items summary · each seeded status's pill and tone · no navigation
   verify.mjs              + the gate
 docs/design-system/additions.md   the stand-in row becomes the list's own row
 ```

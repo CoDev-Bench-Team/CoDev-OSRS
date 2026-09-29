@@ -66,7 +66,7 @@ const page = await cdp.evaluate(async () => {
     rows,
     statuses: REQUEST_STATUSES,
     tones: REQUEST_TONE,
-    mine: mine.map((r) => ({ id: r.id, submittedAt: r.submittedAt })),
+    mine: mine.map((r) => ({ id: r.id, submittedAt: r.submittedAt, status: r.status })),
     otherIds: others.map((r) => r.id),
   };
 });
@@ -149,8 +149,11 @@ check(r1847?.items === 'Laptop, Keyboard + 1 more', 'three items read "Laptop, K
 const r1842 = page.rows.find((r) => r.id === 'REQ-2026-1842');
 check(r1842?.items === 'Monitor, Dock', 'two items read "Monitor, Dock"', r1842?.items);
 
-console.log('\nAC4 / FR-004 — every status in its own tone');
-for (const status of page.statuses) {
+console.log('\nAC4 / FR-004 — every status Maya holds, in its own tone');
+// The seed's statuses, not the whole vocabulary: `Received` (constitution
+// 5.0.0) has no row in the `04 - My Requests` frame, so Maya holds seven of
+// the eight.
+for (const status of new Set(page.mine.map((r) => r.status))) {
   const row = page.rows.find((r) => r.pill === status);
   check(!!row, `a ${status} row exists`);
   if (row) {
@@ -158,14 +161,14 @@ for (const status of page.statuses) {
     check(row.pillClass.includes(`bg-status-${tone}-bg`), `${status} pill uses the ${tone} tone`, row.pillClass);
   }
 }
-check(page.rows.every((r) => page.statuses.includes(r.pill)), 'no pill reads a value outside the seven');
+check(page.rows.every((r) => page.statuses.includes(r.pill)), 'no pill reads a value outside REQUEST_STATUSES');
 
 console.log('\nAC5 / FR-005 — View details opens the panel without navigating');
 await cdp.evaluate(() => document.querySelector('button[aria-label="View details of REQ-2026-1805"]').click());
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"]'), 5000, 'the panel');
+await cdp.waitFor(() => !!document.querySelector('dialog[open]'), 5000, 'the panel');
 const opened = await cdp.evaluate(() => ({
   path: location.pathname,
-  heading: document.querySelector('[role="dialog"] h2')?.textContent.trim(),
+  heading: document.querySelector('dialog[open] h2')?.textContent.trim(),
 }));
 check(opened.path === '/requests', 'the address stays /requests', opened.path);
 check(opened.heading === 'REQ-2026-1805', 'the panel is for that request', opened.heading);
