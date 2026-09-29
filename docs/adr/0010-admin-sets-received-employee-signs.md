@@ -51,8 +51,9 @@ Delivered/Claimed* email that asks the Employee to sign.
 - Every drawn frame and the `Received` email now agree with the written
   machine: `04.1`'s link on a `Received` request, and an email that asks for
   the signature after the handover.
-- Stock leaves the store when the Admin records the handover, which is when it
-  physically leaves. It no longer waits on the Employee.
+- Stock leaves the store when the handover is recorded, by the Admin or the
+  Employee, which is when it physically leaves. It no longer waits on the
+  Employee's signature.
 
 ### Negative
 

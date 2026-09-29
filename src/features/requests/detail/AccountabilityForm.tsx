@@ -122,16 +122,15 @@ export function AccountabilityForm({
           ref={checkbox}
           label="I have read and agree to the above"
           checked={agreed}
-          // Locked until read (FR-005a), and while a signature is sending, so
-          // the box cannot change under a payload already sent (review of #47).
-          unavailable={!read || submitting}
+          unavailable={!read}
           invalid={Boolean(agreedShown) && read}
           message={agreedShown}
           unavailableHint={read ? undefined : SIGN_COPY.lockedHint}
-          onBlockedAttempt={() => {
-            if (!read) setAgreedMessage(SIGN_COPY.readFirst);
-          }}
+          onBlockedAttempt={() => setAgreedMessage(SIGN_COPY.readFirst)}
           onChange={(e) => {
+            // The tick holds while a signature is sending: the payload is
+            // already on its way.
+            if (submitting) return;
             setAgreed(e.target.checked);
             if (e.target.checked) setAgreedMessage(null);
           }}

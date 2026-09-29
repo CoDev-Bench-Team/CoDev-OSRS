@@ -35,14 +35,14 @@ export function InputField({
         {required ? <span aria-hidden="true"> *</span> : null}
       </label>
       <input
+        type="text"
+        {...rest}
         ref={ref}
         id={id}
-        type="text"
         required={required}
         aria-invalid={invalid || undefined}
         aria-describedby={invalid && message ? messageId : undefined}
         className={`h-[39px] w-full appearance-none rounded-6 border-none bg-surface-card px-12 font-sans text-12 text-ink-strong transition-osrs placeholder:text-ink-muted focus:ring-brand ${invalid ? 'ring-brand' : 'ring-warm'}`}
-        {...rest}
       />
       {invalid && message ? (
         <span id={messageId} className="type-meta text-status-rejected-fg">

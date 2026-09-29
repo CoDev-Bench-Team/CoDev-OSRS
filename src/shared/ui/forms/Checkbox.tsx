@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type KeyboardEvent, type MouseEvent, type Ref } from 'react';
+import { useId, useState, type InputHTMLAttributes, type KeyboardEvent, type MouseEvent, type Ref } from 'react';
 
 /** A labelled checkbox, as the file's `.bases / checkbox` draws it (`04.1`'s
  *  *I have read and agree to the above*): a 24px box holding a 22px thumb,
@@ -53,6 +53,9 @@ export function Checkbox({
   const hintId = `${id}-hint`;
   const shownMessage = message && (invalid || unavailable) ? message : undefined;
   const shownHint = unavailable && !shownMessage ? unavailableHint : undefined;
+  const [blocked, setBlocked] = useState(false);
+  // A box locked again later must wait for a new attempt before it speaks.
+  if (blocked && !unavailable) setBlocked(false);
 
   // A click on the input or its label toggles the box before `change` fires,
   // so the refusal belongs here: cancel the toggle and say why.
@@ -62,13 +65,18 @@ export function Checkbox({
       return;
     }
     e.preventDefault();
+    setBlocked(true);
     onBlockedAttempt?.();
   };
-  // Space toggles a checkbox on keyup; cancelling keydown alone does not stop
-  // it in every browser, but the click it synthesises is caught above. This
-  // only keeps the page from scrolling.
+  // Cancelling Space on keydown stops Chromium from synthesising the click,
+  // so the refusal is said here too. A browser that still clicks reaches
+  // `blockClick` as well, which says the same thing again.
   const blockKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (unavailable && e.key === ' ') e.preventDefault();
+    if (unavailable && e.key === ' ') {
+      e.preventDefault();
+      setBlocked(true);
+      onBlockedAttempt?.();
+    }
     rest.onKeyDown?.(e);
   };
 
@@ -112,10 +120,17 @@ export function Checkbox({
         <span className={`type-body ${unavailable ? 'text-ink-muted' : 'text-ink-strong'}`}>{label}</span>
       </label>
       {shownMessage ? (
-        <span id={messageId} role={unavailable ? 'status' : undefined} className="type-meta text-status-rejected-fg">
+        <span id={messageId} className="type-meta text-status-rejected-fg">
           {shownMessage}
         </span>
       ) : null}
+      {/* A blocked attempt keeps focus on the box, so its message is announced
+          here. Only after one: a message that arrives with focus is already
+          read as the description. Always mounted: a live region that appears
+          with its text is not reliably read out. */}
+      <span role="status" className="sr-only">
+        {blocked && unavailable ? shownMessage : null}
+      </span>
       {shownHint ? (
         <span id={hintId} className="sr-only">
           {shownHint}

@@ -39,7 +39,9 @@ import type { EmployeeRequest, EmployeeRequestSource } from '../request-detail-t
  *
  *  - `receive-changes` — an Admin cancels the request while the panel is open.
  *    Marking it received is refused `status-changed`, with the system's own
- *    words, and the reload shows it `Cancelled` (Story 0 AC5). */
+ *    words, and the reload shows it `Cancelled` (Story 0 AC5).
+ *  - `receive-fails` — `markReceived` rejects: the system did not answer. The
+ *    panel says it was not marked received and offers it again (Story 0 AC6). */
 const LOADING_MS = 2000;
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -166,6 +168,8 @@ export function requestStub(mode: string | null, seeded: EmployeeRequestSource):
       };
     case 'sign-fails':
       return { ...seeded, sign: () => Promise.reject(new Error('stubbed sign failure')) };
+    case 'receive-fails':
+      return { ...seeded, markReceived: () => Promise.reject(new Error('stubbed receive failure')) };
     case 'sign-slow':
       return {
         ...seeded,

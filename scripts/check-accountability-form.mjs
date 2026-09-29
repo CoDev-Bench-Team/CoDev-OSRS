@@ -1,5 +1,5 @@
-/** Spec 012 (BEN-136) — the Accountability Form, against SC-001 to SC-006a
- *  (SC-004b waits on K3). Runs through the same CDP client as the other gates.
+/** Spec 012 (BEN-136) — the Accountability Form and Mark as Received, against
+ *  SC-001 to SC-008 (SC-004b waits on K3). Runs through the same CDP client as the other gates.
  *
  *  Needs `npm run dev`; headless Chrome is started by cdp.mjs. Set
  *  OSRS_DEV_ORIGIN when the dev server took a port other than 5173.
@@ -208,6 +208,28 @@ check((await cdp.evaluate(() => document.querySelectorAll('[role="dialog"] [role
 console.log('\nStory 2a / SC-006a — the agreement unlocks only at the end of the acknowledgement');
 check(f.cbDisabledAria && !f.cbNativeDisabled, 'the checkbox is announced as disabled but stays focusable (aria-disabled, not disabled)');
 check(f.cbMessage === 'Scroll the acknowledgement to the end to enable this.', 'and its description says why, before anyone tries it (review of #47)', f.cbMessage);
+// Space first, on a form nothing has touched: a message left by an earlier
+// click would otherwise pass for one Space produced.
+await spaceOnCheckbox();
+f = await cdp.evaluate(form);
+check(f.checked === false && f.cbMessage === COPY.readFirst, 'Space leaves it unticked, with the read-first message', `${f.checked} / ${f.cbMessage}`);
+check(
+  (await cdp.evaluate(() =>
+    document
+      .querySelector('[role="dialog"] input[type="checkbox"]')
+      .closest('label')
+      .parentElement.querySelector('[role="status"]')
+      ?.textContent.trim(),
+  )) === COPY.readFirst,
+  'and announces it, since focus stays on the box',
+);
+// A fresh form again, so the click below has to raise the message itself.
+await clickInPanel('Cancel');
+await cdp.waitFor(() => !document.querySelector('[role="dialog"] [role="region"]'), 3000, 'the read view');
+await clickInPanel(LINK);
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="region"]'), 3000, 'the form again');
+f = await cdp.evaluate(form);
+check(f.cbMessage !== COPY.readFirst, 'a reopened form starts without the message', f.cbMessage);
 // A real pointer click, not a scripted one: the global `[aria-disabled]` rule
 // sets `pointer-events: none` on the input, so the click lands on its label.
 // The sheet slides in; measure only once it has stopped moving.
@@ -227,10 +249,6 @@ await clickCheckbox();
 f = await cdp.evaluate(form);
 check(f.checked === false, 'a scripted click leaves it unticked too');
 check(f.cbMessage === COPY.readFirst, 'and says to read to the end first', f.cbMessage);
-await cdp.evaluate(() => document.activeElement.blur());
-await spaceOnCheckbox();
-f = await cdp.evaluate(form);
-check(f.checked === false && f.cbMessage === COPY.readFirst, 'Space leaves it unticked too, with the same message');
 await scrollBox('end');
 await cdp.waitFor(() => document.querySelector('[role="dialog"] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'the gate to open');
 f = await cdp.evaluate(form);
@@ -370,7 +388,10 @@ f = await cdp.evaluate(form);
 check(f.submitDisabled === true, 'the button is disabled while it sends');
 await clickCheckbox();
 f = await cdp.evaluate(form);
-check(f.cbDisabledAria && f.checked === true, 'the agreement is locked while it sends, and stays ticked (review of #47)');
+check(
+  f.checked === true && !f.cbDisabledAria && f.cbMessage === null,
+  'the agreement stays ticked while it sends, not greyed or announced as disabled (review of #47)',
+);
 // Bypass the disabled button: a second submit of the form itself.
 await cdp.evaluate(() => document.querySelector('[role="dialog"] form').requestSubmit());
 check(
@@ -437,6 +458,20 @@ await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]
 p = await cdp.evaluate(panel);
 check(p.pill === 'Cancelled' && /can no longer be marked received/.test(p.alert ?? ''), 'changed meanwhile: the system’s message, and the current status', `${p.pill} / ${p.alert}`);
 check((await cdp.evaluate(() => document.activeElement?.getAttribute('role'))) === 'alert', 'focus goes to the refusal');
+
+await freshRequests('receive-fails');
+await openRow(HANDED_OVER);
+await clickInPanel('Mark as Received');
+await clickInPanel('Confirm Received');
+await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal');
+p = await cdp.evaluate(panel);
+check(
+  p.pill === 'Ready for Pickup' && /not marked received/.test(p.alert ?? '') && p.buttons.includes('Mark as Received'),
+  'no answer: still handed over, says it was not marked received, and offers Mark as Received again (Story 0 AC6)',
+  `${p.pill} / ${p.alert}`,
+);
+check((await cdp.evaluate(() => document.activeElement?.getAttribute('role'))) === 'alert', 'focus goes to the refusal');
+check((await cdp.evaluate(rows)).find((r) => r.id === HANDED_OVER)?.pill === 'Ready for Pickup', 'the row pill still reads Ready for Pickup');
 
 // ---------------------------------------------------------------- FR-013
 console.log('\nStory 4 / FR-013 — an Admin is never offered the form');

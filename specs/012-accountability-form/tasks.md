@@ -29,17 +29,17 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 - [x] T011 [P] [BEN-139] The conditions constant: `04.1`'s lead-in, the eleven items of spec 012 FR-004 **verbatim** (curly `’` in item 11 included), and the closing line (D8) — `src/features/requests/detail/accountability-conditions.ts`
 - [x] T012 [P] [BEN-139] `useReadToEnd(boxRef)`: a one-way `false → true` when `scrollTop + clientHeight >= scrollHeight - 2`, checked on `scroll`, on mount and on `ResizeObserver` (D8a) — `src/features/requests/detail/use-read-to-end.ts`
 - [x] T013 [P] [BEN-139] `placeSignProblems(problems)` → `{ agreed, fullName, form }`. The pointer table is **empty**, so everything goes to `form`; deduplicate by `detail`. A comment says K3 fills the table from the contract (D13) — `src/features/requests/detail/place-sign-problems.ts`
-- [x] T014 [BEN-139] Seeded `sign`, refusing in D14's order: not an Employee or not the owner → `unavailable`; not agreed or blank name → `invalid` at the whole document; status not `For Delivery` / `Ready for Pickup` → `status-changed`. On success: `Received`, `receivedAt: now`, handover kept, the signature not stored. Depends on T004 — `src/features/requests/detail/seeded-employee-request-source.ts`
+- [x] T014 [BEN-139] Seeded `sign`, refusing in D14's order: not an Employee or not the owner → `unavailable`; not agreed or blank name → `invalid` at the whole document; status not `Received`, or already signed → `status-changed`. On success: `signedAt: now`, the status left at `Received`, the signature not stored (amended 2026-09-29, T036). Depends on T004 — `src/features/requests/detail/seeded-employee-request-source.ts`
 - [x] T015 [BEN-139] Dev stub: add a `sign` passthrough to every existing mode, plus `sign-changes`, `sign-invalid`, `sign-fails` and `sign-slow` (D15). Update the header comment. Depends on T014 — `src/features/requests/detail/dev/request-stub.ts`
 - [x] T016 [BEN-139] Page `sign` handler beside `cancel`: catch → `unavailable`; reload; a `status-changed` whose reload fails → `unavailable`; a failed reload keeps the list with the signed request swapped in. Pass it as `onSign`. Depends on T004 — `src/features/requests/history/MyRequestsPage.tsx`
 
-## Phase 3: K2 — Story 1: Sign for a handed-over request (P1, BEN-139)
+## Phase 3: K2 — Story 1: Sign for a received request (P1, BEN-139)
 
 **Goal**: The Employee opens the form from their own unsigned `Received` request, signs, and sees it recorded (amended 2026-09-29).
 **Independent test**: On the seed, sign REQ-2026-1820 (`Received`, unsigned). It stays `Received`, the link goes, and *Accountability form signed* shows with a time.
 
 - [x] T017 [US1] [BEN-139] `AccountabilityForm` body: **EQUIPMENT ASSIGNED** over `RequestLinesTable`, then **ACKNOWLEDGEMENT** over the 412px scrolling box (`Body 3`, 1px `--color-osrs-border-strong`, `r=8`, 10px padding, `role="region"`, `aria-label="Acknowledgement"`, `tabIndex={0}`; `<p>` + `<ol>` + `<p>`), then the checkbox, then *Type full name to sign*. Inner blocks are `w-full`. No Other Notes. The footer's **Cancel** / **I acknowledge and sign** buttons submit through `form={id}` (D4, D7, D8) — `src/features/requests/detail/AccountabilityForm.tsx`
-- [x] T018 [US1] [BEN-139] Panel modes `read | cancel | sign`. The **Sign accountability form** link goes after the timeline, only on `For Delivery` / `Ready for Pickup`. In `sign`: the header is **Accountability Form** (`H2`) with no pill, `width="wide"`, and the form as the body and footer. No Complete Request control in any mode (D2, D9, FR-001a). Depends on T017 — `src/features/requests/detail/RequestDetailPanel.tsx`
+- [x] T018 [US1] [BEN-139] Panel modes `read | cancel | sign`. The **Sign accountability form** link goes after the timeline, only on an unsigned `Received` request (amended 2026-09-29, T036; `receive` mode added by T039). In `sign`: the header is **Accountability Form** (`H2`) with no pill, `width="wide"`, and the form as the body and footer. No Complete Request control in any mode (D2, D9, FR-001a). Depends on T017 — `src/features/requests/detail/RequestDetailPanel.tsx`
 - [x] T019 [US1] [BEN-139] Focus across modes: entering `sign` focuses the form heading; **Cancel** returns focus to the link; success or a `status-changed` refusal returns focus to the panel heading, or to the `RefusalAlert` when it shows (D9a) — `src/features/requests/detail/RequestDetailPanel.tsx`
 - [x] T020 [US1] [BEN-139] One signature per open form: `submitting` disables both buttons, a `useRef` guard drops a second activation, and `SidePanel dismissible={!submitting}`. The ok path returns to `read` (D11, D12) — `src/features/requests/detail/RequestDetailPanel.tsx`, `src/features/requests/detail/AccountabilityForm.tsx`
 
@@ -60,29 +60,29 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 ## Phase 6: K2 — Story 3: Show a refusal from the system (P1, BEN-139)
 
 **Goal**: A refused signature shows the system's words and the request's current state.
-**Independent test**: `?requests=sign-changes` → back in `read`, with the alert and `Cancelled`. `?requests=sign-invalid` → both messages at the top of the form. `?requests=sign-fails` → the form stays with its values and can be retried.
+**Independent test**: `?requests=sign-changes` → back in `read`, with the alert, and the request shown `Received` and signed. `?requests=sign-invalid` → both messages at the top of the form. `?requests=sign-fails` → the form stays with its values and can be retried.
 
 - [x] T023 [US3] [BEN-139] Outcome handling. `status-changed`: back to `read`, with a `RefusalAlert` showing `detail`, or SPA copy when there is none. `invalid`: stay in `sign`, with `placeSignProblems` output under its fields and at the top. `unavailable` or a throw: stay in `sign`, keep the values, and show *"Your signature was not sent. Try again."* at the top (D12, D13). Depends on T013, T016, T018 — `src/features/requests/detail/RequestDetailPanel.tsx`, `src/features/requests/detail/AccountabilityForm.tsx`
 
 ## Phase 7: K2 — Story 4: Nobody else is offered the form (P1, BEN-139)
 
-**Goal**: Only the owning Employee, and only on `For Delivery` / `Ready for Pickup`.
-**Independent test**: Every other seeded status shows no link. `Received` shows no Cancel Request. The Admin queue has no form or `Received` control.
+**Goal**: Only the owning Employee, and only on their own unsigned `Received` request (amended 2026-09-29).
+**Independent test**: Every other seeded status, and a signed `Received` request, shows no link. `Received` shows no Cancel Request. The Admin queue offers no form.
 
-- [x] T024 [US4] [BEN-139] Audit the Admin surfaces and confirm that nothing offers the form or sets `Received`. Add a comment to the queue source recording that `Received` is reached only through spec 012's form (FR-013). No behaviour change is expected — `src/features/requests/queue/QueuePage.tsx`, `src/features/requests/queue/seeded-queue-source.ts`
+- [x] T024 [US4] [BEN-139] Audit the Admin surfaces and confirm that nothing offers the form. Add a comment to the queue source recording how `Received` is reached: an Admin or the owning Employee marks it, and signing changes no status (FR-013, as amended 2026-09-29). No behaviour change is expected — `src/features/requests/queue/QueuePage.tsx`, `src/features/requests/queue/seeded-queue-source.ts`
   - **Done, in `queue-types.ts`**, where the queue defines `Received` as live; `QueuePage.tsx` and `seeded-queue-source.ts` offer only *Review* and needed no comment.
 
 ## Phase 8: K2 — Design record (BEN-139)
 
 - [x] T025 [BEN-139] additions §3h: the checkbox's invalid and unavailable states; the read-to-the-end gate; the owner's eleven conditions in place of the drawn ten (flagged); the name field's invalid state; the field and refusal copy; QTY in place of PR; the omitted Other Notes card and Complete Request button (flagged); the native scrollbar; the header without a pill (D17) — `docs/design-system/additions.md`
 
-## Phase 8b: Amendment — the Admin sets `Received` (2026-09-29, constitution 6.0.0)
+## Phase 8b: Amendment — the Admin or the owning Employee sets `Received` (2026-09-29, constitution 6.0.0)
 
 - [x] T035 [BEN-139] Constitution 6.0.0 and ADR-0010; `ARCHITECT.md`, `CLAUDE.md`, `docs/product.md`, `docs/process-flow.md`, drift-2026-09-26 note; spec 001 (US5, FR-011/012/012a/012b, entity, edge cases, SC-001, session), its tasks T017/T018/T018b, contracts conflict 5; spec 007 Story 3; spec 012 and plan 012 — `AGENTS.md`, `specs/constitution.md`, `docs/adr/0010-admin-sets-received-employee-signs.md`
 - [x] T036 [BEN-139] Read model gains `signedAt`; the link shows only on an unsigned `Received` request; the signed line (plan D18); the seeded `sign` records `signedAt` and leaves the status; the seeded Completed request counts as signed; `sign-changes` becomes "signed from another tab" — `src/features/requests/detail/`
 - [x] T037 [BEN-141] Gates follow: `check-accountability-form` opens the form from REQ-2026-1820 and expects the request to stay `Received` with the signed line; `check-a11y-responsive` opens it from REQ-2026-1820. `npm run verify`: all 15 gates pass — `scripts/check-accountability-form.mjs`, `scripts/check-a11y-responsive.mjs`
 - [x] T039 [BEN-139] **Mark as Received** for the owning Employee (constitution 6.0.0 widened, ADR-0010; spec 012 Story 0, FR-016–FR-019; plan D19): seam `markReceived`, seeded guard, `receive-changes` stub, page handler, the panel's `receive` mode with its confirmation, `Button` forwards `ref`. Governing docs, spec 001, spec 007 and `contracts/README.md` widened to match — `src/features/requests/`, `src/shared/ui/actions/Button.tsx`
-- [x] T040 [BEN-141] Gates: `check-accountability-form` covers Story 0 (SC-008), including a double confirm and an end-to-end mark-then-sign; `check-request-detail`'s no-receipt assertion is narrowed to completion controls, with Mark as Received required exactly on handed-over rows. `npm run verify`: all 15 gates pass — `scripts/check-accountability-form.mjs`, `scripts/check-request-detail.mjs`
+- [x] T040 [BEN-141] Gates: `check-accountability-form` covers Story 0 (SC-008), including a double confirm, an end-to-end mark-then-sign, and the no-answer path through a `receive-fails` stub (AC6); `check-request-detail`'s no-receipt assertion is narrowed to completion controls, with Mark as Received required exactly on handed-over rows. `npm run verify`: all 15 gates pass — `scripts/check-accountability-form.mjs`, `scripts/check-request-detail.mjs`
 - [ ] T038 Hand-off to BEN-47 (the Admin review/Update Status panel): it must offer `Received` from `For Delivery` / `Ready for Pickup` (the Admin's own route to it; the Employee's is T039), and offer **Complete** only on a signed `Received` request (spec 001 T017, T018) — `specs/001-office-supplies-mvp/tasks.md`
 
 ## Phase 9: K3 — Contract-backed submission (BEN-140; **blocked on contracts/README.md conflict 5**)
@@ -95,9 +95,9 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
 - [x] T029 [BEN-141] `check-accountability-form.mjs` over CDP:
   - **Done, with one change.** The *text that fits* case grows the box, not the text: the acknowledgement is sized in px, so the root font size does not reach it. It exercises the same resize path. A real pointer click was added too, because the global `[aria-disabled]` rule sets `pointer-events: none` on the input.
-  - SC-001: link offered on exactly the seeded 1842 / 1838.
+  - SC-001: link offered on exactly the seeded unsigned `Received` request, REQ-2026-1820 (amended 2026-09-29).
   - SC-002: every invalid combination sends nothing.
-  - SC-003: both handovers end `Received` in the pill, the timeline with a time, and the row, with no sign or cancel control.
+  - SC-003: REQ-2026-1820 stays `Received` in the pill, the timeline and the row, with the signed line and a time, and no sign or cancel control (amended 2026-09-29).
   - SC-004a: `sign-changes` and `sign-invalid`.
   - SC-005: `sign-slow` with a double activation gives one signature.
   - SC-006: FR-004, parsed from `spec.md`, markdown-normalised, and compared with a word diff on failure.
@@ -111,7 +111,8 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - **Done 2026-09-27: no change.** The export is still `2026-09-26T02:49:27.712Z`.
 - [x] T033 [BEN-141] `npm run verify` green, with `check-request-detail` unchanged and passing. Take 1440px screenshots of the read view with the link, the form (locked and unlocked), the invalid state and `Received`, against `04.1`. Attach them to the PR — `scripts/verify.mjs`
   - **Done.** All 15 gates pass. Screenshots are taken of the read view with the link, the form locked, before reading with both messages, ready to sign, and `Received`; they are not committed and get attached to the PR.
-- [ ] T034 [BEN-141] PR to `dev`, linking BEN-136 and the K-tickets, the spec 007 / 001 / process-flow / contracts amendments, and the designer flags — `specs/012-accountability-form/tasks.md`
+- [x] T034 [BEN-141] PR to `dev`, linking BEN-136 and the K-tickets, the spec 007 / 001 / process-flow / contracts amendments, and the designer flags — `specs/012-accountability-form/tasks.md`
+  - **Done:** [PR 47](https://github.com/CoDev-Bench-Team/CoDev-OSRS/pull/47).
 
 ## Dependencies
 

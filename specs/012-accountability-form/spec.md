@@ -233,7 +233,7 @@ Dismissed 2026-09-26 at finalization:
 
 - Completeness: PASS
 - Clarity: PASS (CHK001 dismissed)
-- Consistency: PASS. Agrees with constitution 5.0.0, ADR-0009 and spec 001 as amended above.
+- Consistency: PASS. Agrees with constitution 6.0.0, ADR-0010 (amending ADR-0009) and spec 001 as amended above.
 - Measurability: PASS
 - Coverage: PASS (CHK003 dismissed)
 - Edge cases: PASS

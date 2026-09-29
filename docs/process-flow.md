@@ -80,8 +80,8 @@ your decision."*
 5. **Mark received** (Admin or owning Employee) — once the items are handed
    over, the Admin sets a `For Delivery` or `Ready for Pickup` request to
    **Received** with Update Status, or the owning Employee does with **Mark as
-   Received** on their own request, after confirming *I have received these
-   items*.
+   Received** on their own request, after confirming *"Confirm you have
+   received every item listed above. This can't be undone."*
 6. System: the reserved units become `Assigned` to the Employee, so `Total` and
    `Reserved` both fall by the requested quantity — this is when the items leave
    the store.

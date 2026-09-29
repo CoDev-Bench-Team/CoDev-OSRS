@@ -141,6 +141,7 @@ export function RequestDetailPanel({
     }
     if (result.refusal === 'reason-required') return 'reason-required' as const;
     backOut();
+    focusNext.current = 'alert';
     setRefusal(REFUSAL_COPY[result.refusal]);
   };
 
@@ -210,18 +211,22 @@ export function RequestDetailPanel({
     setRefusal(result.detail ?? SIGN_REFUSAL_COPY['status-changed']);
   };
 
-  const footer =
-    mode === 'sign' ? (
-      <div className="flex items-center justify-center gap-12">
-        <Button variant="ghost" onClick={() => leaveSign('sign-link')} disabled={signing}>
-          Cancel
-        </Button>
-        <Button type="submit" form={formId} disabled={signing}>
-          I acknowledge and sign
-        </Button>
-      </div>
-    ) : receivable ? (
-      mode === 'receive' ? (
+  const renderFooter = () => {
+    if (mode === 'sign') {
+      return (
+        <div className="flex items-center justify-center gap-12">
+          <Button variant="ghost" onClick={() => leaveSign('sign-link')} disabled={signing}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} disabled={signing}>
+            I acknowledge and sign
+          </Button>
+        </div>
+      );
+    }
+
+    if (receivable && mode === 'receive') {
+      return (
         <div className="flex flex-col gap-12">
           {/* Focus lands on the prompt, not on Confirm: a second Enter must not
               assign the items by accident (review of #47). */}
@@ -244,7 +249,11 @@ export function RequestDetailPanel({
             </Button>
           </div>
         </div>
-      ) : (
+      );
+    }
+
+    if (receivable) {
+      return (
         <Button
           ref={receiveButton}
           variant="ghost"
@@ -256,22 +265,33 @@ export function RequestDetailPanel({
         >
           Mark as Received
         </Button>
-      )
-    ) : !cancellable ? undefined : mode === 'cancel' ? (
-      <ReasonForm
-        label="Reason for cancellation"
-        placeholder="e.g duplicate request..."
-        confirmLabel="Confirm Cancellation"
-        requiredMessage={REFUSAL_COPY['reason-required']}
-        submitting={submitting}
-        onBack={backOut}
-        onConfirm={confirm}
-      />
-    ) : (
-      <Button variant="ghost" className="w-full" onClick={() => setMode('cancel')}>
-        Cancel Request
-      </Button>
-    );
+      );
+    }
+
+    if (cancellable && mode === 'cancel') {
+      return (
+        <ReasonForm
+          label="Reason for cancellation"
+          placeholder="e.g duplicate request..."
+          confirmLabel="Confirm Cancellation"
+          requiredMessage={REFUSAL_COPY['reason-required']}
+          submitting={submitting}
+          onBack={backOut}
+          onConfirm={confirm}
+        />
+      );
+    }
+
+    if (cancellable) {
+      return (
+        <Button variant="ghost" className="w-full" onClick={() => setMode('cancel')}>
+          Cancel Request
+        </Button>
+      );
+    }
+
+    return undefined;
+  };
 
   return (
     <SidePanel
@@ -293,7 +313,7 @@ export function RequestDetailPanel({
           </>
         )
       }
-      footer={footer}
+      footer={renderFooter()}
     >
       {mode === 'sign' ? (
         <AccountabilityForm
