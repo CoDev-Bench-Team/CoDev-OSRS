@@ -302,7 +302,7 @@ function FormsSection({ model, onModelChange }: { model: string; onModelChange: 
           <InputField label="Type full name to sign" invalid message="Type your full name to sign." />
         </div>
       </Row>
-      <Row label="Checkbox — unticked, ticked, refused, unavailable until read (04.1; the last two are additions §3h)">
+      <Row label="Checkbox — unticked, ticked, refused, unavailable until read (04.1; the last two are additions §3i)">
         <div className="flex w-[420px] max-w-full flex-col gap-12">
           <Checkbox label="I have read and agree to the above" checked={false} onChange={() => {}} />
           <Checkbox label="I have read and agree to the above" checked onChange={() => {}} />

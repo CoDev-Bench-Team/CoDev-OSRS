@@ -23,7 +23,7 @@ import { useSingleFlight } from './use-single-flight';
  *    wide. A signature the system accepts is recorded on the request; the
  *    status stays `Received`, and the panel says it was signed (FR-009).
  *
- *  The Employee or an Admin sets `Received` (constitution 6.0.0 IV). Nothing
+ *  The Employee or an Admin sets `Received` (constitution 7.0.0 IV). Nothing
  *  here sets `Completed`, and there is no
  *  *Complete Request* control: `04.1` draws one, but only an Admin completes
  *  (spec 012 FR-001a). A cancelled or rejected request reads back its reason.

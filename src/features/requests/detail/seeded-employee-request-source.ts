@@ -18,7 +18,7 @@ import type {
  *  it from without cancelling first. The eighth, REQ-2026-1820, is
  *  `Received`: an Admin has marked it handed over and it is not yet signed,
  *  so it is the one request that offers spec 012's Accountability Form
- *  (constitution 6.0.0). The Completed request counts as signed. The For
+ *  (constitution 7.0.0). The Completed request counts as signed. The For
  *  Delivery and Ready for Pickup requests offer **Mark as Received**.
  *  `sam.torres` owns one request so the list can prove it shows only the
  *  signed-in Employee's. The file gives REQ-2026-1842 to
@@ -208,7 +208,7 @@ export const seededEmployeeRequestSource: EmployeeRequestSource = {
   /** The Accountability Form (spec 012 D14), holding the guards the API will:
    *  the owning Employee only, a real agreement and name, and only on a
    *  `Received` request not yet signed. On success it records the time and
-   *  leaves the status alone (constitution 6.0.0 IV). The typed name is not
+   *  leaves the status alone (constitution 7.0.0 IV). The typed name is not
    *  kept: nothing reads it back (spec 012, Out of Scope), and a demo store is
    *  no place for one. Stock is the backend's (constitution III); this source
    *  models none. */

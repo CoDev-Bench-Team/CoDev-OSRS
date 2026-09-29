@@ -15,7 +15,7 @@ Amended 2026-09-26: Inventory is a **register of units**, and the per-office qua
 
 Amended again 2026-09-26: the Employee signs an **Accountability Form** on receipt, which moves the request to **`Received`** and assigns the reserved units to them; the Admin then completes. See Session 2026-09-26 (`Received`) and [ADR-0009](../../docs/adr/0009-received-and-accountability-form.md).
 
-Amended 2026-09-29: an **Admin**, or the owning **Employee**, sets `Received` (the units are assigned then); the Employee signs the Accountability Form on the `Received` request, which records the acknowledgement without changing the status; the Admin completes only once it is signed. See Session 2026-09-29 and [ADR-0010](../../docs/adr/0010-admin-sets-received-employee-signs.md).
+Amended 2026-09-29: an **Admin**, or the owning **Employee**, sets `Received` (the units are assigned then); the Employee signs the Accountability Form on the `Received` request, which records the acknowledgement without changing the status; the Admin completes only once it is signed. See Session 2026-09-29 and [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md).
 
 ## User Scenarios & Testing
 
@@ -170,7 +170,7 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - **FR-011**: System MUST allow Admins to move an `Approved`, `For Delivery` or `Ready for Pickup` request to `For Delivery` or `Ready for Pickup` without changing any quantity, and a `For Delivery` or `Ready for Pickup` request to `Received` (FR-012a). The two are peers, not a sequence.
 - **FR-011a**: System MUST record a pickup location when the target status is `Ready for Pickup`, and MUST carry it in the resulting notification.
 - **FR-012**: System MUST allow Admins to move a `Received` request to `Completed`, without changing any quantity, **only once its Accountability Form has been signed**. *(Rewritten 2026-09-26; narrowed 2026-09-29.)*
-- **FR-012a**: System MUST allow an Admin, or the owning Employee on their own request, to move a `For Delivery` or `Ready for Pickup` request to `Received`, decreasing `Total` and `Reserved` by each line quantity (the reserved units become `Assigned` to the requester) in the same atomic operation. No other actor may set `Received`. *(Rewritten 2026-09-29, constitution 6.0.0; was: set by the System when the Employee submits the form.)*
+- **FR-012a**: System MUST allow an Admin, or the owning Employee on their own request, to move a `For Delivery` or `Ready for Pickup` request to `Received`, decreasing `Total` and `Reserved` by each line quantity (the reserved units become `Assigned` to the requester) in the same atomic operation. No other actor may set `Received`. *(Rewritten 2026-09-29, constitution 7.0.0; was: set by the System when the Employee submits the form.)*
 - **FR-012b**: System MUST show the owning Employee an **Accountability Form** on their own `Received` request that has not yet been signed, as `04.1` draws it: the request's items and quantities (not unit tags), the acknowledgement conditions (the project owner's eleven; spec 012 FR-004), a required **I have read and agree to the above** checkbox that unlocks once the conditions have been scrolled to their end, a required **Type full name to sign** field, and **Cancel** / **I acknowledge and sign**. Signing records the acknowledgement (signed name, signed time) and does not change the status. *(Rewritten 2026-09-29, [spec 012](../012-accountability-form/spec.md); Other Notes withdrawn 2026-09-26, pending the design.)*
 - **FR-013**: System MUST refuse illegal status transitions and actions not allowed for the caller's role.
 - **FR-014**: System MUST send an email on every defined transition using the design's templates: **Request received** on submit (Employee); **Request approved** on approve (Employee); **Request declined** on reject (Employee); **Status changed** on every other transition — `For Delivery`, `Ready for Pickup`, `Received`, `Completed`, `Cancelled` — carrying previous status, new status, and the pickup location when there is one.
@@ -238,7 +238,7 @@ Resolved from the Linear brief and process diagram with MVP defaults (no blockin
 - Q: Who can approve? → A: ~~Any user with Approver role~~ **any Admin** (small internal team).
 - Q: Auth for MVP? → A: ~~Username/password (email + password) with seeded demo users; SSO later.~~ **Superseded 2026-09-12 — see Session 2026-09-12 below.**
 
-### Session 2026-09-29 — Amendment (the Admin sets `Received`)
+### Session 2026-09-29 — Amendment (the Admin or the Employee sets `Received`; the Employee signs on it)
 
 Raised while building the Accountability Form (BEN-136, [spec 012](../012-accountability-form/spec.md)) and decided by the project owner. It follows the design's order, which the 2026-09-26 session had rejected: `04.1` draws **Sign accountability form** on a request that is already `Received`, and the *Equipment Delivered/Claimed* email asks the Employee to sign after IT has issued the items ([drift-2026-09-26 §3](../../docs/design-system/drift-2026-09-26.md)).
 
@@ -246,7 +246,7 @@ Raised while building the Accountability Form (BEN-136, [spec 012](../012-accoun
 - Q: What does signing do? → A: **It records the acknowledgement; the request stays `Received`.** The Admin still completes, and **Complete is refused until the form is signed.**
 - Q: When do the units become `Assigned`? → A: **On `Received`**, as before; only who triggers it changed.
 
-Constitution **6.0.0** (MAJOR: IV redefined; II, III and VI follow). [ADR-0010](../../docs/adr/0010-admin-sets-received-employee-signs.md) amends ADR-0009. US5, FR-011, FR-012, FR-012a, FR-012b, the Request entity, the edge cases and SC-001 are reworded in place. The contract gap grows: the API must also carry whether a request is signed ([contracts/README.md](contracts/README.md) conflict 5).
+Constitution **7.0.0** (MAJOR: IV redefined; II, III and VI follow). [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md) amends ADR-0009 and ADR-0010, and supersedes the Employee's path in the BEN-47 session below: the form no longer sets `Received`. US5, FR-011, FR-012, FR-012a, FR-012b, the Request entity, the edge cases and SC-001 are reworded in place. The contract gap grows: the API must also carry whether a request is signed ([contracts/README.md](contracts/README.md) conflict 5).
 
 ### Session 2026-09-29 — Amendment (Admin marks `Received`)
 

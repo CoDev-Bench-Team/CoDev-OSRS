@@ -308,11 +308,11 @@ await cdp.waitFor(() => location.pathname === '/catalog', 8000, 'the employee la
 await cdp.goto(`${ORIGIN}/requests`);
 await cdp.waitFor(() => !!document.querySelector('button[aria-label="View details of REQ-2026-1820"]'), 8000, 'the rows');
 await cdp.evaluate(() => document.querySelector('button[aria-label="View details of REQ-2026-1820"]').click());
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"]'), 5000, 'the panel');
-await cdp.evaluate(() => [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent.trim() === 'Sign accountability form').click());
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="region"]'), 5000, 'the form');
+await cdp.waitFor(() => !!document.querySelector('dialog[open]'), 5000, 'the panel');
+await cdp.evaluate(() => [...document.querySelectorAll('dialog[open] button')].find((b) => b.textContent.trim() === 'Sign accountability form').click());
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="region"]'), 5000, 'the form');
 const locked = await cdp.evaluate(() => {
-  const cb = document.querySelector('[role="dialog"] input[type="checkbox"]');
+  const cb = document.querySelector('dialog[open] input[type="checkbox"]');
   return { aria: cb.getAttribute('aria-disabled'), native: cb.disabled, tabbable: cb.tabIndex >= 0 };
 });
 locked.aria === 'true' && !locked.native && locked.tabbable
@@ -322,7 +322,7 @@ for (const w of [360, 768, 1440]) {
   await cdp.setViewport(w, 900);
   await new Promise((r) => setTimeout(r, 350));
   const r = await cdp.evaluate((width) => {
-    const d = document.querySelector('[role="dialog"]');
+    const d = document.querySelector('dialog[open]');
     const b = d.getBoundingClientRect();
     const out = [...d.querySelectorAll('*')].filter((el) => el.getBoundingClientRect().right > width + 1).map((el) => el.tagName + '.' + String(el.className).slice(0, 30)).slice(0, 4);
     const small = [...d.querySelectorAll('button:not([disabled])')]
@@ -353,7 +353,7 @@ for (let i = 0; i < 12; i++) {
     // the box's own `has-focus-visible` ring, a box-shadow.
     const ring = (x) => getComputedStyle(x).outlineStyle !== 'none' && parseFloat(getComputedStyle(x).outlineWidth) > 0;
     const shown = el.type === 'checkbox' ? getComputedStyle(el.parentElement).boxShadow !== 'none' : ring(el);
-    return { name: el.getAttribute('aria-label') || el.textContent.trim().slice(0, 24) || el.type, shown: shown && el.matches(':focus-visible'), inside: !!document.querySelector('[role="dialog"]').contains(el) };
+    return { name: el.getAttribute('aria-label') || el.textContent.trim().slice(0, 24) || el.type, shown: shown && el.matches(':focus-visible'), inside: !!document.querySelector('dialog[open]').contains(el) };
   });
   formStops.push(r);
 }

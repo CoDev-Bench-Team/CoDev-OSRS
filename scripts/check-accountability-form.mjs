@@ -5,7 +5,7 @@
  *  OSRS_DEV_ORIGIN when the dev server took a port other than 5173.
  *
  *  Every scenario starts from a fresh document, so the seeded store is back to
- *  its eight requests. Since constitution 6.0.0 the form is offered only on an
+ *  its eight requests. Since constitution 7.0.0 the form is offered only on an
  *  unsigned `Received` request: REQ-2026-1820. Signing leaves it `Received` and
  *  records the signature (spec 012 FR-009). */
 import { readFileSync } from 'node:fs';
@@ -64,7 +64,7 @@ const rows = () =>
     .map((li) => ({ id: li.querySelector('span').textContent.trim(), pill: li.querySelectorAll('span')[3]?.textContent.trim() }));
 
 const panel = () => {
-  const d = document.querySelector('[role="dialog"]');
+  const d = document.querySelector('dialog[open]');
   if (!d) return null;
   const h2 = d.querySelector('h2');
   return {
@@ -90,22 +90,22 @@ const openRow = async (id) => {
     b.focus();
     b.click();
   }, id);
-  await cdp.waitFor(() => !!document.querySelector('[role="dialog"]'), 5000, `the panel for ${id}`);
+  await cdp.waitFor(() => !!document.querySelector('dialog[open]'), 5000, `the panel for ${id}`);
 };
 const clickInPanel = (label) =>
   cdp.evaluate((l) => {
-    const b = [...document.querySelectorAll('[role="dialog"] button')].find((x) => x.textContent.trim() === l);
+    const b = [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === l);
     if (!b) throw new Error(`no "${l}" button in the panel`);
     b.click();
   }, label);
 const openForm = async (id) => {
   await openRow(id);
   await clickInPanel(LINK);
-  await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="region"][aria-label="Acknowledgement"]'), 5000, 'the form');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="region"][aria-label="Acknowledgement"]'), 5000, 'the form');
 };
 
 const form = () => {
-  const d = document.querySelector('[role="dialog"]');
+  const d = document.querySelector('dialog[open]');
   const box = d.querySelector('[role="region"][aria-label="Acknowledgement"]');
   const cb = d.querySelector('input[type="checkbox"]');
   const name = d.querySelector('input[type="text"]');
@@ -125,24 +125,24 @@ const form = () => {
 };
 const scrollBox = (where) =>
   cdp.evaluate((w) => {
-    const box = document.querySelector('[role="dialog"] [role="region"][aria-label="Acknowledgement"]');
+    const box = document.querySelector('dialog[open] [role="region"][aria-label="Acknowledgement"]');
     box.scrollTop = w === 'end' ? box.scrollHeight : 0;
   }, where);
-const clickCheckbox = () => cdp.evaluate(() => document.querySelector('[role="dialog"] input[type="checkbox"]').click());
+const clickCheckbox = () => cdp.evaluate(() => document.querySelector('dialog[open] input[type="checkbox"]').click());
 const spaceOnCheckbox = async () => {
-  await cdp.evaluate(() => document.querySelector('[role="dialog"] input[type="checkbox"]').focus());
+  await cdp.evaluate(() => document.querySelector('dialog[open] input[type="checkbox"]').focus());
   for (const type of ['keyDown', 'keyUp']) {
     await cdp.send('Input.dispatchKeyEvent', { type, key: ' ', code: 'Space', windowsVirtualKeyCode: 32, text: type === 'keyDown' ? ' ' : undefined });
   }
 };
 const typeName = async (text) => {
-  await cdp.evaluate(() => document.querySelector('[role="dialog"] input[type="text"]').focus());
+  await cdp.evaluate(() => document.querySelector('dialog[open] input[type="text"]').focus());
   await cdp.send('Input.insertText', { text });
 };
 const submit = () => clickInPanel(SUBMIT);
 const readyToSign = async () => {
   await scrollBox('end');
-  await cdp.waitFor(() => document.querySelector('[role="dialog"] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'the gate to open');
+  await cdp.waitFor(() => document.querySelector('dialog[open] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'the gate to open');
   await clickCheckbox();
   await typeName('Maya Santos');
 };
@@ -162,7 +162,7 @@ for (const row of initial) {
   const handedOver = row.pill === 'For Delivery' || row.pill === 'Ready for Pickup';
   check(p.buttons.includes('Mark as Received') === handedOver, `${row.id}: Mark as Received is ${handedOver ? 'offered' : 'absent'} (FR-016)`);
   await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
-  await cdp.waitFor(() => !document.querySelector('[role="dialog"]'), 5000, 'the panel to close');
+  await cdp.waitFor(() => !document.querySelector('dialog'), 5000, 'the panel to close');
 }
 
 check(initial.some((r) => r.id === RECEIVED && r.pill === 'Received'), 'the seed carries an unsigned Received row (REQ-2026-1820)');
@@ -202,7 +202,7 @@ check(
     ? `length ${rendered.length} vs ${expected.length}`
     : `first difference at word ${at}: spec “${expected.slice(at, at + 6).join(' ')}” / page “${rendered.slice(at, at + 6).join(' ')}”`,
 );
-check((await cdp.evaluate(() => document.querySelectorAll('[role="dialog"] [role="region"] ol li').length)) === 11, 'eleven numbered conditions');
+check((await cdp.evaluate(() => document.querySelectorAll('dialog[open] [role="region"] ol li').length)) === 11, 'eleven numbered conditions');
 
 // -------------------------------------------------------------- SC-006a
 console.log('\nStory 2a / SC-006a — the agreement unlocks only at the end of the acknowledgement');
@@ -216,7 +216,7 @@ check(f.checked === false && f.cbMessage === COPY.readFirst, 'Space leaves it un
 check(
   (await cdp.evaluate(() =>
     document
-      .querySelector('[role="dialog"] input[type="checkbox"]')
+      .querySelector('dialog[open] input[type="checkbox"]')
       .closest('label')
       .parentElement.querySelector('[role="status"]')
       ?.textContent.trim(),
@@ -225,9 +225,9 @@ check(
 );
 // A fresh form again, so the click below has to raise the message itself.
 await clickInPanel('Cancel');
-await cdp.waitFor(() => !document.querySelector('[role="dialog"] [role="region"]'), 3000, 'the read view');
+await cdp.waitFor(() => !document.querySelector('dialog[open] [role="region"]'), 3000, 'the read view');
 await clickInPanel(LINK);
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="region"]'), 3000, 'the form again');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="region"]'), 3000, 'the form again');
 f = await cdp.evaluate(form);
 check(f.cbMessage !== COPY.readFirst, 'a reopened form starts without the message', f.cbMessage);
 // A real pointer click, not a scripted one: the global `[aria-disabled]` rule
@@ -235,7 +235,7 @@ check(f.cbMessage !== COPY.readFirst, 'a reopened form starts without the messag
 // The sheet slides in; measure only once it has stopped moving.
 await cdp.waitFor(() => document.getAnimations().every((a) => a.playState !== 'running'), 3000, 'the sheet to settle');
 const boxCentre = await cdp.evaluate(() => {
-  const box = document.querySelector('[role="dialog"] input[type="checkbox"]').parentElement;
+  const box = document.querySelector('dialog[open] input[type="checkbox"]').parentElement;
   box.scrollIntoView({ block: 'center' });
   const r = box.getBoundingClientRect();
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -250,7 +250,7 @@ f = await cdp.evaluate(form);
 check(f.checked === false, 'a scripted click leaves it unticked too');
 check(f.cbMessage === COPY.readFirst, 'and says to read to the end first', f.cbMessage);
 await scrollBox('end');
-await cdp.waitFor(() => document.querySelector('[role="dialog"] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'the gate to open');
+await cdp.waitFor(() => document.querySelector('dialog[open] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'the gate to open');
 f = await cdp.evaluate(form);
 check(!f.cbDisabledAria && f.cbMessage === null, 'scrolling to the end opens it and clears the message and the hint');
 await scrollBox('top');
@@ -263,11 +263,11 @@ check(f.checked === true, 'and it ticks');
 
 // Reopening starts the gate over.
 await clickInPanel('Cancel');
-await cdp.waitFor(() => !document.querySelector('[role="dialog"] [role="region"]'), 3000, 'the read view');
+await cdp.waitFor(() => !document.querySelector('dialog[open] [role="region"]'), 3000, 'the read view');
 p = await cdp.evaluate(panel);
 check(p.active === LINK, 'Cancel returns focus to Sign accountability form (D9a)', p.active);
 await clickInPanel(LINK);
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="region"]'), 3000, 'the form again');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="region"]'), 3000, 'the form again');
 f = await cdp.evaluate(form);
 check(f.cbDisabledAria && f.checked === false, 'reopening the form locks it again');
 p = await cdp.evaluate(panel);
@@ -276,10 +276,10 @@ check(p.activeTag === 'H2' && p.active === 'Accountability Form', 'opening the f
 // Text that comes to fit opens it at once. The box is sized in px, so the
 // check grows the box rather than shrinking the text — the resize path either way.
 await cdp.evaluate(() => {
-  const box = document.querySelector('[role="dialog"] [role="region"]');
+  const box = document.querySelector('dialog[open] [role="region"]');
   box.style.height = `${box.scrollHeight + 40}px`;
 });
-await cdp.waitFor(() => document.querySelector('[role="dialog"] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'a box that fits to open the gate');
+await cdp.waitFor(() => document.querySelector('dialog[open] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'a box that fits to open the gate');
 pass('a box whose text fits opens the gate without scrolling');
 
 // ---------------------------------------------------------------- SC-002
@@ -290,7 +290,7 @@ await submit();
 f = await cdp.evaluate(form);
 check(f.cbMessage === COPY.readFirst && f.nameMessage === COPY.name, 'before reading: the read-first message, and the name message, at once');
 await scrollBox('end');
-await cdp.waitFor(() => document.querySelector('[role="dialog"] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'the gate to open');
+await cdp.waitFor(() => document.querySelector('dialog[open] input[type="checkbox"]')?.getAttribute('aria-disabled') !== 'true', 3000, 'the gate to open');
 await submit();
 f = await cdp.evaluate(form);
 check(f.cbMessage === COPY.agree && f.cbInvalid, 'after reading, unticked: the agreement message');
@@ -306,14 +306,14 @@ await submit();
 p = await cdp.evaluate(panel);
 check(p.heading === 'Accountability Form', 'ticked with a blank name: still the form — nothing sent');
 await cdp.evaluate(() => {
-  const i = document.querySelector('[role="dialog"] input[type="text"]');
+  const i = document.querySelector('dialog[open] input[type="text"]');
   i.select();
 });
 await typeName('Maya Santos');
 f = await cdp.evaluate(form);
 check(f.nameMessage === null, 'typing a name clears its message');
 await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
-await cdp.waitFor(() => !document.querySelector('[role="dialog"]'), 5000, 'the panel to close');
+await cdp.waitFor(() => !document.querySelector('dialog'), 5000, 'the panel to close');
 await openRow(RECEIVED);
 p = await cdp.evaluate(panel);
 check(p.buttons.includes(LINK) && !/Accountability form signed/.test(p.text), 'closing the panel sent nothing: still unsigned, the link still offered');
@@ -326,7 +326,7 @@ console.log('\nStory 1 / SC-003 — a valid signature is recorded; the request s
   await openForm(id);
   await readyToSign();
   await submit();
-  await cdp.waitFor(() => document.querySelector('[role="dialog"] h2')?.textContent.trim() !== 'Accountability Form', 5000, 'the read view');
+  await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.textContent.trim() !== 'Accountability Form', 5000, 'the read view');
   p = await cdp.evaluate(panel);
   check(p.pill === 'Received', `${id}: the panel pill still reads Received`, p.pill);
   const node = p.timeline.find((n) => n[1] === 'Received');
@@ -343,7 +343,7 @@ await freshRequests('sign-changes');
 await openForm(RECEIVED);
 await readyToSign();
 await submit();
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal');
 p = await cdp.evaluate(panel);
 check(
   p.heading === RECEIVED && p.pill === 'Received' && /Accountability form signed/.test(p.text) && !p.buttons.includes(LINK),
@@ -357,7 +357,7 @@ await freshRequests('sign-invalid');
 await openForm(RECEIVED);
 await readyToSign();
 await submit();
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal');
 p = await cdp.evaluate(panel);
 f = await cdp.evaluate(form);
 check(p.heading === 'Accountability Form', 'invalid: the form stays open');
@@ -372,7 +372,7 @@ await freshRequests('sign-fails');
 await openForm(RECEIVED);
 await readyToSign();
 await submit();
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal');
 p = await cdp.evaluate(panel);
 f = await cdp.evaluate(form);
 check(p.heading === 'Accountability Form' && /not sent/.test(p.alert ?? ''), 'no answer: the form stays and says it was not sent', p.alert);
@@ -393,15 +393,15 @@ check(
   'the agreement stays ticked while it sends, not greyed or announced as disabled (review of #47)',
 );
 // Bypass the disabled button: a second submit of the form itself.
-await cdp.evaluate(() => document.querySelector('[role="dialog"] form').requestSubmit());
+await cdp.evaluate(() => document.querySelector('dialog[open] form').requestSubmit());
 check(
   await cdp.evaluate(() => {
-    const x = document.querySelector('[role="dialog"] button[aria-label="Close"]');
+    const x = document.querySelector('dialog[open] button[aria-label="Close"]');
     return x.disabled;
   }),
   'the panel cannot be dismissed mid-send',
 );
-await cdp.waitFor(() => document.querySelector('[role="dialog"] h2')?.textContent.trim() !== 'Accountability Form', 8000, 'the read view');
+await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.textContent.trim() !== 'Accountability Form', 8000, 'the read view');
 await sleep(2500); // long enough for a second, slow signature to have landed
 p = await cdp.evaluate(panel);
 check(p.pill === 'Received' && p.alert === null, 'one signature: Received, and no refusal from a second one', `${p.pill} / ${p.alert}`);
@@ -429,11 +429,11 @@ check(p.active === 'Mark as Received', 'and focus returns to Mark as Received', 
 await clickInPanel('Mark as Received');
 // Two presses in the same task, before a re-render can disable the button.
 await cdp.evaluate(() => {
-  const b = [...document.querySelectorAll('[role="dialog"] button')].find((x) => x.textContent.trim() === 'Confirm Received');
+  const b = [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Confirm Received');
   b.click();
   b.click();
 });
-await cdp.waitFor(() => document.querySelector('[role="dialog"] h2')?.nextElementSibling?.textContent.trim() === 'Received', 5000, 'Received');
+await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'Received', 5000, 'Received');
 await sleep(300);
 p = await cdp.evaluate(panel);
 check(p.pill === 'Received' && p.alert === null, 'confirming marks it Received, once (a second send would have been refused)', `${p.pill} / ${p.alert}`);
@@ -443,10 +443,10 @@ check(!p.buttons.includes('Mark as Received') && p.buttons.includes(LINK), 'Mark
 check(p.active === LINK, 'focus moves to Sign accountability form', p.active);
 check((await cdp.evaluate(rows)).find((r) => r.id === HANDED_OVER)?.pill === 'Received', 'the row pill reads Received');
 await clickInPanel(LINK);
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="region"]'), 5000, 'the form');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="region"]'), 5000, 'the form');
 await readyToSign();
 await submit();
-await cdp.waitFor(() => document.querySelector('[role="dialog"] h2')?.textContent.trim() !== 'Accountability Form', 5000, 'the read view');
+await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.textContent.trim() !== 'Accountability Form', 5000, 'the read view');
 p = await cdp.evaluate(panel);
 check(p.pill === 'Received' && /Accountability form signed/.test(p.text), 'end to end: marked received by the Employee, then signed');
 
@@ -454,7 +454,7 @@ await freshRequests('receive-changes');
 await openRow(HANDED_OVER);
 await clickInPanel('Mark as Received');
 await clickInPanel('Confirm Received');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal');
 p = await cdp.evaluate(panel);
 check(p.pill === 'Cancelled' && /can no longer be marked received/.test(p.alert ?? ''), 'changed meanwhile: the system’s message, and the current status', `${p.pill} / ${p.alert}`);
 check((await cdp.evaluate(() => document.activeElement?.getAttribute('role'))) === 'alert', 'focus goes to the refusal');
@@ -463,7 +463,7 @@ await freshRequests('receive-fails');
 await openRow(HANDED_OVER);
 await clickInPanel('Mark as Received');
 await clickInPanel('Confirm Received');
-await cdp.waitFor(() => !!document.querySelector('[role="dialog"] [role="alert"]'), 5000, 'the refusal');
+await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal');
 p = await cdp.evaluate(panel);
 check(
   p.pill === 'Ready for Pickup' && /not marked received/.test(p.alert ?? '') && p.buttons.includes('Mark as Received'),
@@ -480,15 +480,19 @@ await go('/queue');
 await sleep(500);
 const EMPLOYEE_ONLY = /accountability|acknowledge and sign|mark as received|confirm received/i;
 check(!(await cdp.evaluate((re) => new RegExp(re, 'i').test(document.body.textContent), EMPLOYEE_ONLY.source)), 'the Requests Queue has no form, sign or Mark as Received control');
-for (const id of [RECEIVED, 'REQ-2026-1842']) {
+// `/requests/:id` is a deep link into the Requests Queue (BEN-47): an id the
+// Admin's source holds opens its review panel; one it does not (REQ-2026-1820
+// is seeded for the Employee only) leaves the queue with a notice.
+for (const [id, opens] of [[RECEIVED, false], ['REQ-2026-1842', true]]) {
   await go(`/requests/${id}`);
   await sleep(500);
   // Not a blank page: the check below means nothing unless the view rendered.
-  // Today it is the shell's "Not built yet" Request detail placeholder; BEN-47
-  // builds the Admin panel there, and this then guards it for real.
   check(
-    await cdp.evaluate(() => /Request detail/.test(document.querySelector('main')?.textContent ?? '')),
-    `the Admin’s view of ${id} renders (placeholder until BEN-47)`,
+    await cdp.evaluate(
+      (o) => /Requests Queue/.test(document.querySelector('main')?.textContent ?? '') && !!document.querySelector('dialog[open]') === o,
+      opens,
+    ),
+    `the Admin’s view of ${id} renders${opens ? ' its review panel' : ''}`,
   );
   check(
     !(await cdp.evaluate((re) => new RegExp(re, 'i').test(document.body.textContent), EMPLOYEE_ONLY.source)),

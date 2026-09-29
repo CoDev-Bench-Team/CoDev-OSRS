@@ -1,7 +1,7 @@
 # Architecture — Office Supplies Request System
 
 **Status**: Accepted for MVP  
-**Date**: 2026-09-11 · **Last amended**: 2026-09-29 (the Admin or the Employee sets `Received`, the Employee signs on it; constitution 6.0.0)  
+**Date**: 2026-09-11 · **Last amended**: 2026-09-29 (the Admin or the Employee sets `Received`, the Employee signs on it; constitution 7.0.0)  
 **Companion docs**: [product](docs/product.md), [process flow](docs/process-flow.md), [ADRs](docs/adr/), [feature plan](specs/001-office-supplies-mvp/plan.md)
 
 This file is the cross-cutting HOW. Feature WHAT lives in specs. Do not duplicate user stories here.
@@ -129,7 +129,7 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 - **Complete**: Admin; request is `Received` and its Accountability Form is signed.
 - **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `Ready for Pickup`. **A reason is required from whoever cancels.** Never once `Received` or `Completed`. Releases the reservation in the same transaction, exactly as reject does.
 
-The Admin or the Employee records the handover (`Received`); the Employee then confirms receipt with the Accountability Form; `Completed` is an Admin action once the form is signed — see [ADR-0010](docs/adr/0010-admin-sets-received-employee-signs.md), which amends [ADR-0009](docs/adr/0009-received-and-accountability-form.md).
+The Admin or the Employee records the handover (`Received`); the Employee then confirms receipt with the Accountability Form; `Completed` is an Admin action once the form is signed — see [ADR-0011](docs/adr/0011-admin-sets-received-employee-signs.md), which amends [ADR-0009](docs/adr/0009-received-and-accountability-form.md) and [ADR-0010](docs/adr/0010-admin-marks-received.md).
 
 ## 6. Stock Coupling
 
@@ -242,6 +242,6 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 | [0006](docs/adr/0006-assets-and-inventory.md) | Assets and Inventory are separate; per-office Total/Available/Reserved stock — **partly superseded by 0008** |
 | [0007](docs/adr/0007-fulfilment-status-vocabulary.md) | One handover state (For Delivery / For Pickup), completed by the Admin — amended 2026-09-24: `Ready for Pickup`, drawn pink/blue pills; amended by 0009 |
 | [0008](docs/adr/0008-per-unit-inventory-register.md) | Inventory is a per-unit register; stock counted from unit statuses (partly supersedes 0006); amended by 0009 |
-| [0009](docs/adr/0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes — **amended by 0010** |
-| [0010](docs/adr/0010-admin-marks-received.md) | The Admin may also mark a handed-over request `Received` |
-| [0010](docs/adr/0010-admin-sets-received-employee-signs.md) | The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it; the Admin completes once signed |
+| [0009](docs/adr/0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes — **amended by 0010 and 0011** |
+| [0010](docs/adr/0010-admin-marks-received.md) | The Admin may also mark a handed-over request `Received` — **amended by 0011** |
+| [0011](docs/adr/0011-admin-sets-received-employee-signs.md) | The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it; the Admin completes once signed |

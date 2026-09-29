@@ -16,7 +16,7 @@ Build the Vite React SPA in this repo so it can run the four-stage supply pipeli
 **Target Platform**: Internal web (desktop-class browser)  
 **Project Type**: SPA consuming REST  
 **Performance Goals**: SPA usable on typical laptops; API SLAs are backend-owned  
-**Constraints**: 4-week MVP; constitution **6.0.0** in AGENTS.md (amended 2026-09-26: the unit register, ADR-0008; `Received`, ADR-0009; amended 2026-09-29: `Received` set by the Admin or the Employee, the Accountability Form signed on it, ADR-0010); do not invent a REST contract; the remaining contract gaps (`contracts/README.md`) gate the stock-facing screens
+**Constraints**: 4-week MVP; constitution **7.0.0** in AGENTS.md (amended 2026-09-26: the unit register, ADR-0008; `Received`, ADR-0009; amended 2026-09-29: `Received` set by the Admin or the Employee, the Accountability Form signed on it, ADR-0011); do not invent a REST contract; the remaining contract gaps (`contracts/README.md`) gate the stock-facing screens
 
 ## Constitution Check
 

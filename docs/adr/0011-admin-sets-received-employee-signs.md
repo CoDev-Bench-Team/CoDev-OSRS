@@ -1,9 +1,12 @@
-# ADR-0010: The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it; the Admin completes once signed
+# ADR-0011: The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it; the Admin completes once signed
 
 ## Status
 
 Accepted — 2026-09-29. **Amends [ADR-0009](0009-received-and-accountability-form.md)**
-decisions 2 and 3. Decisions 1, 4, 5, 6 and 7 stand. Constitution **6.0.0**.
+decisions 2 and 3. Decisions 1, 4, 5, 6 and 7 stand. **Amends
+[ADR-0010](0010-admin-marks-received.md)**: the Admin's Update Status path to
+`Received` stands, and the Employee's form no longer sets `Received` — the
+Employee's own path is **Mark as Received**. Constitution **7.0.0**.
 
 ## Context
 
@@ -97,4 +100,4 @@ Reserved until the Employee signs.
 
 - [spec 012](../../specs/012-accountability-form/spec.md), Clarifications, Session 2026-09-29
 - [drift-2026-09-26 §3](../design-system/drift-2026-09-26.md)
-- `AGENTS.md`: constitution 6.0.0, principles II, III, IV, VI
+- `AGENTS.md`: constitution 7.0.0, principles II, III, IV, VI

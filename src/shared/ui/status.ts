@@ -1,6 +1,6 @@
 /** The request and stock status vocabulary.
  *
- *  `RequestStatus` is exactly the states constitution 6.0.0 IV admits and
+ *  `RequestStatus` is exactly the states constitution 7.0.0 IV admits and
  *  nothing else: an illegal state is unrepresentable.
  *
  *  After `Approved` the Admin sets either `For Delivery` or `Ready for Pickup`.
@@ -15,7 +15,7 @@
  *  Employee, sets it once the items are handed over, and it is where the
  *  reserved units are assigned. The Employee then signs the Accountability
  *  Form, which changes no status, and the Admin sets `Completed` from a
- *  signed `Received` request only (constitution 6.0.0 IV, ADR-0010).
+ *  signed `Received` request only (constitution 7.0.0 IV, ADR-0011).
  *
  *  `Rejected` and `Cancelled` are both terminal and both need a reason, but
  *  they are different acts: a rejection is the Admin's decision on a pending

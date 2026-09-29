@@ -26,11 +26,11 @@ export interface EmployeeRequest {
   approvedAt?: string;
   handedOverAt?: string;
   /** Set when the handover is marked `Received`, by an Admin or the owning
-   *  Employee (constitution 6.0.0). */
+   *  Employee (constitution 7.0.0). */
   receivedAt?: string;
   /** When the owning Employee signed the Accountability Form on the
    *  `Received` request. Signing records this and changes no status; the
-   *  Admin's Complete waits on it (constitution 6.0.0 IV, ADR-0010). */
+   *  Admin's Complete waits on it (constitution 7.0.0 IV, ADR-0011). */
   signedAt?: string;
   completedAt?: string;
   /** A stopped request carries why, and the panel reads it back (BEN-67,
@@ -83,10 +83,10 @@ export interface EmployeeRequestSource {
   cancel(user: User, id: string, reason: string): Promise<CancelResult>;
   /** Sign the Accountability Form on one of the Employee's own unsigned
    *  `Received` requests. On acceptance the request carries `signedAt`; its
-   *  status does not change (constitution 6.0.0 IV, spec 012). */
+   *  status does not change (constitution 7.0.0 IV, spec 012). */
   sign(user: User, id: string, signature: Signature): Promise<SignResult>;
   /** Mark one of the Employee's own `For Delivery` / `Ready for Pickup`
    *  requests `Received`: the items are in hand, and the units become
-   *  theirs (constitution 6.0.0 IV, spec 012 Story 0). */
+   *  theirs (constitution 7.0.0 IV, spec 012 Story 0). */
   markReceived(user: User, id: string): Promise<ReceiveResult>;
 }

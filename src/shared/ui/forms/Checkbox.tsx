@@ -10,7 +10,7 @@ import { useId, useState, type InputHTMLAttributes, type KeyboardEvent, type Mou
  *  The input is a real `<input type="checkbox">`, visually hidden over the
  *  drawn box, so keyboard, form and screen-reader behaviour are the platform's.
  *
- *  Two states the file does not draw (additions §3h):
+ *  Two states the file does not draw (additions §3i):
  *
  *  - `invalid`: the box takes the red ring, and `message` shows under it,
  *    announced through `aria-describedby`, as `TextField` does.

@@ -11,8 +11,8 @@ export type HandoverStatus = 'For Delivery' | 'Ready for Pickup';
 export const HANDOVER_STATUSES = ['For Delivery', 'Ready for Pickup'] as const satisfies readonly HandoverStatus[];
 
 /** What **Update Status** can set. `Received` only from a handover state: the
- *  Admin records a receipt the Employee has not signed for in the app
- *  (constitution 6.0.0 IV, ADR-0010). */
+ *  Admin records the handover; the Employee signs for it afterwards
+ *  (constitution 7.0.0 IV, ADR-0010, ADR-0011). */
 export type UpdateStatusTarget = HandoverStatus | 'Received';
 
 /** The Status select's options for a request in `status`. The current status
@@ -53,8 +53,8 @@ export interface ReviewRequest extends QueueRequest {
   pickupLocation?: PickupLocation;
   approvedAt?: string;
   handedOverAt?: string;
-  /** Set when it moves to `Received`: by the Employee's Accountability Form,
-   *  or by the Admin's Update Status (constitution 6.0.0 IV). */
+  /** Set when it moves to `Received`: by the Admin's Update Status, or by the
+   *  owning Employee's Mark as Received (constitution 7.0.0 IV). */
   receivedAt?: string;
   completedAt?: string;
   rejection?: { reason: string; at: string };

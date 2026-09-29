@@ -49,7 +49,7 @@ An Employee stops their own request before anyone has decided on it, and says wh
 
 ### Story 3 — No completion control (Priority: P1)
 
-*(Amended 2026-09-26 and 2026-09-29, spec 012.)* An Employee is never offered a control that sets a request `Completed`. Their receipt controls are spec 012's: **Mark as Received** on their own `For Delivery` / `Ready for Pickup` request, behind a confirmation step, and the **Accountability Form** on their own unsigned `Received` request (constitution 6.0.0).
+*(Amended 2026-09-26 and 2026-09-29, spec 012.)* An Employee is never offered a control that sets a request `Completed`. Their receipt controls are spec 012's: **Mark as Received** on their own `For Delivery` / `Ready for Pickup` request, behind a confirmation step, and the **Accountability Form** on their own unsigned `Received` request (constitution 7.0.0).
 
 **Why this priority**: Spec 001 FR-012a and constitution IV give completion to the Admin only, and changing that requires amending both first.
 
@@ -115,7 +115,7 @@ An Employee stops their own request before anyone has decided on it, and says wh
 
 Raised by [spec 012](../012-accountability-form/spec.md). Spec 012 puts the Accountability Form in this panel, and this spec's Story 3 said no control may mention receipt.
 
-- Q: Does Story 3 still forbid every receipt control? → A: **No.** It forbids any control that sets `Completed`. The Employee's receipt controls are spec 012's: **Mark as Received** on their own `For Delivery` / `Ready for Pickup` request, and **Sign accountability form** on their own unsigned `Received` request, which records the acknowledgement and changes no status (amended 2026-09-29, constitution 6.0.0 IV). `check-request-detail`'s no-receipt pattern is narrowed to completion and to receipt controls outside those states. Story 3, FR-009 and SC-005 are reworded in place.
+- Q: Does Story 3 still forbid every receipt control? → A: **No.** It forbids any control that sets `Completed`. The Employee's receipt controls are spec 012's: **Mark as Received** on their own `For Delivery` / `Ready for Pickup` request, and **Sign accountability form** on their own unsigned `Received` request, which records the acknowledgement and changes no status (amended 2026-09-29, constitution 7.0.0 IV). `check-request-detail`'s no-receipt pattern is narrowed to completion and to receipt controls outside those states. Story 3, FR-009 and SC-005 are reworded in place.
 
 ### Session 2026-09-26 — Amendment (constitution 5.0.0)
 

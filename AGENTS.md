@@ -6,7 +6,7 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 6.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-29
+**Version**: 7.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-29
 
 ### I. Spec-Driven Development
 

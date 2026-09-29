@@ -4,11 +4,11 @@
 **Linear**: [BEN-136](https://linear.app/bench-synergy-project/issue/BEN-136) (K0–K4 = BEN-137 to BEN-141)
 **Created**: 2026-09-26
 **Status**: Draft
-**Sources**: `04.1 - My Requests - View Request`, Accountability Form view (2026-09-26 `.fig`, exported 02:49:27Z; [drift-2026-09-26 §3](../../docs/design-system/drift-2026-09-26.md)), constitution 6.0.0 II–VI, [ADR-0010](../../docs/adr/0010-admin-sets-received-employee-signs.md) (amending [ADR-0009](../../docs/adr/0009-received-and-accountability-form.md)), spec 001 US5 / FR-012 / FR-012b / tasks T018b, spec 007 (Employee request panel), `docs/process-flow.md` §3 steps 5–10, `specs/001-office-supplies-mvp/contracts/README.md` conflict 5, [BEN-98](https://linear.app/bench-synergy-project/issue/BEN-98) validation format
+**Sources**: `04.1 - My Requests - View Request`, Accountability Form view (2026-09-26 `.fig`, exported 02:49:27Z; [drift-2026-09-26 §3](../../docs/design-system/drift-2026-09-26.md)), constitution 7.0.0 II–VI, [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md) (amending [ADR-0009](../../docs/adr/0009-received-and-accountability-form.md)), spec 001 US5 / FR-012 / FR-012b / tasks T018b, spec 007 (Employee request panel), `docs/process-flow.md` §3 steps 5–10, `specs/001-office-supplies-mvp/contracts/README.md` conflict 5, [BEN-98](https://linear.app/bench-synergy-project/issue/BEN-98) validation format
 
 ## Overview
 
-*(Rewritten 2026-09-29, constitution 6.0.0.)* Once a request is handed over, the owning Employee can mark it **`Received`** themselves (an Admin can too, from their own panel); that is when the units are assigned. On a `Received` request, the owning Employee then confirms that it reached them by signing the **Accountability Form** from their own request panel. Signing records the acknowledgement; the request stays `Received`. The Admin's **Complete** is refused until the form is signed.
+*(Rewritten 2026-09-29, constitution 7.0.0.)* Once a request is handed over, the owning Employee can mark it **`Received`** themselves (an Admin can too, from their own panel); that is when the units are assigned. On a `Received` request, the owning Employee then confirms that it reached them by signing the **Accountability Form** from their own request panel. Signing records the acknowledgement; the request stays `Received`. The Admin's **Complete** is refused until the form is signed.
 
 This feature adds the form to the Employee request panel of spec 007. It does not own the panel, My Requests, the Admin's *mark received* and *Complete* actions (spec 001 tasks T017, T018), the Requests Queue, or any backend behaviour. The five-node timeline and the `Received` pill already shipped (tasks T000g).
 
@@ -18,7 +18,7 @@ This feature adds the form to the Employee request panel of spec 007. It does no
 
 An Employee whose request is `For Delivery` or `Ready for Pickup` has the items in hand. They open it from My Requests, press **Mark as Received**, confirm, and the request becomes `Received`, which puts **Sign accountability form** in front of them.
 
-**Why this priority**: The Employee can move their own request to the signing step without waiting for an Admin (constitution 6.0.0 IV). It assigns the units, so it is confirmed first.
+**Why this priority**: The Employee can move their own request to the signing step without waiting for an Admin (constitution 7.0.0 IV). It assigns the units, so it is confirmed first.
 
 **Acceptance Criteria**:
 
@@ -157,7 +157,7 @@ Only the owning Employee, and only on their own unsigned `Received` request, is 
 - **Other Notes.** `04.1` draws it as a read-only card between EQUIPMENT ASSIGNED and ACKNOWLEDGEMENT, a note from the Admin side. It is not an Employee field, and nothing supplies it yet. Waits on a design change (Clarifications, Session 2026-09-26).
 - The drawn *Complete Request* button on the Employee panel (FR-001a).
 - Reading back the signed name after signing. The signed time is shown (FR-009; Clarifications, Session 2026-09-29).
-- A reminder, timeout or escalation for an unsigned form (ADR-0010, negative consequences).
+- A reminder, timeout or escalation for an unsigned form (ADR-0011, negative consequences).
 - Drawing, stylus or image signatures: the signature is the typed full name.
 - Profile's *Currently Assigned* list reacting to the signature (spec 006 / spec 001 US8).
 - The `Status changed` email for `Received`: sent by the API (constitution V). The SPA shows status only.
@@ -196,13 +196,13 @@ Raised when `/create-plan` decoded `04.1` from the 2026-09-26 `.fig`: the form v
 
 - Q (plan analysis A1): SC-004's field-level half cannot be proven before the contract names the form's fields. → A: **Split it**: SC-004a in K2, SC-004b in K3.
 
-### Session 2026-09-29 — Amendment (the Admin sets `Received`; constitution 6.0.0)
+### Session 2026-09-29 — Amendment (the Admin sets `Received`; constitution 7.0.0)
 
-Raised by the project owner after seeing the form on the seeded data: the link should show only on a `Received` request, as `04.1` draws it. That reverses the 2026-09-26 decision (ADR-0009), so it is recorded as an amendment and carried by constitution **6.0.0** and [ADR-0010](../../docs/adr/0010-admin-sets-received-employee-signs.md).
+Raised by the project owner after seeing the form on the seeded data: the link should show only on a `Received` request, as `04.1` draws it. That reverses the 2026-09-26 decision (ADR-0009), so it is recorded as an amendment and carried by constitution **7.0.0** and [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md).
 
 - Q: Where is **Sign accountability form** offered? → A: **Only on the owner's `Received` request**, and only until it is signed.
 - Q: Who sets `Received`? → A: **The Admin**, with Update Status, **or the owning Employee**, with **Mark as Received** on their own request (Story 0), from `For Delivery` / `Ready for Pickup`. The units become `Assigned` then.
-- Q: What is the Employee's control? → A: **A full-width *Mark as Received* button in the footer, behind an inline confirmation** (*Cancel* / *Confirm Received*), as the cancel flow does. Not drawn; additions §3h.
+- Q: What is the Employee's control? → A: **A full-width *Mark as Received* button in the footer, behind an inline confirmation** (*Cancel* / *Confirm Received*), as the cancel flow does. Not drawn; additions §3i.
 - Q: What does signing do? → A: **It records the acknowledgement; the status stays `Received`.** The Admin's Complete is refused until the form is signed.
 
 Recorded as a default, not asked: because signing no longer changes the status, the panel shows **Accountability form signed** with its time where the link was (FR-009), or nothing would tell the Employee it worked. This reverses the 2026-09-26 "status and timeline only" answer for the signed time; the signed name is still not read back. The seeded `Completed` request counts as signed, and the seeded `Received` request (REQ-2026-1820) is unsigned. For Delivery and Ready for Pickup requests no longer offer the link.
@@ -233,7 +233,7 @@ Dismissed 2026-09-26 at finalization:
 
 - Completeness: PASS
 - Clarity: PASS (CHK001 dismissed)
-- Consistency: PASS. Agrees with constitution 6.0.0, ADR-0010 (amending ADR-0009) and spec 001 as amended above.
+- Consistency: PASS. Agrees with constitution 7.0.0, ADR-0011 (amending ADR-0009) and spec 001 as amended above.
 - Measurability: PASS
 - Coverage: PASS (CHK003 dismissed)
 - Edge cases: PASS

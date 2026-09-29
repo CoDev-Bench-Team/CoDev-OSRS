@@ -12,8 +12,8 @@ Significant HOW decisions for OSRS. New ADRs get the next number and `Accepted` 
 | [0006](0006-assets-and-inventory.md) | Assets and Inventory are separate; per-office stock, reserved on submit — **partly superseded by 0008** |
 | [0007](0007-fulfilment-status-vocabulary.md) | One handover state (For Delivery / For Pickup), completed by the Admin — amended 2026-09-24: `Ready for Pickup`, drawn pink/blue pills; **amended by 0009** |
 | [0008](0008-per-unit-inventory-register.md) | Inventory is a per-unit register; stock is counted from unit statuses — **amended by 0009** |
-| [0009](0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes — **amended by 0010** |
-| [0010](0010-admin-marks-received.md) | The Admin may also mark a handed-over request `Received` |
-| [0010](0010-admin-sets-received-employee-signs.md) | The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it (no status change); the Admin completes once signed |
+| [0009](0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes — **amended by 0010 and 0011** |
+| [0010](0010-admin-marks-received.md) | The Admin may also mark a handed-over request `Received` — **amended by 0011** |
+| [0011](0011-admin-sets-received-employee-signs.md) | The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it (no status change); the Admin completes once signed |
 
 Template: context, decision, consequences, alternatives. See `ARCHITECT.md` §13.

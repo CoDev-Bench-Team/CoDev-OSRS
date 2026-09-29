@@ -4,6 +4,10 @@
 
 Accepted — 2026-09-29, agreed by the team. **Amends [ADR-0009](0009-received-and-accountability-form.md)**
 (decision 2's "No one can set `Received` by hand"). Constitution **6.0.0**.
+**Amended by [ADR-0011](0011-admin-sets-received-employee-signs.md)**
+(2026-09-29, constitution 7.0.0): the Admin's path stands; the owning Employee
+now sets `Received` with **Mark as Received** rather than by the form, and
+signs the Accountability Form on the `Received` request.
 
 ## Context
 

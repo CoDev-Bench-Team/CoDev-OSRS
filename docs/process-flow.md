@@ -14,7 +14,7 @@ register of units ([drift-2026-09-26](design-system/drift-2026-09-26.md),
 counts of unit statuses and are unchanged. The same re-export added
 `Received` ([drift-2026-09-26 §3](design-system/drift-2026-09-26.md),
 [ADR-0009](adr/0009-received-and-accountability-form.md)); since 2026-09-29 the Admin sets it and the
-Employee signs on it ([ADR-0010](adr/0010-admin-sets-received-employee-signs.md)).
+Employee signs on it ([ADR-0011](adr/0011-admin-sets-received-employee-signs.md)).
 
 **Purpose:** Clear path for requesting, approving and handing over office
 supplies, including stock movements and notifications.
@@ -101,8 +101,9 @@ your decision."*
 10. Notification: **Status changed** (to Employee).
 
 The Admin or the Employee records the handover, the Employee confirms receipt, and the Admin
-closes the request. See [ADR-0010](adr/0010-admin-sets-received-employee-signs.md),
-which amends [ADR-0009](adr/0009-received-and-accountability-form.md).
+closes the request. See [ADR-0011](adr/0011-admin-sets-received-employee-signs.md),
+which amends [ADR-0009](adr/0009-received-and-accountability-form.md) and
+[ADR-0010](adr/0010-admin-marks-received.md).
 
 ### 3b. Cancel (Employee or Admin)
 
@@ -152,7 +153,7 @@ cancellation** and a **Close** button.
 `For Release` and `Released` are **retired**. The Employee's confirm-receipt
 step, retired by ADR-0007, returns as the Accountability Form
 ([ADR-0009](adr/0009-received-and-accountability-form.md)), signed on a `Received` request
-([ADR-0010](adr/0010-admin-sets-received-employee-signs.md)).
+([ADR-0011](adr/0011-admin-sets-received-employee-signs.md)).
 
 ## Stock Rules
 

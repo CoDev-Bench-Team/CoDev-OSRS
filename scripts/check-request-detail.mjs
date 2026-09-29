@@ -151,7 +151,7 @@ for (const row of initial) {
     offersCancel === (row.pill === 'Pending Approval'),
     `${row.id} (${row.pill}): Cancel Request ${row.pill === 'Pending Approval' ? 'offered' : 'absent'}`,
   );
-  // Spec 007 SC-005, amended 2026-09-29 (spec 012, constitution 6.0.0): no
+  // Spec 007 SC-005, amended 2026-09-29 (spec 012, constitution 7.0.0): no
   // control ever sets Completed, and the Employee's one way to set Received —
   // Mark as Received — appears only on their For Delivery / Ready for Pickup
   // requests.
