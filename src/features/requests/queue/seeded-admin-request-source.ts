@@ -71,7 +71,7 @@ function seed(): ReviewRequest[] {
       id: 'REQ-2026-1838',
       ...person('Paolo Navarro', 'Engineering', 'paolon@codev.com', 'Cebu'),
       items: ['Type C Hub'],
-      lines: [line('Type C Hub - Anker 7-in-1', 1, null)],
+      lines: [line('Type C Hub - Anker 7-in-1', 1, 5)],
       submittedAt: '2026-09-07T03:05:00Z',
       status: 'Pending Approval',
     },

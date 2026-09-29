@@ -14,6 +14,10 @@ import type { AdminRequestSource, TransitionResult } from '../review-types';
  *    the form keeps its input (FR-014).
  *  - `reload-fails`: the transition goes through, then the reload fails. The
  *    panel stays open on the last snapshot and says so (plan D3).
+ *  - `no-stock-figure`: the source reports no stock figure for any request's
+ *    first line (`available: null`), so CURRENT INVENTORY shows its marker
+ *    rather than a number (spec 008 edge case "Unavailable stock figure"). The
+ *    seed always has a figure.
  *
  *  Each mode builds its own seed, so a stubbed session never disturbs the
  *  shared one. */
@@ -52,6 +56,22 @@ export function reviewStub(mode: string | null, fresh: () => AdminRequestSource)
         approve: after(seeded.approve),
         reject: after(seeded.reject),
         updateStatus: after(seeded.updateStatus),
+      };
+    }
+    case 'no-stock-figure': {
+      const seeded = fresh();
+      return {
+        ...seeded,
+        async load() {
+          const snapshot = await seeded.load();
+          return {
+            ...snapshot,
+            requests: snapshot.requests.map((r) => ({
+              ...r,
+              lines: r.lines.map((l, i) => (i === 0 ? { ...l, available: null } : l)),
+            })),
+          };
+        },
       };
     }
     default:

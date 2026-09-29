@@ -222,7 +222,8 @@ try {
   await closed();
   pass('a scrim click closes it');
 
-  await go('/queue');
+  // The seed always has a figure; the stub takes it away (dev only).
+  await go('/queue?review=no-stock-figure');
   await open('REQ-2026-1838');
   p = await cdp.evaluate(panel);
   check(
