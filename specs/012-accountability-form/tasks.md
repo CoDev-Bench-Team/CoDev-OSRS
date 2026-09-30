@@ -9,7 +9,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
 ## Phase 1: K1 — Governing docs (BEN-138)
 
-- [x] T001 [BEN-138] Amend spec 007: Story 3 and SC-005 now read that no control **sets** `Received` or `Completed` directly, and that the only receipt control is spec 012's form. Add a Session 2026-09-26 amendment that cites spec 012 (D16) — `specs/007-employee-request-panel/spec.md`
+- [x] T001 [BEN-138] Amend spec 007: Story 3 and SC-005 now read that no control **sets** `Received` or `Completed` directly, and that the only receipt control is spec 012's form. Add a Session 2026-09-26 amendment that cites spec 012 (D16) — `specs/007-employee-request-panel/spec.md` *(Superseded 2026-09-29 by T035: the Employee's receipt controls are Mark as Received and the form.)*
 - [x] T002 [P] [BEN-138] Point spec 001's T018b at `specs/012-accountability-form/tasks.md` for the breakdown — `specs/001-office-supplies-mvp/tasks.md`
 
 ## Phase 2: K2 — Foundations (BEN-139; blocks every story)

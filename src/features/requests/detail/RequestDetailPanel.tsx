@@ -3,7 +3,7 @@ import { BoxiconsPenAlt, Button, SidePanel, StatusPill } from '../../../shared/u
 import { formatDateTime } from '../format';
 import { ReasonForm } from '../ReasonForm';
 import { AccountabilityForm } from './AccountabilityForm';
-import { ACTION_LINE } from './detail-type';
+import { ACTION_LINE } from './detail-typography';
 import { NO_SIGN_PROBLEMS, placeSignProblems, type PlacedSignProblems } from './place-sign-problems';
 import type { CancelResult, EmployeeRequest, ReceiveResult, Signature, SignResult } from './request-detail-types';
 import { RefusalAlert } from './RefusalAlert';
@@ -160,7 +160,9 @@ export function RequestDetailPanel({
       return;
     }
     focusNext.current = 'alert';
-    setRefusal(result.detail ?? RECEIVE_REFUSAL_COPY[result.refusal]);
+    // FR-019: the system's words for a changed request; fixed copy when it
+    // did not answer.
+    setRefusal(result.refusal === 'status-changed' ? (result.detail ?? RECEIVE_REFUSAL_COPY['status-changed']) : RECEIVE_REFUSAL_COPY.unavailable);
   };
 
   const openSign = () => {
@@ -201,7 +203,7 @@ export function RequestDetailPanel({
     }
     // FR-012: the system did not answer; keep what was typed, allow a retry.
     if (result.refusal === 'unavailable') {
-      setSignRefusal(result.detail ?? SIGN_REFUSAL_COPY.unavailable);
+      setSignRefusal(SIGN_REFUSAL_COPY.unavailable);
       return;
     }
     // FR-010: the request changed underneath; show it as it is now.

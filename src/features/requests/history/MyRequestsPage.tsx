@@ -60,7 +60,7 @@ function ArrowRight() {
 }
 
 /** The shape every panel action's result shares (cancel, sign, mark received). */
-type ActionResult = { ok: true; request: EmployeeRequest } | { ok: false; refusal: string };
+type ActionResult = CancelResult | SignResult | ReceiveResult;
 type Unavailable = { ok: false; refusal: 'unavailable' };
 const UNAVAILABLE: Unavailable = { ok: false, refusal: 'unavailable' };
 

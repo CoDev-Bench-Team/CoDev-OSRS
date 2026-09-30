@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Checkbox, InputField } from '../../../shared/ui';
 import { ACKNOWLEDGEMENT } from './accountability-conditions';
-import { SECTION_HEADING } from './detail-type';
+import { SECTION_HEADING } from './detail-typography';
 import type { PlacedSignProblems } from './place-sign-problems';
 import type { EmployeeRequest, Signature } from './request-detail-types';
 import { RefusalAlert } from './RefusalAlert';

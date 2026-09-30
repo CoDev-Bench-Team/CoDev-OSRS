@@ -123,8 +123,8 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 
 - **Submit**: authenticated Employee; every line qty ≥ 1; qty ≤ `Available` at the requesting office; assets exist and are active.
 - **Approve / Reject**: Admin; request is `Pending Approval`; reject body includes a non-empty reason.
-- **Update status**: Admin; request is `Approved`, `For Delivery` or `Ready for Pickup`; target is `For Delivery` or `Ready for Pickup`; `Ready for Pickup` records a pickup location.
-- **Mark received**: Admin, or the owning Employee on their own request; request is `For Delivery` or `Ready for Pickup`; target is `Received`. Moves the reserved units to `Assigned` in the same transaction.
+- **Update status**: Admin; request is `Approved`, `For Delivery` or `Ready for Pickup`; target is `For Delivery` or `Ready for Pickup`, or `Received` when the request is already `For Delivery` or `Ready for Pickup` (the Admin's mark received, behind a confirmation; spec 008 FR-008, [ADR-0010](docs/adr/0010-admin-marks-received.md)); `Ready for Pickup` records a pickup location.
+- **Mark received**: the Admin, through Update Status above, or the owning Employee on their own request, with **Mark as Received** (spec 012); request is `For Delivery` or `Ready for Pickup`; target is `Received`. Moves the reserved units to `Assigned` in the same transaction.
 - **Accountability Form**: owning Employee; request is `Received` and not yet signed; the form is agreed and signed with the Employee's full name. Records the acknowledgement; no status or unit changes.
 - **Complete**: Admin; request is `Received` and its Accountability Form is signed.
 - **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `Ready for Pickup`. **A reason is required from whoever cancels.** Never once `Received` or `Completed`. Releases the reservation in the same transaction, exactly as reject does.

@@ -1,5 +1,5 @@
 import { StatusTimeline } from '../../../shared/ui';
-import { SECTION_HEADING } from './detail-type';
+import { SECTION_HEADING } from './detail-typography';
 import type { EmployeeRequest } from './request-detail-types';
 import { RequestLinesTable } from './RequestLinesTable';
 import { requestTimeline } from '../request-timeline';

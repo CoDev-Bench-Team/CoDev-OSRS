@@ -62,18 +62,24 @@ export interface Signature {
  *  - `unavailable`: the system did not answer, or would not say why.
  *  - `invalid`: the system refused the fields, as BEN-98 problems.
  *
- *  `detail` is the system's own message, shown in preference to SPA copy. */
+ *  `detail` is the system's own message on `status-changed`, shown in
+ *  preference to SPA copy. `unavailable` carries none: its wording is fixed,
+ *  because it must say the signature was not sent (FR-012, plan D12). */
 export type SignResult =
   | { ok: true; request: EmployeeRequest }
-  | { ok: false; refusal: 'status-changed' | 'unavailable'; detail?: string }
+  | { ok: false; refusal: 'status-changed'; detail?: string }
+  | { ok: false; refusal: 'unavailable' }
   | { ok: false; refusal: 'invalid'; problems: readonly FieldProblem[] };
 
 /** The outcome of the Employee's **Mark as Received** (spec 012 D19).
  *  `status-changed`: the request left `For Delivery` / `Ready for Pickup`
- *  while the panel was open. `detail` is the system's own message. */
+ *  while the panel was open; `detail` is the system's own message.
+ *  `unavailable` carries none: it must say the request was not marked
+ *  received (FR-019). */
 export type ReceiveResult =
   | { ok: true; request: EmployeeRequest }
-  | { ok: false; refusal: 'status-changed' | 'unavailable'; detail?: string };
+  | { ok: false; refusal: 'status-changed'; detail?: string }
+  | { ok: false; refusal: 'unavailable' };
 
 export interface EmployeeRequestSource {
   /** The signed-in Employee's own requests, and nobody else's. */

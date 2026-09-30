@@ -195,8 +195,9 @@ Until then the SPA shows `Received` wherever it renders a status or timeline.
 2026-09-26 (BEN-136, [spec 012](../../012-accountability-form/spec.md)):** the
 SPA builds the form against a seeded source behind the Employee request panel's
 seam, and swaps in a contract-backed source when the API carries the above. The
-gap itself stays open. The Admin's **Received** option in Update Status runs
-against the seeded source only (spec 008 FR-008a).
+gap itself stays open. The Employee's **Mark as Received** (spec 012 Story 0)
+and the Admin's **Received** option in Update Status (spec 008 FR-008a) likewise
+run against the seeded source only.
 
 ### 6. The Admin's Other Notes on a decision (raised 2026-09-29)
 
