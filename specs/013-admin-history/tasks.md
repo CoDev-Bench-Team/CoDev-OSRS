@@ -75,7 +75,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 - [x] T022 [P] [BEN-148] Confirm the shell check still refuses `/history` for the Employee and offers it to the Admin; add the assertion if it is missing — `scripts/check-shell.mjs`
 - [x] T023 [BEN-148] Full `npm run verify` passes; screenshots at 1440px against both `04 - History` frames are attached to the PR — `scripts/verify.mjs` *(Verify passes and the screenshots are taken. Attaching them moves to T025, since the PR does not exist yet.)*
 - [x] T024 [BEN-148] Tick T022 `[x]` in spec 001 tasks and T001–T023 here — `specs/001-office-supplies-mvp/tasks.md`, `specs/013-admin-history/tasks.md`
-- [ ] T025 [BEN-148] PR to `dev` linking BEN-144, and attach it to the Linear issue — `specs/013-admin-history/` Attach the 1440px screenshots of both `04 - History` frames (T023).
+- [x] T025 [BEN-148] PR to `dev` linking BEN-144, and attach it to the Linear issue — `specs/013-admin-history/` Attach the 1440px screenshots of both `04 - History` frames (T023). *(PR #49 is attached to BEN-144, and the screenshots are in its description.)*
 
 ## Dependencies
 
