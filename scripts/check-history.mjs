@@ -131,6 +131,11 @@ const clickChip = (label) =>
       .find((b) => b.textContent.startsWith(`${l}(`) || b.textContent.startsWith(`${l} (`))
       .click();
   }, label);
+const pageButton = (name) =>
+  cdp.evaluate(
+    (n) => [...document.querySelectorAll('nav[aria-label="History pages"] button')].find((b) => b.textContent.trim() === n)?.getAttribute('aria-disabled'),
+    name,
+  );
 const clickPage = (name) =>
   cdp.evaluate((n) => {
     [...document.querySelectorAll('nav[aria-label="History pages"] button')].find((b) => b.textContent.trim() === n).click();
@@ -279,10 +284,16 @@ try {
   await settle();
   s = await state();
   check(s.range === '1-10 of 14' && s.ids.length === 10, 'page size 10 → 1-10 of 14', s.range);
+  check((await pageButton('Back')) === 'true', 'Back is disabled on the first page');
   await clickPage('2');
   await settle();
   s = await state();
   check(s.range === '11-14 of 14' && s.current === '2', 'page 2 → 11-14 of 14', s.range);
+  check((await pageButton('Next')) === 'true', 'Next is disabled on the last page');
+  await clickPage('Next');
+  await settle();
+  s = await state();
+  check(s.range === '11-14 of 14' && s.current === '2', 'and pressing it changes nothing', s.range);
   await clickChip('All requests');
   await settle();
   s = await state();
@@ -416,6 +427,19 @@ try {
   await cdp.waitFor(() => location.pathname === '/queue' && !!document.querySelector('dialog[open] h2'), 8000, 'the queue with the review panel');
   p = await cdp.evaluate(panel);
   check(p.heading === 'REQ-2026-1842', 'a live request\'s link still opens the review panel on the queue', p.heading);
+  // The case the link exists for: an email opened while signed out.
+  await go('/login');
+  await cdp.evaluate(() => localStorage.clear());
+  await go('/requests/REQ-2026-1644');
+  await cdp.waitFor(() => location.pathname === '/login', 8000, 'the redirect to sign-in');
+  await cdp.evaluate(() => document.querySelector('input[value="ethan.cruz"]').click());
+  await cdp.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.includes('Sign in with Google')).click());
+  await cdp.waitFor(
+    () => location.pathname === '/history' && document.querySelector('dialog[open] h2')?.textContent.trim() === 'REQ-2026-1644',
+    8000,
+    'History with the panel after sign-in',
+  );
+  check(true, 'a resolved request\'s link survives sign-in and opens on History (FR-016)');
   await go('/requests/REQ-0000-0000');
   await cdp.waitFor(() => location.pathname === '/queue' && /That request is not available/.test(document.body.innerText), 8000, 'the not-found notice');
   check(true, 'a missing id still gets the queue\'s notice');
