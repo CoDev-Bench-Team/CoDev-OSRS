@@ -1,16 +1,8 @@
-import {
-  StatusTimeline,
-  TABLE_ROW_PADDING_CLASS,
-  TableCard,
-  TableHead,
-  tableColumnStyle,
-  type ColumnWidth,
-} from '../../../shared/ui';
+import { StatusTimeline } from '../../../shared/ui';
+import { SECTION_HEADING } from './detail-typography';
 import type { EmployeeRequest } from './request-detail-types';
-import { keyedLines } from '../format';
+import { RequestLinesTable } from './RequestLinesTable';
 import { requestTimeline } from '../request-timeline';
-
-const QTY_WIDTH: ColumnWidth = '50px';
 
 /** The read-back of one request as the system holds it: Items Requested, the
  *  Note to Approver, a stopped request's reason, and the Status timeline.
@@ -37,24 +29,10 @@ export function RequestReadBack({ request }: { request: EmployeeRequest }) {
   return (
     <div className="flex flex-col gap-18">
       <section className="flex flex-col gap-18" aria-labelledby="items-requested">
-        <h3 id="items-requested" className="font-sans text-14 font-bold leading-body uppercase text-ink-muted">
+        <h3 id="items-requested" className={SECTION_HEADING}>
           Items Requested
         </h3>
-        <TableCard>
-          <TableHead cols={[['Item'], ['Qty', QTY_WIDTH]]} />
-          <ul>
-            {keyedLines(request.lines).map(({ key, line }) => (
-              <li key={key} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
-                <span style={tableColumnStyle()} className="type-ui-bold-wrap text-ink-primary">
-                  {line.description}
-                </span>
-                <span style={tableColumnStyle(QTY_WIDTH)} className="type-ui-bold tabular-nums text-ink-primary">
-                  {line.qty}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </TableCard>
+        <RequestLinesTable lines={request.lines} />
       </section>
 
       {request.noteToApprover ? (
@@ -72,7 +50,7 @@ export function RequestReadBack({ request }: { request: EmployeeRequest }) {
       ) : null}
 
       <section className="flex flex-col gap-18" aria-labelledby="request-status">
-        <h3 id="request-status" className="font-sans text-14 font-bold leading-body uppercase text-ink-muted">
+        <h3 id="request-status" className={SECTION_HEADING}>
           Status
         </h3>
         <StatusTimeline nodes={requestTimeline(request)} />

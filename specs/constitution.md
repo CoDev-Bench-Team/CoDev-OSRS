@@ -2,7 +2,7 @@
 
 Canonical copy of the project constitution for version tracking. The binding text also lives in `AGENTS.md` under `## Constitution`. If the two drift, `AGENTS.md` wins until they are reconciled in the same change.
 
-**Version**: 6.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-29
+**Version**: 7.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-29
 
 ### I. Spec-Driven Development
 
@@ -12,7 +12,7 @@ A change in the design file is a spec-amendment request of the same kind. It MUS
 
 ### II. Two Distinct Human Roles
 
-The system MUST enforce two human roles — **Employee** (requestor) and **Admin** (reviews, approves or rejects, fulfils, and owns Assets and Inventory) — plus a System actor for stock movements, notifications, and the `Received` transition that follows an Employee's Accountability Form. Each protected action MUST authorize against the role that owns that step in the process flow. A user MUST hold exactly one role.
+The system MUST enforce two human roles — **Employee** (requestor; marks their own handover `Received` and signs for it) and **Admin** (reviews, approves or rejects, fulfils, marks a handover `Received`, completes, and owns Assets and Inventory) — plus a System actor for stock movements and notifications. Each protected action MUST authorize against the role that owns that step in the process flow. A user MUST hold exactly one role.
 
 An Admin both decides a request and hands over the stock for it. This removes the separation of duty the 2026-09-11 process diagram drew, and it is deliberate: the 2026-09-22 design file draws a single merged Admin in the navigation, the queue title, the queue subtitle and one review panel. See [ADR-0005](../docs/adr/0005-two-role-model.md); the cost is named there.
 
@@ -26,7 +26,7 @@ An Asset MUST exist and MUST hold stock before it can be requested. Stock is a r
 
 `Total = Available + Reserved` MUST hold at all times, and no quantity MUST EVER be negative.
 
-Submitting a request MUST move the requested number of units from `Available` to `Reserved` in the same transaction as the status change to `Pending Approval`. Rejecting or cancelling MUST move them back in the same transaction as the status change. Approving, moving to `For Delivery` or `Ready for Pickup`, and completing MUST NOT change any unit's status. Moving to `Received` MUST move the reserved units to `Assigned`, with the requester as assignee, in the same transaction as the status change, because that is when the items have left the store. Which specific units are reserved is the API's decision. Only these request transitions move a unit into or out of `Reserved`. Outside them, an Admin MAY move a unit between `Available` and `Inactive`, and MAY record an existing assignment (`Assigned`, with a user) for equipment handed out outside a request; that unit leaves the store without a request.
+Submitting a request MUST move the requested number of units from `Available` to `Reserved` in the same transaction as the status change to `Pending Approval`. Rejecting or cancelling MUST move them back in the same transaction as the status change. Approving, moving to `For Delivery` or `Ready for Pickup`, signing the Accountability Form, and completing MUST NOT change any unit's status. Moving to `Received` MUST move the reserved units to `Assigned`, with the requester as assignee, in the same transaction as the status change, because that is when the items have left the store. Which specific units are reserved is the API's decision. Only these request transitions move a unit into or out of `Reserved`. Outside them, an Admin MAY move a unit between `Available` and `Inactive`, and MAY record an existing assignment (`Assigned`, with a user) for equipment handed out outside a request; that unit leaves the store without a request.
 
 A request quantity MUST NOT exceed Available at the requesting office at submit time. A unit that is `Assigned` or `Reserved` MUST NOT be removed. The low-stock threshold is held per asset.
 
@@ -38,7 +38,7 @@ Rejection MUST require a reason, and is the Admin's decision on a request awaiti
 
 Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`. An Admin MAY cancel an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled. **A cancellation MUST require a reason, from whoever cancels.** A `Received` or `Completed` request MUST NOT be cancelled.
 
-`Received` MUST be reached only from `For Delivery` or `Ready for Pickup`, in one of two ways: the owning Employee submits the **Accountability Form**, and the System then sets it; or an Admin marks it with Update Status. No other actor and no other state may set it. `Completed` MUST be set by an Admin, and only from `Received`.
+An Admin, or the owning Employee on their own request, sets `Received`, from `For Delivery` or `Ready for Pickup`, once the items are handed over. The owning Employee then confirms receipt by signing the **Accountability Form** on their own `Received` request. Signing records the acknowledgement and does not change the status; no other actor may sign, and a request is signed once. `Completed` MUST be set by an Admin, only from `Received`, and only once the Accountability Form has been signed.
 
 `Rejected`, `Cancelled` and `Completed` are terminal. After rejection or cancellation the employee submits a **new** request; neither record is reopened.
 
@@ -50,7 +50,7 @@ Every defined transition MUST send an email. The system MUST provide the templat
 
 ### VI. Independently Testable Increments
 
-Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — browse catalog → request → approve/reject → set For Delivery or Ready for Pickup → Employee signs the Accountability Form (`Received`) → complete — MUST have an end-to-end test.
+Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — browse catalog → request → approve/reject → set For Delivery or Ready for Pickup → Admin or Employee sets `Received` → Employee signs the Accountability Form → complete — MUST have an end-to-end test.
 
 ### VII. Typed Contracts
 
@@ -84,3 +84,4 @@ Credentials and other secrets MUST NOT be committed. Seed users for the demo are
 | **4.0.0** | **2026-09-26** | **III** rewritten: stock is a register of units, and per (asset, office) Available / Reserved / Total are counts of units by status. Complete moves reserved units to `Assigned` to the requester; the numbers are unchanged from 3.0.1. The low-stock threshold is per asset; assigned or reserved units cannot be removed; only request transitions move units into or out of `Reserved`, and an Admin may set `Available` ↔ `Inactive` or record an existing assignment. **VIII** redefined: the per-unit register is in scope, and BitLocker identifier and recovery key/PIN are Admin-only secrets. Decided by the project owner (BEN-116). Source: [drift-2026-09-26 §2](../docs/design-system/drift-2026-09-26.md); carried by [ADR-0008](../docs/adr/0008-per-unit-inventory-register.md) |
 | **5.0.0** | **2026-09-26** | **IV** redefined: a `Received` status between the handover states and `Completed`, set by the System when the owning Employee submits the Accountability Form; `Completed` is set by the Admin only from `Received`; `Received` cannot be cancelled. **III**: the reserved units move to `Assigned` on `Received`, not on `Completed`. **II** gives the System the `Received` transition; **V** sends `Status changed` for it. MAJOR: a principle is redefined and ADR-0007's no-confirm-receipt rule is withdrawn. Decided by the project owner (BEN-43). Source: [drift-2026-09-26 §3](../docs/design-system/drift-2026-09-26.md); carried by [ADR-0009](../docs/adr/0009-received-and-accountability-form.md) |
 | **6.0.0** | **2026-09-29** | **IV** redefined: `Received` is reached from `For Delivery` or `Ready for Pickup` either by the owning Employee's Accountability Form (the System sets it) or by an Admin with Update Status. MAJOR: ADR-0009's "no one can set `Received` by hand" is withdrawn. III, V and the rest of IV are unchanged. Decided by the project owner (BEN-47). Not a design-file change: no frame draws `Received` in the select, and the addition is logged in `docs/design-system/additions.md` §3h. Carried by [ADR-0010](../docs/adr/0010-admin-marks-received.md) |
+| **7.0.0** | **2026-09-29** | **IV** redefined: an **Admin**, or the **owning Employee** on their own request, sets `Received` (from `For Delivery` / `Ready for Pickup`), not the System on the Employee's form. The owning Employee signs the Accountability Form on a `Received` request; signing records the acknowledgement and changes no status. `Completed` requires the form to be signed. **II**: the System no longer takes the `Received` transition; the Admin or the owning Employee does. **III**: signing moves no unit; units still move to `Assigned` on `Received`. **VI**: demo path reordered. MAJOR: IV redefined, reversing ADR-0009 decision 2 and replacing 6.0.0's Employee path (the form no longer sets `Received`; the Admin's Update Status path stands). Decided by the project owner (BEN-136). Source: the order `04.1` draws, [drift-2026-09-26 §3](../docs/design-system/drift-2026-09-26.md), adopted by [spec 012](012-accountability-form/spec.md), Session 2026-09-29; carried by [ADR-0011](../docs/adr/0011-admin-sets-received-employee-signs.md), which amends ADR-0009 and [ADR-0010](../docs/adr/0010-admin-marks-received.md) |

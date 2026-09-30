@@ -3,7 +3,7 @@
 **Date**: 2026-09-26  
 **Spec**: `specs/008-request-review-panel/spec.md`  
 **Status**: Draft  
-**Amended**: 2026-09-29: constitution 6.0.0 / ADR-0010 (the Admin may mark `Received`), the Status select's options, and a modal confirmation for Update Status (D2, D7, D8, D12, D13).
+**Amended**: 2026-09-29: constitution 6.0.0 / ADR-0010 (the Admin may mark `Received`), the Status select's options, and a modal confirmation for Update Status (D2, D7, D8, D12, D13). 2026-09-29: constitution 7.0.0 / [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md) supersedes the Employee's form setting `Received` (D13, IV row).
 
 ## Summary
 
@@ -34,7 +34,7 @@
 | D10 | **`/requests/:id` is a deep link** *(amended 2026-09-26, after the `dev` merge; it was first retired)*. `RequestDeepLink` forwards to `/queue` (Admin) or `/requests` (Employee) with the id in navigation state; `useDeepLinkedRequest` opens the panel once the page's list has loaded, or shows one fixed notice for an id it may not show, then consumes the state. The `requestDetail` destination is kept for both roles so the link survives sign-in; `RequestDetailPlaceholder` and `seeded-request-ids.ts` stay deleted. | Email *View request* buttons link to the address (T005). Deciding existence against the page's own list keeps a missing and a foreign id identical (spec 003 FR-012a). |
 | D11 | The timeline mapping is widened to a structural `TimelineFacts` type (the fields it reads), so `requestTimeline` serves both `EmployeeRequest` and `ReviewRequest`. It moves to `src/features/requests/request-timeline.ts`. | FR-018: reuse the 007 timeline, with one mapping for both panels. |
 | D12 | Undrawn additions (pickup-location select, `Other…` field, pickup-location read-back row, Complete confirm, the `Update Status` action on a handover state, `Received` in the Status select, the Update Status confirmation) are logged in `docs/design-system/additions.md` §3h. | Constitution I: undrawn UI is recorded, not silent. |
-| D13 | *(2026-09-29.)* **The Admin may set `Received`** through `updateStatus(id, 'Received')`, accepted only from `For Delivery` / `Ready for Pickup`. It keeps `handover` and `pickupLocation`, sets `receivedAt`, and does no stock math. The Employee's Accountability Form stays the other way in. | Constitution 6.0.0 IV, ADR-0010, spec 008 FR-008a. |
+| D13 | *(2026-09-29.)* **The Admin may set `Received`** through `updateStatus(id, 'Received')`, accepted only from `For Delivery` / `Ready for Pickup`. It keeps `handover` and `pickupLocation`, sets `receivedAt`, and does no stock math. ~~The Employee's Accountability Form stays the other way in.~~ **Amended 2026-09-29 (constitution 7.0.0, [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md))**: the Employee's way in is **Mark as Received** ([spec 012](../012-accountability-form/spec.md)); the form records the acknowledgement and changes no status. | Constitution 6.0.0 IV, ADR-0010, spec 008 FR-008a. |
 
 ### Actions by status (D1)
 
@@ -221,7 +221,7 @@ scripts/check-review-panel.mjs        # new; wired into scripts/verify.mjs
 | I. Spec-Driven | PASS | Spec 008 is recorded. Specs 003 and 004 are amended in the same change. Undrawn UI is logged (D12). The Admin's `Received` landed as constitution 6.0.0 and ADR-0010 before the code (D13). |
 | II. Two Roles | PASS | `/queue` is Admin-only. There is no Employee path to any action. |
 | III. Inventory Integrity | PASS | The SPA does no stock math, and CURRENT INVENTORY is read from the source. |
-| IV. State Machine | PASS | 6.0.0 transitions: `Received` only from a handover state, by the Admin (D13) or the Employee's form. Illegal actions and targets are unrenderable (D1/D2, D7). |
+| IV. State Machine | PASS | 6.0.0 transitions: `Received` only from a handover state, by the Admin (D13) or ~~the Employee's form~~ the owning Employee's **Mark as Received** (amended 2026-09-29, constitution 7.0.0, [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md); spec 012). Illegal actions and targets are unrenderable (D1/D2, D7). |
 | V. Notifications | PASS | Emails are the API's. The SPA sends none. |
 | VI. Testable Increments | PASS | G2, G3a and G3b each demo on the seed. |
 | VII. Typed Contracts | PASS | Internal read model only. Offices come from the contract enum. |

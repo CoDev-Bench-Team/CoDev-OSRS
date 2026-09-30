@@ -451,6 +451,34 @@ Frames `02.2`, `02.2.1 - Approve`, `02.2.1 - Update Status` (×2), `02.2.2` and
 | **Name-over-context spacing** | 4px (`gap-4`) between a person's name and the line under it: the queue's REQUESTER cell (name over department) and the panel's REQUESTED BY card (name over `email • office`). | Both lines are drawn at 100% line height with 1px or no gap, so they touch. The project owner asked for more space, 2026-09-26. **Flagged to the designer.** |
 | **Unavailable stock figure** | CURRENT INVENTORY shows `—` when the source gives no figure, never `0 in stock`. | `0` would be a claim the SPA cannot make. |
 
+## 3i. The Accountability Form (BEN-136, spec 012, 2026-09-26)
+
+`04.1 - My Requests - View Request` draws the form view (a 564×1079 sheet), the
+read view's **Sign accountability form** link, and the `.bases / checkbox`
+component. `SidePanel`, the lines table and `RefusalAlert` are shared with the
+rest of the panel. What follows is where the build departs from the frame, or
+fills what it leaves open.
+
+| Addition | What was decided | Basis |
+|----------|------------------|-------|
+| **The conditions** | The project owner's **eleven** conditions replace the ten the frame draws, between the frame's lead-in and closing line. | Spec 012 FR-004, Clarifications 2026-09-26. **Flagged to the designer** to redraw the text. |
+| **Acknowledgement type and border** | `Body 3` (Inter Regular 12.5 / 1.45), not the Bold 11.5 the node caches. The border is the file's `Border-Strong` (`#d8d7d2`), `--color-osrs-border-strong`, not the black the node caches. Neither the text nor the border has an override. | The stale-cache rule ([drift-2026-09-22 §9](drift-2026-09-22.md)): the bound style is the authority. Note that `--color-line-strong` is the vendored `--border-strong`, which is **black**; only the name is similar. |
+| **The box scrolls** | 412px tall as drawn, with the native scrollbar. It is focusable (`role="region"`, *Acknowledgement*) so a keyboard can scroll it. | The drawn text overflows its box, and the frame draws a 10px custom track. A native scrollbar is a toolchain call (§1). |
+| **Read-to-the-end gate** | The checkbox is unavailable until the box has been scrolled to its end, or at once when the text fits. Once available it stays available. While unavailable it is `aria-disabled` (still focusable), the thumb is `Border-Strong` and the label `Ink-400`. A click or Space shows *"Scroll to the end of the acknowledgement and read it before agreeing."*, announced again on every attempt. Until then the box carries a screen-reader-only description, *"Scroll the acknowledgement to the end to enable this."*, so a screen-reader user hears why it is locked before trying it. | The project owner's requirement (spec 012 Story 2a, FR-005a). Not drawn. |
+| **Checkbox tick** | A 2px white round-capped check on the black thumb. | The ticked variant's icon slot holds the library's `favorite` placeholder, black on black. Nothing to port. |
+| **Checkbox paints** | `--color-black` for the unticked border and the ticked thumb. | The drawn paints are unbound raw `#000000`. |
+| **Invalid checkbox and name** | The checkbox takes `ring-brand`; the name box swaps its `ring-warm` for `ring-brand`. Each shows one line under it, announced through `aria-describedby`: *"Tick the box to confirm you agree to the conditions."*, *"Type your full name to sign."* Whitespace counts as blank. | Not drawn. Same treatment as the cancel reason (§3f). |
+| **Refusals** | A refusal that names no field sits in the red note at the top of the form. A refusal because the request changed closes the form and shows the note over the read-back, with the request's current status. If the system does not answer: *"Your signature was not sent. Try again."*, and the form keeps what was typed. | The shared `RefusalAlert` (§3f, §3g). Not drawn. |
+| **Signing** | Both buttons disabled, and ✕, Esc and the scrim do nothing, until the system answers. | One signature per form (spec 012 FR-008). Not drawn. |
+| **QTY, not PR** | EQUIPMENT ASSIGNED is the read-back's ITEM / QTY table. | The frame lists per-unit tags. The form signs for request lines (ADR-0009 decision 7). |
+| **No *Other Notes*** | Not rendered. | The frame draws a read-only card, a note from the Admin side, and nothing supplies it (spec 012, Out of Scope). **Flagged to the designer.** |
+| **No *Complete Request* button** | The Employee panel has no such control; the link is the only way in. | Only an Admin completes (constitution IV, spec 012 FR-001a). **Flagged to the designer.** |
+| **Form header** | *Accountability Form* in the panel's heading style, with no status pill. | As drawn. The heading takes the existing panel heading style (`type-section-title`) rather than the frame's `H2`, as the read view already does. |
+| **REQ-2026-1820** | A seeded `Received` row, the eighth, not yet signed: the one request that offers **Sign accountability form** (constitution 7.0.0). | `04 - My Requests` draws no Received row. Its lines and note are placeholder copy. |
+| **Mark as Received** | On the Employee's own `For Delivery` / `Ready for Pickup` request, a full-width ghost button in the panel footer, where **Cancel Request** sits on a pending one. Pressing it swaps the footer for *"Confirm you have received every item listed above. This can't be undone."* over **Cancel** / **Confirm Received**. A refusal is the shared red note. | The Employee may set `Received` (constitution 7.0.0, ADR-0011), and the file draws no control for it. It assigns the items and cannot be undone, so it is confirmed first, as the cancel flow is. |
+| **Signed line** | A signed `Received` request shows, where the link was, the pen icon and *Accountability form signed · \<date, time\>* in `Label 1`, `Ink-400`. Not a control. | Signing no longer changes the status (ADR-0011), so nothing else would tell the Employee it landed. Not drawn. |
+| **Sign link** | The drawn link as a `<button>`: the file's `boxicons:pen-alt` path at 16px, then `Label 1` (Inter Bold 11.5 / 1.3) in `Codev Red`, 4px apart. It sits after the timeline, on an unsigned `Received` request only — where `04.1` draws it (ADR-0011). | It changes the panel's view and goes nowhere, so it is a button. |
+
 ## 4. Defects found in the source — flagged, not fixed
 
 Per FR-011a, a source value that fails a threshold is reported rather than

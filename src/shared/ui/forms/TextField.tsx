@@ -14,7 +14,11 @@ import { useId, type KeyboardEvent, type TextareaHTMLAttributes } from 'react';
  *  Shift+Enter breaks the line. `required` draws the asterisk; `invalid` rings
  *  the box in red and adds the message that says why, announced to a screen
  *  reader through `aria-describedby`. Validation itself is the caller's — this
- *  only shows the result. */
+ *  only shows the result.
+ *
+ *  For a one-line field, use `InputField` (`04.1`'s *Type full name to sign*).
+ *  The two share `required` / `invalid` / `message` and the `aria-describedby`
+ *  wiring, so a form treats them alike (spec 012 D6). */
 export function TextField({
   label,
   required,

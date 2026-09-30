@@ -171,23 +171,33 @@ published contract has neither the status nor a way to reach it.
 **Needed from the API:**
 
 - `Received` in the request status vocabulary, with the time it was set;
-- an Employee-only submission of the **Accountability Form** on the owner's
+- ~~an Employee-only submission of the **Accountability Form** on the owner's
   own `For Delivery` / `Ready for Pickup` request, carrying the agreement,
   the typed full name and optional notes, which sets `Received` and moves
   the reserved units to `Assigned` (`Total` and `Reserved` fall) in one
-  transaction;
-- an Admin transition to `Received` from `For Delivery` / `Ready for Pickup`,
-  with the same unit move (constitution 6.0.0,
-  [ADR-0010](../../../docs/adr/0010-admin-marks-received.md), added
-  2026-09-29);
-- **Complete** narrowed to `Received` only, with no unit change;
+  transaction;~~ (the optional notes were withdrawn 2026-09-26, spec 012) **Amended 2026-09-29 (constitution 7.0.0, [ADR-0011](../../../docs/adr/0011-admin-sets-received-employee-signs.md)):**
+- an **Admin or owning-Employee** transition from `For Delivery` /
+  `Ready for Pickup` to `Received`, which moves the reserved units to `Assigned` (`Total` and
+  `Reserved` fall) in one transaction;
+- an Employee-only submission of the **Accountability Form** on the owner's
+  own `Received` request, carrying the agreement and the typed full name. It
+  records the acknowledgement and changes no status or unit, and is refused on
+  a request already signed;
+- **whether a request has been signed, and when**, on the request resource,
+  so the SPA can hide the form once signed and the Admin's Complete can wait
+  for it;
+- **Complete** narrowed to a signed `Received` request, with no unit change;
 - cancel refused on `Received`;
 - the `Status changed` email on `Received`.
 
-Until then the SPA shows `Received` wherever it renders a status or timeline,
-and does not build the form (spec 001 FR-012b, tasks T018b). The Admin's
-**Received** option in Update Status runs against the seeded source only
-(spec 008 FR-008a).
+Until then the SPA shows `Received` wherever it renders a status or timeline.
+~~and does not build the form (spec 001 FR-012b, tasks T018b).~~ **Amended
+2026-09-26 (BEN-136, [spec 012](../../012-accountability-form/spec.md)):** the
+SPA builds the form against a seeded source behind the Employee request panel's
+seam, and swaps in a contract-backed source when the API carries the above. The
+gap itself stays open. The Employee's **Mark as Received** (spec 012 Story 0)
+and the Admin's **Received** option in Update Status (spec 008 FR-008a) likewise
+run against the seeded source only.
 
 ### 6. The Admin's Other Notes on a decision (raised 2026-09-29)
 

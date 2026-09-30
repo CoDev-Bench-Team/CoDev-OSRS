@@ -1,20 +1,21 @@
 /** The request and stock status vocabulary.
  *
- *  `RequestStatus` is exactly the states constitution 5.0.0 IV admits and
+ *  `RequestStatus` is exactly the states constitution 7.0.0 IV admits and
  *  nothing else: an illegal state is unrepresentable.
  *
  *  After `Approved` the Admin sets either `For Delivery` or `Ready for Pickup`.
  *  They are peers, not a sequence — the Requests Queue filters by each, and a
- *  filter counts a stored value, not a label — and the Admin then sets
- *  `Completed`. The pickup state is named as the design's `Request Status`
+ *  filter counts a stored value, not a label — and either one leads to
+ *  `Received`. The pickup state is named as the design's `Request Status`
  *  component names it, not as the queue's `For Pickup` chip does; the project
  *  owner chose the component (drift-2026-09-24 §6, constitution 3.0.1).
  *  `For Release` and `Released` are retired.
  *
- *  `Received` follows either handover state: the System sets it when the
- *  owning Employee submits the Accountability Form, and it is where the
- *  reserved units are assigned. The Admin then sets `Completed`, from
- *  `Received` only (constitution 5.0.0, ADR-0009).
+ *  `Received` follows either handover state: an Admin, or the owning
+ *  Employee, sets it once the items are handed over, and it is where the
+ *  reserved units are assigned. The Employee then signs the Accountability
+ *  Form, which changes no status, and the Admin sets `Completed` from a
+ *  signed `Received` request only (constitution 7.0.0 IV, ADR-0011).
  *
  *  `Rejected` and `Cancelled` are both terminal and both need a reason, but
  *  they are different acts: a rejection is the Admin's decision on a pending

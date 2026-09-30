@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { BUTTON_SHAPE, BUTTON_VARIANT, type ButtonVariant } from './button-styles';
 
 /** Promoted from the UI kit's local helper (spec 002 FR-006). The class
@@ -8,10 +8,11 @@ export function Button({
   variant = 'primary',
   children,
   className,
+  ref,
   ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; children: ReactNode }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; children: ReactNode; ref?: Ref<HTMLButtonElement> }) {
   return (
-    <button type="button" className={`${BUTTON_SHAPE} ${BUTTON_VARIANT[variant]} ${className ?? ''}`} {...rest}>
+    <button ref={ref} type="button" className={`${BUTTON_SHAPE} ${BUTTON_VARIANT[variant]} ${className ?? ''}`} {...rest}>
       {children}
     </button>
   );

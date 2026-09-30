@@ -13,7 +13,8 @@ register of units ([drift-2026-09-26](design-system/drift-2026-09-26.md),
 [ADR-0008](adr/0008-per-unit-inventory-register.md)). The numbers below are
 counts of unit statuses and are unchanged. The same re-export added
 `Received` ([drift-2026-09-26 §3](design-system/drift-2026-09-26.md),
-[ADR-0009](adr/0009-received-and-accountability-form.md)).
+[ADR-0009](adr/0009-received-and-accountability-form.md)); since 2026-09-29 an Admin or the owning
+Employee sets it, and the Employee signs on it ([ADR-0011](adr/0011-admin-sets-received-employee-signs.md)).
 
 **Purpose:** Clear path for requesting, approving and handing over office
 supplies, including stock movements and notifications.
@@ -22,7 +23,7 @@ supplies, including stock movements and notifications.
 
 | Actor | Job |
 |-------|-----|
-| **Employee** | Browses the catalog, builds a request list, submits, tracks their own requests, cancels their own request while it is `Pending Approval` |
+| **Employee** | Browses the catalog, builds a request list, submits, tracks their own requests, cancels their own request while it is `Pending Approval`, marks their own handed-over request `Received`, and signs the Accountability Form on it |
 | **Admin** | Reviews the queue, approves or rejects, sets `For Delivery` or `Ready for Pickup`, may mark `Received`, completes, cancels what cannot be fulfilled, owns Assets and Inventory |
 | **System** | Moves stock, sends mail, records the notification log |
 
@@ -76,27 +77,33 @@ your decision."*
 3. Notification: **Status changed** (to Employee), carrying *Previous status* →
    *New status*, and the **Pickup** location when there is one.
 4. System: stock is still reserved; no quantity changes.
-5. **Employee signs the Accountability Form** — the owning Employee, while the
-   request is `For Delivery` or `Ready for Pickup`: ticks *I have read and agree
-   to the above*, types their full name, optionally adds *Other Notes*, and
-   presses **I acknowledge and sign**.
-   *Or* the **Admin marks it Received**: **Update Status** on a `For Delivery`
-   or `Ready for Pickup` request also offers **Received**
-   ([ADR-0010](adr/0010-admin-marks-received.md)). Whichever comes first wins.
-6. System: status **Received**. The reserved units become `Assigned` to the
-   Employee, so `Total` and `Reserved` both fall by the requested quantity —
-   this is when the items leave the store.
+5. **Mark received** (Admin or owning Employee) — once the items are handed
+   over, the Admin sets a `For Delivery` or `Ready for Pickup` request to
+   **Received** with Update Status, or the owning Employee does with **Mark as
+   Received** on their own request, after confirming *"Confirm you have
+   received every item listed above. This can't be undone."*
+6. System: the reserved units become `Assigned` to the Employee, so `Total` and
+   `Reserved` both fall by the requested quantity — this is when the items leave
+   the store.
 7. Notification: **Status changed** (to Employee) — the design's
-   `Status changed email - Received`.
-8. **Complete** (Admin) → status **Completed**, from `Received` only. No
-   quantity changes.
-9. Notification: **Status changed** (to Employee).
+   `Status changed email - Received`, *"Equipment Delivered/Claimed"*, which
+   asks the Employee to review and sign the Accountability Form in the portal.
+8. **Employee signs the Accountability Form** — the owning Employee, on their
+   own `Received` request: scrolls the acknowledgement to its end, ticks *I have
+   read and agree to the above*, types their full name, and presses **I
+   acknowledge and sign**. This records the acknowledgement; the status stays
+   `Received` and no quantity changes. It is not a transition, so no email is
+   sent. *(The "Other Notes" the form was once said to take is withdrawn: `04.1`
+   draws it as a read-only card from the Admin side, and it waits on a design
+   change; [spec 012](../specs/012-accountability-form/spec.md).)*
+9. **Complete** (Admin) → status **Completed**, from `Received` only, and only
+   once the Accountability Form is signed. No quantity changes.
+10. Notification: **Status changed** (to Employee).
 
-The Employee confirms receipt, or the Admin records it; the Admin closes the
-request. See [ADR-0009](adr/0009-received-and-accountability-form.md), as
-amended by [ADR-0010](adr/0010-admin-marks-received.md), which amends
-[ADR-0007](adr/0007-fulfilment-status-vocabulary.md) and
-[ADR-0008](adr/0008-per-unit-inventory-register.md).
+The Admin or the Employee records the handover, the Employee confirms receipt, and the Admin
+closes the request. See [ADR-0011](adr/0011-admin-sets-received-employee-signs.md),
+which amends [ADR-0009](adr/0009-received-and-accountability-form.md) and
+[ADR-0010](adr/0010-admin-marks-received.md).
 
 ### 3b. Cancel (Employee or Admin)
 
@@ -136,8 +143,8 @@ cancellation** and a **Close** button.
 | `Approved` | Admin | approve | — | — | — |
 | `For Delivery` | Admin | update status | — | — | — |
 | `Ready for Pickup` | Admin | update status, location recorded | — | — | — |
-| `Received` | System or Admin | from `For Delivery` or `Ready for Pickup`: the owning Employee submits the Accountability Form (System), or an Admin marks it with Update Status | −qty | — | −qty |
-| `Completed` | Admin | complete, from `Received` only | — | — | — |
+| `Received` | Admin or owning Employee | mark received, from `For Delivery` or `Ready for Pickup`; the Employee then signs the Accountability Form on it (no status change) | −qty | — | −qty |
+| `Completed` | Admin | complete, from `Received` only, once the Accountability Form is signed | — | — | — |
 | `Cancelled` | Employee or Admin | cancel, reason required | — | +qty | −qty |
 
 `For Delivery` and `Ready for Pickup` are alternatives, not stages.
@@ -145,7 +152,8 @@ cancellation** and a **Close** button.
 
 `For Release` and `Released` are **retired**. The Employee's confirm-receipt
 step, retired by ADR-0007, returns as the Accountability Form
-([ADR-0009](adr/0009-received-and-accountability-form.md)).
+([ADR-0009](adr/0009-received-and-accountability-form.md)), signed on a `Received` request
+([ADR-0011](adr/0011-admin-sets-received-employee-signs.md)).
 
 ## Stock Rules
 
@@ -163,8 +171,9 @@ step, retired by ADR-0007, returns as the Accountability Form
    chooses which units.
 5. **Reject and cancel release**: those units move Reserved → Available, in the
    same transaction as the status change.
-6. **Approve, For Delivery, Ready for Pickup and Complete change nothing.** The
-   units are already reserved, or already assigned.
+6. **Approve, For Delivery, Ready for Pickup, signing the Accountability Form
+   and Complete change nothing.** The units are already reserved, or already
+   assigned.
 7. **Received assigns**: the reserved units become `Assigned` to the Employee,
    so Total and Reserved both fall, in the same transaction as the status change
    to `Received`. The Assets screen counts them as *Assigned units* (formerly
@@ -282,12 +291,11 @@ flowchart TD
   handover -->|Ready for Pickup| fp[Ready for Pickup / location recorded]
   fd --> mailS1[Email: Status changed]
   fp --> mailS1
-  mailS1 --> sign[Employee signs the Accountability Form]
-  sign --> received[System: Received]
-  mailS1 -.->|Admin marks Received| received
+  mailS1 --> received[Admin or Employee marks Received]
   received --> consume[Total and Reserved fall by qty]
   consume --> mailRc[Email: Status changed]
-  mailRc --> complete[Admin completes / Completed]
+  mailRc --> sign[Employee signs the Accountability Form]
+  sign --> complete[Admin completes / Completed]
   complete --> mailC[Email: Status changed]
   mailC --> endNode([End])
 

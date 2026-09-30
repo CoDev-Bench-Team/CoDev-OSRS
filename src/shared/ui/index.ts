@@ -14,6 +14,8 @@ export { Search } from './forms/Search';
 export { Select } from './forms/Select';
 export { FilterChip } from './forms/FilterChip';
 export { TextField } from './forms/TextField';
+export { InputField } from './forms/InputField';
+export { Checkbox } from './forms/Checkbox';
 
 // Data display
 export { StatusPill } from './data-display/StatusPill';
@@ -62,6 +64,7 @@ export { CaretRight } from './icons/CaretRight';
 export { CheckCircleFill } from './icons/CheckCircleFill';
 export { GoogleIcon, type GoogleIconSize } from './icons/GoogleIcon';
 export { MdiChevronDown } from './icons/MdiChevronDown';
+export { BoxiconsPenAlt } from './icons/BoxiconsPenAlt';
 
 // Status vocabulary
 export {

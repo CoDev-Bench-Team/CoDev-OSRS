@@ -47,15 +47,17 @@ An Employee stops their own request before anyone has decided on it, and says wh
 4. **Given** a non-empty reason, **When** the Employee confirms, **Then** the panel's pill and timeline show `Cancelled`, the panel reads the reason back under *Reason for cancellation*, and the row's pill on My Requests shows `Cancelled` too.
 5. **Given** the request changed while the panel was open (for example, it was approved), **When** the Employee confirms, **Then** the cancel is refused, the panel says so, and it shows the request's current status.
 
-### Story 3 — No confirm receipt (Priority: P1)
+### Story 3 — No completion control (Priority: P1)
 
-An Employee is never offered a control to mark a request received or complete.
+*(Amended 2026-09-26 and 2026-09-29, spec 012.)* An Employee is never offered a control that sets a request `Completed`. Their receipt controls are spec 012's: **Mark as Received** on their own `For Delivery` / `Ready for Pickup` request, behind a confirmation step, and the **Accountability Form** on their own unsigned `Received` request (constitution 7.0.0).
 
-**Why this priority**: Spec 001 FR-012a forbids it, and adding it back requires amending that spec first.
+**Why this priority**: Spec 001 FR-012a and constitution IV give completion to the Admin only, and changing that requires amending both first.
 
 **Acceptance Criteria**:
 
-1. **Given** a request in any of the seven states, **When** its panel renders, **Then** no control mentions receipt, received, or completion.
+1. **Given** a request in any state, **When** its panel renders, **Then** no control marks it complete. The only receipt controls are spec 012's **Mark as Received** (own `For Delivery` / `Ready for Pickup`) and **Sign accountability form** (own unsigned `Received`).
+
+   ~~**Then** no control mentions receipt, received, or completion.~~
 
 ## Edge Cases
 
@@ -77,7 +79,7 @@ An Employee is never offered a control to mark a request received or complete.
 - **FR-006**: Confirm Cancellation MUST refuse a reason that is empty after trimming, without calling the source.
 - **FR-007**: A successful cancel MUST update the panel and the list row to `Cancelled`.
 - **FR-008**: A refused cancel MUST say that the request changed and show its current status.
-- **FR-009**: The panel MUST NOT offer a confirm-receipt or completion control in any state (spec 001 FR-012a).
+- **FR-009**: The panel MUST NOT offer a control that sets `Completed`, in any state. Its receipt controls are spec 012's **Mark as Received** and Accountability Form (spec 001 FR-012a, FR-012b as rewritten 2026-09-29).
 - **FR-010**: The Employee MUST NOT have a `/requests/:id` destination. The Admin keeps it until BEN-47 (spec 003, amended 2026-09-23).
 - **FR-011**: The page MUST show distinct loading, empty and failure states.
 - **FR-012**: The panel and list MUST compose shared UI from `src/shared/ui` only.
@@ -103,11 +105,17 @@ An Employee is never offered a control to mark a request received or complete.
 - **SC-002**: Cancel Request is offered on exactly the `Pending Approval` rows of the seeded data set.
 - **SC-003**: An empty or whitespace-only reason never changes a request's status.
 - **SC-004**: A valid cancel shows `Cancelled` in the panel pill, the timeline and the row pill, and reads the reason back.
-- **SC-005**: No state offers a confirm-receipt control.
+- **SC-005**: No state offers a control that sets `Completed`; **Mark as Received** appears only on the owner's `For Delivery` / `Ready for Pickup` request. *(Amended 2026-09-26 and 2026-09-29, spec 012.)*
 - **SC-006**: An Employee on `/requests/:id` gets the same refusal for an owned, unowned and missing id.
 - **SC-007**: `npm run verify` proves SC-001 to SC-006 through `scripts/check-request-detail.mjs` and `scripts/check-shell.mjs`.
 
 ## Clarifications
+
+### Session 2026-09-26 — Amendment (spec 012, BEN-136)
+
+Raised by [spec 012](../012-accountability-form/spec.md). Spec 012 puts the Accountability Form in this panel, and this spec's Story 3 said no control may mention receipt.
+
+- Q: Does Story 3 still forbid every receipt control? → A: **No.** It forbids any control that sets `Completed`. The Employee's receipt controls are spec 012's: **Mark as Received** on their own `For Delivery` / `Ready for Pickup` request, and **Sign accountability form** on their own unsigned `Received` request, which records the acknowledgement and changes no status (amended 2026-09-29, constitution 7.0.0 IV). `check-request-detail`'s no-receipt pattern is narrowed to completion and to receipt controls outside those states. Story 3, FR-009 and SC-005 are reworded in place.
 
 ### Session 2026-09-26 — Amendment (constitution 5.0.0)
 
