@@ -150,9 +150,9 @@ const r1842 = page.rows.find((r) => r.id === 'REQ-2026-1842');
 check(r1842?.items === 'Monitor, Dock', 'two items read "Monitor, Dock"', r1842?.items);
 
 console.log('\nAC4 / FR-004 — every status Maya holds, in its own tone');
-// The seed's statuses, not the whole vocabulary: `Received` (constitution
-// 5.0.0) has no row in the `04 - My Requests` frame, so Maya holds seven of
-// the eight.
+// The seed's statuses, not the whole vocabulary: `Received` has no row in the
+// `04 - My Requests` frame, but spec 012 seeds REQ-2026-1820 as `Received`
+// to open its Accountability Form from, so Maya holds all eight.
 for (const status of new Set(page.mine.map((r) => r.status))) {
   const row = page.rows.find((r) => r.pill === status);
   check(!!row, `a ${status} row exists`);
