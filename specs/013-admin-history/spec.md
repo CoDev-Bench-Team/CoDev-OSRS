@@ -3,7 +3,7 @@
 **Feature Branch**: `emmanuelr/ben-144-p2spa-history-resolved-requests-admin`  
 **Created**: 2026-09-29  
 **Status**: Draft  
-**Sources**: BEN-144 (L0 of BEN-149 / BEN-148), constitution 6.0.0, `specs/001-office-supplies-mvp/spec.md` (US6 scenario 2, FR-016a, FR-018; tasks T022), `specs/003-app-shell-routing/spec.md` (FR-006, D6), `specs/004-approver-pending-queue/spec.md` (FR-019–FR-022), `specs/008-request-review-panel/spec.md` (terminal read-only state), `specs/010-design-ratification/spec.md` (Q6, Q7), [drift-2026-09-29-export §2](../../docs/design-system/drift-2026-09-29-export.md), `docs/design-system/additions.md` (Rejected timeline ending, terminal read-only state, struck-through Cancelled pill), Figma *Mockups* frames `04 - History` (page) and `04 - History` (page + Cancelled panel)
+**Sources**: BEN-144 (L0 of BEN-149 / BEN-148), constitution 7.0.0, `specs/001-office-supplies-mvp/spec.md` (US6 scenario 2, FR-016a, FR-018; tasks T022), `specs/003-app-shell-routing/spec.md` (FR-006, D6), `specs/004-approver-pending-queue/spec.md` (FR-019–FR-022), `specs/008-request-review-panel/spec.md` (terminal read-only state), `specs/010-design-ratification/spec.md` (Q6, Q7), [drift-2026-09-29-export §2](../../docs/design-system/drift-2026-09-29-export.md), `docs/design-system/additions.md` (Rejected timeline ending, terminal read-only state, struck-through Cancelled pill), Figma *Mockups* frames `04 - History` (page) and `04 - History` (page + Cancelled panel)
 
 ## Overview
 
@@ -61,7 +61,7 @@ Only an Admin reaches History, and nothing on it can change a request.
 
 ### Edge Cases
 
-- **`Received` request.** Not terminal: it waits on the Admin's Complete and stays on the Requests Queue (spec 004). It never appears in History.
+- **`Received` request.** Not terminal: it waits on the Employee's Accountability Form signature and then the Admin's Complete (constitution 7.0.0 IV), and stays on the Requests Queue (spec 004). It never appears in History.
 - **Request resolved while History is open.** The list shows what the source returned when it loaded; a request resolved later appears on the next load. No live update.
 - **No reason stored** on a `Rejected` or `Cancelled` request (for example, a record the source returns without one). The reason block shows an explicit "No reason recorded" marker, not an empty callout.
 - **No note.** The Note to Approver block is not drawn.
@@ -141,7 +141,7 @@ Inferred, not asked:
 
 - Completeness: PASS. All three P1 stories have acceptance criteria.
 - Clarity: PASS
-- Consistency: PASS against constitution 6.0.0 and specs 003, 004 and 008. Spec 007 is amended to match FR-009a.
+- Consistency: PASS against constitution 7.0.0 (re-checked 2026-09-30 after rebasing on `dev`; the terminal statuses are unchanged from 6.0.0) and specs 003, 004 and 008. Spec 007 is amended to match FR-009a.
 - Measurability: PASS
 - Coverage: PASS, including the loading, empty, error and no-reason states.
 - Edge cases: PASS

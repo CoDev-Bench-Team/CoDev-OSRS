@@ -16,7 +16,7 @@
 **Storage**: None in the SPA. The seeded Admin store is in memory and resets on reload.  
 **Target Layer**: Frontend SPA only  
 **Performance Goals**: None beyond the queue's. One `load()` per page visit and retry; the projection is a single pass over tens of rows.  
-**Constraints**: Constitution 6.0.0; no invented REST contract (VII); no transition reachable from History (IV); Admin-only (II, spec 003 FR-006); reuse over redraw (spec FR-014); no drive-by refactors (CLAUDE.md).
+**Constraints**: Constitution 7.0.0; no invented REST contract (VII); no transition reachable from History (IV); Admin-only (II, spec 003 FR-006); reuse over redraw (spec FR-014); no drive-by refactors (CLAUDE.md).
 
 ## Decisions
 
