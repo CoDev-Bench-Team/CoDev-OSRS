@@ -10,13 +10,14 @@ import type { RequestStatus } from '../../../shared/ui';
  *  The table is exhaustive over `RequestStatus` (`satisfies Record<…>`), so a
  *  new status stops the build until it is given its row (plan D2). No status
  *  offers Complete yet (spec 008 FR-010, FR-012). */
-export type ReviewAction = 'approve' | 'reject' | 'updateStatus' | 'close';
+export type ReviewAction = 'approve' | 'reject' | 'updateStatus' | 'cancel' | 'close';
 
 const ACTIONS = {
   'Pending Approval': ['reject', 'approve'],
-  Approved: ['updateStatus'],
-  'For Delivery': ['updateStatus'],
-  'Ready for Pickup': ['updateStatus'],
+  // Cancel sits left of the forward action, as Reject does (spec 008 D14).
+  Approved: ['cancel', 'updateStatus'],
+  'For Delivery': ['cancel', 'updateStatus'],
+  'Ready for Pickup': ['cancel', 'updateStatus'],
   // Constitution 5.0.0 adopted `Received` (ADR-0009). Complete is its action,
   // and it is not built yet (spec 008 Story 4). Until it is, the panel offers
   // nothing here; ✕ still closes it.

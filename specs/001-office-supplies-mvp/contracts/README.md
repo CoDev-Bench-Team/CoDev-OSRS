@@ -166,11 +166,13 @@ Constitution 5.0.0 adds a request status, **`Received`**, between the handover
 states and `Completed`
 ([ADR-0009](../../../docs/adr/0009-received-and-accountability-form.md),
 [drift-2026-09-26 §3](../../../docs/design-system/drift-2026-09-26.md)). The
-published contract has neither the status nor a way to reach it.
+published contract had neither the status nor a way to reach it (as of
+2026-09-26; see the 2026-09-30 note below).
 
 **Needed from the API:**
 
-- `Received` in the request status vocabulary, with the time it was set;
+- `Received` in the request status vocabulary, with the time it was set
+  *(status published 2026-09-30; the time it was set is not confirmed)*;
 - ~~an Employee-only submission of the **Accountability Form** on the owner's
   own `For Delivery` / `Ready for Pickup` request, carrying the agreement,
   the typed full name and optional notes, which sets `Received` and moves
@@ -178,17 +180,28 @@ published contract has neither the status nor a way to reach it.
   transaction;~~ (the optional notes were withdrawn 2026-09-26, spec 012) **Amended 2026-09-29 (constitution 7.0.0, [ADR-0011](../../../docs/adr/0011-admin-sets-received-employee-signs.md)):**
 - an **Admin or owning-Employee** transition from `For Delivery` /
   `Ready for Pickup` to `Received`, which moves the reserved units to `Assigned` (`Total` and
-  `Reserved` fall) in one transaction;
+  `Reserved` fall) in one transaction *(published 2026-09-30 as `/receive`;
+  who may call it and the unit move are not described)*;
 - an Employee-only submission of the **Accountability Form** on the owner's
   own `Received` request, carrying the agreement and the typed full name. It
   records the acknowledgement and changes no status or unit, and is refused on
-  a request already signed;
+  a request already signed *(published 2026-09-30 as `/sign`; see the wording
+  gap below)*;
 - **whether a request has been signed, and when**, on the request resource,
   so the SPA can hide the form once signed and the Admin's Complete can wait
   for it;
 - **Complete** narrowed to a signed `Received` request, with no unit change;
-- cancel refused on `Received`;
+- ~~cancel refused on `Received`~~ *(published 2026-09-30)*;
 - the `Status changed` email on `Received`.
+
+**2026-09-30 — the live Swagger has moved.** It now publishes
+`POST /requests/{id}/receive` ("Marks a handed-over request received") and
+`POST /requests/{id}/sign` (`SignRequestDto { agreed, fullName, notes? }`), and
+cancel is refused on `received` (see Cancel, below). One wording gap is raised
+with the backend team: `/sign` is summarised as *"Signs the Accountability Form,
+completing a received request"*. Constitution 7.0.0 IV has signing change no
+status, and only an Admin sets `Completed`, once the form is signed. The SPA
+does not guess which the API does.
 
 Until then the SPA shows `Received` wherever it renders a status or timeline.
 ~~and does not build the form (spec 001 FR-012b, tasks T018b).~~ **Amended
@@ -244,6 +257,31 @@ with the date each was resolved and a read-only panel carrying the stored reason
 
 Until then History reads the seeded Admin source (spec 013 FR-013). Nothing
 here proposes a route, parameter or field name.
+
+### Cancel (published; read 2026-09-30)
+
+Not a conflict: the contract matches constitution 7.0.0 IV. Recorded here for the
+API-integration ticket, because spec 008 Story 5 (BEN-135) is built against the
+seeded source (spec 008 FR-017).
+
+`POST /requests/{id}/cancel` with `CancelRequestDto { reason }` (required;
+*"Shown to the requester"*). An Employee may cancel their own `pending_approval`
+request. An Admin may cancel `approved`, `ready_for_pickup` or `for_delivery`.
+Stock returns to Available and the requester is emailed. Any other status,
+`received` included, is refused.
+
+| Response | SPA refusal (spec 008) |
+|----------|------------------------|
+| `200`: the cancelled request, *"with cancellationReason and cancelledBy"* | success; `cancellationReason` → the read model's `cancellation.reason`. `cancelledBy` is not read: the timeline draws from timestamps (spec 013 FR-009a), and no screen names who cancelled |
+| `400` `validation-error`, pointer `#/reason` | `reason-required`: the reason field turns invalid with its required message. Showing the API's `detail` there needs a message carried on the refusal, which the integration ticket adds |
+| `404` | `unavailable` |
+| `409` | `status-changed` |
+
+**Still needed from the API:** the `200` body's schema documents only `items`
+and `units`. Spec 008 FR-022 (with spec 013 FR-009a) draws an Admin-cancelled
+request's timeline from its handover state and its approval and handover times.
+So say whether a cancelled request still carries those, and publish
+`cancellationReason` in the schema. This is the same gap as conflict 7.
 
 ### Also worth a word
 

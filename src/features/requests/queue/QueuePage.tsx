@@ -281,6 +281,7 @@ export function QueuePage({
           onApprove={(id, notes) => transition(id, () => source.approve(id, notes))}
           onReject={(id, reason, notes) => transition(id, () => source.reject(id, reason, notes))}
           onUpdateStatus={(id, to, pickup) => transition(id, () => source.updateStatus(id, to, pickup))}
+          onCancel={(id, reason) => transition(id, () => source.cancel(id, reason))}
         />
       ) : null}
     </div>

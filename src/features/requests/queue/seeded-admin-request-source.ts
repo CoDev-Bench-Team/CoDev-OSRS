@@ -27,7 +27,7 @@ import type {
  *  ones the queue leaves to History, enough to page there too (spec 013).
  *
  *  **What the store does not do.** It changes status only. Releasing a
- *  reservation on reject, and consuming stock on complete, are the API's
+ *  reservation on reject or cancel, and consuming stock on complete, are the API's
  *  (constitution III, spec 008 FR-016). The `available` figures are fixed
  *  sample values and never move. How the API names these transitions and their
  *  refusals is contracts conflict 1's to settle, and nothing here proposes a
@@ -359,6 +359,9 @@ function seed(): ReviewRequest[] {
 }
 
 const HANDOVER_FROM = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup']);
+// The Admin cancels a request that cannot be fulfilled, from the same three
+// statuses (constitution 7.0.0 IV). Pending is the Employee's to cancel.
+const ADMIN_CANCEL_FROM = HANDOVER_FROM;
 const RECEIVED_FROM = new Set<RequestStatus>(['For Delivery', 'Ready for Pickup']);
 
 /** A fresh, independent store. The app uses the module-level instance below.
@@ -438,6 +441,19 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
       request.handover = to;
       request.pickupLocation = location;
       request.handedOverAt = now();
+      return { ok: true };
+    },
+
+    async cancel(id, reason) {
+      const request = find(id);
+      if (!request) return refused('unavailable');
+      if (!ADMIN_CANCEL_FROM.has(request.status)) return refused('status-changed');
+      const trimmed = reason.trim();
+      if (!trimmed) return refused('reason-required');
+      // The reservation is released by the API, not here (FR-016). The
+      // handover, location and times stay, so the timeline keeps its nodes.
+      request.status = 'Cancelled';
+      request.cancellation = { reason: trimmed, at: now() };
       return { ok: true };
     },
   };

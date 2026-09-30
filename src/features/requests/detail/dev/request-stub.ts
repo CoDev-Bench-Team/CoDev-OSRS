@@ -44,11 +44,28 @@ import type { EmployeeRequest, EmployeeRequestSource } from '../request-detail-t
  *    Marking it received is refused `status-changed`, with the system's own
  *    words, and the reload shows it `Cancelled` (Story 0 AC5).
  *  - `receive-fails` — `markReceived` rejects: the system did not answer. The
- *    panel says it was not marked received and offers it again (Story 0 AC6). */
+ *    panel says it was not marked received and offers it again (Story 0 AC6).
+ *
+ *  Admin cancel (spec 008 Story 5):
+ *
+ *  - `admin-cancelled` — Maya's list gains one request an Admin cancelled after
+ *    `Ready for Pickup`, so its timeline keeps the nodes it reached (spec 008
+ *    FR-022, spec 013 FR-009a). The seed itself is left as it is. */
 const LOADING_MS = 2000;
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const fail = () => Promise.reject(new Error('stubbed list failure'));
+
+const ADMIN_CANCELLED: EmployeeRequest = {
+  id: 'REQ-2026-1778',
+  submittedAt: '2026-08-18T01:30:00Z',
+  lines: [{ name: 'Monitor', description: 'Monitor - Dell P2422H', qty: 1 }],
+  status: 'Cancelled',
+  handover: 'Ready for Pickup',
+  approvedAt: '2026-08-18T05:00:00Z',
+  handedOverAt: '2026-08-19T02:00:00Z',
+  cancellation: { reason: 'Model discontinued; no stock at Davao', at: '2026-08-20T03:00:00Z' },
+};
 
 export function requestStub(mode: string | null, seeded: EmployeeRequestSource): EmployeeRequestSource | null {
   switch (mode) {
@@ -77,6 +94,13 @@ export function requestStub(mode: string | null, seeded: EmployeeRequestSource):
       };
     case 'failing':
       return { ...seeded, list: fail };
+    case 'admin-cancelled':
+      return {
+        ...seeded,
+        async list(user) {
+          return [...(await seeded.list(user)), ADMIN_CANCELLED];
+        },
+      };
     case 'changes':
     case 'changes-reload-fails': {
       const approved = new Map<string, EmployeeRequest>();

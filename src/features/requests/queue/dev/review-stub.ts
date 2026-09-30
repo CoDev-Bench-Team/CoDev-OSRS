@@ -9,7 +9,10 @@ import type { AdminRequestSource, TransitionResult } from '../review-types';
  *  - `changes`: another Admin approved the request first. Approve, reject and
  *    update-status are refused `status-changed`, and the reload shows the
  *    request `Approved` (or, if it already was, `For Delivery`; if that too,
- *    `Ready for Pickup` at the requestor's office) (spec 008 FR-014).
+ *    `Ready for Pickup` at the requestor's office) (spec 008 FR-014). A cancel
+ *    is overtaken: a handover state becomes `Received` (the Employee marked
+ *    it received, constitution 7.0.0 IV), and `Approved` becomes `For Delivery`
+ *    (another Admin handed it over) (spec 008 edge case "Received while cancelling").
  *  - `failing`: every transition fails outright. The status is unchanged and
  *    the form keeps its input (FR-014).
  *  - `reload-fails`: the transition goes through, then the reload fails. The
@@ -36,12 +39,18 @@ export function reviewStub(mode: string | null, fresh: () => AdminRequestSource)
         } else await seeded.updateStatus(id, 'For Delivery');
         return { ok: false, refusal: 'status-changed' };
       };
-      return { ...seeded, approve: overtaken, reject: overtaken, updateStatus: overtaken };
+      const received = async (id: string): Promise<TransitionResult> => {
+        const request = (await seeded.load()).requests.find((r) => r.id === id);
+        if (!request) return { ok: false, refusal: 'unavailable' };
+        await seeded.updateStatus(id, request.status === 'Approved' ? 'For Delivery' : 'Received');
+        return { ok: false, refusal: 'status-changed' };
+      };
+      return { ...seeded, approve: overtaken, reject: overtaken, updateStatus: overtaken, cancel: received };
     }
     case 'failing': {
       const seeded = fresh();
       const failed = async (): Promise<TransitionResult> => ({ ok: false, refusal: 'unavailable' });
-      return { ...seeded, approve: failed, reject: failed, updateStatus: failed };
+      return { ...seeded, approve: failed, reject: failed, updateStatus: failed, cancel: failed };
     }
     case 'reload-fails': {
       const seeded = fresh();
@@ -59,6 +68,7 @@ export function reviewStub(mode: string | null, fresh: () => AdminRequestSource)
         approve: after(seeded.approve),
         reject: after(seeded.reject),
         updateStatus: after(seeded.updateStatus),
+        cancel: after(seeded.cancel),
       };
     }
     case 'no-stock-figure': {

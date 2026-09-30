@@ -45,13 +45,16 @@ const REFUSAL_COPY: Record<ReviewRefusal, string> = {
   unavailable: 'This request could not be updated. Try again.',
 };
 
+/** `reason-required` above is the reject's. The cancel form says its own. */
+const CANCEL_REASON_REQUIRED = 'Enter a reason for cancelling this request.';
+
 const RELOAD_FAILED =
   'The change was saved, but the latest details could not be loaded. Close the panel to refresh the queue.';
 
 const QTY_WIDTH: ColumnWidth = '48px';
 const STOCK_WIDTH: ColumnWidth = '132px';
 
-type Mode = 'idle' | 'rejecting' | 'updating';
+type Mode = 'idle' | 'rejecting' | 'updating' | 'cancelling';
 
 function StockBadge({ available }: { available: number | null }) {
   if (available === null) {
@@ -76,6 +79,7 @@ export function ReviewPanel({
   onApprove,
   onReject,
   onUpdateStatus,
+  onCancel,
 }: {
   request: ReviewRequest;
   pickupOffices: readonly Office[];
@@ -87,6 +91,8 @@ export function ReviewPanel({
   onApprove: (id: string, notes?: string) => Promise<TransitionResult>;
   onReject: (id: string, reason: string, notes?: string) => Promise<TransitionResult>;
   onUpdateStatus: (id: string, to: UpdateStatusTarget, pickup?: PickupLocation) => Promise<TransitionResult>;
+  /** `reason` is trimmed and non-empty (spec 008 FR-021). */
+  onCancel: (id: string, reason: string) => Promise<TransitionResult>;
 }) {
   const [mode, setMode] = useState<Mode>('idle');
   const [submitting, setSubmitting] = useState(false);
@@ -176,6 +182,25 @@ export function ReviewPanel({
         />
       );
     }
+    // Undrawn: the Employee's `04.2` form, with the Admin's own placeholder
+    // (additions.md §3h). The required reason is the deliberate step, so no
+    // dialog follows it (FR-023).
+    if (mode === 'cancelling') {
+      return (
+        <ReasonForm
+          label="Reason for cancellation"
+          placeholder="e.g item discontinued, no stock at this office..."
+          confirmLabel="Confirm Cancellation"
+          requiredMessage={CANCEL_REASON_REQUIRED}
+          submitting={submitting}
+          onBack={toIdle}
+          onConfirm={async (reason) => {
+            const refused = await run(() => onCancel(request.id, reason));
+            if (refused === 'reason-required') return 'reason-required';
+          }}
+        />
+      );
+    }
     if (mode === 'updating') {
       return (
         <UpdateStatusForm
@@ -220,9 +245,15 @@ export function ReviewPanel({
                     Approve Request
                   </Button>
                 );
+              case 'cancel':
+                return (
+                  <Button key={action} variant="ghost" className="flex-1" disabled={submitting} onClick={() => setMode('cancelling')}>
+                    Cancel Request
+                  </Button>
+                );
               case 'updateStatus':
                 return (
-                  <Button key={action} className="w-full" disabled={submitting} onClick={() => setMode('updating')}>
+                  <Button key={action} className="flex-1" disabled={submitting} onClick={() => setMode('updating')}>
                     Update Status
                   </Button>
                 );

@@ -328,6 +328,34 @@ await new Promise((r) => setTimeout(r, 300));
 l = await cdp.evaluate(listState);
 check(l.failed && l.tryAgain && !l.empty, 'Try Again retries, and a second failure still reads as a failure', JSON.stringify(l));
 
+// ---- spec 008 FR-022: a request an Admin cancelled keeps what it reached ----
+console.log('\nSpec 008 FR-022 — a request an Admin cancelled after handover keeps its nodes');
+await go('/requests?requests=admin-cancelled');
+await cdp.waitFor(() => !!document.querySelector('button[aria-label="View details of REQ-2026-1778"]'), 8000, 'the admin-cancelled row');
+await openRow('REQ-2026-1778');
+p = await cdp.evaluate(panel);
+check(
+  JSON.stringify(p.timeline) ===
+    JSON.stringify([
+      ['reached', 'Submitted'],
+      ['reached', 'Approved'],
+      ['reached', 'Ready for Pickup'],
+      ['cancelled', 'Cancelled'],
+    ]),
+  'the timeline reads Submitted → Approved → Ready for Pickup → Cancelled',
+  JSON.stringify(p.timeline),
+);
+check(p.text.includes('Reason for cancellation') && !p.buttons.includes('Cancel Request'), 'it reads back its reason and offers no cancel');
+await cdp.evaluate(() => document.querySelector('dialog[open] button[aria-label="Close"]').click());
+await closed();
+await openRow('REQ-2026-1791');
+p = await cdp.evaluate(panel);
+check(
+  JSON.stringify(p.timeline) === JSON.stringify([['reached', 'Submitted'], ['cancelled', 'Cancelled']]),
+  'the Employee’s own cancel still collapses to Submitted → Cancelled, as 04.2 draws it',
+  JSON.stringify(p.timeline),
+);
+
 // ---- the shared item summary guards blank and missing names ----
 console.log('\nThe Items cell drops blank names and shows a dash for none (shared summarizeItems)');
 await go('/requests?requests=blank-items');
