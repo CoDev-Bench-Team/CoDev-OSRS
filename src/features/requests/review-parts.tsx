@@ -1,7 +1,9 @@
 import { useId, type ReactNode } from 'react';
-import { Avatar, TABLE_ROW_PADDING_CLASS, TableCard, TableHead, tableColumnStyle, type ColumnWidth } from '../../shared/ui';
+import { Avatar } from '../../shared/ui';
 import type { Office } from '../auth/types';
-import { keyedLines, NO_VALUE } from './format';
+import { SECTION_HEADING } from './detail/detail-typography';
+import { RequestLinesTable } from './detail/RequestLinesTable';
+import { NO_VALUE } from './format';
 import { officeLabel } from './queue/review-types';
 import { NO_REASON, stoppedReason, type StoppedFacts } from './stopped-reason';
 
@@ -75,33 +77,16 @@ export function StoppedReason({ request }: { request: StoppedFacts }) {
   );
 }
 
-const QTY_WIDTH: ColumnWidth = '50px';
-
-/** **ITEMS REQUESTED** as `ITEM · QTY` (frames `03.1`, `04.1`, `04 - History`).
- *  The heading is `Body 1` with a character override to Inter **Bold** 14 / 1.5
- *  in `Ink-400`, 18px above the table. */
+/** **ITEMS REQUESTED** over the shared `ITEM · QTY` table (frames `03.1`,
+ *  `04.1`, `04 - History`), 18px apart. */
 export function ItemsRequested({ lines }: { lines: readonly { description: string; qty: number }[] }) {
   const headingId = useId();
   return (
     <section className="flex flex-col gap-18" aria-labelledby={headingId}>
-      <h3 id={headingId} className="font-sans text-14 font-bold leading-body uppercase text-ink-muted">
+      <h3 id={headingId} className={SECTION_HEADING}>
         Items Requested
       </h3>
-      <TableCard>
-        <TableHead cols={[['Item'], ['Qty', QTY_WIDTH]]} />
-        <ul>
-          {keyedLines(lines).map(({ key, line }) => (
-            <li key={key} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
-              <span style={tableColumnStyle()} className="type-ui-bold-wrap text-ink-primary">
-                {line.description}
-              </span>
-              <span style={tableColumnStyle(QTY_WIDTH)} className="type-ui-bold tabular-nums text-ink-primary">
-                {line.qty}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </TableCard>
+      <RequestLinesTable lines={lines} />
     </section>
   );
 }
