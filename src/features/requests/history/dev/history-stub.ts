@@ -9,6 +9,10 @@ import type { HistorySource } from '../history-source';
  *
  *  - `failing`: every load fails, so the page shows its failure notice and
  *    **Try again** (spec 012 FR-012).
+ *  - `recovers`: every load fails until `window.__recoverHistory()` is called,
+ *    then succeeds, so **Try again** can be shown to reload (spec 012 FR-012).
+ *    Not "fail once": StrictMode's second mount would load before the failure
+ *    ever showed.
  *  - `slow`: the load is held until `window.__releaseHistory()` is called, so
  *    the loading state can be seen and checked.
  *  - `empty`: no request has been resolved yet; the table shows its empty state.
@@ -29,6 +33,9 @@ declare global {
   interface Window {
     /** Set by `?history=slow` while a load is held. */
     __releaseHistory?: () => void;
+    /** Set by `?history=recovers`; lets later loads succeed. */
+    __recoverHistory?: () => void;
+    __historyRecovered?: boolean;
   }
 }
 
@@ -48,6 +55,19 @@ export function historyStub(mode: string | null, fresh: () => AdminRequestSource
       return {
         load: () => Promise.reject(new Error('history stub: load failed')),
       };
+    case 'recovers': {
+      // The flag lives on window, not in this closure: StrictMode builds the
+      // source twice in development, and either copy may be the one in use.
+      const seeded = fresh();
+      window.__historyRecovered = false;
+      window.__recoverHistory = () => {
+        window.__historyRecovered = true;
+      };
+      return {
+        load: () =>
+          window.__historyRecovered ? seeded.load() : Promise.reject(new Error('history stub: not yet recovered')),
+      };
+    }
     case 'slow': {
       const seeded = fresh();
       return {

@@ -462,11 +462,11 @@ try {
   check(!(await cdp.evaluate(() => history.state?.usr ?? null)), 'the link\'s state is consumed');
   await esc();
   await closed();
-  await settle();
-  check(
-    await cdp.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Filter by status'),
-    'closing a deep-linked panel, which no Review opened, puts focus on the chips',
-  );
+  // Focus moves on the next animation frame; wait for it rather than guess.
+  const onChips = await cdp
+    .waitFor(() => document.activeElement?.getAttribute('aria-label') === 'Filter by status', 3000, 'focus on the chips')
+    .then(() => true, () => false);
+  check(onChips, 'closing a deep-linked panel, which no Review opened, puts focus on the chips');
   await go('/requests/REQ-2026-1842');
   await cdp.waitFor(() => location.pathname === '/queue' && !!document.querySelector('dialog[open] h2'), 8000, 'the queue with the review panel');
   p = await cdp.evaluate(panel);
@@ -512,6 +512,21 @@ try {
   check(
     await cdp.evaluate(() => document.querySelector('[role="status"][aria-live="polite"]')?.textContent.trim() === 'History could not be loaded.'),
     'and the failure is announced',
+  );
+
+  await go('/history?history=recovers');
+  await cdp.waitFor(() => /History could not be loaded/.test(document.body.innerText), 5000, 'the failure notice');
+  await cdp.evaluate(() => {
+    window.__recoverHistory();
+    [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === 'Try Again').click();
+  });
+  await rowsLoaded();
+  await settle();
+  s = await state();
+  check(s.ids.length === 14, 'Try Again reloads, and the rows arrive (FR-012)', `${s.ids.length} rows`);
+  check(
+    await cdp.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Filter by status'),
+    'and focus moves to the chips, not <body>',
   );
 
   await go('/history?history=empty');
