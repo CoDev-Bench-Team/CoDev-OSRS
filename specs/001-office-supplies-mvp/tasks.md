@@ -84,7 +84,8 @@ Depends on backend auth/session resources.
 
 ## Phase 7: User Story 6 + 7 — History and cancel (P2)
 
-- [ ] T019 [P] [US6] My Requests table + status pills + detail panel — `src/features/requests/history/MyRequestsPage.tsx`
+- [x] T019 [P] [US6] My Requests table + status pills + detail panel — `src/features/requests/history/MyRequestsPage.tsx`
+  - **Done across two specs.** The list is [spec 009](../009-my-requests/spec.md) (BEN-44); the detail panel is [spec 007](../007-employee-request-panel/spec.md) (BEN-45). Both read the seeded source until the request contract publishes.
 - [ ] T020 [US7] Cancel Request dialog with required reason (employee, while pending) — `src/features/requests/history/CancelDialog.tsx`
 - [ ] T021 [US7] Admin cancel from the review panel (approved / for delivery / for pickup) — `src/features/requests/queue/ReviewPanel.tsx` — **moved to BEN-135** (no control drawn; spec 008 Out of Scope)
 - [ ] T022 [US6] History page: chips, table, read-only detail panel showing the stored reason — `src/features/requests/history/HistoryPage.tsx`
