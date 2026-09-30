@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { SidePanel, StatusPill, StatusTimeline } from '../../../shared/ui';
+import { SECTION_HEADING } from '../detail/detail-typography';
 import { requestTimeline } from '../request-timeline';
 import { Card, ItemsRequested, RequesterBlock, StoppedReason } from '../review-parts';
 import type { ResolvedRequest } from './history-model';
@@ -35,7 +36,7 @@ export function HistoryPanel({ request, onClose }: { request: ResolvedRequest; o
       ) : null}
 
       <section className="flex flex-col gap-18" aria-labelledby={statusHeadingId}>
-        <h3 id={statusHeadingId} className="font-sans text-14 font-bold leading-tight uppercase text-ink-secondary">
+        <h3 id={statusHeadingId} className={SECTION_HEADING}>
           Status
         </h3>
         <StatusTimeline nodes={requestTimeline(request)} />
