@@ -109,7 +109,6 @@ const historyState = () => {
     range: pages?.querySelector('p')?.textContent.trim() ?? null,
     current: pages?.querySelector('[aria-current="page"]')?.textContent.trim() ?? null,
     text: table?.innerText ?? '',
-    main: document.querySelector('main')?.innerText ?? '',
   };
 };
 const state = () => cdp.evaluate(historyState);
@@ -536,10 +535,14 @@ try {
 
   await go('/history?history=no-reason');
   await rowsLoaded();
+  s = await state();
   for (const [id, label] of [['REQ-2026-1684', 'Reason for rejection'], ['REQ-2026-1677', 'Reason for cancellation']]) {
+    const resolved = s.resolved[s.ids.indexOf(id)];
+    check(resolved && resolved !== '—', `${id}: losing its reason keeps its RESOLVED date`, resolved);
     await open(id);
     p = await cdp.evaluate(panel);
     check(p.text.includes(label) && p.text.includes('No reason recorded'), `${id}: ${label} reads "No reason recorded"`);
+    check(p.dated.at(-1), `${id}: and its ending node keeps its date`, JSON.stringify(p.dated));
     await esc();
     await closed();
   }

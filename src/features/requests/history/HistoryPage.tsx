@@ -67,7 +67,7 @@ function announce(state: LoadState, history: HistoryViewModel | null): string {
   if (history.resolvedCount === 0) return 'No requests have been resolved yet.';
   const shown = history.matchCount;
   if (shown === 0) return 'No resolved requests match the current filters.';
-  return `${shown} resolved request${shown === 1 ? '' : 's'} match.`;
+  return `${shown} resolved request${shown === 1 ? ' matches' : 's match'}.`;
 }
 
 export function HistoryPage({

@@ -39,12 +39,15 @@ declare global {
   }
 }
 
-function mapped(fresh: () => AdminRequestSource, change: (requests: ReviewRequest[]) => ReviewRequest[]): HistorySource {
+function mapped(
+  fresh: () => AdminRequestSource,
+  change: (requests: readonly ReviewRequest[]) => ReviewRequest[],
+): HistorySource {
   const seeded = fresh();
   return {
     async load(): Promise<ReviewSnapshot> {
       const snapshot = await seeded.load();
-      return { ...snapshot, requests: change([...snapshot.requests]) };
+      return { ...snapshot, requests: change(snapshot.requests) };
     },
   };
 }
@@ -84,15 +87,16 @@ export function historyStub(mode: string | null, fresh: () => AdminRequestSource
       return mapped(fresh, (requests) => requests.filter((request) => !isResolved(request)));
     case 'no-reason':
       // Decided per load, not once: StrictMode and Try Again both load again,
-      // and each load must drop the same two reasons.
+      // and each load must drop the same two reasons. Only the reason goes;
+      // the time it was set stays, so RESOLVED and the timeline keep a date.
       return mapped(fresh, (requests) => {
         const rejected = requests.find((request) => request.status === 'Rejected');
         const cancelled = requests.find((request) => request.status === 'Cancelled');
         return requests.map((request) =>
-          request === rejected
-            ? { ...request, rejection: undefined }
-            : request === cancelled
-              ? { ...request, cancellation: undefined }
+          request === rejected && request.rejection
+            ? { ...request, rejection: { ...request.rejection, reason: '' } }
+            : request === cancelled && request.cancellation
+              ? { ...request, cancellation: { ...request.cancellation, reason: '' } }
               : request,
         );
       });

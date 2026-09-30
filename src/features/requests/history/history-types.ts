@@ -1,5 +1,5 @@
 import type { RequestStatus } from '../../../shared/ui';
-import type { QueueRow } from '../queue/queue-types';
+import { QUEUE_SORTS, type QueueRow, type QueueSort } from '../queue/queue-types';
 
 /** The statuses History lists, in the order the file draws their chips:
  *  `All requests · Completed · Cancelled · Rejected` (`04 - History`). The
@@ -13,8 +13,8 @@ export const HISTORY_CHIPS: readonly HistoryChip[] = ['All requests', ...TERMINA
 
 /** The queue's drawn sort menu (`02.1`); the date orders read the resolved
  *  time (spec 012 FR-006). */
-export const HISTORY_SORTS = ['Newest First', 'Oldest First', 'Employee (A-Z)'] as const;
-export type HistorySort = (typeof HISTORY_SORTS)[number];
+export const HISTORY_SORTS = QUEUE_SORTS;
+export type HistorySort = QueueSort;
 
 /** Chip, search, sort and page as one value. */
 export interface HistoryQuery {
