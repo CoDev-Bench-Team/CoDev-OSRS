@@ -23,8 +23,8 @@ import type {
  *  and emails follow the `mayas@codev.com` shape the Profile frame draws.
  *  REQ-2026-1847's lines, note and office are frame `02.2`'s.
  *
- *  There are enough live rows to page at 10 per page, and three terminal ones
- *  the queue leaves to History.
+ *  There are enough live rows to page at 10 per page, and fourteen terminal
+ *  ones the queue leaves to History, enough to page there too (spec 013).
  *
  *  **What the store does not do.** It changes status only. Releasing a
  *  reservation on reject, and consuming stock on complete, are the API's
@@ -186,6 +186,7 @@ function seed(): ReviewRequest[] {
       handover: 'For Delivery',
       approvedAt: '2026-08-01T06:00:00Z',
       handedOverAt: '2026-08-02T02:00:00Z',
+      receivedAt: '2026-08-02T08:00:00Z',
       completedAt: '2026-08-03T02:00:00Z',
     },
     {
@@ -206,6 +207,153 @@ function seed(): ReviewRequest[] {
       status: 'Cancelled',
       approvedAt: '2026-07-28T06:00:00Z',
       cancellation: { reason: 'Model discontinued; employee will re-request', at: '2026-07-29T02:00:00Z' },
+    },
+    // More resolved requests for History (spec 013 plan D9): every shape a
+    // request can end in, across requesters and dates, enough to page at 10.
+    {
+      id: 'REQ-2026-1672',
+      ...person('Maya Santos', 'Product Design', 'mayas@codev.com', 'Davao'),
+      items: ['Laptop', 'Keyboard', 'USB-C Headset'],
+      lines: [
+        line('Business Laptop - Dell Latitude', 1, 12),
+        line('Wireless Keyboard - Logitech M185', 1, 24),
+        line('USB-C Headset - A4Tech Hu-10', 1, 12),
+      ],
+      noteToApprover: 'temporary project setup',
+      submittedAt: '2026-09-10T01:00:00Z',
+      // Cancelled by the Employee while pending. `04 - History`'s sample panel.
+      status: 'Cancelled',
+      cancellation: { reason: 'Duplicate of request SR-1042', at: '2026-09-11T01:42:00Z' },
+    },
+    {
+      id: 'REQ-2026-1669',
+      ...person('Paolo Navarro', 'Engineering', 'paolon@codev.com', 'Cebu'),
+      items: ['Laptop', 'Mouse'],
+      lines: [line('Business Laptop - Dell Latitude', 1, 8), line('Wireless Mouse - Logitech M185', 1, 30)],
+      noteToApprover: 'replacement for a failing unit',
+      submittedAt: '2026-09-01T02:00:00Z',
+      status: 'Completed',
+      handover: 'Ready for Pickup',
+      pickupLocation: { kind: 'office', office: 'Cebu' },
+      approvedAt: '2026-09-01T05:00:00Z',
+      handedOverAt: '2026-09-02T03:00:00Z',
+      receivedAt: '2026-09-03T06:00:00Z',
+      completedAt: '2026-09-04T01:30:00Z',
+    },
+    {
+      id: 'REQ-2026-1663',
+      ...person('Andrea Villanueva', 'Finance', 'andreav@codev.com', 'Makati'),
+      items: ['Phone'],
+      lines: [line('Mobile Phone - Samsung Galaxy A15', 1, 3)],
+      noteToApprover: 'for the on-call rotation',
+      submittedAt: '2026-08-28T02:00:00Z',
+      status: 'Completed',
+      handover: 'For Delivery',
+      approvedAt: '2026-08-28T06:00:00Z',
+      handedOverAt: '2026-08-29T02:00:00Z',
+      receivedAt: '2026-08-29T08:00:00Z',
+      completedAt: '2026-09-08T03:00:00Z',
+    },
+    {
+      id: 'REQ-2026-1657',
+      ...person('Carla Mercado', 'Marketing', 'carlam@codev.com', 'Ortigas'),
+      items: ['Monitor'],
+      lines: [line('Monitor - Dell P2422H', 2, 5)],
+      noteToApprover: 'dual screens for design reviews',
+      submittedAt: '2026-08-25T02:00:00Z',
+      status: 'Rejected',
+      rejection: { reason: 'One monitor per employee; request a second through your manager', at: '2026-08-25T09:00:00Z' },
+    },
+    {
+      id: 'REQ-2026-1650',
+      ...person('Rafael Garcia', 'Operations', 'rafaelg@codev.com', 'Makati'),
+      items: ['UPS'],
+      lines: [line('UPS - APC Back-UPS 650', 1, 2)],
+      submittedAt: '2026-08-20T02:00:00Z',
+      // Cancelled by an Admin after it was handed over for delivery.
+      status: 'Cancelled',
+      handover: 'For Delivery',
+      approvedAt: '2026-08-20T05:00:00Z',
+      handedOverAt: '2026-08-21T02:00:00Z',
+      cancellation: { reason: 'Courier could not deliver; unit returned to stock', at: '2026-08-22T07:00:00Z' },
+    },
+    {
+      id: 'REQ-2026-1644',
+      ...person('Trisha Aquino', 'Product Design', 'trishaa@codev.com', 'Davao'),
+      items: ['Headset'],
+      lines: [line('Headset - Jabra Evolve2 30', 1, 4)],
+      noteToApprover: 'for client calls',
+      submittedAt: '2026-08-15T02:00:00Z',
+      // Cancelled by an Admin while it waited at a pickup point.
+      status: 'Cancelled',
+      handover: 'Ready for Pickup',
+      pickupLocation: { kind: 'other', text: '6th floor IT desk' },
+      approvedAt: '2026-08-15T05:00:00Z',
+      handedOverAt: '2026-08-16T02:00:00Z',
+      cancellation: { reason: 'Not collected within ten business days', at: '2026-08-30T02:00:00Z' },
+    },
+    {
+      id: 'REQ-2026-1638',
+      ...person('Liza Bautista', 'People Operations', 'lizab@codev.com', 'Davao'),
+      items: ['Type C Hub'],
+      lines: [line('Type C Hub - Anker 7-in-1', 1, 6)],
+      noteToApprover: 'for new-hire onboarding kits',
+      submittedAt: '2026-08-12T02:00:00Z',
+      status: 'Completed',
+      handover: 'Ready for Pickup',
+      pickupLocation: { kind: 'office', office: 'Davao' },
+      approvedAt: '2026-08-12T04:00:00Z',
+      handedOverAt: '2026-08-13T02:00:00Z',
+      receivedAt: '2026-08-13T07:00:00Z',
+      completedAt: '2026-08-14T02:00:00Z',
+    },
+    {
+      id: 'REQ-2026-1631',
+      ...person('Joaquin Flores', 'Finance', 'joaquinf@codev.com', 'Makati'),
+      items: ['Laptop'],
+      lines: [line('Business Laptop - Dell Latitude', 1, 6)],
+      noteToApprover: 'upgrade for month-end reporting',
+      submittedAt: '2026-08-10T02:00:00Z',
+      status: 'Rejected',
+      rejection: { reason: 'Current unit is within its refresh cycle', at: '2026-08-10T06:00:00Z' },
+    },
+    {
+      id: 'REQ-2026-1625',
+      ...person('Bea Reyes', 'People Operations', 'bear@codev.com', 'Ortigas'),
+      items: ['Webcam'],
+      lines: [line('Webcam - Logitech C920', 1, 7)],
+      submittedAt: '2026-08-06T02:00:00Z',
+      // Cancelled by the Employee while pending.
+      status: 'Cancelled',
+      cancellation: { reason: 'Borrowed a spare from the team', at: '2026-08-06T05:00:00Z' },
+    },
+    {
+      id: 'REQ-2026-1619',
+      ...person('Daniel Santos', 'Customer Success', 'daniels@codev.com', 'Bacolod'),
+      items: ['Headset', 'Mouse'],
+      lines: [line('Headset - Jabra Evolve2 30', 1, 3), line('Wireless Mouse - Logitech M185', 1, 11)],
+      noteToApprover: 'support desk seat',
+      submittedAt: '2026-07-24T02:00:00Z',
+      status: 'Completed',
+      handover: 'For Delivery',
+      approvedAt: '2026-07-24T04:00:00Z',
+      handedOverAt: '2026-07-25T02:00:00Z',
+      receivedAt: '2026-07-25T06:00:00Z',
+      completedAt: '2026-07-27T02:00:00Z',
+    },
+    {
+      id: 'REQ-2026-1612',
+      // Paolo's second resolved request, so Employee (A-Z) has a tie to break.
+      // It sits after REQ-2026-1669 in the seed and was submitted before it,
+      // but resolved after it: only a tie-break on the resolved time puts it
+      // first (check-history).
+      ...person('Paolo Navarro', 'Engineering', 'paolon@codev.com', 'Cebu'),
+      items: ['Laptop Stand'],
+      lines: [line('Laptop Stand - Rain Design mStand', 1, 9)],
+      noteToApprover: 'posture',
+      submittedAt: '2026-08-20T02:00:00Z',
+      status: 'Rejected',
+      rejection: { reason: 'Stands are issued by Facilities, not Workplace', at: '2026-09-06T01:00:00Z' },
     },
   ];
 }

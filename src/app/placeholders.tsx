@@ -14,4 +14,3 @@ function screen(id: DestinationId) {
 
 export const AssetsPlaceholder = () => screen('assets');
 export const InventoryPlaceholder = () => screen('inventory');
-export const HistoryPlaceholder = () => screen('history');

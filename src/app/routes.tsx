@@ -8,13 +8,13 @@ import { ProfilePage } from '../features/profile/ProfilePage';
 import { MyRequestsPage } from '../features/requests/history/MyRequestsPage';
 import { useSession } from '../features/auth/session-context';
 import { QueuePage } from '../features/requests/queue/QueuePage';
+import { HistoryPage } from '../features/requests/history/HistoryPage';
 import { RequestDeepLink } from './RequestDeepLink';
 import { AppLayout } from './AppLayout';
 import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './destinations';
 import { NavButton } from './NavButton';
 import {
   AssetsPlaceholder,
-  HistoryPlaceholder,
   InventoryPlaceholder,
 } from './placeholders';
 
@@ -75,7 +75,7 @@ export function AppRoutes() {
         <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
         <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />
-        <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPlaceholder />)} />
+        <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPage />)} />
         <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePage />)} />
         <Route path="*" element={<NotFoundRoute />} />
       </Route>

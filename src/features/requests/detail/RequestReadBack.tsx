@@ -1,8 +1,9 @@
 import { StatusTimeline } from '../../../shared/ui';
 import { SECTION_HEADING } from './detail-typography';
 import type { EmployeeRequest } from './request-detail-types';
-import { RequestLinesTable } from './RequestLinesTable';
 import { requestTimeline } from '../request-timeline';
+import { ItemsRequested } from '../review-parts';
+import { NO_REASON, stoppedReason } from '../stopped-reason';
 
 /** The read-back of one request as the system holds it: Items Requested, the
  *  Note to Approver, a stopped request's reason, and the Status timeline.
@@ -18,22 +19,13 @@ import { requestTimeline } from '../request-timeline';
  *  apart; sections sit 18px apart. */
 export function RequestReadBack({ request }: { request: EmployeeRequest }) {
   // BEN-67 / BEN-70: a stopped request reads back why. The `04.2 - Cancelled`
-  // frame does not draw it; Linear asks for it (additions.md §3e).
-  const stopped =
-    request.status === 'Cancelled' && request.cancellation
-      ? { label: 'Reason for cancellation', reason: request.cancellation.reason }
-      : request.status === 'Rejected' && request.rejection
-        ? { label: 'Reason for rejection', reason: request.rejection.reason }
-        : null;
+  // frame does not draw it; Linear asks for it (additions.md §3e). One with no
+  // stored reason says so (additions.md §3j).
+  const stopped = stoppedReason(request);
 
   return (
     <div className="flex flex-col gap-18">
-      <section className="flex flex-col gap-18" aria-labelledby="items-requested">
-        <h3 id="items-requested" className={SECTION_HEADING}>
-          Items Requested
-        </h3>
-        <RequestLinesTable lines={request.lines} />
-      </section>
+      <ItemsRequested lines={request.lines} />
 
       {request.noteToApprover ? (
         <section className="flex flex-col gap-12 rounded-10 bg-surface-card p-20 shadow-card">
@@ -45,7 +37,7 @@ export function RequestReadBack({ request }: { request: EmployeeRequest }) {
       {stopped ? (
         <section className="flex flex-col gap-12 rounded-10 bg-surface-card p-20 shadow-card">
           <h3 className="type-subhead text-ink-primary">{stopped.label}</h3>
-          <p className="type-meta text-ink-strong">{stopped.reason}</p>
+          <p className={`type-meta text-ink-strong ${stopped.reason ? '' : 'italic'}`}>{stopped.reason ?? NO_REASON}</p>
         </section>
       ) : null}
 

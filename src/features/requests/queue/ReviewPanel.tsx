@@ -1,6 +1,5 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
-  Avatar,
   Button,
   SidePanel,
   StatusPill,
@@ -14,11 +13,11 @@ import {
 import type { Office } from '../../auth/types';
 import { keyedLines, NO_VALUE } from '../format';
 import { ReasonForm } from '../ReasonForm';
+import { Card, RequesterBlock, StoppedReason } from '../review-parts';
 import { requestTimeline } from '../request-timeline';
 import { reviewActions } from './review-actions';
 import {
   LOCATION_REQUIRED,
-  officeLabel,
   pickupLabel,
   type PickupLocation,
   type ReviewRefusal,
@@ -52,23 +51,7 @@ const RELOAD_FAILED =
 const QTY_WIDTH: ColumnWidth = '48px';
 const STOCK_WIDTH: ColumnWidth = '132px';
 
-/** `02.2.2.1` draws the rejection reason as a red callout under the timeline.
- *  A cancellation reason takes the same shape in the Cancelled pill's slate. */
-const REJECTED_TONE = 'border-status-rejected-fg bg-status-rejected-bg text-status-rejected-fg';
-const CANCELLED_TONE = 'border-status-cancelled-fg bg-status-cancelled-bg text-status-cancelled-fg';
-
 type Mode = 'idle' | 'rejecting' | 'updating';
-
-/** Derived, where `User.initials` in auth/types.ts is carried: the review read
- *  model holds only the requestor's name, and the contract has no initials
- *  field to carry (constitution VII). A name that is not two words still gets
- *  its first letter, and an empty one the marker. */
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
-  return (first + last).toUpperCase() || NO_VALUE;
-}
 
 function StockBadge({ available }: { available: number | null }) {
   if (available === null) {
@@ -83,15 +66,6 @@ function StockBadge({ available }: { available: number | null }) {
   }
   const tone = available > 0 ? 'bg-status-available-bg text-status-available-fg' : 'bg-status-unavailable-bg text-status-unavailable-fg';
   return <span className={`inline-flex rounded-8 px-10 py-4 type-pill tabular-nums ${tone}`}>{available} in stock</span>;
-}
-
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-8 rounded-10 bg-surface-card p-20 shadow-card">
-      <h3 className="type-ui-bold text-ink-primary">{title}</h3>
-      {children}
-    </section>
-  );
 }
 
 export function ReviewPanel({
@@ -122,7 +96,6 @@ export function ReviewPanel({
   // it, and a refusal that keeps the status keeps it too (FR-014).
   const [otherNotes, setOtherNotes] = useState('');
   const otherNotesId = useId();
-  const requestedById = useId();
   const statusHeadingId = useId();
   const sentNotes = () => otherNotes.trim() || undefined;
 
@@ -185,13 +158,6 @@ export function ReviewPanel({
   // The notes box sits above the decision, so it is shown exactly where a
   // decision is offered.
   const deciding = actions.includes('approve') || actions.includes('reject');
-
-  const stopped =
-    request.status === 'Rejected' && request.rejection
-      ? { label: 'Reason for rejection', reason: request.rejection.reason, tone: REJECTED_TONE }
-      : request.status === 'Cancelled' && request.cancellation
-        ? { label: 'Reason for cancellation', reason: request.cancellation.reason, tone: CANCELLED_TONE }
-        : null;
 
   const footer = (close: () => void) => {
     if (mode === 'rejecting') {
@@ -304,20 +270,7 @@ export function ReviewPanel({
         </p>
       ) : null}
 
-      <section className="flex flex-col gap-10" aria-labelledby={requestedById}>
-        <h3 id={requestedById} className="type-eyebrow uppercase text-ink-secondary">
-          Requested by:
-        </h3>
-        <div className="flex items-center gap-12 rounded-10 bg-surface-card p-20 shadow-card">
-          <Avatar initials={initials(request.requestorName)} />
-          <div className="flex min-w-0 flex-col gap-4">
-            <span className="truncate type-ui-bold text-ink-primary">{request.requestorName}</span>
-            <span className="truncate type-meta text-ink-secondary">
-              {[request.requestorEmail, officeLabel(request.requestorOffice)].filter(Boolean).join(' • ')}
-            </span>
-          </div>
-        </div>
-      </section>
+      <RequesterBlock name={request.requestorName} email={request.requestorEmail} office={request.requestorOffice} />
 
       <section aria-label="Requested items">
         <TableCard>
@@ -359,12 +312,7 @@ export function ReviewPanel({
         <StatusTimeline nodes={requestTimeline(request)} />
       </section>
 
-      {stopped ? (
-        <section className={`flex flex-col gap-9 rounded-10 border p-20 ${stopped.tone}`}>
-          <h3 className="type-ui-bold">{stopped.label}</h3>
-          <p className="font-sans text-12-5 font-regular">{stopped.reason}</p>
-        </section>
-      ) : null}
+      <StoppedReason request={request} />
 
       {deciding ? (
         // `02.2` draws the same field as the drawer's Note to Approver: Inter

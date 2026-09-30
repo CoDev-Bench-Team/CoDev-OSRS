@@ -20,16 +20,22 @@ export interface TimelineFacts {
  *
  *  The drawing reads Submitted → Approved → For Delivery/For Pickup → Received
  *  → Complete (drift-2026-09-26 §2), which is the state machine itself
- *  (constitution 5.0.0 IV, ADR-0009): the third node is reached when the Admin
+ *  (constitution 7.0.0 IV, ADR-0009): the third node is reached when the Admin
  *  sets `For Delivery` or `Ready for Pickup`, and names whichever it was. Before
  *  that it reads the drawn "For Delivery/For Pickup".
  *
  *  Each reached node takes the tone of the status pill it stands for (the
  *  project owner's decision, 2026-09-26).
  *
- *  The stopped endings follow `04.2 - Cancelled`: the timeline collapses to
- *  Submitted and the ending. Rejected is not drawn and takes the same shape in
- *  red (docs/design-system/additions.md). */
+ *  The stopped endings follow `04.2 - Cancelled`: Submitted, then the ending.
+ *  Rejected is not drawn and takes the same shape in red. A rejection only
+ *  happens from `Pending Approval`, so that is its only shape.
+ *
+ *  A request cancelled after approval keeps the nodes it reached before the
+ *  ending, each dated: Submitted → Approved → [handover] → Cancelled (spec 013
+ *  FR-009a, additions.md §3j). The terminal status cannot say how far it got,
+ *  so the timestamps do, and a node is drawn only when all of its facts are
+ *  present. `Received` cannot be cancelled, so no longer shape exists. */
 const APPROVED_OR_LATER = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup', 'Received', 'Completed']);
 const HANDED_OVER = new Set<RequestStatus>(['For Delivery', 'Ready for Pickup', 'Received', 'Completed']);
 const RECEIVED_OR_LATER = new Set<RequestStatus>(['Received', 'Completed']);
@@ -43,7 +49,24 @@ export function requestTimeline(request: TimelineFacts): TimelineNode[] {
   };
 
   if (request.status === 'Cancelled') {
-    return [submitted, { label: 'Cancelled', state: 'cancelled', when: formatDateTime(request.cancellation?.at) }];
+    const reached: TimelineNode[] = [submitted];
+    if (request.approvedAt) {
+      reached.push({
+        label: 'Approved',
+        state: 'reached',
+        tone: REQUEST_TONE.Approved,
+        when: formatDateTime(request.approvedAt),
+      });
+      if (request.handover && request.handedOverAt) {
+        reached.push({
+          label: request.handover,
+          state: 'reached',
+          tone: REQUEST_TONE[request.handover],
+          when: formatDateTime(request.handedOverAt),
+        });
+      }
+    }
+    return [...reached, { label: 'Cancelled', state: 'cancelled', when: formatDateTime(request.cancellation?.at) }];
   }
   if (request.status === 'Rejected') {
     return [submitted, { label: 'Rejected', state: 'rejected', when: formatDateTime(request.rejection?.at) }];

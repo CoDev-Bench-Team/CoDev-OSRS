@@ -265,8 +265,10 @@ console.log('\n/requests/:id opens the request\'s panel, for either role (spec 0
 await signIn('admin');
 let hit = await followLink('REQ-2026-1847', '/queue');
 check(hit.path === '/queue' && hit.panel === 'REQ-2026-1847', 'the Admin lands on /queue with that request\'s review panel open', JSON.stringify(hit));
-hit = await followLink('REQ-2026-1684', '/queue');
-check(hit.panel === 'REQ-2026-1684', 'a decided request opens too, read-only (it is not in the live queue)', JSON.stringify(hit));
+// A resolved request belongs to History since 2026-09-29 (spec 013 FR-016;
+// spec 008 FR-001a, amended): the queue forwards the link there.
+hit = await followLink('REQ-2026-1684', '/history');
+check(hit.path === '/history' && hit.panel === 'REQ-2026-1684', 'a resolved request opens read-only on History, not the queue', JSON.stringify(hit));
 hit = await followLink('REQ-2026-9999', '/queue');
 check(!hit.panel && !!hit.notice && !hit.notice.includes('9999'), 'a missing id opens nothing and says so, without echoing it', JSON.stringify(hit));
 check(!/yours/.test(hit.notice ?? ''), 'the Admin\'s notice does not suggest the request might not be theirs', hit.notice);

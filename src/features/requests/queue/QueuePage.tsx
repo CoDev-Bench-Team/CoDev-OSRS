@@ -18,7 +18,8 @@ import {
   type ColumnWidth,
 } from '../../../shared/ui';
 import { DESTINATIONS } from '../../../app/destinations';
-import { buildQueueViewModel, NO_VALUE, updateQuery } from './queue-model';
+import { buildQueueViewModel, NO_VALUE } from './queue-model';
+import { updateQuery } from '../list-query';
 import {
   INITIAL_QUERY,
   PAGE_SIZES,
@@ -30,8 +31,9 @@ import {
 } from './queue-types';
 import { adminRequestSource } from './admin-request-source';
 import { RefusalAlert } from '../detail/RefusalAlert';
-import { REQUEST_NOT_FOUND, useDeepLinkedRequest } from '../deep-link';
+import { REQUEST_NOT_FOUND, useDeepLinkedRequest, type DeepLinkState } from '../deep-link';
 import { ReviewPanel } from './ReviewPanel';
+import { isResolved } from '../history/history-model';
 import type { AdminRequestSource, ReviewSnapshot, TransitionResult } from './review-types';
 
 type LoadState =
@@ -90,7 +92,12 @@ export function QueuePage({
 }: {
   source?: AdminRequestSource;
 }) {
-  const { search } = useLocation();
+  const { search, state: navigation } = useLocation();
+  /** A `/requests/:id` link still being resolved. Until it is, the queue shows
+   *  its loading state rather than a table it may be about to leave: a
+   *  resolved request's link is forwarded to History, and the queue must not
+   *  flash or announce its rows on the way (spec 013 plan D14). */
+  const linking = !!(navigation as DeepLinkState | null)?.openRequest;
   const source = useMemo(() => given ?? adminRequestSource(search), [given, search]);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
@@ -137,10 +144,11 @@ export function QueuePage({
    *  The chips' group has a short name and sits directly above the table. The
    *  queue frame draws no section heading to land on (spec 004, amendment 3). */
   useEffect(() => {
-    if (state.kind !== 'loaded' || !retrying.current) return;
+    // While a deep link resolves the table is not mounted yet; wait for it.
+    if (state.kind !== 'loaded' || linking || !retrying.current) return;
     retrying.current = false;
     recoveredFocus.current?.focus();
-  }, [state]);
+  }, [state, linking]);
 
   /** Derived once here rather than inside the table, so the announcement and
    *  what is on screen are the same projection of the same snapshot. Memoised
@@ -178,14 +186,19 @@ export function QueuePage({
     }
   };
 
-  // `/requests/:id` lands here for an Admin and opens that request's panel. The
-  // snapshot holds every request, terminal ones included, so a link to a
-  // decided request opens it read-only.
+  // `/requests/:id` lands here for an Admin. The snapshot holds every request:
+  // a live one opens its review panel, and a resolved one is forwarded to
+  // History, which owns its read-only panel (spec 013 FR-016, plan D14).
   const allIds = useMemo(
     () => (state.kind === 'loaded' ? state.snapshot.requests.map((request) => request.id) : null),
     [state],
   );
-  const { unavailable, dismiss } = useDeepLinkedRequest(allIds, setOpenId, REQUEST_NOT_FOUND);
+  const openLinked = (id: string): string | void => {
+    const request = state.kind === 'loaded' ? state.snapshot.requests.find((r) => r.id === id) : undefined;
+    if (request && isResolved(request)) return DESTINATIONS.history.path;
+    setOpenId(id);
+  };
+  const { unavailable, dismiss } = useDeepLinkedRequest(allIds, openLinked, REQUEST_NOT_FOUND);
   const review = (id: string) => {
     dismiss();
     setOpenId(id);
@@ -218,10 +231,10 @@ export function QueuePage({
           place is routinely missed — only a change WITHIN an existing region
           announces reliably, and `loading` is the state the page opens in. */}
       <div role="status" aria-live="polite" className="sr-only">
-        {announce(state, queue)}
+        {announce(linking && state.kind === 'loaded' ? { kind: 'loading' } : state, queue)}
       </div>
 
-      {state.kind === 'loading' ? (
+      {state.kind === 'loading' || (linking && state.kind === 'loaded') ? (
         <Notice
           eyebrow="Loading"
           tone="info"
@@ -252,7 +265,7 @@ export function QueuePage({
 
       {unavailable ? <RefusalAlert messages={[unavailable]} /> : null}
 
-      {queue ? (
+      {queue && !linking ? (
         <LoadedQueue queue={queue} query={query} onChange={change} focusRef={recoveredFocus} onReview={review} />
       ) : null}
 

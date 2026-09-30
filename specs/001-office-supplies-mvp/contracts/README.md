@@ -217,6 +217,34 @@ Until then the SPA collects the note and sends it only to the seeded source
 (spec 008 FR-007a). A contract-backed source MUST NOT send it until the field is
 published.
 
+### 7. History: resolved requests (raised 2026-09-29)
+
+The Admin's **History** (spec 001 FR-016a, [spec 013](../../013-admin-history/spec.md))
+lists every `Completed`, `Rejected` and `Cancelled` request across all requestors,
+with the date each was resolved and a read-only panel carrying the stored reason
+([drift-2026-09-29-export §2](../../../docs/design-system/drift-2026-09-29-export.md), H4).
+`GET /requests` (backend BEN-105) is not published with a documented response.
+
+**Needed from the API:**
+
+- a read of requests in terminal statuses, across all requestors, for an Admin;
+- **the time each terminal status was set** (completed, rejected, cancelled), for
+  the RESOLVED column and its sort. A generic "last updated" time does not say
+  when the request was resolved;
+- the stored **rejection reason** and **cancellation reason** on read (the
+  `rejectionReason` on `UpdateRequestDto` is write-only as published), and who
+  cancelled;
+- the requester's **department**, which the REQUESTER column prints under the
+  name, alongside name, email and office;
+- the time of each earlier transition (approved, handed over), which the
+  panel's timeline shows for a request cancelled after approval;
+- **server-side paging, search and status filtering.** The design draws
+  `1-50 of 1,250`. The SPA filters in the browser against the seed today (spec
+  013 plan R4).
+
+Until then History reads the seeded Admin source (spec 013 FR-013). Nothing
+here proposes a route, parameter or field name.
+
 ### Also worth a word
 
 The design's emails print request ids as `REQ-10482`; every SPA screen prints
