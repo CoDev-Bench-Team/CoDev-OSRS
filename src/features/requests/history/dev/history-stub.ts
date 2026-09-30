@@ -8,23 +8,23 @@ import type { HistorySource } from '../history-source';
  *  `?history=<mode>` on `/history` reaches what the seed cannot:
  *
  *  - `failing`: every load fails, so the page shows its failure notice and
- *    **Try again** (spec 012 FR-012).
+ *    **Try again** (spec 013 FR-012).
  *  - `recovers`: every load fails until `window.__recoverHistory()` is called,
- *    then succeeds, so **Try again** can be shown to reload (spec 012 FR-012).
+ *    then succeeds, so **Try again** can be shown to reload (spec 013 FR-012).
  *    Not "fail once": StrictMode's second mount would load before the failure
  *    ever showed.
  *  - `slow`: the load is held until `window.__releaseHistory()` is called, so
  *    the loading state can be seen and checked.
  *  - `empty`: no request has been resolved yet; the table shows its empty state.
  *  - `no-reason`: the first Rejected and the first Cancelled request lose their
- *    stored reason, so the panel shows *No reason recorded* (spec 012 edge
+ *    stored reason, so the panel shows *No reason recorded* (spec 013 edge
  *    case). The seed always stores one, as constitution IV requires.
  *  - `received`: REQ-2026-1715 has been received, so the data set holds all
- *    eight statuses; `Received` is live and must stay off History (spec 012
+ *    eight statuses; `Received` is live and must stay off History (spec 013
  *    edge case, SC-001).
  *  - `no-resolved-date`: the first Completed request in the seed loses its completed time,
  *    so RESOLVED shows the em dash and it sorts last under both date orders
- *    (spec 012 plan R3).
+ *    (spec 013 plan R3).
  *
  *  Each mode builds its own seed, so a stubbed session never disturbs the
  *  shared one. */

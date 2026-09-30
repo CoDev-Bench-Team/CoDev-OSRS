@@ -219,7 +219,7 @@ published.
 
 ### 7. History: resolved requests (raised 2026-09-29)
 
-The Admin's **History** (spec 001 FR-016a, [spec 012](../../012-admin-history/spec.md))
+The Admin's **History** (spec 001 FR-016a, [spec 013](../../013-admin-history/spec.md))
 lists every `Completed`, `Rejected` and `Cancelled` request across all requestors,
 with the date each was resolved and a read-only panel carrying the stored reason
 ([drift-2026-09-29-export §2](../../../docs/design-system/drift-2026-09-29-export.md), H4).
@@ -240,9 +240,9 @@ with the date each was resolved and a read-only panel carrying the stored reason
   panel's timeline shows for a request cancelled after approval;
 - **server-side paging, search and status filtering.** The design draws
   `1-50 of 1,250`. The SPA filters in the browser against the seed today (spec
-  012 plan R4).
+  013 plan R4).
 
-Until then History reads the seeded Admin source (spec 012 FR-013). Nothing
+Until then History reads the seeded Admin source (spec 013 FR-013). Nothing
 here proposes a route, parameter or field name.
 
 ### Also worth a word

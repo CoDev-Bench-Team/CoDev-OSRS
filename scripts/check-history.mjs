@@ -1,4 +1,4 @@
-/** Spec 012 — the Admin's History (BEN-144).
+/** Spec 013 — the Admin's History (BEN-144).
  *
  *  Asserts against the seeded Admin source:
  *  - Admin-only: no History nav item for the Employee, and `/history` refused.
@@ -44,7 +44,7 @@ const REASONS = {
   'REQ-2026-1625': 'Borrowed a spare from the team',
 };
 /** Every seeded Cancelled request's timeline: the nodes it reached, then the
- *  ending (spec 012 FR-009a, plan R2). */
+ *  ending (spec 013 FR-009a, plan R2). */
 const CANCELLED_TIMELINES = {
   'REQ-2026-1672': [['reached', 'Submitted'], ['cancelled', 'Cancelled']],
   'REQ-2026-1625': [['reached', 'Submitted'], ['cancelled', 'Cancelled']],

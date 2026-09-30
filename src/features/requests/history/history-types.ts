@@ -4,7 +4,7 @@ import { QUEUE_SORTS, type QueueRow, type QueueSort } from '../queue/queue-types
 /** The statuses History lists, in the order the file draws their chips:
  *  `All requests · Completed · Cancelled · Rejected` (`04 - History`). The
  *  terminal statuses of constitution IV; `Received` is live and stays on the
- *  Requests Queue (spec 012 FR-002). */
+ *  Requests Queue (spec 013 FR-002). */
 export const TERMINAL_STATUSES = ['Completed', 'Cancelled', 'Rejected'] as const satisfies readonly RequestStatus[];
 export type TerminalStatus = (typeof TERMINAL_STATUSES)[number];
 
@@ -12,7 +12,7 @@ export type HistoryChip = 'All requests' | TerminalStatus;
 export const HISTORY_CHIPS: readonly HistoryChip[] = ['All requests', ...TERMINAL_STATUSES];
 
 /** The queue's drawn sort menu (`02.1`); the date orders read the resolved
- *  time (spec 012 FR-006). */
+ *  time (spec 013 FR-006). */
 export const HISTORY_SORTS = QUEUE_SORTS;
 export type HistorySort = QueueSort;
 
@@ -45,7 +45,7 @@ export interface HistoryViewModel {
   /** Resolved requests before any search: tells "nothing resolved yet" apart
    *  from "nothing matches" when `rows` is empty. */
   resolvedCount: number;
-  /** Per chip, over the search matches (spec 012 FR-004). */
+  /** Per chip, over the search matches (spec 013 FR-004). */
   chipCounts: Readonly<Record<HistoryChip, number>>;
   /** Rows the selected chip and search match, across every page. */
   matchCount: number;

@@ -4,7 +4,7 @@ import type { AdminRequestSource } from '../queue/review-types';
 import { historyStub } from './dev/history-stub';
 
 /** What History may do with the Admin's requests: read them. The transitions
- *  are not in the type, so nothing on History can change a request (spec 012
+ *  are not in the type, so nothing on History can change a request (spec 013
  *  FR-011, plan D1). */
 export type HistorySource = Pick<AdminRequestSource, 'load'>;
 

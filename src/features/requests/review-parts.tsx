@@ -9,8 +9,8 @@ import { NO_REASON, stoppedReason, type StoppedFacts } from './stopped-reason';
 
 /** The read-back parts more than one request panel draws: the Admin's review
  *  panel (spec 008), the Employee's request panel (spec 007) and the Admin's
- *  History panel (spec 012). Each lives once, so the panels cannot drift apart
- *  (spec 012 plan D7). */
+ *  History panel (spec 013). Each lives once, so the panels cannot drift apart
+ *  (spec 013 plan D7). */
 
 /** Derived, where `User.initials` in auth/types.ts is carried: the request read
  *  models hold only the requestor's name, and the contract has no initials

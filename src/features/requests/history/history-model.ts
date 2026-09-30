@@ -19,7 +19,7 @@ export const isResolved = (request: ReviewRequest): request is ResolvedRequest =
  *  set, as the source records it. `undefined` for a live request, or a
  *  terminal one missing its time.
  *
- *  The one place History reads a resolved time (spec 012 plan D2, R3). The
+ *  The one place History reads a resolved time (spec 013 plan D2, R3). The
  *  RESOLVED label and both date sorts go through it, so when the contract says
  *  how it carries the time (contracts conflict 7), only this changes. */
 export function resolvedAt(request: ReviewRequest): string | undefined {

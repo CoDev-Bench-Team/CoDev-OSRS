@@ -1,7 +1,7 @@
 # Implementation Plan: Admin History — resolved requests
 
 **Date**: 2026-09-29  
-**Spec**: `specs/012-admin-history/spec.md`  
+**Spec**: `specs/013-admin-history/spec.md`  
 **Status**: Draft  
 **Linear**: BEN-144 (L1: BEN-149)
 
@@ -111,7 +111,7 @@ scripts/check-history.mjs    # new
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| I. Spec-Driven Development | PASS | Implements spec 012; undrawn parts logged (D12); the spec 007 amendment is recorded |
+| I. Spec-Driven Development | PASS | Implements spec 013; undrawn parts logged (D12); the spec 007 amendment is recorded |
 | II. Two Human Roles | PASS | Admin-only through the existing guard (D11); checked (D13) |
 | III. Inventory Integrity | PASS | No stock figure read or computed |
 | IV. State Machine | PASS | Read-only by type (D1); no transition, no reopen |
@@ -123,7 +123,7 @@ scripts/check-history.mjs    # new
 
 ## Analysis
 
-Cross-checked against spec 012 on 2026-09-29. Coverage is FR-001 to FR-016 plus FR-009a: 17/17 (FR-016 was added during the red team and is covered by D14). No CRITICAL or HIGH findings.
+Cross-checked against spec 013 on 2026-09-29. Coverage is FR-001 to FR-016 plus FR-009a: 17/17 (FR-016 was added during the red team and is covered by D14). No CRITICAL or HIGH findings.
 
 - A1 (MEDIUM, fixed): FR-015 was uncovered. D5 and D13 now carry responsiveness and keyboard access.
 - A2 (MEDIUM, decided): the cancellation callout's tone. The frame draws red and the review panel uses slate. **Slate everywhere**, logged in additions.md (D7, D12).
@@ -151,7 +151,7 @@ Steelman: History is a read-only projection of the store the queue already write
 | R2 | The widened timeline draws nodes a cancelled request never reached, when its facts are inconsistent | **Mitigated**: a node needs all its facts (D8); every seeded Cancelled row is checked (D13) |
 | R3 | The derived resolved time does not survive the real contract | **Mitigated**: one `resolvedAt()` (D2); conflict 7 names the need (D10); the blank path is stubbed and checked (D9, D13) |
 | R4 | A load-everything, filter-in-the-browser list does not scale to the drawn 1,250 rows | **Accepted**, see Known Risks |
-| R5 | An email link to a resolved request opens the queue's review panel, not History | **Mitigated**: D14; spec 012 FR-016; spec 008 FR-001a amended |
+| R5 | An email link to a resolved request opens the queue's review panel, not History | **Mitigated**: D14; spec 013 FR-016; spec 008 FR-001a amended |
 
 ## Known Risks
 

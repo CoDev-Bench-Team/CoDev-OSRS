@@ -24,7 +24,7 @@ import type {
  *  REQ-2026-1847's lines, note and office are frame `02.2`'s.
  *
  *  There are enough live rows to page at 10 per page, and fourteen terminal
- *  ones the queue leaves to History, enough to page there too (spec 012).
+ *  ones the queue leaves to History, enough to page there too (spec 013).
  *
  *  **What the store does not do.** It changes status only. Releasing a
  *  reservation on reject, and consuming stock on complete, are the API's
@@ -207,7 +207,7 @@ function seed(): ReviewRequest[] {
       approvedAt: '2026-07-28T06:00:00Z',
       cancellation: { reason: 'Model discontinued; employee will re-request', at: '2026-07-29T02:00:00Z' },
     },
-    // More resolved requests for History (spec 012 plan D9): every shape a
+    // More resolved requests for History (spec 013 plan D9): every shape a
     // request can end in, across requesters and dates, enough to page at 10.
     {
       id: 'REQ-2026-1672',

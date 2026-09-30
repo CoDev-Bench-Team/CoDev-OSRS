@@ -36,7 +36,7 @@ import {
 } from './history-types';
 import { HistoryPanel } from './HistoryPanel';
 
-/** The Admin's History (BEN-144, spec 012; frame `04 - History`): every
+/** The Admin's History (BEN-144, spec 013; frame `04 - History`): every
  *  resolved request across all requestors, in the Requests Queue's table
  *  geometry, with a read-only panel. Nothing here changes a request: the
  *  source it holds can only load (plan D1). */
@@ -81,7 +81,7 @@ export function HistoryPage({
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [query, setQuery] = useState<HistoryQuery>(INITIAL_HISTORY_QUERY);
-  /** The request open in the panel. Component state, not an address (spec 012
+  /** The request open in the panel. Component state, not an address (spec 013
    *  Clarifications). */
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -118,7 +118,7 @@ export function HistoryPage({
   const change = (next: Partial<HistoryQuery>) => setQuery((current) => updateQuery(current, next));
 
   /** `/requests/:id` for a resolved request lands here, forwarded by the queue
-   *  (spec 012 FR-016, plan D14). Only resolved requests can open. */
+   *  (spec 013 FR-016, plan D14). Only resolved requests can open. */
   const resolvedIds = useMemo(
     () => (state.kind === 'loaded' ? state.snapshot.requests.filter(isResolved).map((request) => request.id) : null),
     [state],
@@ -291,7 +291,7 @@ function LoadedHistory({
                     {request.resolvedLabel}
                   </span>
                   <span style={tableColumnStyle(COLUMNS.action)} className="flex items-center">
-                    {/* Opens the read-only panel; the drawn label (spec 012 H1). */}
+                    {/* Opens the read-only panel; the drawn label (spec 013 H1). */}
                     <Button aria-label={`Review request ${request.id}`} onClick={() => onReview(request.id)}>
                       Review
                     </Button>

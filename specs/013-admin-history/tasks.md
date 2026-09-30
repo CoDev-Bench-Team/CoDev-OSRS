@@ -1,7 +1,7 @@
 # Tasks: Admin History — resolved requests
 
-**Spec**: `specs/012-admin-history/spec.md`  
-**Plan**: `specs/012-admin-history/plan.md`  
+**Spec**: `specs/013-admin-history/spec.md`  
+**Plan**: `specs/013-admin-history/plan.md`  
 **Structure**: By the plan's Build Order. The two refactor phases (1, 2) each end on a full `npm run verify` before any History code lands (R1).
 
 Linear lifecycle: BEN-145 (L0, spec) → BEN-149 (L1, plan + tasks) → BEN-146 (L2, table) → BEN-147 (L3, panel) → BEN-148 (L4, checks + PR). Parent: BEN-144.
@@ -10,7 +10,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 
 ## Phase 0: Docs and contract gap (BEN-149)
 
-- [x] T001 [P] [BEN-149] Mark spec 001 T022 as owned by spec 012 — `specs/001-office-supplies-mvp/tasks.md`
+- [x] T001 [P] [BEN-149] Mark spec 001 T022 as owned by spec 013 — `specs/001-office-supplies-mvp/tasks.md`
 - [x] T002 [P] [BEN-149] Add conflict **7, "History: resolved requests"**: terminal statuses from `GET /requests` (BEN-105), the time each terminal status was set, the stored rejection and cancellation reason on read, the requester's department, and a server-paged list (R4). No route, parameter or field name is proposed (D10) — `specs/001-office-supplies-mvp/contracts/README.md`
 - [x] T003 [P] [BEN-149] Log the undrawn parts (D12): composed Rejected and Completed History panels (H2 / D8), counts on every History chip, History's sort menu, the stopped-request timeline rule (replacing the Cancelled collapse), the *No reason recorded* marker, and History's cancellation callout in slate where the frame draws red — `docs/design-system/additions.md`
 
@@ -71,11 +71,11 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - No page-level overflow at 360px and 1440px; keyboard reach to chips, search, sort, **Review** and pagination (D13).
 
   File: `scripts/check-history.mjs`
-- [x] T021 [BEN-148] Wire `history (spec 012)` into the gates and update the header comment — `scripts/verify.mjs`
+- [x] T021 [BEN-148] Wire `history (spec 013)` into the gates and update the header comment — `scripts/verify.mjs`
 - [x] T022 [P] [BEN-148] Confirm the shell check still refuses `/history` for the Employee and offers it to the Admin; add the assertion if it is missing — `scripts/check-shell.mjs`
 - [x] T023 [BEN-148] Full `npm run verify` passes; screenshots at 1440px against both `04 - History` frames are attached to the PR — `scripts/verify.mjs` *(Verify passes and the screenshots are taken. Attaching them moves to T025, since the PR does not exist yet.)*
-- [x] T024 [BEN-148] Tick T022 `[x]` in spec 001 tasks and T001–T023 here — `specs/001-office-supplies-mvp/tasks.md`, `specs/012-admin-history/tasks.md`
-- [ ] T025 [BEN-148] PR to `dev` linking BEN-144, and attach it to the Linear issue — `specs/012-admin-history/` Attach the 1440px screenshots of both `04 - History` frames (T023).
+- [x] T024 [BEN-148] Tick T022 `[x]` in spec 001 tasks and T001–T023 here — `specs/001-office-supplies-mvp/tasks.md`, `specs/013-admin-history/tasks.md`
+- [ ] T025 [BEN-148] PR to `dev` linking BEN-144, and attach it to the Linear issue — `specs/013-admin-history/` Attach the 1440px screenshots of both `04 - History` frames (T023).
 
 ## Dependencies
 

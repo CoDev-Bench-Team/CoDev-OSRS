@@ -1,6 +1,6 @@
 /** The list rules the Requests Queue (spec 004) and the Admin's History (spec
- *  012) share, so the two tables search, sort and page by one set of rules
- *  (spec 012 plan D3). */
+ *  013) share, so the two tables search, sort and page by one set of rules
+ *  (spec 013 plan D3). */
 
 /** The fields a request list searches. */
 export interface Searchable {

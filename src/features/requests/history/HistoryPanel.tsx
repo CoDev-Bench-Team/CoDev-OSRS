@@ -5,12 +5,12 @@ import { Card, ItemsRequested, RequesterBlock, StoppedReason } from '../review-p
 import type { ResolvedRequest } from './history-model';
 
 /** The Admin's read-only view of a resolved request, a side panel over
- *  History (BEN-144, spec 012). Frame: `04 - History` with its Cancelled panel.
+ *  History (BEN-144, spec 013). Frame: `04 - History` with its Cancelled panel.
  *
  *  It reads the request back and offers nothing to do: no footer, no action.
- *  ✕, Esc and the scrim close it (spec 012 FR-008 to FR-011). The Rejected and
+ *  ✕, Esc and the scrim close it (spec 013 FR-008 to FR-011). The Rejected and
  *  Completed panels are composed from the same parts, since only the Cancelled
- *  one is drawn (additions.md §3i). */
+ *  one is drawn (additions.md §3j). */
 export function HistoryPanel({ request, onClose }: { request: ResolvedRequest; onClose: () => void }) {
   const statusHeadingId = useId();
   return (

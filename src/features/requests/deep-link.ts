@@ -26,7 +26,7 @@ export const REQUEST_NOT_FOUND = 'That request is not available. It may not exis
  *
  *  `open` may instead return a path: the request belongs to another page, and
  *  the link is forwarded there with the same state, for that page to open. The
- *  Requests Queue forwards a resolved request to History (spec 012 FR-016). */
+ *  Requests Queue forwards a resolved request to History (spec 013 FR-016). */
 export function useDeepLinkedRequest(
   ids: readonly string[] | null,
   open: (id: string) => string | void,

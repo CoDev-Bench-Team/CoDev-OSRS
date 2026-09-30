@@ -101,7 +101,7 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     path: '/history',
     navLabel: 'History',
     title: 'History',
-    /** `04 - History`'s drawn subheading (spec 012 Story 1). */
+    /** `04 - History`'s drawn subheading (spec 013 Story 1). */
     purpose: 'Full audit trail — completed, cancelled, and rejected requests',
     roles: ['admin'],
   },

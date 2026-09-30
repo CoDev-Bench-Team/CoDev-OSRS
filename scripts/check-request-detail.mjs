@@ -175,7 +175,7 @@ for (const row of initial) {
   if (row.pill === 'Cancelled') {
     // `04.2 - Cancelled`: an Employee cancels only while pending, so the
     // timeline reads Submitted → Cancelled. A request cancelled after approval
-    // would keep the nodes it reached (spec 012 FR-009a); check-history covers it.
+    // would keep the nodes it reached (spec 013 FR-009a); check-history covers it.
     check(
       JSON.stringify(p.timeline) === JSON.stringify([['reached', 'Submitted'], ['cancelled', 'Cancelled']]),
       `${row.id}: cancelled while pending, the timeline reads Submitted → Cancelled`,

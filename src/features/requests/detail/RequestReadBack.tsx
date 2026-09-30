@@ -20,7 +20,7 @@ import { NO_REASON, stoppedReason } from '../stopped-reason';
 export function RequestReadBack({ request }: { request: EmployeeRequest }) {
   // BEN-67 / BEN-70: a stopped request reads back why. The `04.2 - Cancelled`
   // frame does not draw it; Linear asks for it (additions.md §3e). One with no
-  // stored reason says so (additions.md §3i).
+  // stored reason says so (additions.md §3j).
   const stopped = stoppedReason(request);
 
   return (

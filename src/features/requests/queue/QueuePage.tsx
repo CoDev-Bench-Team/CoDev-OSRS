@@ -96,7 +96,7 @@ export function QueuePage({
   /** A `/requests/:id` link still being resolved. Until it is, the queue shows
    *  its loading state rather than a table it may be about to leave: a
    *  resolved request's link is forwarded to History, and the queue must not
-   *  flash or announce its rows on the way (spec 012 plan D14). */
+   *  flash or announce its rows on the way (spec 013 plan D14). */
   const linking = !!(navigation as DeepLinkState | null)?.openRequest;
   const source = useMemo(() => given ?? adminRequestSource(search), [given, search]);
   const [attempt, setAttempt] = useState(0);
@@ -188,7 +188,7 @@ export function QueuePage({
 
   // `/requests/:id` lands here for an Admin. The snapshot holds every request:
   // a live one opens its review panel, and a resolved one is forwarded to
-  // History, which owns its read-only panel (spec 012 FR-016, plan D14).
+  // History, which owns its read-only panel (spec 013 FR-016, plan D14).
   const allIds = useMemo(
     () => (state.kind === 'loaded' ? state.snapshot.requests.map((request) => request.id) : null),
     [state],

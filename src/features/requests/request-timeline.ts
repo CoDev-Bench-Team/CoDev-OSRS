@@ -32,8 +32,8 @@ export interface TimelineFacts {
  *  happens from `Pending Approval`, so that is its only shape.
  *
  *  A request cancelled after approval keeps the nodes it reached before the
- *  ending, each dated: Submitted → Approved → [handover] → Cancelled (spec 012
- *  FR-009a, additions.md §3i). The terminal status cannot say how far it got,
+ *  ending, each dated: Submitted → Approved → [handover] → Cancelled (spec 013
+ *  FR-009a, additions.md §3j). The terminal status cannot say how far it got,
  *  so the timestamps do, and a node is drawn only when all of its facts are
  *  present. `Received` cannot be cancelled, so no longer shape exists. */
 const APPROVED_OR_LATER = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup', 'Received', 'Completed']);
