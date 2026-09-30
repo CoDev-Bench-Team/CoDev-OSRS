@@ -36,7 +36,7 @@ Replace the `/requests` placeholder with a minimal My Requests table, and open a
 | Handover (*For Delivery* or *Ready for Pickup*, the state taken; the drawn *For Delivery/For Pickup* before then) | `For Delivery`, `Ready for Pickup`, `Completed` | `handedOverAt` |
 | Complete | `Completed` | `completedAt` |
 
-`Cancelled` collapses to **Submitted → Cancelled** in slate, as `04.2 - Cancelled` draws it. `Rejected` takes the same shape in red; it isn't drawn, so it is logged in `docs/design-system/additions.md` §3e.
+~~`Cancelled` collapses to **Submitted → Cancelled** in slate~~ `Cancelled` shows every node the request reached, dated, then **Cancelled** in slate; one cancelled while pending reads Submitted → Cancelled, as `04.2 - Cancelled` draws it *(amended 2026-09-29, [spec 012](../012-admin-history/spec.md) FR-009a, additions.md §3i)*. `Rejected` takes the same shape in red; it isn't drawn, so it is logged in `docs/design-system/additions.md` §3e.
 
 ## Data Model
 

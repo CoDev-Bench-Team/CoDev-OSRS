@@ -121,7 +121,7 @@ Raised by [spec 012](../012-accountability-form/spec.md). Spec 012 puts the Acco
 
 Raised by [drift-2026-09-26 §3](../../docs/design-system/drift-2026-09-26.md): `04.1` and `04.2` now draw a five-node timeline.
 
-- Q: What does the panel's timeline show? → A: **Submitted → Approved → For Delivery/For Pickup → Received → Complete.** `Received` is reached when the request is `Received` or `Completed`, and carries the time it was set. Cancelled and Rejected still collapse to two nodes.
+- Q: What does the panel's timeline show? → A: **Submitted → Approved → For Delivery/For Pickup → Received → Complete.** `Received` is reached when the request is `Received` or `Completed`, and carries the time it was set. ~~Cancelled and Rejected still collapse to two nodes.~~ Rejected still collapses to two nodes; Cancelled keeps the nodes it reached *(amended 2026-09-29, [spec 012](../012-admin-history/spec.md) FR-009a)*.
 - Q: Does the panel get the Accountability Form? → A: **Not in this spec.** It is spec 001 FR-012b / tasks T018b, blocked on the contract (conflict 5). The panel still offers **Cancel Request** only while `Pending Approval`.
 
 ### Session 2026-09-25 — Amendment (from spec 011, BEN-43)

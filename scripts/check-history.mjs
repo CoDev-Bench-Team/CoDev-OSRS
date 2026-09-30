@@ -123,6 +123,8 @@ const panel = () => {
     controls: d.querySelectorAll('input, textarea, select, [role="combobox"]').length,
     text: d.textContent,
     timeline: [...d.querySelectorAll('ol li')].map((li) => [li.dataset.state, li.querySelector('span span')?.textContent.trim()]),
+    /** Whether each node carries a date ("Aug 20, 2026, 1:00 PM"). */
+    dated: [...d.querySelectorAll('ol li')].map((li) => /[A-Z][a-z]{2} \d{1,2}, \d{4}/.test(li.textContent)),
   };
 };
 
@@ -407,6 +409,12 @@ try {
   await setPageSize(50);
   await settle();
 
+  await open('REQ-2026-1650');
+  p = await cdp.evaluate(panel);
+  check(!/Note to Approver/.test(p.text), 'a request with no note draws no Note to Approver block');
+  await esc();
+  await closed();
+
   console.log('\nEvery stored reason is read back (SC-003)');
   for (const [id, reason] of Object.entries(REASONS)) {
     await open(id);
@@ -422,6 +430,7 @@ try {
     await open(id);
     p = await cdp.evaluate(panel);
     check(same(p.timeline, expected), `${id}: ${expected.map(([, l]) => l).join(' → ')}`, JSON.stringify(p.timeline));
+    check(p.dated.length === expected.length && p.dated.every(Boolean), `${id}: every node is dated`, JSON.stringify(p.dated));
     await esc();
     await closed();
   }

@@ -31,7 +31,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
 - [x] T010 [US1] [BEN-146] `TERMINAL_STATUSES` (`Completed · Cancelled · Rejected`), `HistoryChip`, `HISTORY_SORTS` (the queue's three), `HistoryQuery` + `INITIAL_HISTORY_QUERY`, `HistoryRow`, `HistoryViewModel`; `PAGE_SIZES` imported from the queue (D4) — `src/features/requests/history/history-types.ts`
 - [x] T011 [US1] [BEN-146] `resolvedAt(request)`, the only reader of the resolved time (D2, R3), and `buildHistoryViewModel(snapshot, query)`: de-duplicate, keep terminal statuses, search, count every chip over the matches, filter, sort by `resolvedAt` / Employee (A-Z), clamp and slice, via `list-query.ts` (D3) — `src/features/requests/history/history-model.ts`
 - [x] T012 [P] [US1] [BEN-146] Add about 11 terminal rows to the shared seed so it reaches about 14: Completed by delivery and by pickup; Rejected; Cancelled from pending, `Approved`, `For Delivery` and `Ready for Pickup`; one with no note; several requesters and dates. Every stored reason is present. REQ-2026-1847 is untouched (D9) — `src/features/requests/queue/seeded-admin-request-source.ts`
-- [x] T013 [US1] [BEN-146] `HistorySource = Pick<AdminRequestSource, 'load'>` and `historySource(search)` over `adminRequestSource`. On the dev server only, a `?history=` stub with `failing`, `slow`, `empty`, `no-reason` and `no-resolved-date` modes, each on a fresh seed (D1, D9) — `src/features/requests/history/history-source.ts`, `src/features/requests/history/dev/history-stub.ts`
+- [x] T013 [US1] [BEN-146] `HistorySource = Pick<AdminRequestSource, 'load'>` and `historySource(search)` over `adminRequestSource`. On the dev server only, a `?history=` stub with `failing`, `slow`, `empty`, `no-reason`, `no-resolved-date` and `received` modes, each on a fresh seed (D1, D9) — `src/features/requests/history/history-source.ts`, `src/features/requests/history/dev/history-stub.ts`
 - [x] T014 [US1] [BEN-146] `HistoryPage`:
   - `LoadState`: `LoadingState` while loading, a `Notice` + **Try again** on failure, and the empty state on no match.
   - Header from `DESTINATIONS.history`; the toolbar holds `Search` (the drawn placeholder) and the sort `Select`.
@@ -66,7 +66,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] [Ticket] Description — path`
   - The three sorts by resolved time; pagination range, Back/Next ends, and page-size reset; re-pressing the selected chip keeps the page.
   - The panel: reason label per status; none for Completed; no action controls on the rows or the panel.
   - Every seeded Cancelled row's exact timeline node list.
-  - Stub modes `failing` / `slow` / `empty` / `no-reason` / `no-resolved-date`, the last showing `NO_VALUE` and sorting last under both date orders.
+  - Stub modes `failing` / `slow` / `empty` / `no-reason` / `no-resolved-date` / `received` (a Received request stays off History, so all eight statuses are present); `no-resolved-date` showing `NO_VALUE` and sorting last under both date orders.
   - `/requests/<terminal id>` as an Admin opens the History panel, and a live id opens the review panel.
   - No page-level overflow at 360px and 1440px; keyboard reach to chips, search, sort, **Review** and pagination (D13).
 
