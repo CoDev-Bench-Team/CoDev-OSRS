@@ -14,9 +14,11 @@ import { CATEGORIES, SPEC_KEYS, type Asset, type AssetDraft, type Category, type
  *  Laptop loses nothing; `draftForCategory` drops what the category does not
  *  draw at submit, so a hidden field is never sent.
  *
- *  No location, quantity or threshold here: the design moved stock to the
- *  Update stocks panel (drift §4f). The custom-spec rows are Update-only, as
- *  drawn, and have no contract field (spec 014 D7). */
+ *  No location or quantity: stock is units, added on Inventory (ADR-0008).
+ *  Update Asset ends with STOCKS · Low-stock threshold, one per asset
+ *  (drift-2026-09-26 §2, spec 014 D8); Add Asset draws none, so a new asset
+ *  takes the source's default. The custom-spec rows are Update-only, as drawn,
+ *  and have no contract field (spec 014 D7). */
 type FormState = {
   name: string;
   category: Category;
@@ -25,6 +27,8 @@ type FormState = {
   image?: string;
   specs: Record<SpecKey, string>;
   customSpecs: CustomSpec[];
+  /** As typed; parsed on submit. Update only. */
+  lowStockThreshold: string;
 };
 
 function initial(asset?: Asset): FormState {
@@ -36,7 +40,13 @@ function initial(asset?: Asset): FormState {
     image: asset?.image,
     specs: Object.fromEntries(SPEC_KEYS.map((k) => [k, asset?.specs[k] ?? ''])) as Record<SpecKey, string>,
     customSpecs: asset?.customSpecs.map((s) => ({ ...s })) ?? [],
+    lowStockThreshold: asset ? String(asset.lowStockThreshold) : '',
   };
+}
+
+/** Blank is not 0: it is refused, as any non-whole number is. */
+function parseThreshold(typed: string): number {
+  return typed.trim() === '' ? NaN : Number(typed);
 }
 
 const MODEL_PLACEHOLDER = 'e.g. Latitude 7440';
@@ -81,7 +91,10 @@ export function AssetFormPanel({
     // `customSpecs.<i>` index names the same row on screen as in the draft.
     const kept = { ...form, customSpecs: form.customSpecs.filter((s) => s.key.trim() || s.value.trim()) };
     setForm(kept);
-    const draft = draftForCategory(kept);
+    const draft = draftForCategory({
+      ...kept,
+      lowStockThreshold: updating ? parseThreshold(kept.lowStockThreshold) : undefined,
+    });
     const missing = missingFields(draft);
     if (Object.keys(missing).length) {
       setErrors(missing);
@@ -243,6 +256,23 @@ export function AssetFormPanel({
                 </button>
               </>
             ) : null}
+          </FieldGroup>
+        ) : null}
+
+        {updating ? (
+          <FieldGroup heading="STOCKS">
+            <Field label="Low-stock threshold" error={errors.lowStockThreshold}>
+              {({ id, invalid, describedBy }) => (
+                <TextInput
+                  id={id}
+                  inputMode="numeric"
+                  invalid={invalid}
+                  aria-describedby={describedBy}
+                  value={form.lowStockThreshold}
+                  onChange={(e) => set('lowStockThreshold', e.target.value)}
+                />
+              )}
+            </Field>
           </FieldGroup>
         ) : null}
       </form>

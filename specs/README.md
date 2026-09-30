@@ -13,7 +13,7 @@ AI-SDD feature folders. Do not put application code here.
 | [012-accountability-form](012-accountability-form/spec.md) | Accountability Form — Employee confirms receipt on `Received` (BEN-136) | Draft |
 | [013-admin-history](013-admin-history/spec.md) | Admin History — resolved requests, read-only panel (BEN-144) | Draft |
 | [010-design-ratification](010-design-ratification/spec.md) | Ratify the 2026-09-22 export's open questions; unit-register amendment (BEN-116) | Draft |
-| [014-assets-inventory](014-assets-inventory/spec.md) | Assets and Inventory (Admin) — SPA mock (BEN-48) | Draft |
+| [014-assets-inventory](014-assets-inventory/spec.md) | Assets (Admin) — SPA mock (BEN-48); Inventory is BEN-107 / BEN-108 | Draft |
 | [constitution.md](constitution.md) | Governing principles (also in AGENTS.md) | 7.0.0 |
 
 When starting a new feature: copy the lifecycle in `docs/ai-sdd.md`, create `specs/00N-slug/` with `spec.md` first, then plan and tasks. Do not invent a REST `contracts/api.md` — the backend team owns HTTP.

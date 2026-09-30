@@ -18,20 +18,19 @@ import type { Asset } from './types';
 
 /** `/assets` — `03- Assets` (spec 014 Story 1).
  *
- *  The requestable catalogue, by model, with unit counts summed across the five
- *  offices: Available and Reserved from stock, Deployed from completed requests.
- *  A row opens View Asset; **+ Add Asset** opens the Add panel.
+ *  The requestable catalogue, by model, with its units counted by status and
+ *  summed across the five offices: Available, Reserved and Assigned
+ *  (ADR-0008). A row opens View Asset; **+ Add Asset** opens the Add panel.
  *
  *  Column widths are the drawn ones inside 20px padding, so below about 1100px
- *  the table scrolls sideways inside its card rather than reflowing, as
- *  Inventory does. */
+ *  the table scrolls sideways inside its card rather than reflowing. */
 const COLUMNS: [label: string, width?: ColumnWidth][] = [
   ['ITEM NAME', '300px'],
   ['CATEGORY', '160px'],
   ['MODEL', '200px'],
   ['AVAILABLE UNITS', '160px'],
   ['PENDING/RESERVED UNITS', '200px'],
-  ['DEPLOYED UNITS'],
+  ['ASSIGNED UNITS'],
 ];
 
 /** Derived from the columns and the shared gutter; the fluid column keeps 120px. */
@@ -56,7 +55,7 @@ export function AssetsPage() {
   return (
     <div className="flex flex-1 flex-col pt-[34px] pb-32">
       <div className="flex flex-wrap items-center justify-between gap-16">
-        <PageHeader title="Assets" subtitle="Deployed and available units" />
+        <PageHeader title="Assets" subtitle="Assigned and available units" />
         <Button variant="accent" onClick={() => setPanel({ kind: 'add' })}>
           + Add Asset
         </Button>
@@ -103,7 +102,7 @@ export function AssetsPage() {
                     {reserved}
                   </span>
                   <span className="type-ui text-ink-strong" style={tableColumnStyle()}>
-                    {asset.deployed}
+                    {asset.assigned}
                   </span>
                 </button>
               );

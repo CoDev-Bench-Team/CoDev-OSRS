@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AssetSource } from './asset-source';
 import { seededAssetSource } from './seeded-asset-source';
-import type { Asset, AssetDraft, StockChange } from './types';
+import type { Asset, AssetDraft } from './types';
 
-/** The active source. Seeded until the stock model is settled (spec 014 D1);
- *  a contract-backed source replaces this one line. */
+/** The active source. Seeded until the contract publishes the unit counts
+ *  (spec 014 D1); a contract-backed source replaces this one line. */
 const source: AssetSource = seededAssetSource;
 
 export type AssetsState =
@@ -12,7 +12,7 @@ export type AssetsState =
   | { kind: 'failed' }
   | { kind: 'loaded'; assets: Asset[] };
 
-/** Loads every asset and exposes the three mutations. A mutation resolves with
+/** Loads every asset and exposes the two mutations. A mutation resolves with
  *  the saved asset after the list has been reloaded, or rejects with whatever
  *  the source rejected with — a `ValidationProblem` the form maps to fields. */
 export function useAssets() {
@@ -59,6 +59,5 @@ export function useAssets() {
     reload,
     create: useCallback((draft: AssetDraft) => after(source.create(draft)), [after]),
     update: useCallback((id: string, draft: AssetDraft) => after(source.update(id, draft)), [after]),
-    setStock: useCallback((id: string, change: StockChange) => after(source.setStock(id, change)), [after]),
   };
 }

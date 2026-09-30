@@ -4,9 +4,9 @@ import type { AssetsState } from './asset-store';
 import { CATEGORIES } from './types';
 import { ALL_CATEGORIES, PAGE_SIZES, type TableQuery } from './useTableQuery';
 
-/** The toolbar both admin tables share: search beside the category select,
- *  then the four stock chips. Only the first chip's noun differs —
- *  `All assets` on Assets, `All items` on Inventory. */
+/** The Assets toolbar: search beside the category select, then the four stock
+ *  chips. Inventory's unit table filters by unit status instead (BEN-107), so
+ *  it does not share these chips. */
 const CHIPS: [label: string, status: StockStatus][] = [
   ['In stock', 'In Stock'],
   ['Low stock', 'Low Stock'],

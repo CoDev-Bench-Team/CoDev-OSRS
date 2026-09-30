@@ -6,7 +6,7 @@ export const ALL_CATEGORIES = 'All categories';
 export const PAGE_SIZES = [10, 25, 50] as const;
 
 /** Search, category, stock chip and page over an in-memory list — the Assets
- *  and Inventory toolbars (spec 014 Story 1, Story 4).
+ *  toolbar (spec 014 Story 1).
  *
  *  Chip counts describe the rows the search and category select leave, before
  *  the chip itself applies, so each chip says how many rows pressing it would

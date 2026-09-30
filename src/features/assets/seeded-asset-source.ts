@@ -6,25 +6,26 @@ import type { AssetSource } from './asset-source';
 import { CATEGORIES, type Asset, type AssetDraft, type StockLevels } from './types';
 import { draftForCategory, missingFields } from './category-fields';
 
-/** Seeded Assets and Inventory — non-production placeholders under
- *  constitution IX, and the only `AssetSource` until the stock model is
- *  settled (spec 014 D1).
+/** Seeded Assets — non-production placeholders under constitution IX, and the
+ *  only `AssetSource` until the contract publishes per-asset unit counts
+ *  (spec 014 D1).
  *
- *  The first rows are the design's own: `03 - Inventory` draws Dell Latitude
- *  7440 at 32 / 18 / 14, LG UltraFine 27-inch at 24 / 8 / 16, Logitech MX
- *  Master 3S at 28 / 4 / 24 and a 2m USB-C cable at 60 / 0 / 60, plus two
- *  unnamed rows at 40 / 24 / 16 and 20 / 5 / 15, given names here. How each
- *  total splits across the five offices is ours. The rest make every state
- *  reachable: all three stock statuses, an asset with no stock anywhere, every
- *  category, an asset with custom specs, and enough rows for a second page.
+ *  Stock is held as counts of units by status per office, as a register of
+ *  units would report it (ADR-0008): Available and Reserved at each office,
+ *  Assigned per asset. The first rows keep the design's own totals — Dell
+ *  Latitude 7440 at 18 available / 14 reserved, LG UltraFine 27-inch at 8 / 16,
+ *  Logitech MX Master 3S at 4 / 24, a 2m USB-C cable at 0 / 60, and two more at
+ *  24 / 16 and 5 / 15, given names here. How each splits across the five
+ *  offices is ours. The rest make every state reachable: all three stock
+ *  statuses, an asset with no units anywhere, every category, an asset with
+ *  custom specs, and enough rows for a second page.
  *
- *  Module state, so an edit on Assets is on Inventory after navigating, and a
- *  reload starts over. */
+ *  Module state, so a reload starts over. */
 
 type Split = [cebu: number, bacolod: number, makati: number, ortigas: number, davao: number];
 
-function stock(totals: Split, reserved: Split = [0, 0, 0, 0, 0]): Record<Office, StockLevels> {
-  return Object.fromEntries(OFFICES.map((o, i) => [o, { total: totals[i], reserved: reserved[i] }])) as Record<
+function stock(available: Split, reserved: Split = [0, 0, 0, 0, 0]): Record<Office, StockLevels> {
+  return Object.fromEntries(OFFICES.map((o, i) => [o, { available: available[i], reserved: reserved[i] }])) as Record<
     Office,
     StockLevels
   >;
@@ -52,8 +53,8 @@ let assets: Asset[] = [
     specs: { ...LAPTOP_SPECS, processor: 'Intel Core i7-1365U', graphics: 'Intel Iris Xe Graphics' },
     customSpecs: [],
     lowStockThreshold: 5,
-    deployed: 3,
-    stock: stock([12, 5, 8, 4, 3], [6, 2, 4, 2, 0]),
+    assigned: 3,
+    stock: stock([6, 3, 4, 2, 3], [6, 2, 4, 2, 0]),
   },
   {
     id: 'asset-2',
@@ -64,8 +65,8 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 6,
-    deployed: 11,
-    stock: stock([8, 4, 6, 3, 3], [6, 2, 5, 2, 1]),
+    assigned: 11,
+    stock: stock([2, 2, 1, 1, 2], [6, 2, 5, 2, 1]),
   },
   {
     id: 'asset-3',
@@ -75,8 +76,8 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 8,
-    deployed: 21,
-    stock: stock([12, 6, 10, 6, 6], [5, 2, 4, 3, 2]),
+    assigned: 21,
+    stock: stock([7, 4, 6, 3, 4], [5, 2, 4, 3, 2]),
   },
   {
     id: 'asset-4',
@@ -86,8 +87,8 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 5,
-    deployed: 17,
-    stock: stock([10, 4, 7, 4, 3], [9, 3, 6, 3, 3]),
+    assigned: 17,
+    stock: stock([1, 1, 1, 1, 0], [9, 3, 6, 3, 3]),
   },
   {
     id: 'asset-5',
@@ -97,8 +98,8 @@ let assets: Asset[] = [
     specs: { ram: '4GB', storage: '128GB' },
     customSpecs: [],
     lowStockThreshold: 5,
-    deployed: 8,
-    stock: stock([6, 3, 5, 3, 3], [5, 2, 4, 2, 2]),
+    assigned: 8,
+    stock: stock([1, 1, 1, 1, 1], [5, 2, 4, 2, 2]),
   },
   {
     id: 'asset-6',
@@ -107,8 +108,8 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 10,
-    deployed: 44,
-    stock: stock([20, 10, 15, 8, 7], [20, 10, 15, 8, 7]),
+    assigned: 44,
+    stock: stock([0, 0, 0, 0, 0], [20, 10, 15, 8, 7]),
   },
   {
     id: 'asset-7',
@@ -120,8 +121,8 @@ let assets: Asset[] = [
     specs: LAPTOP_SPECS,
     customSpecs: [{ key: 'External Keyboard', value: 'Logitech MX Keys' }],
     lowStockThreshold: 4,
-    deployed: 9,
-    stock: stock([6, 2, 4, 0, 3], [1, 0, 1, 0, 0]),
+    assigned: 9,
+    stock: stock([5, 2, 3, 0, 3], [1, 0, 1, 0, 0]),
   },
   {
     id: 'asset-8',
@@ -131,7 +132,7 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 3,
-    deployed: 6,
+    assigned: 6,
     stock: stock([0, 0, 0, 0, 0]),
   },
   {
@@ -142,7 +143,7 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 2,
-    deployed: 4,
+    assigned: 4,
     stock: stock([4, 2, 2, 1, 1]),
   },
   {
@@ -153,8 +154,8 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 2,
-    deployed: 2,
-    stock: stock([3, 1, 2, 1, 1], [1, 0, 0, 0, 0]),
+    assigned: 2,
+    stock: stock([2, 1, 2, 1, 1], [1, 0, 0, 0, 0]),
   },
   {
     id: 'asset-11',
@@ -163,8 +164,8 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 6,
-    deployed: 12,
-    stock: stock([10, 4, 6, 4, 4], [2, 0, 1, 0, 0]),
+    assigned: 12,
+    stock: stock([8, 4, 5, 4, 4], [2, 0, 1, 0, 0]),
   },
   {
     id: 'asset-12',
@@ -174,8 +175,8 @@ let assets: Asset[] = [
     specs: { ram: '32GB', storage: '1TB SSD', processor: 'AMD Ryzen 7 PRO 7840U', graphics: 'AMD Radeon 780M', operatingSystem: 'Windows 11 Pro' },
     customSpecs: [],
     lowStockThreshold: 4,
-    deployed: 5,
-    stock: stock([5, 0, 3, 2, 0], [3, 0, 2, 1, 0]),
+    assigned: 5,
+    stock: stock([2, 0, 1, 1, 0], [3, 0, 2, 1, 0]),
   },
   {
     id: 'asset-13',
@@ -185,8 +186,8 @@ let assets: Asset[] = [
     specs: { ram: '6GB', storage: '128GB' },
     customSpecs: [],
     lowStockThreshold: 2,
-    deployed: 3,
-    stock: stock([2, 0, 2, 0, 0], [2, 0, 1, 0, 0]),
+    assigned: 3,
+    stock: stock([0, 0, 1, 0, 0], [2, 0, 1, 0, 0]),
   },
   {
     id: 'asset-14',
@@ -196,7 +197,7 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 4,
-    deployed: 7,
+    assigned: 7,
     stock: stock([6, 2, 4, 2, 2]),
   },
   {
@@ -206,8 +207,8 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 10,
-    deployed: 30,
-    stock: stock([15, 5, 10, 5, 5], [2, 1, 1, 0, 0]),
+    assigned: 30,
+    stock: stock([13, 4, 9, 5, 5], [2, 1, 1, 0, 0]),
   },
   {
     id: 'asset-16',
@@ -216,7 +217,7 @@ let assets: Asset[] = [
     specs: {},
     customSpecs: [],
     lowStockThreshold: 3,
-    deployed: 5,
+    assigned: 5,
     stock: stock([0, 0, 0, 0, 0]),
   },
 ];
@@ -262,8 +263,9 @@ export const seededAssetSource: AssetSource = {
     const asset: Asset = {
       ...draftForCategory(input),
       id: nextId(),
-      lowStockThreshold: 5,
-      deployed: 0,
+      // The contract's `lowQtyAlert` default; Add Asset draws no threshold.
+      lowStockThreshold: input.lowStockThreshold ?? 5,
+      assigned: 0,
       stock: stock([0, 0, 0, 0, 0]),
     };
     assets = [...assets, asset];
@@ -274,33 +276,6 @@ export const seededAssetSource: AssetSource = {
     const errors = check(input);
     if (Object.keys(errors).length) return refuse(errors);
     const saved: Asset = { ...find(id), ...draftForCategory(input) };
-    assets = assets.map((a) => (a.id === id ? saved : a));
-    return settle(clone(saved));
-  },
-
-  setStock(id, { lowStockThreshold, totals }) {
-    const current = find(id);
-    const errors: Record<string, string> = {};
-    if (!Number.isInteger(lowStockThreshold) || lowStockThreshold < 0) {
-      errors.lowStockThreshold = 'Enter a whole number, 0 or more';
-    }
-    for (const office of OFFICES) {
-      const total = totals[office];
-      const { reserved } = current.stock[office];
-      if (!Number.isInteger(total) || total < reserved) {
-        errors[`totals.${office}`] = `Cannot be below the ${reserved} reserved at ${office}`;
-      }
-    }
-    if (Object.keys(errors).length) return refuse(errors);
-
-    // All or nothing: the new record is built whole and swapped in once.
-    const saved: Asset = {
-      ...current,
-      lowStockThreshold,
-      stock: Object.fromEntries(
-        OFFICES.map((o) => [o, { total: totals[o], reserved: current.stock[o].reserved }]),
-      ) as Record<Office, StockLevels>,
-    };
     assets = assets.map((a) => (a.id === id ? saved : a));
     return settle(clone(saved));
   },

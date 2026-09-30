@@ -45,9 +45,9 @@ this table was first written; the previous `type`, `location`, `specs[]` and
 | `imageBase64` | Optional; base64 image, may include data-URI prefix. Nullable on update |
 | `name` | Required on create |
 | `category` | Required on create. Enum: Laptop, Headset, Monitor, Phone, UPS, Mice, **Wifi**, Type C Hub, Other Devices. Replaces `type` |
-| `model` | Required on create, **for every category** — see conflict 4 |
+| `model` | Required on create, **for every category** — see conflict 9 |
 | `description` | Optional free text |
-| `ram` · `storage` · `processor` · `graphics` · `operatingSystem` | Optional spec strings. Replace the `specs[]` key/value list — see conflict 5 |
+| `ram` · `storage` · `processor` · `graphics` · `operatingSystem` | Optional spec strings. Replace the `specs[]` key/value list — see conflict 10 |
 | `lowQtyAlert` | Low-stock threshold, one per asset, default 5 — see conflict 3 |
 
 `GET /assets` takes `page`, `limit`, `search` (name, model or category),
@@ -55,7 +55,7 @@ this table was first written; the previous `type`, `location`, `specs[]` and
 `stockLevel` (`in_stock` · `low_stock` · `out_of_stock`, from Available against
 the threshold). **Its `200` response has no documented schema.** The backend source
 (2026-09-24) returns each asset with `quantity` = its count of **Available**
-units, at `location` when given; Reserved, Total and Deployed are not returned. The Catalog (spec 005)
+units, at `location` when given; Reserved, Total and Assigned are not returned. The Catalog (spec 005)
 reads it through a seeded `CatalogSource` until it is.
 
 Stock itself is now carried by **inventory items**, one per unit:
@@ -66,17 +66,18 @@ update a `status` of `Available` · `Reserved` · `Assigned` · `Inactive`.
 
 ## Open conflicts with the 2026-09-22 design (raised 2026-09-22)
 
-### State on 2026-09-24
+### State on 2026-09-30
 
-The backend answered all three in PR #87 (BEN-20), before BEN-115 recorded a decision. Spec 014 (Assets and Inventory) ships as an SPA mock on seeded data until 1 is settled.
+The backend answered 1–3 in PR #87 (BEN-20). Spec 014 (Assets, BEN-48) runs on
+seeded data until the per-asset counts in 1 are published.
 
 | # | State | What is still needed |
 |---|-------|----------------------|
-| 1 | **Answered with a per-unit register.** Total / Available / Reserved are counts of unit records by status. | The per-unit register is out of scope under constitution VIII and contradicts ADR-0006, so the **project owner** must choose: amend ADR-0006 and VIII to adopt it, or ask the backend for an aggregate stock resource. Either way the SPA needs **per (asset, office) Total and Reserved, Deployed per asset, and a way to set a quantity per office in one call** — none is exposed today. |
+| 1 | **Decided 2026-09-26: the per-unit register** (constitution 4.0.0, ADR-0008). Available / Reserved / Total are counts of unit records by status. | The published read of per-asset counts (available / reserved / assigned) the Assets table needs — see the 2026-09-26 note under 1 below. |
 | 2 | **Resolved: `Ortigas`**, in every location enum (users, assets, inventory items). | — |
-| 3 | **Resolved**: `location` and `quantity` left the asset; `lowQtyAlert` stayed, one per asset, which matches the one threshold `03.4 - Update Stocks` draws. | Spec 001 FR-003 says per (asset, office); amend it to per asset. |
-| 4 | **New.** `model` is required for every category; the design asterisks it only on Laptop, Phone and Headset, offers it optionally on Wifi and Type C Hub, and draws no Model field on UPS, Mice and Other Device. | One of the two moves. |
-| 5 | **New.** `specs[]` was replaced by five fixed fields, so the Update Asset panel's free custom-spec row (`e.g. External Keyboard`) has nowhere to be saved. | Restore a custom-spec field, or the designer drops the row. |
+| 3 | **Resolved**: `location` and `quantity` left the asset; `lowQtyAlert` stayed, one per asset, which the Update Asset panel's `STOCKS · Low-stock threshold` matches. Spec 001 FR-003 now says per asset. | — |
+| 9 | **Open.** `model` is required for every category; the design asterisks it only on Laptop, Phone and Headset, offers it optionally on Wifi and Type C Hub, and draws no Model field on UPS, Mice and Other Device. | One of the two moves. See 9 below. |
+| 10 | **Open.** `specs[]` was replaced by five fixed fields, so the Update Asset panel's free custom-spec row (`e.g. External Keyboard`) has nowhere to be saved. | Restore a custom-spec field, or the designer drops the row. See 10 below. |
 
 The sections below are the original write-up of 1–3.
 
@@ -314,6 +315,23 @@ and `units`. Spec 008 FR-022 (with spec 013 FR-009a) draws an Admin-cancelled
 request's timeline from its handover state and its approval and handover times.
 So say whether a cancelled request still carries those, and publish
 `cancellationReason` in the schema. This is the same gap as conflict 7.
+
+### 9. `model` is required for every category (raised 2026-09-24)
+
+`CreateAssetDto` requires `model` whatever the category. The eight `03.1 Add
+Asset - <category>` frames asterisk it on Laptop, Phone and Headset, offer it
+unstarred on Wifi and Type C Hub, and draw no Model field on UPS, Mice and
+Other Device. Spec 014 D6 follows the design, so a contract-backed source would
+be refused on those categories. **Needed:** the DTO makes `model` optional, or
+the designer draws it on every category.
+
+### 10. No field for a custom specification (raised 2026-09-24)
+
+The DTO replaced the `specs[]` key/value list with five fixed fields (`ram`,
+`storage`, `processor`, `graphics`, `operatingSystem`). The Update Asset panel
+still draws a free row (`e.g. External Keyboard`). Spec 014 D7 builds it on the
+seeded source only. **Needed:** a custom-spec field on the asset, or the
+designer drops the row. A contract-backed source MUST NOT send it until then.
 
 ### Also worth a word
 

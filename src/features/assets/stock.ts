@@ -1,22 +1,19 @@
 import type { StockStatus } from '../../shared/ui';
 import { OFFICES } from '../auth/types';
-import type { Asset, StockLevels } from './types';
+import type { Asset } from './types';
 
 /** The stock arithmetic, in one place (constitution III, spec 014 D9, D11). */
 
-export function available({ total, reserved }: StockLevels): number {
-  return total - reserved;
-}
-
-/** An asset's stock summed over the five offices. */
+/** An asset's stock summed over the five offices. Total is Available +
+ *  Reserved: the units still in the store. */
 export function stockTotals(asset: Pick<Asset, 'stock'>): { total: number; available: number; reserved: number } {
-  let total = 0;
+  let available = 0;
   let reserved = 0;
   for (const office of OFFICES) {
-    total += asset.stock[office].total;
+    available += asset.stock[office].available;
     reserved += asset.stock[office].reserved;
   }
-  return { total, available: total - reserved, reserved };
+  return { total: available + reserved, available, reserved };
 }
 
 /** Derived, never stored. The threshold is inclusive: an item sitting exactly
@@ -30,12 +27,4 @@ export function stockStatus(availableUnits: number, lowStockThreshold: number): 
 
 export function assetStockStatus(asset: Pick<Asset, 'stock' | 'lowStockThreshold'>): StockStatus {
   return stockStatus(stockTotals(asset).available, asset.lowStockThreshold);
-}
-
-/** Clamp a proposed office Total so it can never undercut what is already
- *  reserved there — the only way the UI could break `Total = Available +
- *  Reserved` or make Available negative. Non-numbers fall back to the floor. */
-export function clampTotal(proposed: number, reserved: number): number {
-  if (!Number.isFinite(proposed)) return reserved;
-  return Math.max(reserved, Math.trunc(proposed));
 }

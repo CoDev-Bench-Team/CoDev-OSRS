@@ -496,20 +496,19 @@ fills what it leaves open.
 | **Sort menu** | Newest First · Oldest First · Employee (A-Z), the queue's drawn menu (`02.1`); the date orders use the resolved date. | The frame draws the select closed. Decided by the project owner (spec 013). |
 | **Loading, empty and failure** | The shell's `LoadingState` in place of the table; the queue's empty state; a `Notice` with **Try again** on failure. | Not drawn; the queue's treatment (spec 004). |
 
-## 3k. Assets and Inventory (BEN-48, spec 014)
+## 3k. Assets (BEN-48, spec 014)
 
-`03- Assets`, `03.1 Add Asset - <category>`, `03.2- View Asset`, `03 - Inventory`
-(frame B) and `03.4 - Update Stocks` are drawn. The following are ours.
+`03- Assets` (×2), `03.1 Add Asset - <category>` and `03.2- View Asset` are
+drawn, as of the 2026-09-26 export. The following are ours. The Inventory rows
+this section carried until 2026-09-30 (stepper floor, typeable stepper, disabled
+`+ Add Inventory`) went with frame B and `03.4 - Update Stocks` (ADR-0008).
 
 | Addition | What was decided | Basis |
 |----------|------------------|-------|
-| **Office floor under each stepper** | Each office row on Update stocks reads `<n> reserved · <n> available` beneath the office name, and `−` is disabled at the reserved count. | Not drawn. A stepper that stops at 3 with no reason reads as a bug; the floor is what keeps `Total = Available + Reserved` (spec 014 D9). |
-| **Typeable stepper value** | The number between `−` and `+` is an input; a value below the floor is raised to it when the field is left. | Not drawn as editable. Setting 60 units one click at a time is not a workflow. |
-| **`+ Add Inventory` disabled** | Rendered as drawn, at 60% opacity, not clickable, with a screen-reader note that adding individual units is not part of the MVP. | It opens a per-unit form that constitution VIII puts out of scope (spec 014 D10). |
 | **Field error line** | A 12px line in rejected ink under the control, and the control's hairline turns rejected red. | The panels draw no error state. Same colours as the shell's refusals. |
 | **Custom specification rows** | On Update Asset: `Specification *` and `Value` side by side with `Remove`, and `+ Add specification` under the category rows. | The frame draws one free row with the placeholder `e.g. External Keyboard` and no add or remove control. |
 | **Monitor's form** | Headset's shape: Model required, no specifications. | No `03.1 Add Asset - Monitor` frame; Monitor is in the contract's category enum (spec 014 D4). |
-| **Table loading, failure and empty** | Loading: the shell's dots at the height of three rows. Failure: the shell's `Notice` with `Try again`. Empty: `No asset matches that search` / `No item matches that search` in a row. | None drawn. |
+| **Table loading, failure and empty** | Loading: the shell's dots at the height of three rows. Failure: the shell's `Notice` with `Try again`. Empty: `No asset matches that search` in a row. | None drawn. |
 | **Panel footer pinned** | Cancel / Save Changes sit in a footer under a hairline, outside the scrolling body. | The frames draw the pair at the foot of a panel that does not scroll; Add Asset - Laptop is taller than a 1024px viewport. |
 
 ---

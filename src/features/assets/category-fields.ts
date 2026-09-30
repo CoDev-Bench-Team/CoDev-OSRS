@@ -6,7 +6,7 @@ import type { AssetDraft, Category, SpecKey } from './types';
  *
  *  - `model` — `required` where the frame asterisks it, `optional` where it
  *    draws the field without one, `absent` where it draws none. The live
- *    contract requires `model` for every category (contract conflict 4).
+ *    contract requires `model` for every category (contract conflict 8).
  *  - `specs` — the SPECIFICATIONS rows, in the frame's order.
  *
  *  Monitor has no frame; it takes Headset's shape (spec 014 D4, flagged). */
@@ -53,6 +53,7 @@ export function draftForCategory(draft: AssetDraft): AssetDraft {
     customSpecs: draft.customSpecs
       .map((s) => ({ key: s.key.trim(), value: s.value.trim() }))
       .filter((s) => s.key || s.value),
+    ...(draft.lowStockThreshold === undefined ? {} : { lowStockThreshold: draft.lowStockThreshold }),
   };
 }
 
@@ -66,5 +67,9 @@ export function missingFields(draft: AssetDraft): Record<string, string> {
   draft.customSpecs.forEach((s, i) => {
     if (!s.key) errors[`customSpecs.${i}.key`] = 'Name this specification';
   });
+  const threshold = draft.lowStockThreshold;
+  if (threshold !== undefined && (!Number.isInteger(threshold) || threshold < 0)) {
+    errors.lowStockThreshold = 'Enter a whole number, 0 or more';
+  }
   return errors;
 }

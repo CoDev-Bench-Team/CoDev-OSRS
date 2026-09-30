@@ -5,8 +5,8 @@ import type { Office } from '../auth/types';
  *  SPA terms, not HTTP terms. Where a name matches the live contract it is
  *  deliberate — the category values and the five specification keys are the
  *  contract's own — so wiring maps them one-to-one. Where the contract has no
- *  equivalent (per-office Total / Reserved, deployed units, custom specs) the
- *  gap is recorded in `specs/001-office-supplies-mvp/contracts/README.md`. */
+ *  equivalent (per-asset unit counts, custom specs) the gap is recorded in
+ *  `specs/001-office-supplies-mvp/contracts/README.md`. */
 
 /** The contract's category enum, in its order (spec 014 D4). */
 export const CATEGORIES = [
@@ -28,9 +28,10 @@ export type SpecKey = (typeof SPEC_KEYS)[number];
 
 export type CustomSpec = { key: string; value: string };
 
-/** One office's stock. Available is never stored: it is `total − reserved`
- *  (constitution III, spec 014 D9). */
-export type StockLevels = { total: number; reserved: number };
+/** One office's stock: how many of the asset's units there are `Available`
+ *  and how many `Reserved`. Counts of units by status, never set by hand;
+ *  Total is their sum and is never stored (constitution III, ADR-0008). */
+export type StockLevels = { available: number; reserved: number };
 
 export type Asset = {
   id: string;
@@ -43,16 +44,16 @@ export type Asset = {
   specs: Partial<Record<SpecKey, string>>;
   /** The Update Asset panel's free rows. No contract field (spec 014 D7). */
   customSpecs: CustomSpec[];
-  /** One per asset, as the Update stocks panel draws it (spec 014 D8). */
+  /** One per asset, on the Update Asset panel (spec 014 D8). */
   lowStockThreshold: number;
-  /** Units consumed by completed requests — the Assets screen's DEPLOYED UNITS. */
-  deployed: number;
+  /** Units in `Assigned` — the Assets screen's ASSIGNED UNITS. Not in Total. */
+  assigned: number;
   stock: Record<Office, StockLevels>;
 };
 
-/** What the Add and Update Asset panels submit. Stock is not on it: the
- *  design moved it to the Update stocks panel (drift §4f). */
-export type AssetDraft = Pick<Asset, 'name' | 'category' | 'model' | 'description' | 'image' | 'specs' | 'customSpecs'>;
-
-/** What the Update stocks panel submits, all at once (spec 014 FR-007). */
-export type StockChange = { lowStockThreshold: number; totals: Record<Office, number> };
+/** What the Add and Update Asset panels submit. No stock: units are added on
+ *  Inventory. The threshold is drawn on Update Asset only, so Add leaves it
+ *  out and the source applies the contract's default (spec 014 D8). */
+export type AssetDraft = Pick<Asset, 'name' | 'category' | 'model' | 'description' | 'image' | 'specs' | 'customSpecs'> & {
+  lowStockThreshold?: number;
+};
