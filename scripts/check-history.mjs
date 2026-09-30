@@ -408,6 +408,10 @@ try {
     'closing on the scrim keeps the chip and search',
     `${s.pressed}, "${searchValue}"`,
   );
+  check(
+    await cdp.evaluate((rid) => document.activeElement?.getAttribute('aria-label') === `Review request ${rid}`, first),
+    'and focus returns to its Review after a scrim close',
+  );
   await setSearch('');
   await clickChip('All requests');
   await pickSort('Newest First');
@@ -435,6 +439,31 @@ try {
     await open(id);
     p = await cdp.evaluate(panel);
     check(same(p.timeline, expected), `${id}: ${expected.map(([, l]) => l).join(' → ')}`, JSON.stringify(p.timeline));
+    check(p.dated.length === expected.length && p.dated.every(Boolean), `${id}: every node is dated`, JSON.stringify(p.dated));
+    await esc();
+    await closed();
+  }
+
+  console.log('\nRejected and Completed timelines: every reached node, dated (FR-009a)');
+  for (const id of STATUS.Rejected) {
+    await open(id);
+    p = await cdp.evaluate(panel);
+    const expected = [['reached', 'Submitted'], ['rejected', 'Rejected']];
+    check(same(p.timeline, expected), `${id}: Submitted → Rejected`, JSON.stringify(p.timeline));
+    check(p.dated.length === expected.length && p.dated.every(Boolean), `${id}: every node is dated`, JSON.stringify(p.dated));
+    await esc();
+    await closed();
+  }
+  for (const id of STATUS.Completed) {
+    await open(id);
+    p = await cdp.evaluate(panel);
+    const [, , handover] = p.timeline.map(([, label]) => label);
+    const expected = [['reached', 'Submitted'], ['reached', 'Approved'], ['reached', handover], ['reached', 'Received'], ['reached', 'Complete']];
+    check(
+      same(p.timeline, expected) && ['For Delivery', 'Ready for Pickup'].includes(handover),
+      `${id}: Submitted → Approved → ${handover} → Received → Complete`,
+      JSON.stringify(p.timeline),
+    );
     check(p.dated.length === expected.length && p.dated.every(Boolean), `${id}: every node is dated`, JSON.stringify(p.dated));
     await esc();
     await closed();

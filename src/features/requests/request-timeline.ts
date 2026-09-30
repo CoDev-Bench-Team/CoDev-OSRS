@@ -20,7 +20,7 @@ export interface TimelineFacts {
  *
  *  The drawing reads Submitted → Approved → For Delivery/For Pickup → Received
  *  → Complete (drift-2026-09-26 §2), which is the state machine itself
- *  (constitution 5.0.0 IV, ADR-0009): the third node is reached when the Admin
+ *  (constitution 7.0.0 IV, ADR-0009): the third node is reached when the Admin
  *  sets `For Delivery` or `Ready for Pickup`, and names whichever it was. Before
  *  that it reads the drawn "For Delivery/For Pickup".
  *
