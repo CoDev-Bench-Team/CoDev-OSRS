@@ -186,6 +186,7 @@ function seed(): ReviewRequest[] {
       handover: 'For Delivery',
       approvedAt: '2026-08-01T06:00:00Z',
       handedOverAt: '2026-08-02T02:00:00Z',
+      receivedAt: '2026-08-02T08:00:00Z',
       completedAt: '2026-08-03T02:00:00Z',
     },
     {
