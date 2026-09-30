@@ -59,9 +59,10 @@ const TABLE_MIN_WIDTH = tableMinWidth(Object.values(COLUMNS), MIN_ITEMS_WIDTH);
 
 const isHistorySort = (value: string): value is HistorySort => (HISTORY_SORTS as readonly string[]).includes(value);
 
-/** What a screen reader is told once History settles. Loading and failure
- *  announce through their own surfaces. */
-function announce(history: HistoryViewModel | null): string {
+/** What a screen reader is told as History settles. `LoadingState` announces
+ *  itself; the failure `Notice` does not, so it is said here, as on the queue. */
+function announce(state: LoadState, history: HistoryViewModel | null): string {
+  if (state.kind === 'failed') return 'History could not be loaded.';
   if (!history) return '';
   if (history.resolvedCount === 0) return 'No requests have been resolved yet.';
   const shown = history.matchCount;
@@ -144,7 +145,7 @@ export function HistoryPage({
   return (
     <div className="flex w-full min-w-0 flex-col gap-32 py-32">
       <div role="status" aria-live="polite" className="sr-only">
-        {announce(history)}
+        {announce(state, history)}
       </div>
 
       {state.kind === 'loading' ? <LoadingState label="Loading history" /> : null}

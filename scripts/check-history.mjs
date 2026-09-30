@@ -23,8 +23,8 @@ const EMPLOYEE = { account: 'maya.santos', landing: '/catalog' };
  *  submitted before REQ-2026-1669 but resolved after it, so an order by
  *  submitted time would fail here. */
 const NEWEST = [
-  'REQ-2026-1672', 'REQ-2026-1663', 'REQ-2026-1669', 'REQ-2026-1644', 'REQ-2026-1657', 'REQ-2026-1650', 'REQ-2026-1638',
-  'REQ-2026-1631', 'REQ-2026-1625', 'REQ-2026-1690', 'REQ-2026-1684', 'REQ-2026-1677', 'REQ-2026-1619', 'REQ-2026-1612',
+  'REQ-2026-1672', 'REQ-2026-1663', 'REQ-2026-1612', 'REQ-2026-1669', 'REQ-2026-1644', 'REQ-2026-1657', 'REQ-2026-1650',
+  'REQ-2026-1638', 'REQ-2026-1631', 'REQ-2026-1625', 'REQ-2026-1690', 'REQ-2026-1684', 'REQ-2026-1677', 'REQ-2026-1619',
 ];
 const STATUS = {
   Completed: ['REQ-2026-1690', 'REQ-2026-1669', 'REQ-2026-1663', 'REQ-2026-1638', 'REQ-2026-1619'],
@@ -265,7 +265,9 @@ try {
   const byName = [...s.names].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
   check(same(s.names, byName), 'Employee (A-Z) orders by name', s.names.slice(0, 3).join(', '));
   const paolo = s.ids.filter((id) => ['REQ-2026-1669', 'REQ-2026-1612'].includes(id));
-  check(same(paolo, ['REQ-2026-1669', 'REQ-2026-1612']), 'a tie on name falls back to newest resolved first', paolo.join(', '));
+  // 1612 follows 1669 in the seed and was submitted before it, but resolved
+  // after it, so neither a stable sort nor a submitted-time tie-break passes.
+  check(same(paolo, ['REQ-2026-1612', 'REQ-2026-1669']), 'a tie on name falls back to newest resolved first', paolo.join(', '));
   await pickSort('Newest First');
   await settle();
 
@@ -343,7 +345,7 @@ try {
   await setPageSize(10);
   await clickPage('2');
   await settle();
-  await open('REQ-2026-1644');
+  await open('REQ-2026-1663');
   await closeButton();
   await closed();
   s = await state();
@@ -352,7 +354,7 @@ try {
     'closing with ✕ keeps the sort, page size and page',
     `${s.range}, page ${s.current}, ${await sortValue()}`,
   );
-  check(await cdp.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Review request REQ-2026-1644'), 'and focus returns to its Review');
+  check(await cdp.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Review request REQ-2026-1663'), 'and focus returns to its Review');
   await clickChip('Cancelled');
   await setSearch('o');
   await settle();
@@ -386,8 +388,20 @@ try {
 
   // ---- Deep links (FR-016) ----
   console.log('\nDeep links (FR-016)');
+  // Watch the whole hop, /requests/:id → /queue → /history, for the queue's
+  // table or its settled announcement: the forward must not flash either.
+  const { identifier: watcher } = await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+    source: `window.__queueFlashed = false;
+      new MutationObserver(() => {
+        if (document.querySelector('[aria-label="Requests table"]') || /awaiting approval/.test(document.body?.innerText ?? '')) {
+          window.__queueFlashed = true;
+        }
+      }).observe(document, { childList: true, subtree: true, characterData: true });`,
+  });
   await go('/requests/REQ-2026-1644');
   await cdp.waitFor(() => location.pathname === '/history' && !!document.querySelector('dialog[open] h2'), 8000, 'History with the panel');
+  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: watcher });
+  check(!(await cdp.evaluate(() => window.__queueFlashed)), 'the forward never renders or announces the queue on the way');
   p = await cdp.evaluate(panel);
   check(p.heading === 'REQ-2026-1644', 'a resolved request\'s link opens its History panel', p.heading);
   check(!(await cdp.evaluate(() => history.state?.usr ?? null)), 'the link\'s state is consumed');
@@ -427,6 +441,10 @@ try {
     table: !!document.querySelector('[aria-label="History table"]'),
   }));
   check(failed.retry && !failed.table, 'a failed load shows the notice with Try Again, not an empty table', JSON.stringify(failed));
+  check(
+    await cdp.evaluate(() => document.querySelector('[role="status"][aria-live="polite"]')?.textContent.trim() === 'History could not be loaded.'),
+    'and the failure is announced',
+  );
 
   await go('/history?history=empty');
   await cdp.waitFor(() => !!document.querySelector('[aria-label="History table"]'), 5000, 'the empty table');

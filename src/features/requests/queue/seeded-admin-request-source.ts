@@ -343,13 +343,16 @@ function seed(): ReviewRequest[] {
     {
       id: 'REQ-2026-1612',
       // Paolo's second resolved request, so Employee (A-Z) has a tie to break.
+      // It sits after REQ-2026-1669 in the seed and was submitted before it,
+      // but resolved after it: only a tie-break on the resolved time puts it
+      // first (check-history).
       ...person('Paolo Navarro', 'Engineering', 'paolon@codev.com', 'Cebu'),
       items: ['Laptop Stand'],
       lines: [line('Laptop Stand - Rain Design mStand', 1, 9)],
       noteToApprover: 'posture',
-      submittedAt: '2026-07-20T02:00:00Z',
+      submittedAt: '2026-08-20T02:00:00Z',
       status: 'Rejected',
-      rejection: { reason: 'Stands are issued by Facilities, not Workplace', at: '2026-07-21T01:00:00Z' },
+      rejection: { reason: 'Stands are issued by Facilities, not Workplace', at: '2026-09-06T01:00:00Z' },
     },
   ];
 }

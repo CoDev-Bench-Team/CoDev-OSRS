@@ -144,10 +144,11 @@ export function QueuePage({
    *  The chips' group has a short name and sits directly above the table. The
    *  queue frame draws no section heading to land on (spec 004, amendment 3). */
   useEffect(() => {
-    if (state.kind !== 'loaded' || !retrying.current) return;
+    // While a deep link resolves the table is not mounted yet; wait for it.
+    if (state.kind !== 'loaded' || linking || !retrying.current) return;
     retrying.current = false;
     recoveredFocus.current?.focus();
-  }, [state]);
+  }, [state, linking]);
 
   /** Derived once here rather than inside the table, so the announcement and
    *  what is on screen are the same projection of the same snapshot. Memoised
@@ -230,7 +231,7 @@ export function QueuePage({
           place is routinely missed — only a change WITHIN an existing region
           announces reliably, and `loading` is the state the page opens in. */}
       <div role="status" aria-live="polite" className="sr-only">
-        {announce(linking ? { kind: 'loading' } : state, queue)}
+        {announce(linking && state.kind === 'loaded' ? { kind: 'loading' } : state, queue)}
       </div>
 
       {state.kind === 'loading' || (linking && state.kind === 'loaded') ? (
