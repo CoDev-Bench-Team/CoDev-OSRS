@@ -103,6 +103,7 @@ const historyState = () => {
     ids: rows.map((r) => r.children[0].textContent.trim()),
     names: rows.map((r) => r.children[1].firstElementChild?.textContent.trim() ?? ''),
     departments: rows.map((r) => r.children[1].children[1]?.textContent.trim() ?? ''),
+    items: rows.map((r) => r.children[2].textContent.trim()),
     statuses: rows.map((r) => r.children[3].textContent.trim()),
     resolved: rows.map((r) => r.children[4].textContent.trim()),
     range: pages?.querySelector('p')?.textContent.trim() ?? null,
@@ -232,6 +233,7 @@ try {
   check(same(s.ids, NEWEST), 'newest resolved first by default (not newest submitted)', s.ids.slice(0, 4).join(', '));
   check(s.resolved[0] === 'Sep 11, 2026', 'RESOLVED prints the date it was resolved', s.resolved[0]);
   check(s.names[0] === 'Maya Santos' && s.departments[0] === 'Product Design', 'REQUESTER is name over department', `${s.names[0]} / ${s.departments[0]}`);
+  check(s.items[0] === 'Laptop, Keyboard, USB-C Headset', 'ITEMS lists the item names', s.items[0]);
   check(
     same(s.chips, { 'All requests': 14, Completed: 5, Cancelled: 5, Rejected: 4 }),
     'every chip carries its count',
@@ -370,6 +372,10 @@ try {
   await open('REQ-2026-1672');
   let p = await cdp.evaluate(panel);
   check(p.text.includes('Duplicate of request SR-1042') && p.text.includes('temporary project setup'), 'the frame\'s sample: its reason and Note to Approver');
+  check(
+    p.text.includes('Maya Santos') && p.text.includes('mayas@codev.com • Davao Office'),
+    'REQUESTED BY reads the name and `email • office`',
+  );
   await esc();
   await closed();
 
