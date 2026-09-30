@@ -15,6 +15,9 @@ import type { HistorySource } from '../history-source';
  *  - `no-reason`: the first Rejected and the first Cancelled request lose their
  *    stored reason, so the panel shows *No reason recorded* (spec 012 edge
  *    case). The seed always stores one, as constitution IV requires.
+ *  - `received`: REQ-2026-1715 has been received, so the data set holds all
+ *    eight statuses; `Received` is live and must stay off History (spec 012
+ *    edge case, SC-001).
  *  - `no-resolved-date`: the first Completed request in the seed loses its completed time,
  *    so RESOLVED shows the em dash and it sorts last under both date orders
  *    (spec 012 plan R3).
@@ -73,6 +76,12 @@ export function historyStub(mode: string | null, fresh: () => AdminRequestSource
               : request,
         );
       });
+    case 'received':
+      return mapped(fresh, (requests) =>
+        requests.map((request) =>
+          request.id === 'REQ-2026-1715' ? { ...request, status: 'Received', receivedAt: '2026-08-09T02:00:00Z' } : request,
+        ),
+      );
     case 'no-resolved-date':
       return mapped(fresh, (requests) => {
         const completed = requests.find((request) => request.status === 'Completed');

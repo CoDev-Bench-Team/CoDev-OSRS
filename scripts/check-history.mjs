@@ -31,6 +31,18 @@ const STATUS = {
   Cancelled: ['REQ-2026-1677', 'REQ-2026-1672', 'REQ-2026-1650', 'REQ-2026-1644', 'REQ-2026-1625'],
   Rejected: ['REQ-2026-1684', 'REQ-2026-1657', 'REQ-2026-1631', 'REQ-2026-1612'],
 };
+/** Every seeded Rejected and Cancelled request's stored reason (SC-003). */
+const REASONS = {
+  'REQ-2026-1684': 'Duplicate of request SR-1042',
+  'REQ-2026-1657': 'One monitor per employee; request a second through your manager',
+  'REQ-2026-1631': 'Current unit is within its refresh cycle',
+  'REQ-2026-1612': 'Stands are issued by Facilities, not Workplace',
+  'REQ-2026-1677': 'Model discontinued; employee will re-request',
+  'REQ-2026-1672': 'Duplicate of request SR-1042',
+  'REQ-2026-1650': 'Courier could not deliver; unit returned to stock',
+  'REQ-2026-1644': 'Not collected within ten business days',
+  'REQ-2026-1625': 'Borrowed a spare from the team',
+};
 /** Every seeded Cancelled request's timeline: the nodes it reached, then the
  *  ending (spec 012 FR-009a, plan R2). */
 const CANCELLED_TIMELINES = {
@@ -90,6 +102,7 @@ const historyState = () => {
     pressed: document.querySelector('[role="group"][aria-label="Filter by status"] button[aria-pressed="true"]')?.textContent ?? null,
     ids: rows.map((r) => r.children[0].textContent.trim()),
     names: rows.map((r) => r.children[1].firstElementChild?.textContent.trim() ?? ''),
+    departments: rows.map((r) => r.children[1].children[1]?.textContent.trim() ?? ''),
     statuses: rows.map((r) => r.children[3].textContent.trim()),
     resolved: rows.map((r) => r.children[4].textContent.trim()),
     range: pages?.querySelector('p')?.textContent.trim() ?? null,
@@ -216,6 +229,7 @@ try {
   check(s.statuses.every((t) => ['Completed', 'Cancelled', 'Rejected'].includes(t)), 'every row is Completed, Cancelled or Rejected', [...new Set(s.statuses)].join(', '));
   check(same(s.ids, NEWEST), 'newest resolved first by default (not newest submitted)', s.ids.slice(0, 4).join(', '));
   check(s.resolved[0] === 'Sep 11, 2026', 'RESOLVED prints the date it was resolved', s.resolved[0]);
+  check(s.names[0] === 'Maya Santos' && s.departments[0] === 'Product Design', 'REQUESTER is name over department', `${s.names[0]} / ${s.departments[0]}`);
   check(
     same(s.chips, { 'All requests': 14, Completed: 5, Cancelled: 5, Rejected: 4 }),
     'every chip carries its count',
@@ -247,7 +261,13 @@ try {
   await setSearch('laptop');
   await settle();
   s = await state();
-  check(s.chips['All requests'] === s.ids.length && s.chips['All requests'] > 1, 'chip counts follow the search', JSON.stringify(s.chips));
+  // 'laptop' matches 1669 (Completed), 1672 and 1677 (Cancelled), 1631 and
+  // 1612 (Rejected). Every chip recounts over the matches, not the list.
+  check(
+    same(s.chips, { 'All requests': 5, Completed: 1, Cancelled: 2, Rejected: 2 }) && s.ids.length === 5,
+    'every chip count follows the search',
+    JSON.stringify(s.chips),
+  );
   await setSearch('no such thing');
   await settle();
   s = await state();
@@ -387,6 +407,15 @@ try {
   await setPageSize(50);
   await settle();
 
+  console.log('\nEvery stored reason is read back (SC-003)');
+  for (const [id, reason] of Object.entries(REASONS)) {
+    await open(id);
+    p = await cdp.evaluate(panel);
+    check(p.text.includes(reason) && !p.text.includes('No reason recorded'), `${id}: "${reason}"`);
+    await esc();
+    await closed();
+  }
+
   // ---- Stopped timelines (FR-009a) ----
   console.log('\nA cancelled request\'s timeline keeps what it reached (FR-009a)');
   for (const [id, expected] of Object.entries(CANCELLED_TIMELINES)) {
@@ -485,6 +514,15 @@ try {
     await closed();
   }
 
+  await go('/history?history=received');
+  await rowsLoaded();
+  s = await state();
+  check(
+    !s.ids.includes('REQ-2026-1715') && s.ids.length === 14,
+    'with all eight statuses present, a Received request stays off History',
+    `${s.ids.length} rows`,
+  );
+
   await go('/history?history=no-resolved-date');
   await rowsLoaded();
   s = await state();
@@ -498,13 +536,18 @@ try {
   console.log('\nKeyboard and width (FR-015)');
   await go('/history');
   await rowsLoaded();
-  await cdp.evaluate(() => document.querySelector('input[type="search"]').focus());
+  // From the top of the document, so Tab has to find Search too.
+  await cdp.evaluate(() => {
+    document.activeElement?.blur();
+    window.scrollTo(0, 0);
+  });
   const reached = new Set();
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 60; i++) {
     await key('Tab', 'Tab', 9);
     const label = await cdp.evaluate(() => {
       const a = document.activeElement;
       if (!a) return '';
+      if (a.matches('input[type="search"]')) return 'search';
       if (a.matches('[role="combobox"]')) return 'sort';
       if (a.closest('[aria-label="Filter by status"]')) return 'chip';
       if (a.getAttribute('aria-label')?.startsWith('Review request')) return 'review';
@@ -514,7 +557,7 @@ try {
     if (label) reached.add(label);
     if (label === 'pages') break;
   }
-  check(['sort', 'chip', 'review', 'pages'].every((l) => reached.has(l)), 'Tab reaches sort, chips, Review and pagination', [...reached].join(', '));
+  check(['search', 'sort', 'chip', 'review', 'pages'].every((l) => reached.has(l)), 'Tab reaches search, sort, chips, Review and pagination', [...reached].join(', '));
   for (const width of [360, 1440]) {
     await cdp.setViewport(width, 900);
     await settle();

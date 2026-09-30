@@ -93,7 +93,7 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 - **Source failure.** A transition fails for a reason other than a stale status. The panel keeps the request's previous status, shows a failure message, and keeps the form's input so the Admin can retry.
 - **Double submit.** While a transition is in flight, its confirm control is inert, so one click is one request.
 - **No note.** The Note to Approver block is not drawn.
-- **Terminal request reached by id.** An Admin opens a `Rejected`, `Cancelled` or `Completed` request (for example, just after deciding it). The panel is read-only: rejection or cancellation reason read back where there is one, and **Close**.
+- **Terminal request reached by id.** An Admin opens a `Rejected`, `Cancelled` or `Completed` request (for example, just after deciding it). The panel is read-only: rejection or cancellation reason read back where there is one, and **Close**. *(Amended 2026-09-29, [spec 012](../012-admin-history/spec.md) FR-016: only the "just after deciding it" case stays here. A `/requests/:id` link to a resolved request opens History's panel over `/history`.)*
 - **Employee.** An Employee cannot reach `/queue` (spec 003 guard), so no action in this feature is reachable as an Employee.
 - **Unavailable stock figure.** The source gives no Available figure for a line's (asset, office). CURRENT INVENTORY shows an explicit unavailable marker, not `0 in stock`.
 - **Office enum.** The pickup-location list uses the office names the contract exposes. The contract settled on `Ortigas` on 2026-09-25 (contracts conflict 2 closed), and the SPA's `Office` follows it; the SPA invents no third spelling.
