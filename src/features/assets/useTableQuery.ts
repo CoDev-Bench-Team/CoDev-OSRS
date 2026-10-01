@@ -10,9 +10,9 @@ export const ALL_CATEGORIES = 'All categories';
  *  the chip itself applies, so each chip says how many rows pressing it would
  *  show. A row whose status has no chip counts under All only. Any filter
  *  change returns to page 1. */
-export function useTableQuery<T, S extends string>(
+export function useTableQuery<T, R extends string, S extends R = R>(
   items: readonly T[],
-  describe: (item: T) => { text: string; category: Category; status: S },
+  describe: (item: T) => { text: string; category: Category; status: R },
   { statuses, pageSizes, pageSize: initialPageSize }: { statuses: readonly S[]; pageSizes: readonly number[]; pageSize: number },
 ) {
   const [search, setSearchState] = useState('');
@@ -26,7 +26,7 @@ export function useTableQuery<T, S extends string>(
     const scoped = items
       .map((item) => ({ item, ...describe(item) }))
       .filter((r) => (!needle || r.text.toLowerCase().includes(needle)) && (category === ALL_CATEGORIES || r.category === category));
-    const byStatus = new Map<S, number>(statuses.map((s) => [s, 0]));
+    const byStatus = new Map<string, number>(statuses.map((s) => [s, 0]));
     for (const r of scoped) {
       const n = byStatus.get(r.status);
       if (n !== undefined) byStatus.set(r.status, n + 1);
@@ -68,4 +68,4 @@ export function useTableQuery<T, S extends string>(
   };
 }
 
-export type TableQuery<S extends string = string> = ReturnType<typeof useTableQuery<unknown, S>>;
+export type TableQuery<S extends string = string> = ReturnType<typeof useTableQuery<unknown, S, S>>;

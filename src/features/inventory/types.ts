@@ -84,3 +84,8 @@ export type UnitBatchDraft = Pick<UnitDraft, 'assetId' | 'pr' | 'price' | 'suppl
   location: Office;
   units: UnitBatchEntry[];
 };
+
+/** The chips Inventory draws, in order. Inactive has none: an inactive unit
+ *  is counted under All items only (spec 015 FR-003). */
+export const UNIT_CHIPS = ['Assigned', 'Available', 'Reserved'] as const satisfies readonly UnitStatus[];
+export type UnitChip = (typeof UNIT_CHIPS)[number];

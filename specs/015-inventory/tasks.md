@@ -42,12 +42,12 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
 
 ## Phase 2: US1, US6 — The unit table and the Add Inventory menu (BEN-107)
 
-- [ ] T015 [P] [US1] [BEN-107] `StatusPill` `unit` prop on the 8px chip. New tokens `--color-status-assigned-*` (aliasing `--color-osrs-blue-700` / `--color-osrs-blue-tint`) and `--color-status-inactive-*` (aliasing `--color-osrs-ink-700` / `--color-osrs-ink-tint`); Available reuses green and Reserved the amber `low` tokens. Add all four to the gallery (P14) — `src/shared/ui/data-display/StatusPill.tsx`, `src/styles/theme.css`, `src/shared/ui/gallery/Gallery.tsx`
-- [ ] T016 [P] [BEN-107] `statusOptions('add')`, `statusOptions('edit', unit)` (`null` for Reserved), `withStatus`, `withAssignee`, and `removal(unit)` with the drawn assigned copy and our reserved copy (P6) — `src/features/inventory/unit-rules.ts`
-- [ ] T017 [P] [BEN-107] `DEVICE_FIELDS` per category (Laptop: serial required and BitLocker; Mice and Other Devices: serial optional; the rest: serial required), the no-item default (Serial only), and `stripHidden(draft, category)` (P7) — `src/features/inventory/device-fields.ts`
-- [ ] T018 [P] [BEN-107] `formatPeso` (`Php 80,000.00`) — `src/features/inventory/format.ts`
-- [ ] T019 [BEN-107] `validateUnit` and `validateBatch`, keyed by contract field paths (`units.<i>.serialNumber` for rows), covering every FR-008, FR-010, FR-011a and FR-013 rule that is not the uploader's. Status is required unless the stored unit is Reserved (P5, P8) — `src/features/inventory/unit-validation.ts`
-- [ ] T020 [BEN-107] `InventorySource` and `inventorySource(search)`. The seeded source:
+- [x] T015 [P] [US1] [BEN-107] `StatusPill` `unit` prop on the 8px chip. New tokens `--color-status-assigned-*` (aliasing `--color-osrs-blue-700` / `--color-osrs-blue-tint`) and `--color-status-inactive-*` (aliasing `--color-osrs-ink-700` / `--color-osrs-ink-tint`); Available reuses green and Reserved the amber `low` tokens. Add all four to the gallery (P14) — `src/shared/ui/data-display/StatusPill.tsx`, `src/styles/theme.css`, `src/shared/ui/gallery/Gallery.tsx`
+- [x] T016 [P] [BEN-107] `statusOptions('add')`, `statusOptions('edit', unit)` (`null` for Reserved), `withStatus`, `withAssignee`, and `removal(unit)` with the drawn assigned copy and our reserved copy (P6) — `src/features/inventory/unit-rules.ts`
+- [x] T017 [P] [BEN-107] `DEVICE_FIELDS` per category (Laptop: serial required and BitLocker; Mice and Other Devices: serial optional; the rest: serial required), the no-item default (Serial only), and `stripHidden(draft, category)` (P7) — `src/features/inventory/device-fields.ts`
+- [x] T018 [P] [BEN-107] `formatPeso` (`Php 80,000.00`) — `src/features/inventory/format.ts`
+- [x] T019 [BEN-107] `validateUnit` and `validateBatch`, keyed by contract field paths (`units.<i>.serialNumber` for rows), covering every FR-008, FR-010, FR-011a and FR-013 rule that is not the uploader's. Status is required unless the stored unit is Reserved (P5, P8) — `src/features/inventory/unit-validation.ts`
+- [x] T020 [BEN-107] `InventorySource` and `inventorySource(search)`. The seeded source:
   - `list()` returns rows newest first, joined to the Assets source for item name, model and category.
   - `get(id)` is the only method that returns secrets.
   - `create`, `createBatch` (all or nothing) and `update` run the shared validation and refuse with a `ValidationProblem`; a serial already in the register gets `409` with *"Serial numbers already in use: X."*.
@@ -56,19 +56,19 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
   - `remove(id, reason)` refuses Assigned and Reserved, and logs the reason (P2, P4, P8, P16).
 
   Files: `src/features/inventory/inventory-source.ts`, `src/features/inventory/seeded-inventory-source.ts`
-- [ ] T021 [BEN-107] Dev-only `?inventory=slow|failing|recovers|empty`, each over a fresh seed, behind `import.meta.env.DEV`. `window.__osrs.inventory` exposes `counts(assetId, office)`, `reserveBehind(unitId)`, `removeBehind(unitId)` and `refuseNext(problem)`, which answers the next save once with that problem body (P16) — `src/features/inventory/dev/inventory-stub.ts`, `src/features/inventory/seeded-unit-register.ts`
-- [ ] T022 [BEN-107] `useInventory()`: `loading` · `failed` · `loaded`, `reload`, and save methods that reload after success, in the shape of `useAssets()` but without its `console.error` calls (P10, P19) — `src/features/inventory/inventory-store.ts`
-- [ ] T023 [P] [US1] [BEN-107] `InventoryToolbar`: `Search` (*"Search inventory by item name or code"*), the category `Select` (All categories plus the contract's nine), and chips All items · Assigned · Available · Reserved with counts and pressed state (P9, FR-003, FR-004) — `src/features/inventory/InventoryToolbar.tsx`
-- [ ] T024 [P] [US1] [BEN-107] `AddInventoryMenu`: `Button` with a trailing chevron, `aria-haspopup="menu"` and `aria-expanded`. Under it, a white card with `role="menu"` holding Add Single Unit and Add Multiple Units. Arrow keys move; Esc and an outside click close and return focus to the button (P11, FR-006) — `src/features/inventory/AddInventoryMenu.tsx`
-- [ ] T025 [US1] [BEN-107] `InventoryPage`:
+- [x] T021 [BEN-107] Dev-only `?inventory=slow|failing|recovers|empty`, each over a fresh seed, behind `import.meta.env.DEV`. `window.__osrs.inventory` exposes `counts(assetId, office)`, `reserveBehind(unitId)`, `removeBehind(unitId)` and `refuseNext(problem)`, which answers the next save once with that problem body (P16) — `src/features/inventory/dev/inventory-stub.ts`, `src/features/inventory/seeded-unit-register.ts`
+- [x] T022 [BEN-107] `useInventory()`: `loading` · `failed` · `loaded`, `reload`, and save methods that reload after success, in the shape of `useAssets()` but without its `console.error` calls (P10, P19) — `src/features/inventory/inventory-store.ts`
+- [x] T023 [P] [US1] [BEN-107] `InventoryToolbar`: `Search` (*"Search inventory by item name or code"*), the category `Select` (All categories plus the contract's nine), and chips All items · Assigned · Available · Reserved with counts and pressed state (P9, FR-003, FR-004) — `src/features/inventory/InventoryToolbar.tsx`
+- [x] T024 [P] [US1] [BEN-107] `AddInventoryMenu`: `Button` with a trailing chevron, `aria-haspopup="menu"` and `aria-expanded`. Under it, a white card with `role="menu"` holding Add Single Unit and Add Multiple Units. Arrow keys move; Esc and an outside click close and return focus to the button (P11, FR-006) — `src/features/inventory/AddInventoryMenu.tsx`
+- [x] T025 [US1] [BEN-107] `InventoryPage`:
   - `PageHeader` from `DESTINATIONS.inventory`; the menu; the toolbar.
   - The load states: `LoadingState`, a `Notice` with **Try again**, and the empty state.
   - `TableCard` with columns MODEL (item name) · CATEGORY · PR · SERIAL NUMBER · OFFICE · ASSIGNED (name over department, or muted `Unassigned`) · STATUS (`StatusPill unit`) · ACTION (**Review**, labelled with item name and serial or PR), widths from the `03 - Inventory` frame via `tableColumnStyle` / `tableMinWidth`. A missing PR or serial shows `NO_VALUE` (`src/features/requests/format.ts`).
   - `TablePager` at 50 per page, offering 10 · 25 · 50 · 100. Open-panel state is held in the component, never in the URL (P10, FR-001 to FR-005, FR-015).
 
   File: `src/features/inventory/InventoryPage.tsx`
-- [ ] T026 [US6] [BEN-107] Route `/inventory` to `guarded('inventory', <InventoryPage />)`. `InventoryPlaceholder` is the file's last export, so delete `placeholders.tsx` and its import (P15) — `src/app/routes.tsx`, `src/app/placeholders.tsx`
-- [ ] T027 [US1] [US6] [BEN-107] Extend the check:
+- [x] T026 [US6] [BEN-107] Route `/inventory` to `guarded('inventory', <InventoryPage />)`. `InventoryPlaceholder` is the file's last export, so delete `placeholders.tsx` and its import (P15) — `src/app/routes.tsx`, `src/app/placeholders.tsx`
+- [x] T027 [US1] [US6] [BEN-107] Extend the check:
   - The Employee: no nav item, and `/inventory` refused.
   - Columns; no secret in any cell; chips, counts and Inactive under All items only; search by item name, model, PR and serial; category; pagination and page-1 reset; newest first.
   - The menu by keyboard, Esc and outside click.
@@ -78,7 +78,7 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
 
 ## Phase 3: US2, US3, US4 — Add Single Unit, Review/Edit, Remove Unit (BEN-108)
 
-- [ ] T028 [BEN-108] Shared panel parts (P12):
+- [x] T028 [BEN-108] Shared panel parts (P12):
   - `CatalogItemPicker`, an ARIA 1.2 combobox over `useAssets()` by item name or model, showing the category eyebrow over the name with ✕.
   - `UserPicker`, a combobox over the directory by name or email, any role or office.
   - `SecretInput`, a `type="text"` input masked by `-webkit-text-security: disc`, never `type="password"`, with a Show/Hide toggle (`aria-pressed`), `autoComplete="off"` and `spellCheck={false}` (R3).
@@ -87,14 +87,14 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
   - `ImageField` gains `label` and `filename` props (defaults `Image` and `asset-image`); its action names follow the label, so Assets is unchanged.
 
   Files: `src/features/inventory/unit-fields.tsx`, `src/features/assets/ImageField.tsx`
-- [ ] T029 [US2] [BEN-108] `UnitFormPanel` in add mode (400px):
+- [x] T029 [US2] [BEN-108] `UnitFormPanel` in add mode (400px):
   - Catalog Item; PURCHASE DETAILS; DEVICE DETAILS; ASSIGNMENT (User, Office defaulting to Cebu, Status with *Select Status* offering Available and Assigned); NOTES (Description, Attachment via `ImageField`).
   - Picking a User sets Assigned, and Available clears the User. Switching away from a Laptop drops the BitLocker values.
   - Client validation on Save; a refusal maps through `fieldErrors`, and a `409` shows the source's message. The panel stays open with every value on refusal (Story 2, FR-007, FR-008, FR-011 to FR-013).
 
   File: `src/features/inventory/UnitFormPanel.tsx`
-- [ ] T030 [US2] [BEN-108] Wire **Add Single Unit** from the menu. On save the panel closes and the list reloads; focus returns to **+ Add Inventory** — `src/features/inventory/InventoryPage.tsx`
-- [ ] T031 [US3] [BEN-108] `UnitFormPanel` in edit mode, opened by **Review** through `get(id)`:
+- [x] T030 [US2] [BEN-108] Wire **Add Single Unit** from the menu. On save the panel closes and the list reloads; focus returns to **+ Add Inventory** — `src/features/inventory/InventoryPage.tsx`
+- [x] T031 [US3] [BEN-108] `UnitFormPanel` in edit mode, opened by **Review** through `get(id)`:
   - The header is the item name plus the unit pill; the catalog item is not editable and `update` leaves `assetId` unchanged; every other field is prefilled.
   - Status offers Available · Assigned · Inactive. A Reserved unit has read-only Status, User and Office.
   - Secrets are masked, for a Laptop only. A missing serial must be filled before saving (except Mice and Other Devices).
@@ -102,15 +102,15 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
   - Focus returns to the row's **Review** (Story 3, FR-007, FR-012, FR-016).
 
   Files: `src/features/inventory/UnitFormPanel.tsx`, `src/features/inventory/InventoryPage.tsx`
-- [ ] T032 [US4] [BEN-108] `RemoveUnitSection` and the removing mode:
+- [x] T032 [US4] [BEN-108] `RemoveUnitSection` and the removing mode:
   - **Remove Unit** link for Available and Inactive; the assigned and reserved refusal copy otherwise, from `removal(unit)`.
   - Removing mode shows `Reason for removal *` and the footer becomes **Cancel** / **Confirm Removal**. Cancel returns to edit; an empty reason is refused under the field.
   - Confirm calls `remove(id, reason)`, discarding unsaved edits (Story 4, FR-009).
 
   Files: `src/features/inventory/unit-fields.tsx`, `src/features/inventory/UnitFormPanel.tsx`
-- [ ] T033 [US3] [US4] [BEN-108] Concurrent changes. On a `404` from `get`, `update` or `remove`, the body becomes a `Notice` with the source's message and **Close**; closing reloads the list. On a `409` from a unit reserved behind the panel, the message shows and the edits are kept (P12, P16, spec edge cases) — `src/features/inventory/UnitFormPanel.tsx`
-- [ ] T034 [BEN-108] Check `SecretInput` masking in Chrome, Safari and Firefox. If one does not mask, decide the fallback and record it in plan P12 (R3) — `src/features/inventory/unit-fields.tsx`, `specs/015-inventory/plan.md`
-- [ ] T035 [US2] [US3] [US4] [BEN-108] Extend the check (P19):
+- [x] T033 [US3] [US4] [BEN-108] Concurrent changes. On a `404` from `get`, `update` or `remove`, the body becomes a `Notice` with the source's message and **Close**; closing reloads the list. On a `409` from a unit reserved behind the panel, the message shows and the edits are kept (P12, P16, spec edge cases) — `src/features/inventory/UnitFormPanel.tsx`
+- [x] T034 [BEN-108] Check `SecretInput` masking in Chrome, Safari and Firefox. If one does not mask, decide the fallback and record it in plan P12 (R3) — `src/features/inventory/unit-fields.tsx`, `specs/015-inventory/plan.md`
+- [x] T035 [US2] [US3] [US4] [BEN-108] Extend the check (P19):
   - Add Single Unit: exactly Available and Assigned; picking a User sets Assigned; the User field finds an Employee and an Admin by name and by email, at any office; switching from a Laptop to another category drops the BitLocker values; field errors; a `400` problem through `refuseNext` landing under the pointed field; a `409` serial conflict; counts after save.
   - Review/Edit per status, with the P6 options; Reserved read-only, with its other details still saveable; unassign, assign, inactivate and reactivate moving `__osrs.inventory.counts` by ±1; Assigned → Inactive and Inactive → Assigned moving nothing; an office move; the seeded serial-less Monitor cannot be saved until Serial is filled (Story 3 7a).
   - Masked secrets on a Laptop only; no `input[type="password"]`; a console captured through every panel flow, the URL and the table DOM free of any seeded secret value.
@@ -121,16 +121,16 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
 
 ## Phase 4: US5 — Add Multiple Units (BEN-152)
 
-- [ ] T036 [P] [US5] [BEN-152] `SidePanel` gains `batch: 'max-w-[650px]'` (P12) — `src/shared/ui/overlay/SidePanel.tsx`
-- [ ] T037 [US5] [BEN-152] `BulkAddPanel` (650px):
+- [x] T036 [P] [US5] [BEN-152] `SidePanel` gains `batch: 'max-w-[650px]'` (P12) — `src/shared/ui/overlay/SidePanel.tsx`
+- [x] T037 [US5] [BEN-152] `BulkAddPanel` (650px):
   - Catalog Item; a **No. of Units** stepper beside Office (Cebu); shared PURCHASE DETAILS.
   - Opens with one row. Each row has Serial (plus the BitLocker pair for a Laptop) and a ✕; **+ Add another unit** sits below. The count always equals the rows: `−` drops the last row, `+` and **+ Add another unit** are disabled at 100, and Save is disabled at 0. No ✓, User, Status or RAM.
   - A category switch keeps serials and drops BitLocker values.
   - `validateBatch` on Save (missing and duplicate serials under each row); per-row pointers through `fieldErrors`; a `409` shows the source's message above the rows; `createBatch` all or nothing (Story 5, FR-010, FR-011, FR-011a).
 
   File: `src/features/inventory/BulkAddPanel.tsx`
-- [ ] T038 [US5] [BEN-152] Wire **Add Multiple Units** from the menu. On save the panel closes and the list reloads; focus returns to **+ Add Inventory** — `src/features/inventory/InventoryPage.tsx`
-- [ ] T039 [US5] [BEN-152] Extend the check (P19):
+- [x] T038 [US5] [BEN-152] Wire **Add Multiple Units** from the menu. On save the panel closes and the list reloads; focus returns to **+ Add Inventory** — `src/features/inventory/InventoryPage.tsx`
+- [x] T039 [US5] [BEN-152] Extend the check (P19):
   - Opens at 1; stepper and rows in step; the 0 and 100 bounds.
   - A duplicate serial or one invalid row creates nothing, with the error under that row (SC-005). A serial already in the register shows the `409` message and creates nothing. A `400` problem through `refuseNext` pointing at `#/units/2/serialNumber` lands under row 3.
   - Three units at Cebu raise Available and Total there by 3, on Inventory and on Assets' AVAILABLE UNITS (SC-001).

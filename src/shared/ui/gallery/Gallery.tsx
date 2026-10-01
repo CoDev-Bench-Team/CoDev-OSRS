@@ -20,6 +20,7 @@ import {
   REQUEST_STATUSES,
   STOCK_STATUSES,
   INVENTORY_STATUSES,
+  UNIT_STATUSES,
   Search,
   Select,
   SidePanel,
@@ -224,6 +225,11 @@ function StatusSection() {
       <Row label="Inventory status — the catalog's stock band, same chip">
         {INVENTORY_STATUSES.map((s) => (
           <StatusPill key={s} inventory={s} />
+        ))}
+      </Row>
+      <Row label="Unit status — a unit in the register, same chip">
+        {UNIT_STATUSES.map((s) => (
+          <StatusPill key={s} unit={s} />
         ))}
       </Row>
     </Section>
