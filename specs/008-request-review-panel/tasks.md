@@ -115,6 +115,8 @@ An Admin cancels an `Approved`, `For Delivery` or `Ready for Pickup` request tha
   - `?review=changes` → stale copy, `Received`, no Cancel Request; `?review=failing` → status and reason kept; `?review=reload-fails` → stale notice
   - `/requests/REQ-2026-1677` as Admin → Submitted → Approved → Cancelled, read-only in History with no Cancel Request (spec 013 FR-016, since the rebase on `dev`)
   - at 360px the two-button row stays on one line with no overflow (R10)
+  - *(Review 2026-10-01.)* The seed's `cancel`, probed directly because the stubs replace it: Pending, Received, Completed, Rejected and Cancelled refused `status-changed`; a blank reason `reason-required`; an unknown id `unavailable`; a legal cancel stores the trimmed reason and keeps `approvedAt` and `handedOverAt`
+  - *(Review 2026-10-01.)* The label is exactly `Reason for cancellation *`; the no-dialog check runs before the pill changes; focus lands on the panel heading after a cancel and after a refused one; the timeline dates match the seeded timestamps; and History, reached through the nav, lists the just-cancelled request
 
   — `scripts/check-review-panel.mjs`
 - [x] T057 [US5] [BEN-135] Request-detail check: under `?requests=admin-cancelled`, the extra row reads Submitted → Approved → Ready for Pickup → Cancelled; the existing REQ-2026-1791 and live-cancel collapse checks stay unchanged and green (FR-022) — `scripts/check-request-detail.mjs`
