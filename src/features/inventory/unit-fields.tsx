@@ -20,6 +20,16 @@ function CloseGlyph() {
   );
 }
 
+/** A refusal that names no field, above the form or the rows it is about. */
+export function FormAlert({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p role="alert" className="rounded-6 bg-status-rejected-bg px-12 py-10 type-meta leading-body text-status-rejected-fg">
+      {message}
+    </p>
+  );
+}
+
 const RESULT_LIMIT = 8;
 
 /** An ARIA 1.2 combobox's keyboard and list state over `items`: Arrow keys

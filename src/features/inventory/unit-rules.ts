@@ -34,10 +34,10 @@ export function withAssignee<D extends Assignable<string>>(draft: D, userId: str
   return userId ? { ...draft, assignedToId: userId, status: 'Assigned' } : { ...draft, assignedToId: undefined };
 }
 
-export const ASSIGNED_REFUSAL =
+const ASSIGNED_REFUSAL =
   'This unit can’t be removed because it is assigned to a user. Remove assignment first before removing this unit.';
 /** Ours; the file draws only the assigned refusal (spec 015 D9). */
-export const RESERVED_REFUSAL = 'This unit can’t be removed because it is reserved for a request.';
+const RESERVED_REFUSAL = 'This unit can’t be removed because it is reserved for a request.';
 
 /** Whether a unit may be removed: only one no one holds (FR-009). */
 export function removal(unit: { status: UnitStatus }): { allowed: true } | { allowed: false; reason: string } {

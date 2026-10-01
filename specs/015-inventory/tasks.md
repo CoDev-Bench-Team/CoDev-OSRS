@@ -45,7 +45,7 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
 - [x] T015 [P] [US1] [BEN-107] `StatusPill` `unit` prop on the 8px chip. New tokens `--color-status-assigned-*` (aliasing `--color-osrs-blue-700` / `--color-osrs-blue-tint`) and `--color-status-inactive-*` (aliasing `--color-osrs-ink-700` / `--color-osrs-ink-tint`); Available reuses green and Reserved the amber `low` tokens. Add all four to the gallery (P14) — `src/shared/ui/data-display/StatusPill.tsx`, `src/styles/theme.css`, `src/shared/ui/gallery/Gallery.tsx`
 - [x] T016 [P] [BEN-107] `statusOptions('add')`, `statusOptions('edit', unit)` (`null` for Reserved), `withStatus`, `withAssignee`, and `removal(unit)` with the drawn assigned copy and our reserved copy (P6) — `src/features/inventory/unit-rules.ts`
 - [x] T017 [P] [BEN-107] `DEVICE_FIELDS` per category (Laptop: serial required and BitLocker; Mice and Other Devices: serial optional; the rest: serial required), the no-item default (Serial only), and `stripHidden(draft, category)` (P7) — `src/features/inventory/device-fields.ts`
-- [x] T018 [P] [BEN-107] `formatPeso` (`Php 80,000.00`) — `src/features/inventory/format.ts`
+- [x] T018 [P] [BEN-107] `formatAmount` (`Php 80,000.00` with the field's prefix) — `src/features/inventory/format.ts`
 - [x] T019 [BEN-107] `validateUnit` and `validateBatch`, keyed by contract field paths (`units.<i>.serialNumber` for rows), covering every FR-008, FR-010, FR-011a and FR-013 rule that is not the uploader's. Status is required unless the stored unit is Reserved (P5, P8) — `src/features/inventory/unit-validation.ts`
 - [x] T020 [BEN-107] `InventorySource` and `inventorySource(search)`. The seeded source:
   - `list()` returns rows newest first, joined to the Assets source for item name, model and category.

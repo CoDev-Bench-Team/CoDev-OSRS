@@ -133,7 +133,7 @@ export function createSeededInventorySource(
       const draft = stripHidden(tidy(input), asset?.category);
       const errors = validateUnit(draft, asset?.category, today());
       if (input.assetId && !asset) errors.assetId = 'Choose a catalog item from the list';
-      if (draft.status && !statusOptions('add').some((s) => s === draft.status)) errors.status = 'Choose Available or Assigned';
+      if (draft.status && !statusOptions('add').some((s) => s === draft.status)) errors.status = 'Choose Available, Assigned or Inactive';
       if (draft.status === 'Assigned' && draft.assignedToId && !users.has(draft.assignedToId)) errors.assignedToId = 'Choose a user from the list';
       if (Object.keys(errors).length || !asset || !draft.location || !draft.status) return refuse(invalid(errors));
       const taken = register.serialsInUse(draft.serialNumber ? [draft.serialNumber] : []);

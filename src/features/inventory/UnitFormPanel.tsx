@@ -1,6 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Button, Field, FieldGroup, LoadingState, Notice, Select, SidePanel, StatusPill, TextArea } from '../../shared/ui';
-import { fieldErrors, isValidationProblem } from '../../shared/validation';
 import { useAssets } from '../assets/asset-store';
 import { ImageField } from '../assets/ImageField';
 import type { Asset, Category } from '../assets/types';
@@ -8,9 +7,10 @@ import { OFFICES, type Office } from '../auth/types';
 import { deviceFieldsFor, stripHidden } from './device-fields';
 import { formatAmount, parseAmount } from './format';
 import { isUnitProblem } from './inventory-source';
+import { refusal, useAttempt } from './inventory-store';
 import { seededUserDirectory } from './seeded-user-directory';
 import type { AddStatus, EditStatus, UnitDetail, UnitDraft } from './types';
-import { CatalogItemPicker, DeviceFields, PurchaseFields, RemoveUnitSection, UserPicker, type Device, type Purchase } from './unit-fields';
+import { CatalogItemPicker, DeviceFields, FormAlert, PurchaseFields, RemoveUnitSection, UserPicker, type Device, type Purchase } from './unit-fields';
 import { statusOptions, withAssignee, withStatus } from './unit-rules';
 import { today, validateUnit } from './unit-validation';
 import type { DirectoryUser } from './user-directory';
@@ -79,7 +79,7 @@ function toDraft(form: FormState, assetId: string, category: Category | undefine
   };
   if (!reserved) {
     draft.location = form.location;
-    draft.status = form.status === 'Inactive' || form.status === 'Available' || form.status === 'Assigned' ? form.status : undefined;
+    draft.status = form.status;
     draft.assignedToId = form.status === 'Assigned' ? form.assignedToId : undefined;
   }
   return stripHidden(draft, category);
@@ -136,38 +136,24 @@ type Props =
     };
 
 type Loaded = { kind: 'loading' } | { kind: 'failed' } | { kind: 'gone'; message: string } | { kind: 'ready'; unit?: UnitDetail };
+type Errors = Record<string, string>;
 
-export function UnitFormPanel(props: Props) {
-  const editing = props.mode === 'edit';
-  const formId = useId();
-  const { state: assetsState } = useAssets();
-  const assets = assetsState.kind === 'loaded' ? assetsState.assets : null;
-  const users = useUsers();
-  const [loaded, setLoaded] = useState<Loaded>(editing ? { kind: 'loading' } : { kind: 'ready' });
-  const [form, setForm] = useState<FormState>(EMPTY);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [removing, setRemoving] = useState(false);
-  const [reason, setReason] = useState('');
-
-  const live = useRef(true);
-  useEffect(() => {
-    live.current = true;
-    return () => {
-      live.current = false;
-    };
-  }, []);
-
-  const unitId = editing ? props.unitId : null;
-  const load = editing ? props.load : null;
+/** Loads the unit under review; add mode is ready at once. `retry` loads
+ *  again after a failure, `gone` records a 404 met later by a save. */
+function useUnitLoad(unitId: string | null, load: ((id: string) => Promise<UnitDetail>) | null, onLoaded: (unit: UnitDetail) => void) {
+  const [loaded, setLoaded] = useState<Loaded>(unitId ? { kind: 'loading' } : { kind: 'ready' });
   const [attempt, setAttempt] = useState(0);
+  const onLoadedRef = useRef(onLoaded);
+  useEffect(() => {
+    onLoadedRef.current = onLoaded;
+  });
   useEffect(() => {
     if (!unitId || !load) return;
     let active = true;
     load(unitId).then(
       (unit) => {
         if (!active) return;
-        setForm(fromUnit(unit));
+        onLoadedRef.current(unit);
         setLoaded({ kind: 'ready', unit });
       },
       (error: unknown) => {
@@ -179,6 +165,187 @@ export function UnitFormPanel(props: Props) {
       active = false;
     };
   }, [unitId, load, attempt]);
+  return {
+    loaded,
+    retry: () => setAttempt((n) => n + 1),
+    gone: (message: string) => setLoaded({ kind: 'gone', message }),
+  };
+}
+
+/** The body while the unit is not ready: loading, gone (a 404) or failed. */
+function UnitLoadNotice({ loaded }: { loaded: Exclude<Loaded, { kind: 'ready' }> }) {
+  if (loaded.kind === 'loading') {
+    return (
+      <div className="[&>div]:min-h-[204px]">
+        <LoadingState label="Loading unit" />
+      </div>
+    );
+  }
+  if (loaded.kind === 'gone') {
+    return <Notice eyebrow="Not found" tone="stopped" title="This unit is no longer in the register" body={loaded.message} />;
+  }
+  return <Notice eyebrow="Could not load" tone="stopped" title="The unit could not be loaded" body="Nothing was changed. Try again in a moment" />;
+}
+
+function FormFooter({ formId, saving, removing, onCancel }: { formId: string; saving: boolean; removing: boolean; onCancel: () => void }) {
+  const idle = removing ? 'Confirm Removal' : 'Save Changes';
+  return (
+    <div className="flex items-center justify-center gap-12">
+      <Button variant="ghost" disabled={saving} onClick={onCancel}>
+        Cancel
+      </Button>
+      <Button type="submit" form={formId} disabled={saving}>
+        {saving ? (removing ? 'Removing…' : 'Saving…') : idle}
+      </Button>
+    </div>
+  );
+}
+
+function NoticeFooter({ onRetry, onClose }: { onRetry?: () => void; onClose: () => void }) {
+  return (
+    <div className="flex items-center justify-center gap-12">
+      {onRetry ? (
+        <Button variant="ghost" onClick={onRetry}>
+          Try again
+        </Button>
+      ) : null}
+      <Button onClick={onClose}>Close</Button>
+    </div>
+  );
+}
+
+/** ASSIGNMENT: User, Office and Status. A Reserved unit shows all three
+ *  read-only (`options` is `null`), Status reading `Reserved`. */
+function AssignmentFields({
+  form,
+  users,
+  options,
+  errors,
+  onAssignee,
+  onLocation,
+  onStatus,
+}: {
+  form: FormState;
+  users: DirectoryUser[] | null;
+  options: readonly (AddStatus | EditStatus)[] | null;
+  errors: Errors;
+  onAssignee: (userId: string | undefined) => void;
+  onLocation: (office: Office) => void;
+  onStatus: (status: AddStatus | EditStatus) => void;
+}) {
+  const reserved = options === null;
+  return (
+    <FieldGroup heading="ASSIGNMENT">
+      <UserPicker users={users} value={reserved ? undefined : form.assignedToId} disabled={reserved} error={errors.assignedToId} onChange={onAssignee} />
+      <Field label="Office" required error={errors.location}>
+        {({ id, required, invalid, describedBy }) => (
+          <Select
+            id={id}
+            label="Office"
+            size="field"
+            required={required}
+            invalid={invalid}
+            describedBy={describedBy}
+            disabled={reserved}
+            options={[...OFFICES]}
+            value={form.location}
+            onChange={(v) => onLocation(v as Office)}
+          />
+        )}
+      </Field>
+      <Field label="Status" required error={errors.status}>
+        {({ id, required, invalid, describedBy }) => (
+          <Select
+            id={id}
+            label="Status"
+            size="field"
+            required={required}
+            invalid={invalid}
+            describedBy={describedBy}
+            placeholder="Select Status"
+            disabled={reserved}
+            options={options ? [...options] : ['Reserved']}
+            value={reserved ? 'Reserved' : form.status}
+            onChange={(v) => {
+              const next = options?.find((o) => o === v);
+              if (next) onStatus(next);
+            }}
+          />
+        )}
+      </Field>
+    </FieldGroup>
+  );
+}
+
+/** NOTES: Description and the Attachment uploader. */
+function NotesFields({
+  form,
+  errors,
+  onChange,
+}: {
+  form: FormState;
+  errors: Errors;
+  onChange: (key: 'description' | 'attachmentUrl', value: string | undefined) => void;
+}) {
+  return (
+    <FieldGroup heading="NOTES">
+      <Field label="Description" error={errors.description}>
+        {({ id, invalid, describedBy }) => (
+          <TextArea
+            id={id}
+            invalid={invalid}
+            aria-describedby={describedBy}
+            placeholder="Insert here..."
+            value={form.description}
+            onChange={(e) => onChange('description', e.target.value)}
+            className="h-[75px] min-h-[75px]! py-12!"
+          />
+        )}
+      </Field>
+      <ImageField label="Attachment" filename="unit-attachment" value={form.attachmentUrl} error={errors.attachmentUrl} onChange={(v) => onChange('attachmentUrl', v)} />
+    </FieldGroup>
+  );
+}
+
+type FooterProps = { loaded: Loaded; formId: string; saving: boolean; removing: boolean; onCancelRemoval: () => void; onRetry: () => void };
+
+/** The footer for each load state: none while loading, Close (and Try again
+ *  after a failure) while not ready, Cancel and the submit button once ready. */
+function panelFooter({ loaded, formId, saving, removing, onCancelRemoval, onRetry }: FooterProps) {
+  if (loaded.kind === 'loading') return undefined;
+  if (loaded.kind !== 'ready') {
+    return (leave: () => void) => <NoticeFooter onRetry={loaded.kind === 'failed' ? onRetry : undefined} onClose={leave} />;
+  }
+  return (leave: () => void) => <FormFooter formId={formId} saving={saving} removing={removing} onCancel={removing ? onCancelRemoval : leave} />;
+}
+
+function UnitHeader({ title, unit }: { title: string; unit?: UnitDetail }) {
+  return (
+    <div className="flex min-w-0 flex-col items-start gap-4">
+      <h2 className="font-display text-[22px] font-medium leading-display text-ink-primary">{title}</h2>
+      {unit ? <StatusPill unit={unit.status} /> : null}
+    </div>
+  );
+}
+
+export function UnitFormPanel(props: Props) {
+  const formId = useId();
+  const { state: assetsState } = useAssets();
+  const assets = assetsState.kind === 'loaded' ? assetsState.assets : null;
+  const users = useUsers();
+  const [form, setForm] = useState<FormState>(EMPTY);
+  const [errors, setErrors] = useState<Errors>({});
+  const [removing, setRemoving] = useState(false);
+  const [reason, setReason] = useState('');
+  const editing = props.mode === 'edit' ? props : null;
+  const { loaded, retry, gone } = useUnitLoad(editing?.unitId ?? null, editing?.load ?? null, (unit) => setForm(fromUnit(unit)));
+
+  const { saving, attempt } = useAttempt(props.onClose, (error, what) => {
+    const result = refusal(error, what, (key) => SHOWN.has(key));
+    if (!('problem' in result)) setErrors(result.errors);
+    else if (result.problem.status === 404) gone(result.problem.detail);
+    else setErrors({ '': result.problem.detail });
+  });
 
   const unit = loaded.kind === 'ready' ? loaded.unit : undefined;
   const reserved = unit?.status === 'Reserved';
@@ -199,131 +366,58 @@ export function UnitFormPanel(props: Props) {
   };
 
   const close = () => {
-    if (loaded.kind === 'gone' && props.mode === 'edit') props.onGone();
+    if (loaded.kind === 'gone') editing?.onGone();
     props.onClose();
   };
 
-  const refused = (error: unknown, what: string) => {
-    if (!live.current) return;
-    if (isValidationProblem(error)) {
-      const mapped = fieldErrors(error);
-      const unshown = Object.keys(mapped).find((key) => !SHOWN.has(key));
-      setErrors(unshown === undefined ? mapped : { ...mapped, '': `${what}: ${mapped[unshown]}` });
-    } else if (isUnitProblem(error)) {
-      if (error.status === 404) setLoaded({ kind: 'gone', message: error.detail });
-      else setErrors({ '': error.detail });
-    } else {
-      setErrors({ '': `${what}. Try again` });
-    }
-  };
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (saving) return;
-    if (removing && props.mode === 'edit') {
-      if (!reason.trim()) {
-        setErrors({ reason: 'Enter a reason for removal' });
-        return;
-      }
-      setSaving(true);
-      try {
-        await props.onRemove(props.unitId, reason.trim());
-        if (live.current) props.onClose();
-      } catch (error) {
-        refused(error, 'The unit could not be removed');
-      } finally {
-        if (live.current) setSaving(false);
-      }
+  function remove(target: NonNullable<typeof editing>) {
+    if (!reason.trim()) {
+      setErrors({ reason: 'Enter a reason for removal' });
       return;
     }
+    void attempt(() => target.onRemove(target.unitId, reason.trim()), 'The unit could not be removed');
+  }
 
-    const assetId = unit?.assetId ?? form.asset?.id ?? '';
-    const draft = toDraft(form, assetId, category, reserved);
+  function save() {
+    const draft = toDraft(form, unit?.assetId ?? form.asset?.id ?? '', category, reserved);
     const found = validateUnit(draft, category, today(), unit);
     if (Object.keys(found).length) {
       setErrors(found);
       return;
     }
-    setSaving(true);
-    try {
-      if (props.mode === 'edit') await props.onUpdate(props.unitId, draft);
-      else await props.onCreate(draft);
-      if (live.current) props.onClose();
-    } catch (error) {
-      refused(error, 'The unit could not be saved');
-    } finally {
-      if (live.current) setSaving(false);
-    }
+    void attempt(() => (props.mode === 'edit' ? props.onUpdate(props.unitId, draft) : props.onCreate(draft)), 'The unit could not be saved');
   }
 
-  const title = editing ? (unit?.itemName ?? 'Review unit') : 'Add Single Unit';
-  const header = (
-    <div className="flex min-w-0 flex-col items-start gap-4">
-      <h2 className="font-display text-[22px] font-medium leading-display text-ink-primary">{title}</h2>
-      {unit ? <StatusPill unit={unit.status} /> : null}
-    </div>
-  );
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (saving) return;
+    if (removing && editing) remove(editing);
+    else save();
+  }
 
-  const footer =
-    loaded.kind === 'ready' ? (
-      (leave: () => void) => (
-        <div className="flex items-center justify-center gap-12">
-          <Button
-            variant="ghost"
-            disabled={saving}
-            onClick={() => {
-              if (removing) {
-                setRemoving(false);
-                setReason('');
-                clear('reason');
-              } else leave();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" form={formId} disabled={saving}>
-            {saving ? (removing ? 'Removing…' : 'Saving…') : removing ? 'Confirm Removal' : 'Save Changes'}
-          </Button>
-        </div>
-      )
-    ) : loaded.kind === 'loading' ? undefined : (
-      (leave: () => void) => (
-        <div className="flex items-center justify-center gap-12">
-          {loaded.kind === 'failed' ? (
-            <Button variant="ghost" onClick={() => setAttempt((n) => n + 1)}>
-              Try again
-            </Button>
-          ) : null}
-          <Button onClick={leave}>Close</Button>
-        </div>
-      )
-    );
+  const leaveRemoving = () => {
+    setRemoving(false);
+    setReason('');
+    clear('reason');
+  };
+
+  const title = editing ? (unit?.itemName ?? 'Review unit') : 'Add Single Unit';
 
   return (
     <SidePanel
       title={title}
       onClose={close}
       dismissible={!saving}
-      header={header}
+      header={<UnitHeader title={title} unit={unit} />}
       bodyClassName="px-14 pt-10 pb-24"
       footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
-      footer={footer}
+      footer={panelFooter({ loaded, formId, saving, removing, onCancelRemoval: leaveRemoving, onRetry: retry })}
     >
-      {loaded.kind === 'loading' ? (
-        <div className="[&>div]:min-h-[204px]">
-          <LoadingState label="Loading unit" />
-        </div>
-      ) : loaded.kind === 'gone' ? (
-        <Notice eyebrow="Not found" tone="stopped" title="This unit is no longer in the register" body={loaded.message} />
-      ) : loaded.kind === 'failed' ? (
-        <Notice eyebrow="Could not load" tone="stopped" title="The unit could not be loaded" body="Nothing was changed. Try again in a moment" />
+      {loaded.kind !== 'ready' ? (
+        <UnitLoadNotice loaded={loaded} />
       ) : (
-        <form id={formId} onSubmit={(e) => void submit(e)} noValidate className="flex flex-col gap-32">
-          {errors[''] ? (
-            <p role="alert" className="rounded-6 bg-status-rejected-bg px-12 py-10 type-meta leading-body text-status-rejected-fg">
-              {errors['']}
-            </p>
-          ) : null}
+        <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-32">
+          <FormAlert message={errors['']} />
 
           {editing ? null : (
             <CatalogItemPicker
@@ -344,80 +438,22 @@ export function UnitFormPanel(props: Props) {
 
           <PurchaseFields value={form} onChange={set} errors={errors} today={today()} />
           <DeviceFields category={category} value={form} onChange={set} errors={errors} />
-
-          <FieldGroup heading="ASSIGNMENT">
-            <UserPicker
-              users={users}
-              value={reserved ? undefined : form.assignedToId}
-              disabled={reserved}
-              error={errors.assignedToId}
-              onChange={(userId) => {
-                setForm((f) => withAssignee(f, userId));
-                clear('assignedToId', 'status');
-              }}
-            />
-            <Field label="Office" required error={errors.location}>
-              {({ id, required, invalid, describedBy }) => (
-                <Select
-                  id={id}
-                  label="Office"
-                  size="field"
-                  required={required}
-                  invalid={invalid}
-                  describedBy={describedBy}
-                  disabled={reserved}
-                  options={[...OFFICES]}
-                  value={form.location}
-                  onChange={(v) => set('location', v as Office)}
-                />
-              )}
-            </Field>
-            <Field label="Status" required error={errors.status}>
-              {({ id, required, invalid, describedBy }) => (
-                <Select
-                  id={id}
-                  label="Status"
-                  size="field"
-                  required={required}
-                  invalid={invalid}
-                  describedBy={describedBy}
-                  placeholder="Select Status"
-                  disabled={options === null}
-                  options={options ? [...options] : ['Reserved']}
-                  value={options === null ? 'Reserved' : form.status}
-                  onChange={(v) => {
-                    const next = options?.find((o) => o === v);
-                    if (!next) return;
-                    setForm((f) => withStatus(f, next));
-                    clear('status', 'assignedToId');
-                  }}
-                />
-              )}
-            </Field>
-          </FieldGroup>
-
-          <FieldGroup heading="NOTES">
-            <Field label="Description" error={errors.description}>
-              {({ id, invalid, describedBy }) => (
-                <TextArea
-                  id={id}
-                  invalid={invalid}
-                  aria-describedby={describedBy}
-                  placeholder="Insert here..."
-                  value={form.description}
-                  onChange={(e) => set('description', e.target.value)}
-                  className="h-[75px] min-h-[75px]! py-12!"
-                />
-              )}
-            </Field>
-            <ImageField
-              label="Attachment"
-              filename="unit-attachment"
-              value={form.attachmentUrl}
-              error={errors.attachmentUrl}
-              onChange={(v) => set('attachmentUrl', v)}
-            />
-          </FieldGroup>
+          <AssignmentFields
+            form={form}
+            users={users}
+            options={options}
+            errors={errors}
+            onAssignee={(userId) => {
+              setForm((f) => withAssignee(f, userId));
+              clear('assignedToId', 'status');
+            }}
+            onLocation={(office) => set('location', office)}
+            onStatus={(status) => {
+              setForm((f) => withStatus(f, status));
+              clear('status', 'assignedToId');
+            }}
+          />
+          <NotesFields form={form} errors={errors} onChange={set} />
 
           {unit ? (
             <RemoveUnitSection

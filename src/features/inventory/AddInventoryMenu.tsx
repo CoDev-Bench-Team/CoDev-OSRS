@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Button, MdiChevronDown } from '../../shared/ui';
 
 export type AddKind = 'single' | 'batch';
@@ -16,8 +16,9 @@ const ITEMS: [kind: AddKind, label: string][] = [
  *  outside close the menu. Choosing an item puts focus back on the button
  *  before the panel opens, so the panel returns focus there when it closes
  *  (FR-016). */
-export function AddInventoryMenu({ onChoose, buttonRef }: { onChoose: (kind: AddKind) => void; buttonRef: RefObject<HTMLButtonElement | null> }) {
+export function AddInventoryMenu({ onChoose }: { onChoose: (kind: AddKind) => void }) {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const menuId = useId();
   const wrapper = useRef<HTMLDivElement>(null);
   const items = useRef<(HTMLButtonElement | null)[]>([]);
@@ -38,7 +39,7 @@ export function AddInventoryMenu({ onChoose, buttonRef }: { onChoose: (kind: Add
     };
     document.addEventListener('pointerdown', outside);
     return () => document.removeEventListener('pointerdown', outside);
-  }, [open, initial, buttonRef]);
+  }, [open, initial]);
 
   const close = () => {
     setOpen(false);

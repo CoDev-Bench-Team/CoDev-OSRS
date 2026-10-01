@@ -86,7 +86,7 @@ Errors: `400` validation problem (RFC 9457, `errors[].pointer`), `404` not found
 | `src/features/inventory/unit-rules.ts` | **New.** (P6) |
 | `src/features/inventory/device-fields.ts` | **New.** (P7) |
 | `src/features/inventory/unit-validation.ts` | **New.** (P8) |
-| `src/features/inventory/format.ts` | **New.** `formatPeso` (`Php 80,000.00`, FR-013) |
+| `src/features/inventory/format.ts` | **New.** `formatAmount` (`80,000.00` beside the field's `Php` prefix, FR-013) and the Price field's as-typed grouping |
 | `src/features/inventory/inventory-source.ts` | **New.** `InventorySource`, `inventorySource(search)` (P2, P4, P16) |
 | `src/features/inventory/inventory-store.ts` | **New.** `useInventory()` (P10) |
 | `src/features/inventory/seeded-inventory-source.ts` | **New.** (P2, P8) |

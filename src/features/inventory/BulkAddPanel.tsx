@@ -1,14 +1,13 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { Button, Field, FieldGroup, Select, SidePanel, TextInput } from '../../shared/ui';
-import { fieldErrors, isValidationProblem } from '../../shared/validation';
 import { useAssets } from '../assets/asset-store';
 import type { Asset } from '../assets/types';
 import { OFFICES, type Office } from '../auth/types';
 import { deviceFieldsFor, stripHidden } from './device-fields';
 import { parseAmount } from './format';
-import { isUnitProblem } from './inventory-source';
+import { refusal, useAttempt } from './inventory-store';
 import type { UnitBatchDraft } from './types';
-import { CatalogItemPicker, PurchaseFields, SecretInput, type Device, type Purchase } from './unit-fields';
+import { CatalogItemPicker, FormAlert, PurchaseFields, SecretInput, type Device, type Purchase } from './unit-fields';
 import { MAX_BATCH, today, validateBatch } from './unit-validation';
 
 /** Add Multiple Units — `03 - Inventory - Bulk Add Units`, 650px (spec 015
@@ -48,16 +47,12 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
   const [errors, setErrors] = useState<Record<string, string>>({});
   /** A refusal that names no field (a 409), shown above the rows. */
   const [conflict, setConflict] = useState<string>();
-  const [saving, setSaving] = useState(false);
   const rule = deviceFieldsFor(asset?.category);
-
-  const live = useRef(true);
-  useEffect(() => {
-    live.current = true;
-    return () => {
-      live.current = false;
-    };
-  }, []);
+  const { saving, attempt } = useAttempt(onClose, (error, what) => {
+    const result = refusal(error, what, shown);
+    if ('problem' in result) setConflict(result.problem.detail);
+    else setErrors(result.errors);
+  });
 
   /** Row errors are keyed by position, so any change to the row list clears
    *  them rather than leaving a message under the wrong row. */
@@ -85,7 +80,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     clear(`units.${i}.${key}`);
   };
 
-  async function submit(event: FormEvent) {
+  function submit(event: FormEvent) {
     event.preventDefault();
     if (saving || rows.length === 0) return;
     const draft: UnitBatchDraft = {
@@ -104,24 +99,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
       setErrors(found);
       return;
     }
-    setSaving(true);
-    try {
-      await onCreate(draft);
-      if (live.current) onClose();
-    } catch (error) {
-      if (!live.current) return;
-      if (isValidationProblem(error)) {
-        const mapped = fieldErrors(error);
-        const unshown = Object.keys(mapped).find((key) => !shown(key));
-        setErrors(unshown === undefined ? mapped : { ...mapped, '': `The units could not be saved: ${mapped[unshown]}` });
-      } else if (isUnitProblem(error)) {
-        setConflict(error.detail);
-      } else {
-        setErrors({ '': 'The units could not be saved. Try again' });
-      }
-    } finally {
-      if (live.current) setSaving(false);
-    }
+    void attempt(() => onCreate(draft), 'The units could not be saved');
   }
 
   const full = rows.length >= MAX_BATCH;
@@ -146,12 +124,8 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
         </div>
       )}
     >
-      <form id={formId} onSubmit={(e) => void submit(e)} noValidate className="flex flex-col gap-32">
-        {errors[''] ? (
-          <p role="alert" className="rounded-6 bg-status-rejected-bg px-12 py-10 type-meta leading-body text-status-rejected-fg">
-            {errors['']}
-          </p>
-        ) : null}
+      <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-32">
+        <FormAlert message={errors['']} />
 
         <CatalogItemPicker
           assets={assets}
@@ -231,11 +205,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
         />
 
         <FieldGroup heading="UNITS">
-          {conflict ? (
-            <p role="alert" className="rounded-6 bg-status-rejected-bg px-12 py-10 type-meta leading-body text-status-rejected-fg">
-              {conflict}
-            </p>
-          ) : null}
+          <FormAlert message={conflict} />
           {errors.units ? <p className="type-meta leading-body text-status-rejected-fg">{errors.units}</p> : null}
           {rows.map((row, i) => (
             <div key={row.key} role="group" aria-label={`Unit ${i + 1}`} className="flex items-start gap-12">

@@ -68,7 +68,6 @@ export function InventoryPage() {
     { statuses: UNIT_CHIPS, pageSizes: PAGE_SIZES, pageSize: 50 },
   );
   const [panel, setPanel] = useState<PanelState>(null);
-  const addButton = useRef<HTMLButtonElement>(null);
   const table = useRef<HTMLDivElement>(null);
 
   /** A panel that closes after its row has gone (a removal) has no opener to
@@ -85,7 +84,7 @@ export function InventoryPage() {
     <div className="flex flex-1 flex-col pt-[34px] pb-32">
       <div className="flex flex-wrap items-center justify-between gap-16">
         <PageHeader title={DESTINATIONS.inventory.title} subtitle={DESTINATIONS.inventory.purpose} />
-        <AddInventoryMenu buttonRef={addButton} onChoose={(kind) => setPanel({ kind })} />
+        <AddInventoryMenu onChoose={(kind) => setPanel({ kind })} />
       </div>
 
       <InventoryToolbar query={query} />

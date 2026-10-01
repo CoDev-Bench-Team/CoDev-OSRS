@@ -19,6 +19,25 @@ import { useId, type KeyboardEvent, type TextareaHTMLAttributes } from 'react';
  *  For a one-line field, use `InputField` (`04.1`'s *Type full name to sign*).
  *  The two share `required` / `invalid` / `message` and the `aria-describedby`
  *  wiring, so a form treats them alike (spec 012 D6). */
+/** The block and label colours: a danger field keeps its pink at rest; a
+ *  neutral one turns pink only when invalid. */
+const LOOK = {
+  danger: { block: 'bg-status-rejected-bg ring-brand-alt', label: 'text-brand-primary-alt' },
+  invalid: { block: 'bg-status-rejected-bg ring-brand', label: 'text-status-rejected-fg' },
+  resting: { block: 'bg-surface-card ring-default', label: 'text-ink-strong' },
+} as const;
+
+const SIZE = {
+  md: { label: 'type-subhead', box: 'min-h-[58px] text-14' },
+  sm: { label: 'font-sans text-13 font-bold leading-tight', box: 'min-h-[56px] text-12' },
+} as const;
+
+/** Enter submits the form, as a one-line field would; Shift+Enter, an input
+ *  method's composition, or a handler that already took the key does not. */
+function submitsOnEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
+  return !e.defaultPrevented && e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing;
+}
+
 export function TextField({
   label,
   required,
@@ -37,28 +56,21 @@ export function TextField({
   tone?: 'neutral' | 'danger';
   /** `sm` is Inventory's `Reason for removal *`: a 13px label over 12px text
    *  in a 56px box (spec 015). */
-  size?: 'md' | 'sm';
+  size?: keyof typeof SIZE;
 }) {
   const id = useId();
   const messageId = `${id}-message`;
+  const showMessage = invalid === true && !!message;
+  const look = LOOK[tone === 'danger' ? 'danger' : invalid ? 'invalid' : 'resting'];
   const submitOnEnter = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     onKeyDown?.(e);
-    if (e.defaultPrevented || e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+    if (!submitsOnEnter(e)) return;
     e.preventDefault();
     e.currentTarget.form?.requestSubmit();
   };
-  const block =
-    tone === 'danger'
-      ? 'bg-status-rejected-bg ring-brand-alt'
-      : invalid
-        ? 'bg-status-rejected-bg ring-brand'
-        : 'bg-surface-card ring-default';
-  const small = size === 'sm';
-  const labelColour =
-    tone === 'danger' ? 'text-brand-primary-alt' : invalid ? 'text-status-rejected-fg' : 'text-ink-strong';
   return (
-    <div className={`flex flex-col gap-12 rounded-10 p-20 ${block} ${className ?? ''}`}>
-      <label htmlFor={id} className={`${small ? 'font-sans text-13 font-bold leading-tight' : 'type-subhead'} ${labelColour}`}>
+    <div className={`flex flex-col gap-12 rounded-10 p-20 ${look.block} ${className ?? ''}`}>
+      <label htmlFor={id} className={`${SIZE[size].label} ${look.label}`}>
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </label>
@@ -67,12 +79,12 @@ export function TextField({
         rows={1}
         required={required}
         aria-invalid={invalid || undefined}
-        aria-describedby={invalid && message ? messageId : undefined}
+        aria-describedby={showMessage ? messageId : undefined}
         onKeyDown={submitOnEnter}
-        className={`${small ? 'min-h-[56px] text-12' : 'min-h-[58px] text-14'} max-h-[160px] w-full resize-none [field-sizing:content] appearance-none rounded-8 border-none bg-surface-card px-14 py-14 font-sans text-ink-primary outline-none transition-osrs placeholder:text-ink-muted focus:ring-brand ${invalid ? 'ring-brand' : 'ring-default'}`}
+        className={`${SIZE[size].box} max-h-[160px] w-full resize-none [field-sizing:content] appearance-none rounded-8 border-none bg-surface-card px-14 py-14 font-sans text-ink-primary outline-none transition-osrs placeholder:text-ink-muted focus:ring-brand ${invalid ? 'ring-brand' : 'ring-default'}`}
         {...rest}
       />
-      {invalid && message ? (
+      {showMessage ? (
         <span id={messageId} className="type-meta text-status-rejected-fg">
           {message}
         </span>

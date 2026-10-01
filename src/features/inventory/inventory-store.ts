@@ -1,6 +1,45 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { InventorySource } from './inventory-source';
+import { fieldErrors, isValidationProblem } from '../../shared/validation';
+import { isUnitProblem, type InventorySource, type UnitProblem } from './inventory-source';
 import type { UnitBatchDraft, UnitDetail, UnitDraft, UnitRow } from './types';
+
+/** What a panel shows for a refused save: field errors, with the first one it
+ *  has no field for (`shown` is false) also above the form; or the 404/409
+ *  problem, which each panel places itself. */
+export function refusal(error: unknown, what: string, shown: (key: string) => boolean): { problem: UnitProblem } | { errors: Record<string, string> } {
+  if (isValidationProblem(error)) {
+    const mapped = fieldErrors(error);
+    const unshown = Object.keys(mapped).find((key) => !shown(key));
+    return { errors: unshown === undefined ? mapped : { ...mapped, '': `${what}: ${mapped[unshown]}` } };
+  }
+  if (isUnitProblem(error)) return { problem: error };
+  return { errors: { '': `${what}. Try again` } };
+}
+
+/** A panel's save: `saving` while it is in flight, `onDone` once it lands,
+ *  `onRefused` with the error otherwise. Nothing fires after unmount. */
+export function useAttempt(onDone: () => void, onRefused: (error: unknown, what: string) => void) {
+  const [saving, setSaving] = useState(false);
+  const live = useRef(true);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
+  async function attempt(run: () => Promise<unknown>, what: string) {
+    setSaving(true);
+    try {
+      await run();
+      if (live.current) onDone();
+    } catch (error) {
+      if (live.current) onRefused(error, what);
+    } finally {
+      if (live.current) setSaving(false);
+    }
+  }
+  return { saving, attempt };
+}
 
 export type InventoryState =
   | { kind: 'loading' }
