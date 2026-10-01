@@ -2,7 +2,7 @@ import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Field, FieldGroup, Search, TextField, TextInput, type FieldControl } from '../../shared/ui';
 import type { Asset, Category } from '../assets/types';
 import { deviceFieldsFor } from './device-fields';
-import { amountInput } from './format';
+import { amountInput, displayAmount } from './format';
 import { removal } from './unit-rules';
 import type { DirectoryUser } from './user-directory';
 import type { UnitStatus } from '../../shared/ui';
@@ -315,6 +315,9 @@ export function PurchaseFields({
   errors: Errors;
   today: string;
 }) {
+  // Price holds a plain number; the grouped, two-decimal form is shown only
+  // while the field is not being edited.
+  const [editingPrice, setEditingPrice] = useState(false);
   return (
     <FieldGroup heading="PURCHASE DETAILS">
       <Field label="Purchase Request" error={errors.pr}>
@@ -341,7 +344,9 @@ export function PurchaseFields({
               aria-describedby={describedBy}
               inputMode="decimal"
               placeholder="0.00"
-              value={value.price}
+              value={editingPrice ? value.price : displayAmount(value.price)}
+              onFocus={() => setEditingPrice(true)}
+              onBlur={() => setEditingPrice(false)}
               onChange={(e) => onChange('price', amountInput(e.target.value))}
               className="pl-[44px]"
             />

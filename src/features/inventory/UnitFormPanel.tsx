@@ -6,7 +6,7 @@ import { ImageField } from '../assets/ImageField';
 import type { Asset, Category } from '../assets/types';
 import { OFFICES, type Office } from '../auth/types';
 import { deviceFieldsFor, stripHidden } from './device-fields';
-import { formatAmount, parseAmount } from './format';
+import { parseAmount } from './format';
 import { isUnitProblem } from './inventory-source';
 import { seededUserDirectory } from './seeded-user-directory';
 import type { AddStatus, EditStatus, UnitDetail, UnitDraft } from './types';
@@ -48,7 +48,7 @@ const EMPTY: FormState = {
 function fromUnit(unit: UnitDetail): FormState {
   return {
     pr: unit.pr ?? '',
-    price: unit.price === undefined ? '' : formatAmount(unit.price),
+    price: unit.price === undefined ? '' : String(unit.price),
     supplier: unit.supplier ?? '',
     purchasedAt: unit.purchasedAt ?? '',
     serialNumber: unit.serialNumber ?? '',

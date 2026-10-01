@@ -569,7 +569,16 @@ try {
   await pick('Catalog Item', monitorName, monitorName);
 
   await fill('Price', 'abc1,2x50');
-  check((await control('Price')).value === '1,250', 'Price keeps digits and commas, dropping letters');
+  check((await control('Price')).value === '1,250.00', 'Price drops letters and shows the plain 1250 as 1,250.00');
+  const priceAt = await cdp.evaluate(() => {
+    const input = document.getElementById([...document.querySelectorAll('dialog[open] label')].find((l) => l.textContent.trim() === 'Price').htmlFor);
+    input.scrollIntoView({ block: 'center' });
+    const r = input.getBoundingClientRect();
+    return { x: r.left + r.width - 20, y: r.top + r.height / 2 };
+  });
+  await clickAt(priceAt);
+  check(await until(() => document.activeElement?.value === '1250'), 'while it is edited it holds the plain number');
+  await cdp.evaluate(() => document.activeElement.blur());
   await fill('Price', '1,250.555');
   await fill('Serial Number', 'DEMO-CHECK-0001');
   await pressInPanel('Save Changes');

@@ -19,11 +19,20 @@ export function parseAmount(typed: string): number | undefined {
   return /^\d+(\.\d+)?$/.test(plain) ? Number(plain) : NaN;
 }
 
-/** What the Price field keeps of a keystroke or paste: digits, the thousands
- *  commas and one decimal point. Letters and every other character are
- *  dropped as they are typed. */
+/** What the Price field keeps of a keystroke or paste: digits and one decimal
+ *  point, so the value stays a plain `58000`. Letters, commas and every other
+ *  character are dropped as they are typed. */
 export function amountInput(raw: string): string {
-  const kept = raw.replace(/[^\d.,]/g, '');
+  const kept = raw.replace(/[^\d.]/g, '');
   const dot = kept.indexOf('.');
   return dot < 0 ? kept : kept.slice(0, dot + 1) + kept.slice(dot + 1).replace(/\./g, '');
+}
+
+/** How the Price field shows its plain value while it is not being edited:
+ *  `58000` reads `58,000.00`. A value validation would refuse (more than two
+ *  decimals) shows as typed, so its error still names what was entered. */
+export function displayAmount(value: string): string {
+  const amount = parseAmount(value);
+  if (amount === undefined || Number.isNaN(amount) || /\.\d{3,}$/.test(value.trim())) return value;
+  return formatAmount(amount);
 }
