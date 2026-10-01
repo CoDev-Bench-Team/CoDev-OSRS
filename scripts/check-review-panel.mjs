@@ -38,6 +38,8 @@ const go = async (path) => {
 // While a request is pending the panel holds two text boxes: the optional
 // Other Notes and, once rejecting, the required reason.
 const REASON = 'dialog[open] textarea[required]';
+const REJECT_REQUIRED = 'Enter a reason for rejecting this request.';
+const CANCEL_REQUIRED = 'Enter a reason for cancelling this request.';
 const NOTES = 'dialog[open] textarea:not([required])';
 const notesValue = () => document.querySelector('dialog[open] textarea:not([required])')?.value ?? null;
 
@@ -48,6 +50,13 @@ const page = () => ({
   ),
   cards: document.querySelector('section[aria-label="Requests workload summary"]')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
   chips: document.querySelector('[role="group"][aria-label="Filter by status"]')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+  // Each chip as label → count, read from its "Label (n)" text.
+  chipCounts: Object.fromEntries(
+    [...document.querySelectorAll('[role="group"][aria-label="Filter by status"] button')].map((b) => {
+      const [, label, n] = b.textContent.match(/^(.*)\((\d[\d,]*)\)$/) ?? [];
+      return [label?.trim(), Number(n?.replace(/,/g, ''))];
+    }),
+  ),
 });
 
 const panel = () => {
@@ -647,12 +656,15 @@ try {
   await click('Confirm Cancellation');
   await settle();
   p = await cdp.evaluate(panel);
-  check(p.invalid && p.pill === 'Approved', 'an empty reason is refused and the status stays');
+  check(
+    p.invalid && p.pill === 'Approved' && p.text.includes(CANCEL_REQUIRED) && !p.text.includes(REJECT_REQUIRED),
+    'an empty reason is refused with the cancel form’s own message, and the status stays',
+  );
   await typeInto(REASON, '   ');
   await click('Confirm Cancellation');
   await settle();
   p = await cdp.evaluate(panel);
-  check(p.invalid && p.pill === 'Approved', 'a whitespace-only reason is refused too');
+  check(p.invalid && p.pill === 'Approved' && p.text.includes(CANCEL_REQUIRED), 'a whitespace-only reason is refused too');
   await click('Cancel');
   await settle();
   p = await cdp.evaluate(panel);
@@ -683,6 +695,12 @@ try {
     beforeCancel.cards.includes('8 In Processing') && afterCancel.cards.includes('7 In Processing'),
     'In Processing drops by one',
     afterCancel.cards,
+  );
+  check(
+    afterCancel.chipCounts.Approved === beforeCancel.chipCounts.Approved - 1 &&
+      afterCancel.chipCounts['All requests'] === beforeCancel.chipCounts['All requests'] - 1,
+    'the Approved and All requests chips each drop by one (FR-013)',
+    `${JSON.stringify(beforeCancel.chipCounts)} → ${JSON.stringify(afterCancel.chipCounts)}`,
   );
   await click('Close');
   await closed();
@@ -759,6 +777,20 @@ try {
   await esc();
   await closed();
 
+  await cancelIn('REQ-2026-1805', 'No stock at Makati');
+  await click('Confirm Cancellation');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal');
+  p = await cdp.evaluate(panel);
+  check(
+    p.alert?.includes('updated while you were viewing it') &&
+      p.pill === 'For Delivery' &&
+      JSON.stringify(p.buttons) === JSON.stringify(EXPECTED['For Delivery']),
+    'a cancel overtaken by another Admin’s handover shows For Delivery, still offering Cancel Request',
+    `${p.pill}: ${p.buttons.join(' / ')}`,
+  );
+  await esc();
+  await closed();
+
   await go('/queue?review=failing');
   await cancelIn('REQ-2026-1805', 'Supplier backorder');
   await click('Confirm Cancellation');
@@ -778,12 +810,41 @@ try {
   await esc();
   await closed();
 
+  // The source itself refuses the reason, as the API's `400 #/reason` will:
+  // the field goes back to invalid with its own message (FR-021).
+  await go('/queue?review=reason-refused');
+  await cancelIn('REQ-2026-1805', 'Supplier backorder');
+  await click('Confirm Cancellation');
+  await settle();
+  p = await cdp.evaluate(panel);
+  check(
+    p.invalid && p.pill === 'Approved' && p.text.includes(CANCEL_REQUIRED) && !p.alert,
+    'a reason the source refuses puts the cancel field back to invalid, with its own message',
+    `${p.pill}: invalid=${p.invalid}, alert=${p.alert}`,
+  );
+  await esc();
+  await closed();
+  await open('REQ-2026-1847');
+  await click('Reject Request');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea[required]'), 3000, 'the rejection reason');
+  await typeInto(REASON, 'Duplicate');
+  await click('Confirm Rejection');
+  await settle();
+  p = await cdp.evaluate(panel);
+  check(
+    p.invalid && p.pill === 'Pending Approval' && p.text.includes(REJECT_REQUIRED),
+    'and the reject field the same way, with the reject message',
+    `${p.pill}: invalid=${p.invalid}`,
+  );
+  await esc();
+  await closed();
+
   // The dev stubs above replace `cancel`, so the seed's own guard is probed
   // directly: the API will refuse these, and the seed must not let them through.
   const guard = await cdp.evaluate(async () => {
     const { createSeededAdminRequestSource } = await import('/src/features/requests/queue/seeded-admin-request-source.ts');
     const source = createSeededAdminRequestSource();
-    await source.updateStatus('REQ-2026-1703', 'Received');
+    const setup = await source.updateStatus('REQ-2026-1703', 'Received');
     const refused = {};
     for (const id of ['REQ-2026-1847', 'REQ-2026-1703', 'REQ-2026-1690', 'REQ-2026-1684', 'REQ-2026-1677']) {
       refused[id] = await source.cancel(id, 'Not allowed');
@@ -792,8 +853,9 @@ try {
     const missing = await source.cancel('REQ-2026-0000', 'No such request');
     const legal = await source.cancel('REQ-2026-1715', '  Recalled  ');
     const after = (await source.load()).requests.find((r) => r.id === 'REQ-2026-1715');
-    return { refused, blank, missing, legal, after };
+    return { setup, refused, blank, missing, legal, after };
   });
+  check(guard.setup.ok, 'probe setup: REQ-2026-1703 reached Received', JSON.stringify(guard.setup));
   check(
     Object.values(guard.refused).every((r) => !r.ok && r.refusal === 'status-changed'),
     'the seed refuses a cancel from Pending, Received, Completed, Rejected or Cancelled',

@@ -50,6 +50,8 @@ const panel = () => {
     buttons,
     text: d.textContent,
     timeline: [...d.querySelectorAll('ol li')].map((li) => [li.dataset.state, li.querySelector('span span')?.textContent.trim()]),
+    // Each node's date line: the last line of its label column.
+    when: [...d.querySelectorAll('ol li')].map((li) => li.lastElementChild?.lastElementChild?.textContent.trim()),
     invalid: d.querySelector('textarea')?.getAttribute('aria-invalid') === 'true',
     focusInside: d.contains(document.activeElement),
   };
@@ -345,7 +347,15 @@ check(
   'the timeline reads Submitted → Approved → Ready for Pickup → Cancelled',
   JSON.stringify(p.timeline),
 );
-check(p.text.includes('Reason for cancellation') && !p.buttons.includes('Cancel Request'), 'it reads back its reason and offers no cancel');
+check(
+  p.text.includes('Reason for cancellation') && p.text.includes('Model discontinued; no stock at Davao') && !p.buttons.includes('Cancel Request'),
+  'it reads back its reason and offers no cancel',
+);
+const stubDates = await cdp.evaluate(async (xs) => {
+  const { formatDateTime } = await import('/src/features/requests/format.ts');
+  return xs.map(formatDateTime);
+}, ['2026-08-18T01:30:00Z', '2026-08-18T05:00:00Z', '2026-08-19T02:00:00Z', '2026-08-20T03:00:00Z']);
+check(JSON.stringify(p.when) === JSON.stringify(stubDates), 'each node is dated from its timestamp', p.when.join(' / '));
 await cdp.evaluate(() => document.querySelector('dialog[open] button[aria-label="Close"]').click());
 await closed();
 await openRow('REQ-2026-1791');

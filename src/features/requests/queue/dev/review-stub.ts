@@ -17,6 +17,10 @@ import type { AdminRequestSource, TransitionResult } from '../review-types';
  *    the form keeps its input (FR-014).
  *  - `reload-fails`: the transition goes through, then the reload fails. The
  *    panel stays open on the last snapshot and says so (plan D3).
+ *  - `reason-refused`: reject and cancel are refused `reason-required` even
+ *    with a reason, as the API's `400 #/reason` will be. The reason field goes
+ *    back to invalid with its required message (FR-021; reject takes the same
+ *    path).
  *  - `no-stock-figure`: the source reports no stock figure for any request's
  *    first line (`available: null`), so CURRENT INVENTORY shows its marker
  *    rather than a number (spec 008 edge case "Unavailable stock figure"). The
@@ -70,6 +74,11 @@ export function reviewStub(mode: string | null, fresh: () => AdminRequestSource)
         updateStatus: after(seeded.updateStatus),
         cancel: after(seeded.cancel),
       };
+    }
+    case 'reason-refused': {
+      const seeded = fresh();
+      const refused = async (): Promise<TransitionResult> => ({ ok: false, refusal: 'reason-required' });
+      return { ...seeded, reject: refused, cancel: refused };
     }
     case 'no-stock-figure': {
       const seeded = fresh();

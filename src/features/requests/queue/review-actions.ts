@@ -14,7 +14,7 @@ export type ReviewAction = 'approve' | 'reject' | 'updateStatus' | 'cancel' | 'c
 
 const ACTIONS = {
   'Pending Approval': ['reject', 'approve'],
-  // Cancel sits left of the forward action, as Reject does (spec 008 D14).
+  // Cancel sits left of the forward action, as Reject does (spec 008 plan D14).
   Approved: ['cancel', 'updateStatus'],
   'For Delivery': ['cancel', 'updateStatus'],
   'Ready for Pickup': ['cancel', 'updateStatus'],
