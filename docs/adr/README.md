@@ -15,5 +15,6 @@ Significant HOW decisions for OSRS. New ADRs get the next number and `Accepted` 
 | [0009](0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes — **amended by 0010 and 0011** |
 | [0010](0010-admin-marks-received.md) | The Admin may also mark a handed-over request `Received` — **amended by 0011** |
 | [0011](0011-admin-sets-received-employee-signs.md) | The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it (no status change); the Admin completes once signed |
+| [0012](0012-no-admin-cancel-on-for-delivery.md) | An Admin cannot cancel a `For Delivery` request; a failed delivery goes back to `Ready for Pickup` first |
 
 Template: context, decision, consequences, alternatives. See `ARCHITECT.md` §13.

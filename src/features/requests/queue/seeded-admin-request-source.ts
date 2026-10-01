@@ -27,7 +27,7 @@ import type {
  *  ones the queue leaves to History, enough to page there too (spec 013).
  *
  *  **What the store does not do.** It changes status only. Releasing a
- *  reservation on reject, and consuming stock on complete, are the API's
+ *  reservation on reject or cancel, and consuming stock on complete, are the API's
  *  (constitution III, spec 008 FR-016). The `available` figures are fixed
  *  sample values and never move. How the API names these transitions and their
  *  refusals is contracts conflict 1's to settle, and nothing here proposes a
@@ -270,9 +270,12 @@ function seed(): ReviewRequest[] {
       items: ['UPS'],
       lines: [line('UPS - APC Back-UPS 650', 1, 2)],
       submittedAt: '2026-08-20T02:00:00Z',
-      // Cancelled by an Admin after it was handed over for delivery.
+      // The delivery failed and came back, so an Admin set it Ready for Pickup
+      // and then cancelled it: For Delivery cannot be cancelled (constitution
+      // 8.0.0 IV).
       status: 'Cancelled',
-      handover: 'For Delivery',
+      handover: 'Ready for Pickup',
+      pickupLocation: { kind: 'office', office: 'Makati' },
       approvedAt: '2026-08-20T05:00:00Z',
       handedOverAt: '2026-08-21T02:00:00Z',
       cancellation: { reason: 'Courier could not deliver; unit returned to stock', at: '2026-08-22T07:00:00Z' },
@@ -359,6 +362,10 @@ function seed(): ReviewRequest[] {
 }
 
 const HANDOVER_FROM = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup']);
+// The Admin cancels a request that cannot be fulfilled (constitution 8.0.0 IV).
+// Pending is the Employee's to cancel, and `For Delivery` and `Received` MUST
+// NOT be cancelled, so this set must not follow HANDOVER_FROM.
+const ADMIN_CANCEL_FROM = new Set<RequestStatus>(['Approved', 'Ready for Pickup']);
 const RECEIVED_FROM = new Set<RequestStatus>(['For Delivery', 'Ready for Pickup']);
 
 /** A fresh, independent store. The app uses the module-level instance below.
@@ -438,6 +445,19 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
       request.handover = to;
       request.pickupLocation = location;
       request.handedOverAt = now();
+      return { ok: true };
+    },
+
+    async cancel(id, reason) {
+      const request = find(id);
+      if (!request) return refused('unavailable');
+      if (!ADMIN_CANCEL_FROM.has(request.status)) return refused('status-changed');
+      const trimmed = reason.trim();
+      if (!trimmed) return refused('reason-required');
+      // The reservation is released by the API, not here (FR-016). The
+      // handover, location and times stay, so the timeline keeps its nodes.
+      request.status = 'Cancelled';
+      request.cancellation = { reason: trimmed, at: now() };
       return { ok: true };
     },
   };

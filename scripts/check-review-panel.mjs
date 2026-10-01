@@ -38,6 +38,8 @@ const go = async (path) => {
 // While a request is pending the panel holds two text boxes: the optional
 // Other Notes and, once rejecting, the required reason.
 const REASON = 'dialog[open] textarea[required]';
+const REJECT_REQUIRED = 'Enter a reason for rejecting this request.';
+const CANCEL_REQUIRED = 'Enter a reason for cancelling this request.';
 const NOTES = 'dialog[open] textarea:not([required])';
 const notesValue = () => document.querySelector('dialog[open] textarea:not([required])')?.value ?? null;
 
@@ -48,6 +50,13 @@ const page = () => ({
   ),
   cards: document.querySelector('section[aria-label="Requests workload summary"]')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
   chips: document.querySelector('[role="group"][aria-label="Filter by status"]')?.innerText.replace(/\s+/g, ' ').trim() ?? '',
+  // Each chip as label → count, read from its "Label (n)" text.
+  chipCounts: Object.fromEntries(
+    [...document.querySelectorAll('[role="group"][aria-label="Filter by status"] button')].map((b) => {
+      const [, label, n] = b.textContent.match(/^(.*)\((\d[\d,]*)\)$/) ?? [];
+      return [label?.trim(), Number(n?.replace(/,/g, ''))];
+    }),
+  ),
 });
 
 const panel = () => {
@@ -63,6 +72,9 @@ const panel = () => {
     text: d.textContent,
     stock: [...d.querySelectorAll('ul li')].map((li) => li.lastElementChild?.textContent.trim()),
     timeline: [...d.querySelectorAll('ol li')].map((li) => li.querySelector('span span')?.textContent.trim()),
+    // Each node's date line: the last line of its label column.
+    when: [...d.querySelectorAll('ol li')].map((li) => li.lastElementChild?.lastElementChild?.textContent.trim()),
+    headingFocused: document.activeElement === d.querySelector('h2'),
     invalid: [...d.querySelectorAll('textarea')].some((t) => t.getAttribute('aria-invalid') === 'true'),
     alert: d.querySelector('[role="alert"]')?.textContent.trim() ?? null,
     selects: Object.fromEntries(
@@ -166,9 +178,10 @@ const choose = async (selectLabel, option) => {
 
 const EXPECTED = {
   'Pending Approval': ['Reject Request', 'Approve Request'],
-  Approved: ['Update Status'],
+  Approved: ['Cancel Request', 'Update Status'],
+  // Its items are out with the delivery: no cancel (constitution 8.0.0 IV).
   'For Delivery': ['Update Status'],
-  'Ready for Pickup': ['Update Status'],
+  'Ready for Pickup': ['Cancel Request', 'Update Status'],
 };
 
 try {
@@ -330,7 +343,7 @@ try {
   await click('Approve Request');
   await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'Approved', 5000, 'Approved');
   p = await cdp.evaluate(panel);
-  check(JSON.stringify(p.buttons) === '["Update Status"]', 'the panel now offers Update Status');
+  check(JSON.stringify(p.buttons) === JSON.stringify(EXPECTED.Approved), 'the panel now offers Cancel Request and Update Status', p.buttons.join(' / '));
   check(await cdp.evaluate(notesValue) === null, 'an empty Other Notes does not stop approval, and the field goes with the decision');
   check(p.timeline[1] === 'Approved', 'the timeline reaches Approved');
   after = await cdp.evaluate(page);
@@ -410,7 +423,11 @@ try {
   p = await cdp.evaluate(panel);
   check(p.text.includes('Pickup location') && p.text.includes('6th floor IT desk'), 'the pickup location reads back');
   check(p.timeline[2] === 'Ready for Pickup', 'the handover node names the state taken', p.timeline[2]);
-  check(JSON.stringify(p.buttons) === '["Update Status"]' && !p.buttons.includes('Complete'), 'a handover state offers Update Status, and no Complete');
+  check(
+    JSON.stringify(p.buttons) === JSON.stringify(EXPECTED['Ready for Pickup']) && !p.buttons.includes('Complete'),
+    'Ready for Pickup offers Cancel Request and Update Status, and no Complete',
+    p.buttons.join(' / '),
+  );
 
   await click('Update Status');
   await settle();
@@ -423,6 +440,16 @@ try {
   await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'For Delivery', 5000, 'For Delivery');
   p = await cdp.evaluate(panel);
   check(!p.text.includes('6th floor IT desk'), 'swapping to For Delivery clears the pickup location');
+  const fullWidth = await cdp.evaluate(() => {
+    const b = [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status');
+    const row = b?.parentElement.getBoundingClientRect();
+    return !!b && Math.abs(b.getBoundingClientRect().width - row.width) < 1;
+  });
+  check(
+    JSON.stringify(p.buttons) === JSON.stringify(EXPECTED['For Delivery']) && fullWidth,
+    'For Delivery offers Update Status alone, across the row, and no Cancel Request (constitution 8.0.0)',
+    p.buttons.join(' / '),
+  );
   pass('the peers swap');
 
   // The form never offers the current status, so only a race sends it: someone
@@ -531,7 +558,7 @@ try {
   await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal');
   p = await cdp.evaluate(panel);
   check(p.alert?.includes('updated while you were viewing it') && p.pill === 'Approved', 'the refusal says so and shows the current status', `${p.pill}: ${p.alert}`);
-  check(JSON.stringify(p.buttons) === '["Update Status"]', 'and the current status’s actions');
+  check(JSON.stringify(p.buttons) === JSON.stringify(EXPECTED.Approved), 'and the current status’s actions', p.buttons.join(' / '));
   await esc();
   await closed();
 
@@ -599,6 +626,306 @@ try {
   check(!p.alert, 'the warning belongs to its request, not to the next one opened', p.alert);
   await esc();
   await closed();
+
+  // ---- US5: Admin cancel (BEN-135) ----
+  console.log('\nStory 5 — an Admin cancels a request that cannot be fulfilled');
+  const cancelIn = async (id, reason) => {
+    await open(id);
+    await click('Cancel Request');
+    await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea[required]'), 3000, 'the cancellation reason');
+    if (reason !== undefined) await typeInto(REASON, reason);
+  };
+  // `waitFor` serialises its predicate and passes no arguments, so the wanted
+  // pill is written into the predicate's source.
+  const toPill = (want) =>
+    cdp.waitFor(
+      new Function(`return document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === ${JSON.stringify(want)};`),
+      5000,
+      want,
+    );
+  // Seeded timestamps as the panel prints them, through the app's own formatter.
+  const formatted = (isos) =>
+    cdp.evaluate(async (xs) => {
+      const { formatDateTime } = await import('/src/features/requests/format.ts');
+      return xs.map(formatDateTime);
+    }, isos);
+
+  await go('/queue');
+  const beforeCancel = await cdp.evaluate(page);
+  await cancelIn('REQ-2026-1805');
+  const field = await cdp.evaluate((sel) => {
+    const t = document.querySelector(sel);
+    return { label: t.labels?.[0]?.textContent.trim(), placeholder: t.placeholder, required: t.required };
+  }, REASON);
+  check(
+    field.required && field.label === 'Reason for cancellation *' && field.placeholder === 'e.g item discontinued, no stock at this office...',
+    'Cancel Request asks for a required Reason for cancellation, with the Admin’s placeholder',
+    JSON.stringify(field),
+  );
+  p = await cdp.evaluate(panel);
+  check(p.buttons.join('/') === 'Cancel/Confirm Cancellation', 'the block offers Cancel / Confirm Cancellation, and Update Status is gone', p.buttons.join(' / '));
+  await click('Confirm Cancellation');
+  await settle();
+  p = await cdp.evaluate(panel);
+  check(
+    p.invalid && p.pill === 'Approved' && p.text.includes(CANCEL_REQUIRED) && !p.text.includes(REJECT_REQUIRED),
+    'an empty reason is refused with the cancel form’s own message, and the status stays',
+  );
+  await typeInto(REASON, '   ');
+  await click('Confirm Cancellation');
+  await settle();
+  p = await cdp.evaluate(panel);
+  check(p.invalid && p.pill === 'Approved' && p.text.includes(CANCEL_REQUIRED), 'a whitespace-only reason is refused too');
+  await click('Cancel');
+  await settle();
+  p = await cdp.evaluate(panel);
+  check(JSON.stringify(p.buttons) === JSON.stringify(EXPECTED.Approved), 'Cancel backs out to the actions', p.buttons.join(' / '));
+  check(p.focusInside, 'and focus stays inside the panel');
+  await click('Cancel Request');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea[required]'), 3000, 'the cancellation reason');
+  check(await cdp.evaluate((sel) => document.querySelector(sel).value === '', REASON), 'backing out discarded the typed reason');
+  await typeInto(REASON, 'Model discontinued by the supplier');
+  await click('Confirm Cancellation');
+  await settle();
+  check((await confirmation()) === null, 'no confirmation dialog follows the reason (FR-023)');
+  await toPill('Cancelled');
+  p = await cdp.evaluate(panel);
+  check(p.timeline.join(' → ') === 'Submitted → Approved → Cancelled', 'the timeline keeps Approved before Cancelled (FR-022)', p.timeline.join(' → '));
+  const seededDates1805 = await formatted(['2026-08-29T13:20:00Z', '2026-08-30T02:05:00Z']);
+  check(
+    p.when[0] === seededDates1805[0] && p.when[1] === seededDates1805[1] && !!p.when[2] && p.when[2] !== '—',
+    'each node keeps its date: the seeded Submitted and Approved, and the cancel’s own',
+    p.when.join(' / '),
+  );
+  check(p.headingFocused, 'focus lands on the panel heading once the form closes');
+  check(p.text.includes('Reason for cancellation') && p.text.includes('Model discontinued by the supplier'), 'the reason reads back under Reason for cancellation');
+  check(JSON.stringify(p.buttons) === '["Close"]', 'Close is the only action', p.buttons.join(' / '));
+  const afterCancel = await cdp.evaluate(page);
+  check(!afterCancel.ids.includes('REQ-2026-1805'), 'the request has left the queue behind the panel');
+  check(
+    beforeCancel.cards.includes('8 In Processing') && afterCancel.cards.includes('7 In Processing'),
+    'In Processing drops by one',
+    afterCancel.cards,
+  );
+  check(
+    afterCancel.chipCounts.Approved === beforeCancel.chipCounts.Approved - 1 &&
+      afterCancel.chipCounts['All requests'] === beforeCancel.chipCounts['All requests'] - 1,
+    'the Approved and All requests chips each drop by one (FR-013)',
+    `${JSON.stringify(beforeCancel.chipCounts)} → ${JSON.stringify(afterCancel.chipCounts)}`,
+  );
+  await click('Close');
+  await closed();
+
+  // In-app navigation keeps the seeded store, so History shows the cancel.
+  await cdp.evaluate(() =>
+    [...document.querySelectorAll('header nav a')].find((a) => a.getBoundingClientRect().width > 0 && a.textContent.trim() === 'History').click(),
+  );
+  await cdp.waitFor(() => location.pathname === '/history' && !!document.querySelector('button[aria-label^="Review request "]'), 8000, 'the History rows');
+  check(
+    await cdp.evaluate(() => !!document.querySelector('button[aria-label="Review request REQ-2026-1805"]')),
+    'the just-cancelled request is listed in History',
+  );
+  await go('/queue');
+
+  await cancelIn('REQ-2026-1715', 'Phone model recalled');
+  await click('Confirm Cancellation');
+  await toPill('Cancelled');
+  p = await cdp.evaluate(panel);
+  check(
+    p.timeline.join(' → ') === 'Submitted → Approved → Ready for Pickup → Cancelled',
+    'a cancelled pickup keeps its handover node',
+    p.timeline.join(' → '),
+  );
+  const seededDates1715 = await formatted(['2026-08-07T04:00:00Z', '2026-08-08T01:00:00Z']);
+  check(
+    p.when[1] === seededDates1715[0] && p.when[2] === seededDates1715[1],
+    'with the seeded Approved and handover dates',
+    p.when.join(' / '),
+  );
+  check(!p.text.includes('Pickup location') && !p.text.includes('6th floor IT desk'), 'and no longer reads back a pickup location');
+  await esc();
+  await closed();
+
+  await open('REQ-2026-1698');
+  await click('Update Status');
+  await settle();
+  p = await cdp.evaluate(panel);
+  check(!p.buttons.includes('Cancel Request'), 'while Update Status is open, Cancel Request is not offered', p.buttons.join(' / '));
+  await esc();
+  await closed();
+
+  // A terminal request's deep link opens History's read-only panel (spec 013 FR-016).
+  await go('/requests/REQ-2026-1677');
+  await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.textContent.trim() === 'REQ-2026-1677', 8000, 'the deep-linked cancelled request');
+  p = await cdp.evaluate(panel);
+  check(p.timeline.join(' → ') === 'Submitted → Approved → Cancelled', 'the seeded Admin cancel reads Submitted → Approved → Cancelled', p.timeline.join(' → '));
+  const seededDates1677 = await formatted(['2026-07-28T06:00:00Z', '2026-07-29T02:00:00Z']);
+  check(
+    p.when[1] === seededDates1677[0] && p.when[2] === seededDates1677[1],
+    'dated by approvedAt and cancellation.at',
+    p.when.join(' / '),
+  );
+  check(
+    (await cdp.evaluate(() => location.pathname)) === '/history' && p.buttons.length === 0,
+    'a cancelled request opens read-only in History, with no Cancel Request',
+    p.buttons.join(' / '),
+  );
+  await esc();
+  await closed();
+
+  await go('/queue?review=changes');
+  await cancelIn('REQ-2026-1703', 'No stock at Cebu');
+  await click('Confirm Cancellation');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal');
+  p = await cdp.evaluate(panel);
+  check(
+    p.alert?.includes('updated while you were viewing it') && p.pill === 'Received',
+    'a cancel overtaken by the Employee’s receipt is refused and shows Received',
+    `${p.pill}: ${p.alert}`,
+  );
+  check(!p.buttons.includes('Cancel Request'), 'and Cancel Request is gone', p.buttons.join(' / '));
+  check(p.headingFocused, 'and focus lands on the panel heading');
+  await esc();
+  await closed();
+
+  await cancelIn('REQ-2026-1805', 'No stock at Makati');
+  await click('Confirm Cancellation');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the refusal');
+  p = await cdp.evaluate(panel);
+  check(
+    p.alert?.includes('updated while you were viewing it') &&
+      p.pill === 'For Delivery' &&
+      JSON.stringify(p.buttons) === JSON.stringify(EXPECTED['For Delivery']),
+    'a cancel overtaken by another Admin’s handover shows For Delivery, with Cancel Request gone',
+    `${p.pill}: ${p.buttons.join(' / ')}`,
+  );
+  await esc();
+  await closed();
+
+  await go('/queue?review=failing');
+  await cancelIn('REQ-2026-1805', 'Supplier backorder');
+  await click('Confirm Cancellation');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the failure');
+  p = await cdp.evaluate(panel);
+  check(p.pill === 'Approved' && p.alert?.includes('could not be updated'), 'a failed cancel leaves the status unchanged', `${p.pill}: ${p.alert}`);
+  check(await cdp.evaluate((sel) => document.querySelector(sel)?.value === 'Supplier backorder', REASON), 'and keeps the typed reason for a retry');
+  await esc();
+  await closed();
+
+  await go('/queue?review=reload-fails');
+  await cancelIn('REQ-2026-1805', 'Supplier backorder');
+  await click('Confirm Cancellation');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] [role="alert"]'), 5000, 'the reload notice');
+  p = await cdp.evaluate(panel);
+  check(!!p && p.alert?.includes('could not be loaded'), 'a cancel whose reload fails keeps the panel open and says so');
+  await esc();
+  await closed();
+
+  // The source itself refuses the reason, as the API's `400 #/reason` will:
+  // the field goes back to invalid with its own message (FR-021).
+  await go('/queue?review=reason-refused');
+  await cancelIn('REQ-2026-1805', 'Supplier backorder');
+  await click('Confirm Cancellation');
+  await settle();
+  p = await cdp.evaluate(panel);
+  check(
+    p.invalid && p.pill === 'Approved' && p.text.includes(CANCEL_REQUIRED) && !p.alert,
+    'a reason the source refuses puts the cancel field back to invalid, with its own message',
+    `${p.pill}: invalid=${p.invalid}, alert=${p.alert}`,
+  );
+  await esc();
+  await closed();
+  await open('REQ-2026-1847');
+  await click('Reject Request');
+  await cdp.waitFor(() => !!document.querySelector('dialog[open] textarea[required]'), 3000, 'the rejection reason');
+  await typeInto(REASON, 'Duplicate');
+  await click('Confirm Rejection');
+  await settle();
+  p = await cdp.evaluate(panel);
+  check(
+    p.invalid && p.pill === 'Pending Approval' && p.text.includes(REJECT_REQUIRED),
+    'and the reject field the same way, with the reject message',
+    `${p.pill}: invalid=${p.invalid}`,
+  );
+  await esc();
+  await closed();
+
+  // The dev stubs above replace `cancel`, so the seed's own guard is probed
+  // directly: the API will refuse these, and the seed must not let them through.
+  const guard = await cdp.evaluate(async () => {
+    const { createSeededAdminRequestSource } = await import('/src/features/requests/queue/seeded-admin-request-source.ts');
+    const source = createSeededAdminRequestSource();
+    const setup = await source.updateStatus('REQ-2026-1703', 'Received');
+    const refused = {};
+    for (const id of ['REQ-2026-1847', 'REQ-2026-1748', 'REQ-2026-1703', 'REQ-2026-1690', 'REQ-2026-1684', 'REQ-2026-1677']) {
+      refused[id] = await source.cancel(id, 'Not allowed');
+    }
+    const blank = await source.cancel('REQ-2026-1805', '   ');
+    const missing = await source.cancel('REQ-2026-0000', 'No such request');
+    const legal = await source.cancel('REQ-2026-1715', '  Recalled  ');
+    // A failed delivery: back to Ready for Pickup, then cancellable.
+    const swapped = await source.updateStatus('REQ-2026-1748', 'Ready for Pickup', { kind: 'office', office: 'Makati' });
+    const afterSwap = await source.cancel('REQ-2026-1748', 'Courier could not deliver');
+    const { requests } = await source.load();
+    const after = requests.find((r) => r.id === 'REQ-2026-1715');
+    const failed = requests.find((r) => r.id === 'REQ-2026-1748');
+    return { setup, refused, blank, missing, legal, after, swapped, afterSwap, failed };
+  });
+  check(guard.setup.ok, 'probe setup: REQ-2026-1703 reached Received', JSON.stringify(guard.setup));
+  check(
+    Object.values(guard.refused).every((r) => !r.ok && r.refusal === 'status-changed'),
+    'the seed refuses a cancel from Pending, For Delivery, Received, Completed, Rejected or Cancelled',
+    JSON.stringify(guard.refused),
+  );
+  check(!guard.blank.ok && guard.blank.refusal === 'reason-required', 'and a blank reason', JSON.stringify(guard.blank));
+  check(!guard.missing.ok && guard.missing.refusal === 'unavailable', 'and an unknown request', JSON.stringify(guard.missing));
+  check(
+    guard.legal.ok &&
+      guard.after.status === 'Cancelled' &&
+      guard.after.cancellation?.reason === 'Recalled' &&
+      !!guard.after.cancellation?.at &&
+      guard.after.approvedAt === '2026-08-07T04:00:00Z' &&
+      guard.after.handedOverAt === '2026-08-08T01:00:00Z',
+    'a legal cancel stores the trimmed reason and keeps the earlier timestamps',
+    JSON.stringify(guard.after),
+  );
+  check(
+    guard.swapped.ok &&
+      guard.afterSwap.ok &&
+      guard.failed?.status === 'Cancelled' &&
+      guard.failed.handover === 'Ready for Pickup' &&
+      guard.failed.pickupLocation?.kind === 'office' &&
+      guard.failed.pickupLocation.office === 'Makati' &&
+      guard.failed.cancellation?.reason === 'Courier could not deliver',
+    'a failed delivery moved back to Ready for Pickup can then be cancelled, and reads as a pickup',
+    JSON.stringify([guard.swapped, guard.afterSwap, guard.failed]),
+  );
+
+  // R10: the two-button row at the narrowest supported width.
+  await cdp.setViewport(360, 800);
+  await go('/queue');
+  await open('REQ-2026-1805');
+  const row = await cdp.evaluate(() => {
+    const d = document.querySelector('dialog[open]');
+    const bs = [...d.querySelectorAll('button')].filter((b) => ['Cancel Request', 'Update Status'].includes(b.textContent.trim()));
+    const dr = d.getBoundingClientRect();
+    const rs = bs.map((b) => b.getBoundingClientRect());
+    return {
+      count: bs.length,
+      oneLine: rs.length === 2 && Math.abs(rs[0].top - rs[1].top) < 1,
+      inside: rs.every((r) => r.left >= dr.left && r.right <= dr.right),
+      unclipped: bs.every((b) => b.scrollWidth <= b.clientWidth),
+      pageFits: document.documentElement.scrollWidth <= window.innerWidth,
+    };
+  });
+  check(
+    row.count === 2 && row.oneLine && row.inside && row.unclipped && row.pageFits,
+    'at 360px Cancel Request and Update Status share one line, inside the panel, with no overflow',
+    JSON.stringify(row),
+  );
+  await esc();
+  await closed();
+  await cdp.setViewport(1440, 1024);
 
   // ---- SC-006: no Employee path ----
   console.log('\nSC-006 — an Employee cannot reach the queue or any review action');

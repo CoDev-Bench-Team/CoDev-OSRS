@@ -113,11 +113,14 @@ rejection: rejection is the Admin's decision on a request awaiting one.
 1. **Employee cancels** — only their own request, and only while it is
    `Pending Approval`. The dialog asks for **Reason for cancellation \*** and is
    confirmed with **Confirm Cancellation**.
-2. **Admin cancels** — an `Approved`, `For Delivery` or `Ready for Pickup` request
-   that cannot be fulfilled. A reason is required.
+2. **Admin cancels** — an `Approved` or `Ready for Pickup` request that cannot
+   be fulfilled. A reason is required. A `For Delivery` request cannot be
+   cancelled: its items are out with the delivery. If the delivery falls
+   through and the items come back, the Admin moves it to `Ready for Pickup`
+   first (constitution 8.0.0, [ADR-0012](adr/0012-no-admin-cancel-on-for-delivery.md)).
 3. A **reason is required from whoever cancels**.
 4. A `Received` or `Completed` request cannot be cancelled; the items are
-   already with the employee.
+   already with the employee. Nor can a `For Delivery` one (point 2).
 5. System: **release the reservation** (Reserved → Available); status
    **Cancelled**.
 6. Notification: **Status changed** (to Employee; to the Admin queue when the
@@ -145,7 +148,7 @@ cancellation** and a **Close** button.
 | `Ready for Pickup` | Admin | update status, location recorded | — | — | — |
 | `Received` | Admin or owning Employee | mark received, from `For Delivery` or `Ready for Pickup`; the Employee then signs the Accountability Form on it (no status change) | −qty | — | −qty |
 | `Completed` | Admin | complete, from `Received` only, once the Accountability Form is signed | — | — | — |
-| `Cancelled` | Employee or Admin | cancel, reason required | — | +qty | −qty |
+| `Cancelled` | Employee or Admin | cancel, reason required; from `Pending Approval` (Employee) or `Approved` / `Ready for Pickup` (Admin) | — | +qty | −qty |
 
 `For Delivery` and `Ready for Pickup` are alternatives, not stages.
 `Rejected`, `Cancelled` and `Completed` are terminal.
@@ -301,7 +304,7 @@ flowchart TD
 
   reserve -.->|Employee cancels + reason| canc[Release reservation / Cancelled]
   approve -.->|Admin cannot fulfil + reason| canc
-  fd -.->|Admin cannot fulfil + reason| canc
+  fd -.->|Delivery fails: Update Status| fp
   fp -.->|Admin cannot fulfil + reason| canc
   canc --> mailX[Email: Status changed]
   mailX --> endNode

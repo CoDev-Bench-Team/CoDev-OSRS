@@ -50,6 +50,8 @@ const panel = () => {
     buttons,
     text: d.textContent,
     timeline: [...d.querySelectorAll('ol li')].map((li) => [li.dataset.state, li.querySelector('span span')?.textContent.trim()]),
+    // Each node's date line: the last line of its label column.
+    when: [...d.querySelectorAll('ol li')].map((li) => li.lastElementChild?.lastElementChild?.textContent.trim()),
     invalid: d.querySelector('textarea')?.getAttribute('aria-invalid') === 'true',
     focusInside: d.contains(document.activeElement),
   };
@@ -327,6 +329,42 @@ await cdp.evaluate(() => [...document.querySelectorAll('main button')].find((b) 
 await new Promise((r) => setTimeout(r, 300));
 l = await cdp.evaluate(listState);
 check(l.failed && l.tryAgain && !l.empty, 'Try Again retries, and a second failure still reads as a failure', JSON.stringify(l));
+
+// ---- spec 008 FR-022: a request an Admin cancelled keeps what it reached ----
+console.log('\nSpec 008 FR-022 — a request an Admin cancelled after handover keeps its nodes');
+await go('/requests?requests=admin-cancelled');
+await cdp.waitFor(() => !!document.querySelector('button[aria-label="View details of REQ-2026-1778"]'), 8000, 'the admin-cancelled row');
+await openRow('REQ-2026-1778');
+p = await cdp.evaluate(panel);
+check(
+  JSON.stringify(p.timeline) ===
+    JSON.stringify([
+      ['reached', 'Submitted'],
+      ['reached', 'Approved'],
+      ['reached', 'Ready for Pickup'],
+      ['cancelled', 'Cancelled'],
+    ]),
+  'the timeline reads Submitted → Approved → Ready for Pickup → Cancelled',
+  JSON.stringify(p.timeline),
+);
+check(
+  p.text.includes('Reason for cancellation') && p.text.includes('Model discontinued; no stock at Davao') && !p.buttons.includes('Cancel Request'),
+  'it reads back its reason and offers no cancel',
+);
+const stubDates = await cdp.evaluate(async (xs) => {
+  const { formatDateTime } = await import('/src/features/requests/format.ts');
+  return xs.map(formatDateTime);
+}, ['2026-08-18T01:30:00Z', '2026-08-18T05:00:00Z', '2026-08-19T02:00:00Z', '2026-08-20T03:00:00Z']);
+check(JSON.stringify(p.when) === JSON.stringify(stubDates), 'each node is dated from its timestamp', p.when.join(' / '));
+await cdp.evaluate(() => document.querySelector('dialog[open] button[aria-label="Close"]').click());
+await closed();
+await openRow('REQ-2026-1791');
+p = await cdp.evaluate(panel);
+check(
+  JSON.stringify(p.timeline) === JSON.stringify([['reached', 'Submitted'], ['cancelled', 'Cancelled']]),
+  'the Employee’s own cancel still collapses to Submitted → Cancelled, as 04.2 draws it',
+  JSON.stringify(p.timeline),
+);
 
 // ---- the shared item summary guards blank and missing names ----
 console.log('\nThe Items cell drops blank names and shows a dash for none (shared summarizeItems)');
