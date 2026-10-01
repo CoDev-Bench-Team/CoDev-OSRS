@@ -19,20 +19,33 @@ export function parseAmount(typed: string): number | undefined {
   return /^\d+(\.\d+)?$/.test(plain) ? Number(plain) : NaN;
 }
 
-/** What the Price field keeps of a keystroke or paste: digits and one decimal
- *  point, so the value stays a plain `58000`. Letters, commas and every other
- *  character are dropped as they are typed. */
-export function amountInput(raw: string): string {
+/** The Price field as the Admin types: digits grouped by thousands, one
+ *  decimal point and at most two decimals. `58000` reads `58,000`, `1250.5`
+ *  reads `1,250.5`. Letters and every other character are dropped. The value
+ *  stays a string for display; `parseAmount` reads the number back. */
+export function typeAmount(raw: string): string {
   const kept = raw.replace(/[^\d.]/g, '');
   const dot = kept.indexOf('.');
-  return dot < 0 ? kept : kept.slice(0, dot + 1) + kept.slice(dot + 1).replace(/\./g, '');
+  const whole = (dot < 0 ? kept : kept.slice(0, dot)).replace(/^0+(?=\d)/, '');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (dot < 0) return grouped;
+  return `${grouped || '0'}.${kept.slice(dot + 1).replace(/\./g, '').slice(0, 2)}`;
 }
 
-/** How the Price field shows its plain value while it is not being edited:
- *  `58000` reads `58,000.00`. A value validation would refuse (more than two
- *  decimals) shows as typed, so its error still names what was entered. */
-export function displayAmount(value: string): string {
+/** Where the caret belongs in `formatted` so it still follows the same
+ *  `significant` digits and point it followed before the commas moved. */
+export function caretAt(formatted: string, significant: number): number {
+  if (significant <= 0) return 0;
+  let seen = 0;
+  for (let i = 0; i < formatted.length; i++) {
+    if (/[\d.]/.test(formatted[i])) seen++;
+    if (seen === significant) return i + 1;
+  }
+  return formatted.length;
+}
+
+/** The Price field once the Admin leaves it: `58,000` reads `58,000.00`. */
+export function settleAmount(value: string): string {
   const amount = parseAmount(value);
-  if (amount === undefined || Number.isNaN(amount) || /\.\d{3,}$/.test(value.trim())) return value;
-  return formatAmount(amount);
+  return amount === undefined || Number.isNaN(amount) ? value : formatAmount(amount);
 }

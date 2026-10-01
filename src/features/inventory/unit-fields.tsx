@@ -1,8 +1,8 @@
-import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Field, FieldGroup, Search, TextField, TextInput, type FieldControl } from '../../shared/ui';
 import type { Asset, Category } from '../assets/types';
 import { deviceFieldsFor } from './device-fields';
-import { amountInput, displayAmount } from './format';
+import { caretAt, settleAmount, typeAmount } from './format';
 import { removal } from './unit-rules';
 import type { DirectoryUser } from './user-directory';
 import type { UnitStatus } from '../../shared/ui';
@@ -318,9 +318,16 @@ export function PurchaseFields({
   errors: Errors;
   today: string;
 }) {
-  // Price holds a plain number; the grouped, two-decimal form is shown only
-  // while the field is not being edited.
-  const [editingPrice, setEditingPrice] = useState(false);
+  // Reformatting moves the commas, so the caret is put back after the same
+  // digits it followed. Runs after every render: a keystroke the format
+  // drops (a letter) re-renders nothing yet still needs the caret restored.
+  const priceCaret = useRef<{ input: HTMLInputElement; at: number } | null>(null);
+  useLayoutEffect(() => {
+    const pending = priceCaret.current;
+    if (!pending) return;
+    priceCaret.current = null;
+    pending.input.setSelectionRange(pending.at, pending.at);
+  });
   return (
     <FieldGroup heading="PURCHASE DETAILS">
       <Field label="Purchase Request" error={errors.pr}>
@@ -347,10 +354,21 @@ export function PurchaseFields({
               aria-describedby={describedBy}
               inputMode="decimal"
               placeholder="0.00"
-              value={editingPrice ? value.price : displayAmount(value.price)}
-              onFocus={() => setEditingPrice(true)}
-              onBlur={() => setEditingPrice(false)}
-              onChange={(e) => onChange('price', amountInput(e.target.value))}
+              value={value.price}
+              onChange={(e) => {
+                const input = e.target;
+                const typed = input.value;
+                const significant = typed.slice(0, input.selectionStart ?? typed.length).replace(/[^\d.]/g, '').length;
+                const next = typeAmount(typed);
+                const caret = { input, at: caretAt(next, significant) };
+                if (next === value.price) queueMicrotask(() => input.setSelectionRange(caret.at, caret.at));
+                else priceCaret.current = caret;
+                onChange('price', next);
+              }}
+              onBlur={() => {
+                const settled = settleAmount(value.price);
+                if (settled !== value.price) onChange('price', settled);
+              }}
               className="pl-[44px]"
             />
           </div>

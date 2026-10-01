@@ -577,23 +577,35 @@ try {
   await pressInPanel(`Clear catalog item ${laptopName}`);
   await pick('Catalog Item', monitorName, monitorName);
 
-  await fill('Price', 'abc1,2x50');
-  check((await control('Price')).value === '1,250.00', 'Price drops letters and shows the plain 1250 as 1,250.00');
   const priceAt = await cdp.evaluate(() => {
     const input = document.getElementById([...document.querySelectorAll('dialog[open] label')].find((l) => l.textContent.trim() === 'Price').htmlFor);
     input.scrollIntoView({ block: 'center' });
     const r = input.getBoundingClientRect();
     return { x: r.left + r.width - 20, y: r.top + r.height / 2 };
   });
+  const priceNow = () => cdp.evaluate(() => ({ value: document.activeElement.value, caret: document.activeElement.selectionStart }));
+  const typeKeys = async (text) => {
+    for (const ch of text) await cdp.send('Input.insertText', { text: ch });
+  };
   await clickAt(priceAt);
-  check(await until(() => document.activeElement?.value === '1250'), 'while it is edited it holds the plain number');
+  await typeKeys('58000');
+  check((await priceNow()).value === '58,000', 'Price groups thousands as it is typed');
+  await cdp.evaluate(() => document.activeElement.setSelectionRange(1, 1));
+  await typeKeys('1');
+  const mid = await priceNow();
+  check(mid.value === '518,000' && mid.caret === 2, 'typing mid-number keeps the caret after the typed digit', JSON.stringify(mid));
+  await cdp.evaluate(() => document.activeElement.setSelectionRange(7, 7));
+  await typeKeys('x');
+  check((await priceNow()).value === '518,000', 'letters are dropped');
+  await typeKeys('.505');
+  check((await priceNow()).value === '518,000.50', 'at most two decimals are kept');
   await cdp.evaluate(() => document.activeElement.blur());
-  await fill('Price', '1,250.555');
+  await fill('Price', '1250');
+  await clickAt(priceAt);
+  await cdp.evaluate(() => document.activeElement.blur());
+  check((await control('Price')).value === '1,250.00', 'leaving the field pads it to two decimals');
+  await fill('Price', '1250.5');
   await fill('Serial Number', 'DEMO-CHECK-0001');
-  await pressInPanel('Save Changes');
-  await wait(150);
-  check((await control('Price')).message === 'Use at most two decimal places', 'a price is refused past two decimals');
-  await fill('Price', '1,250.50');
 
   await cdp.evaluate(() =>
     window.__osrs.inventory.refuseNext({
@@ -618,6 +630,7 @@ try {
   const monitorCebu = await counts('asset-2', 'Cebu');
   await fill('Serial Number', 'DEMO-CHECK-0001');
   check(await save(), 'a valid unit saves and the panel closes');
+  check((await register()).units.find((u) => u.serialNumber === 'DEMO-CHECK-0001')?.price === 1250.5, 'the price is saved as the number 1250.5');
   check(same(delta(monitorCebu, await counts('asset-2', 'Cebu')), { available: 1, reserved: 0, total: 1, assigned: 0, inactive: 0 }), 'Available and Total at Cebu rise by 1');
   await until(() => document.querySelector('[data-unit]')?.children[3].textContent.trim() === 'DEMO-CHECK-0001');
   check((await rowCells())[0]?.[3] === 'DEMO-CHECK-0001', 'the new unit leads the list');
