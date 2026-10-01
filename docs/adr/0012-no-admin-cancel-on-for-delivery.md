@@ -56,7 +56,9 @@ Until the API changes, the SPA does not offer the action.
 ### Negative
 
 - **Cancelling a failed delivery takes two steps** (Update Status to `Ready for
-  Pickup`, then Cancel), and two `Status changed` emails.
+  Pickup`, then Cancel), and two `Status changed` emails. The first tells the
+  employee the items are ready to collect, with the pickup location, just
+  before the second cancels the request.
 - **The delivery attempt drops off the timeline.** A request holds one handover
   status and time, so a failed delivery that was moved to `Ready for Pickup`
   and cancelled reads Submitted → Approved → Ready for Pickup → Cancelled. Only
