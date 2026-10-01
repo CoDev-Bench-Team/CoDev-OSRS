@@ -172,7 +172,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
             <span id={`${formId}-count`} className="font-sans text-12-5 font-bold leading-body text-osrs-ink-800">
               No. of Units
             </span>
-            <div className="flex items-center gap-8" role="group" aria-labelledby={`${formId}-count`}>
+            <div className="flex items-center gap-8 select-none" role="group" aria-labelledby={`${formId}-count`}>
               <Button
                 variant="ghost"
                 aria-label="Remove the last unit"
