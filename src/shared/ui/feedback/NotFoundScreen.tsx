@@ -17,7 +17,7 @@ export function NotFoundScreen({ path, action }: { path?: string; action?: React
       actions={action}
     >
       {path ? (
-        <code className="max-w-full truncate rounded-4 bg-surface-table-header px-8 py-6 font-sans text-12 leading-tight text-ink-secondary">
+        <code className="max-w-full truncate rounded-4 bg-surface-table-header px-8 py-6 my-0 font-sans text-12 leading-tight text-ink-secondary">
           {path}
         </code>
       ) : null}

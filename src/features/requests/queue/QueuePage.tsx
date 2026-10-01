@@ -193,22 +193,23 @@ export function QueuePage({
     () => (state.kind === 'loaded' ? state.snapshot.requests.map((request) => request.id) : null),
     [state],
   );
-  const openLinked = (id: string): string | void => {
+  const forwardResolved = (id: string): string | undefined => {
     const request = state.kind === 'loaded' ? state.snapshot.requests.find((r) => r.id === id) : undefined;
-    if (request && isResolved(request)) return DESTINATIONS.history.path;
-    setOpenId(id);
+    return request && isResolved(request) ? DESTINATIONS.history.path : undefined;
   };
-  const { unavailable, dismiss } = useDeepLinkedRequest(allIds, openLinked, REQUEST_NOT_FOUND);
+  const { linked, unavailable, dismiss } = useDeepLinkedRequest(allIds, REQUEST_NOT_FOUND, forwardResolved);
   const review = (id: string) => {
     dismiss();
     setOpenId(id);
   };
 
+  const shownId = openId ?? linked;
   const openRequest =
-    openId && state.kind === 'loaded' ? state.snapshot.requests.find((request) => request.id === openId) : undefined;
+    shownId && state.kind === 'loaded' ? state.snapshot.requests.find((request) => request.id === shownId) : undefined;
 
   const closePanel = () => {
     setOpenId(null);
+    dismiss();
     // The stale-data notice tells the Admin to close the panel to refresh, so
     // closing does. If this reload fails too, the request stays marked stale
     // and warns again when it is reopened.

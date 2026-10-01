@@ -12,5 +12,4 @@ function screen(id: DestinationId) {
   return <Placeholder name={title} purpose={purpose} />;
 }
 
-export const AssetsPlaceholder = () => screen('assets');
 export const InventoryPlaceholder = () => screen('inventory');

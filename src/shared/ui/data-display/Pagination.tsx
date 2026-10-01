@@ -20,7 +20,9 @@ const BOX = 'inline-flex h-[36px] items-center justify-center rounded-4 border-n
 const RESTING = `${BOX} bg-surface-card shadow-[inset_0_0_0_1px_var(--color-osrs-neutral-200)]`;
 const CONTROL = `${RESTING} text-osrs-neutral-800`;
 const ENABLED = `${CONTROL} cursor-pointer hover:bg-osrs-neutral-100`;
-const DISABLED = `${RESTING} cursor-default text-ink-muted`;
+/** The file's `state=disabled` is the resting control at 30% opacity, ink
+ *  unchanged; the class outranks the global `[aria-disabled]` 40%. */
+const DISABLED = `${CONTROL} cursor-default opacity-30`;
 
 /** Heroicons mini, the set the file's `Icon (heroicons-mini)` instances use. */
 function Chevron({ direction }: { direction: 'left' | 'right' | 'down' }) {

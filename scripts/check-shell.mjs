@@ -445,11 +445,43 @@ for (const width of [360, 768, 1024, 1440]) {
     const header = document.querySelector('header');
     const reachableNav = [...header.querySelectorAll('nav a')].filter((a) => a.getBoundingClientRect().width > 0).length;
     const signOut = [...header.querySelectorAll('button')].find((b) => b.textContent.includes('Sign Out'));
-    const small = [...document.querySelectorAll('a[href], button:not([disabled])')]
-      .map((el) => ({ el, box: el.getBoundingClientRect() }))
-      .filter(({ box }) => box.width > 0 && (box.width < 44 || box.height < 44))
-      .map(({ el, box }) => `${el.tagName}.${String(el.className).slice(0, 20)} ${Math.round(box.width)}x${Math.round(box.height)}`)
+    // The target is what the pointer can hit: below 1440 a control keeps its
+    // drawn box and an absolutely positioned ::before grows the hit area to
+    // 44px (index.css). Each control is scrolled into view and probed just
+    // inside the edges of that area, on the axes where its box is under 44px,
+    // as check-a11y-responsive does. A probe must reach the control, or fall
+    // in a gap where a neighbour's hit area overlaps it; landing on the page
+    // (clipped) or on a neighbour's drawn box (covered) fails.
+    const CONTROL = 'a[href]:not([aria-disabled="true"]), button:not([disabled]):not([aria-disabled="true"])';
+    const inBox = (el, x, y) => {
+      const b = el.getBoundingClientRect();
+      return x >= b.left && x < b.right && y >= b.top && y < b.bottom;
+    };
+    const reach = (el) => {
+      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const probes = [
+        ...(r.width < 44 ? [[cx - 21, cy], [cx + 21, cy]] : []),
+        ...(r.height < 44 ? [[cx, cy - 21], [cx, cy + 21]] : []),
+      ];
+      return probes
+        .map(([x, y]) => [x, y, document.elementFromPoint(x, y)])
+        .filter(([x, y, hit]) => {
+          if (el.contains(hit)) return false;
+          const other = hit?.closest('a[href], button, label');
+          return !other || inBox(other, x, y);
+        })
+        .map(([, , hit]) => `${hit?.tagName}.${String(hit?.className).slice(0, 16)}`);
+    };
+    const small = [...document.querySelectorAll(CONTROL)]
+      .filter((el) => el.getBoundingClientRect().width > 0)
+      .map((el) => ({ el, missed: reach(el) }))
+      .filter(({ missed }) => missed.length > 0)
+      .map(({ el, missed }) => `${el.tagName} "${el.textContent.trim().slice(0, 14)}" → ${missed.join(', ')}`)
       .slice(0, 4);
+    scrollTo(0, 0);
     return {
       scrollW: document.documentElement.scrollWidth,
       overflowing,

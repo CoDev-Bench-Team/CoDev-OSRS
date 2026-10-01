@@ -4,6 +4,7 @@ import { NotFoundScreen } from '../shared/ui';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { RequireAccess } from '../features/auth/RequireAccess';
 import { CatalogPage } from '../features/catalog/CatalogPage';
+import { AssetsPage } from '../features/assets/AssetsPage';
 import { ProfilePage } from '../features/profile/ProfilePage';
 import { MyRequestsPage } from '../features/requests/history/MyRequestsPage';
 import { useSession } from '../features/auth/session-context';
@@ -13,10 +14,7 @@ import { RequestDeepLink } from './RequestDeepLink';
 import { AppLayout } from './AppLayout';
 import { DESTINATIONS, landingPath, SIGN_IN_PATH, type DestinationId } from './destinations';
 import { NavButton } from './NavButton';
-import {
-  AssetsPlaceholder,
-  InventoryPlaceholder,
-} from './placeholders';
+import { InventoryPlaceholder } from './placeholders';
 
 /** The route map — the destination set in `destinations.ts`, made addressable.
  *
@@ -73,7 +71,7 @@ export function AppRoutes() {
         <Route path={DESTINATIONS.requests.path} element={guarded('requests', <MyRequestsPage />)} />
         <Route path={DESTINATIONS.requestDetail.path} element={guarded('requestDetail', <RequestDeepLink />)} />
         <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
-        <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPlaceholder />)} />
+        <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPage />)} />
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPlaceholder />)} />
         <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPage />)} />
         <Route path={DESTINATIONS.profile.path} element={guarded('profile', <ProfilePage />)} />

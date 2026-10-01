@@ -150,7 +150,7 @@ Logos, the login photograph, catalog product photography and icon vectors live i
 - **FR-010**: Every interactive component MUST define hover, focus-visible and disabled states following the source's stated restraint (subtle ink or fill shift, 120–180ms eased, no scale or bounce).
 - **FR-011**: Every interactive element MUST expose a visible keyboard focus indicator and be reachable by keyboard.
 - **FR-011a**: Text and background pairings MUST meet WCAG 2.1 AA contrast. Where a pairing recorded in the design-system source fails that threshold, it MUST be flagged to the designer under FR-018 and MUST NOT be silently recoloured.
-- **FR-012**: The shell and all components MUST render without horizontal overflow at every width from 360px up to the 1440px design width, matching the source layout exactly at 1440. At viewports below the design width, every interactive target MUST be at least 44×44px.
+- **FR-012**: The shell and all components MUST render without horizontal overflow at every width from 360px up to the 1440px design width, matching the source layout exactly at 1440. At viewports below the design width, every interactive target MUST be at least 44×44px, met by an invisible hit area around the drawn box rather than by growing it; a labelled text field or native select keeps its drawn height (amended 2026-10-01 — see Clarifications).
 - **FR-013**: Brand logos, the login photograph, catalog photography and icon vectors MUST be committed to this repository and served from the app's origin.
 - **FR-014**: Icons MUST inherit colour from their parent rather than carrying fixed fills.
 - **FR-015**: The component library MUST be browsable in isolation — every component and variant viewable without running a product page or reaching an API — using the SPA's existing toolchain, adding no new framework or dependency.
@@ -185,7 +185,7 @@ Logos, the login photograph, catalog product photography and icon vectors live i
 - **SC-002**: With all third-party hosts unreachable, the application renders in its designed faces at their designed weights, with no fallback substitution.
 - **SC-003**: All 25 components (17 published families + 8 promoted shell pieces) are viewable in isolation with their variants, and each passes a side-by-side comparison against its design-system specimen at the 1440px design width.
 - **SC-004**: Passing an invalid status, variant, or missing required label to any component fails before the application runs, and no request status outside the six-state machine can be expressed.
-- **SC-005**: Every screen in the library renders without horizontal overflow at every width from 360px to 1440px, and no interactive target below the design width is smaller than 44×44px.
+- **SC-005**: Every screen in the library renders without horizontal overflow at every width from 360px to 1440px, and no interactive target below the design width has a hit area smaller than 44×44px, text fields and native selects excepted (amended 2026-10-01).
 - **SC-006**: Every interactive element in the library is reachable and operable by keyboard with a visible focus indicator, and every text/background pairing either meets WCAG 2.1 AA or appears on the designer-review list.
 - **SC-007**: A single document lists every value, state, and breakpoint added beyond the design-system source, ready for designer review.
 - **SC-008**: Spec 001's UI tasks can begin with zero unresolved visual questions.
@@ -232,6 +232,14 @@ None dismissed. All five flagged items (CHK001, CHK003, CHK004, CHK005, CHK006) 
 - Q: D3 keeps the two imported components, which use Noto Sans and Roboto, but D4 self-hosted only Inter and Space Grotesk. How is that resolved? → A: Self-host all four families, so all 17 component families render pixel-exact (D4).
 - Q: The design file's pill defines 11 statuses; the constitution defines 6 request states. How should the pill be typed? → A: Type to the 6 canonical states, keep "Ready for Pickup" as a presentational label for `Released`, drop "For Delivery" (D5).
 - Q: FR-015 requires isolated browsing, but constitution VIII forbids new frameworks without an ADR. How? → A: An in-app gallery route using the existing toolchain — no Storybook, no ADR (D6).
+
+### Session 2026-10-01 — Amendment to FR-012 / SC-005 (drawn sizes below 1440)
+
+Raised by the 2026-10-01 design review of the Assets screens (spec 014 T037) and decided by the project owner. Recorded here, not applied silently.
+
+- Q: Below 1440 the touch-target rule grew every control to a 44px box, so 42px buttons, 32px chips, 36px pagination and 39px fields changed size at 1439. Keep that, or keep the drawn sizes? → A: **Keep the drawn sizes everywhere.** Links, buttons and checkboxes meet 44×44 with an invisible, centred pseudo-element (`index.css`, `hit-area`); text fields and native selects keep their drawn height, their label being a click target for them too.
+
+**Scope of the amendment.** What a target measures changes, not which targets exist: the 44px is the hit area, not the box. `check-shell` and `check-a11y-responsive` hit-test that area rather than reading the box. Recorded in `docs/design-system/additions.md` §3. No constitution version bump is required — no principle changes.
 
 ### Session 2026-09-15 — Amendment to D5 (a seventh state)
 

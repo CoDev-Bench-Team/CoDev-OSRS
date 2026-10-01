@@ -33,12 +33,13 @@ const INVENTORY: Record<InventoryStatus, string> = {
   'Out of Stock': 'bg-status-unavailable-bg text-status-unavailable-fg',
 };
 
-/** The pill carries two geometries, chosen by which kind of status it is given
- *  (spec 002 FR-009):
+/** Every pill is 32px high with 10px sides, so pills read at one size across
+ *  the app. The shape and type follow the kind of status it is given (spec 002
+ *  FR-009):
  *
- *  - request and stock  — 999px radius, 12px bold, 6x10 padding
- *  - catalog availability and inventory status — 8px radius, 11.5px bold,
- *    10px padding, on 10% tints
+ *  - request and stock  — 999px radius, 12px bold
+ *  - catalog availability and inventory status — 8px radius, 11.5px bold, on
+ *    10% tints
  *
  *  A request status always reads as its own name, in its own tone. */
 type Props =
@@ -56,7 +57,7 @@ export function StatusPill(props: Props) {
       : AVAILABILITY[props.availability!];
     return (
       <span
-        className={`inline-flex items-center justify-center rounded-8 p-10 font-sans text-11-5 font-bold leading-display whitespace-nowrap ${cls} ${className ?? ''}`}
+        className={`inline-flex h-32 items-center justify-center rounded-8 px-10 font-sans text-11-5 font-bold leading-display whitespace-nowrap ${cls} ${className ?? ''}`}
       >
         {label}
       </span>
@@ -68,7 +69,7 @@ export function StatusPill(props: Props) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-pill px-10 py-6 type-pill whitespace-nowrap ${tone} ${className ?? ''}`}
+      className={`inline-flex h-32 items-center rounded-pill px-10 type-pill whitespace-nowrap ${tone} ${className ?? ''}`}
     >
       {label}
     </span>

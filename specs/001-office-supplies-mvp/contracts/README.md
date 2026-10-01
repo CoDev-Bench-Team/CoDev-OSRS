@@ -34,7 +34,7 @@ SPA forms MUST map each `errors[].pointer` to the matching input and show `detai
 
 ## Assets create / update fields (reference)
 
-From published `CreateAssetDto` / `UpdateAssetDto` (see Swagger). Catalog and Inventory UI MUST align with Figma Asset/Catalog screens **and** these fields — do not invent extras.
+From published `CreateAssetDto` / `UpdateAssetDto` as read from Swagger on **2026-09-24**, after backend PR #87 (BEN-20). Catalog and Inventory UI MUST align with Figma Asset/Catalog screens **and** these fields — do not invent extras.
 
 **Re-read from the live Swagger 2026-09-25** (BEN-42). The DTO has changed since
 this table was first written; the previous `type`, `location`, `specs[]` and
@@ -45,16 +45,17 @@ this table was first written; the previous `type`, `location`, `specs[]` and
 | `imageBase64` | Optional; base64 image, may include data-URI prefix. Nullable on update |
 | `name` | Required on create |
 | `category` | Required on create. Enum: Laptop, Headset, Monitor, Phone, UPS, Mice, **Wifi**, Type C Hub, Other Devices. Replaces `type` |
-| `model` | Required on create. Brand / model string |
+| `model` | Required on create, **for every category** — see conflict 9 |
 | `description` | Optional free text |
 | `ram` · `storage` · `processor` · `graphics` · `operatingSystem` | Optional spec strings. Replace the `specs[]` key/value list |
-| `lowQtyAlert` | Low-stock threshold — still on the asset, see conflict 3 |
+| `lowQtyAlert` | Low-stock threshold, one per asset, default 5 — see conflict 3 |
 
 `GET /assets` takes `page`, `limit`, `search` (name, model or category),
 `category`, `location` ("scope available quantities … to a single office") and
 `stockLevel` (`in_stock` · `low_stock` · `out_of_stock`, from Available against
-the threshold). **Its `200` response has no documented schema**, so the name of
-the per-office availability field is not yet published. The Catalog (spec 005)
+the threshold). **Its `200` response has no documented schema.** The backend source
+(2026-09-24) returns each asset with `quantity` = its count of **Available**
+units, at `location` when given; Reserved, Total and Assigned are not returned. The Catalog (spec 005)
 reads it through a seeded `CatalogSource` until it is.
 
 Stock itself is now carried by **inventory items**, one per unit:
@@ -64,6 +65,21 @@ Stock itself is now carried by **inventory items**, one per unit:
 update a `status` of `Available` · `Reserved` · `Assigned` · `Inactive`.
 
 ## Open conflicts with the 2026-09-22 design (raised 2026-09-22)
+
+### State on 2026-09-30
+
+The backend answered 1–3 in PR #87 (BEN-20). Spec 014 (Assets, BEN-48) runs on
+seeded data until the per-asset counts in 1 are published.
+
+| # | State | What is still needed |
+|---|-------|----------------------|
+| 1 | **Decided 2026-09-26: the per-unit register** (constitution 4.0.0, ADR-0008). Available / Reserved / Total are counts of unit records by status. | The published read of per-asset counts (available / reserved / assigned) the Assets table needs — see the 2026-09-26 note under 1 below. |
+| 2 | **Resolved: `Ortigas`**, in every location enum (users, assets, inventory items). | — |
+| 3 | **Resolved**: `location` and `quantity` left the asset; `lowQtyAlert` stayed, one per asset, which the Add and Update Asset panels' `STOCKS · Low-stock threshold` matches (spec 014 D8). Spec 001 FR-003 now says per asset. | — |
+| 9 | **Open.** `model` is required for every category; the design asterisks it only on Laptop, Phone and Headset, offers it optionally on Wifi and Type C Hub, and draws no Model field on UPS, Mice and Other Device. | One of the two moves. See 9 below. |
+| 10 | **Withdrawn 2026-10-01.** The SPA misread the file: no Add or Update Asset frame draws a custom-spec row ([drift-2026-10-01](../../../docs/design-system/drift-2026-10-01.md) A2). The five fixed fields cover the design. | — |
+
+The sections below are the original write-up of 1–3.
 
 Constitution VII forbids the SPA papering over a gap between the design and the
 published contract. These three are **not UI preferences**; each needs a
@@ -299,6 +315,29 @@ and `units`. Spec 008 FR-022 (with spec 013 FR-009a) draws an Admin-cancelled
 request's timeline from its handover state and its approval and handover times.
 So say whether a cancelled request still carries those, and publish
 `cancellationReason` in the schema. This is the same gap as conflict 7.
+
+### 9. `model` is required for every category (raised 2026-09-24)
+
+`CreateAssetDto` requires `model` whatever the category. The eight `03.1 Add
+Asset - <category>` frames asterisk it on Laptop, Phone and Headset, offer it
+unstarred on Wifi and Type C Hub, and draw no Model field on UPS, Mice and
+Other Device. Spec 014 D6 follows the design, so a contract-backed source would
+be refused on those categories. **Needed:** the DTO makes `model` optional, or
+the designer draws it on every category.
+
+### 10. No field for a custom specification (raised 2026-09-24)
+
+The DTO replaced the `specs[]` key/value list with five fixed fields (`ram`,
+`storage`, `processor`, `graphics`, `operatingSystem`). The Update Asset panel
+still draws a free row (`e.g. External Keyboard`). Spec 014 D7 builds it on the
+seeded source only. **Needed:** a custom-spec field on the asset, or the
+designer drops the row. A contract-backed source MUST NOT send it until then.
+
+**2026-10-01 — withdrawn.** Re-reading the 2026-10-01 export, no Add Asset or
+Update Asset frame draws the row; it was a misreading on the SPA side, not a
+gap in the DTO. Spec 014 D7 is withdrawn and the row is gone from the SPA
+([drift-2026-10-01](../../../docs/design-system/drift-2026-10-01.md) A2).
+Nothing is needed from the backend.
 
 ### Also worth a word
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 /** What a `/requests/:id` deep link hands the list it lands on: the Admin's
@@ -17,49 +17,63 @@ export const REQUEST_UNAVAILABLE = 'That request is not available. It may not ex
  *  nothing is that the request does not exist. */
 export const REQUEST_NOT_FOUND = 'That request is not available. It may not exist.';
 
-/** Opens the request a deep link asked for, once `ids` — every request this
- *  page may show — has loaded. An id not among them opens nothing and returns
- *  `message` as the notice. The navigation state is consumed on arrival, so
- *  Back, a reload or a later render never reopens it. `dismiss` clears the
- *  notice; the page calls it when the Admin or Employee opens a panel, so an
- *  old notice does not sit above a request that did open.
+/** What the link resolved to, decided once, when `ids` first arrives. */
+type Outcome =
+  | { kind: 'pending'; id: string }
+  | { kind: 'open'; id: string }
+  | { kind: 'forward'; id: string; path: string }
+  | { kind: 'missed' }
+  | { kind: 'none' };
+
+/** Resolves the request a deep link asked for, once `ids` — every request this
+ *  page may show — has loaded. `linked` is that request's id, for the page to
+ *  show as open; an id not among `ids` opens nothing and returns `message` as
+ *  the notice. The outcome is decided once, so a later change to `ids` neither
+ *  closes a linked panel nor raises the notice. The navigation state is
+ *  consumed on arrival, so Back, a reload or a later render never reopens it.
+ *  `dismiss` clears both; the page calls it when the Admin or Employee opens
+ *  or closes a panel, so an old notice does not sit above a request that did
+ *  open and a closed panel stays closed.
  *
- *  `open` may instead return a path: the request belongs to another page, and
- *  the link is forwarded there with the same state, for that page to open. The
- *  Requests Queue forwards a resolved request to History (spec 013 FR-016). */
+ *  `forward` may name another page for the request: the link is passed there
+ *  with the same state, for that page to open. The Requests Queue forwards a
+ *  resolved request to History (spec 013 FR-016). */
 export function useDeepLinkedRequest(
   ids: readonly string[] | null,
-  open: (id: string) => string | void,
   message: string,
-): { unavailable: string | null; dismiss: () => void } {
+  forward?: (id: string) => string | undefined,
+): { linked: string | null; unavailable: string | null; dismiss: () => void } {
   const location = useLocation();
   const navigate = useNavigate();
-  // Whether the link asked for a request this page cannot show. The notice
-  // itself is derived in render, from `message`.
-  const [missed, setMissed] = useState(false);
-  // The id is read once, on arrival, before the state is cleared below.
-  const wanted = useRef((location.state as DeepLinkState | null)?.openRequest ?? null);
-  const openRef = useRef(open);
-  useEffect(() => {
-    openRef.current = open;
+  const [outcome, setOutcome] = useState<Outcome>(() => {
+    const id = (location.state as DeepLinkState | null)?.openRequest;
+    return id ? { kind: 'pending', id } : { kind: 'none' };
   });
 
-  // An effect, not render: the id is one-shot navigation state that can only
-  // be resolved once the list's data arrives, and consuming it navigates.
-  useEffect(() => {
-    const id = wanted.current;
-    if (!id || !ids) return;
-    wanted.current = null;
-    if (ids.includes(id)) {
-      const forward = openRef.current(id);
-      if (forward) {
-        const state: DeepLinkState = { openRequest: id };
-        navigate(forward, { replace: true, state });
-        return;
-      }
-    } else setMissed(true);
-    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
-  }, [ids, navigate, location.pathname, location.search]);
+  // Decided during render, the moment the data is in, so the panel opens in
+  // the same commit as the rows rather than one effect later.
+  if (outcome.kind === 'pending' && ids) {
+    const { id } = outcome;
+    const path = ids.includes(id) ? forward?.(id) : undefined;
+    setOutcome(!ids.includes(id) ? { kind: 'missed' } : path ? { kind: 'forward', id, path } : { kind: 'open', id });
+  }
 
-  return { unavailable: missed ? message : null, dismiss: () => setMissed(false) };
+  // Consuming the link navigates, which is the router's business, not render's.
+  const settled = outcome.kind !== 'pending' && outcome.kind !== 'none';
+  const hasLinkState = !!(location.state as DeepLinkState | null)?.openRequest;
+  useEffect(() => {
+    if (!settled || !hasLinkState) return;
+    if (outcome.kind === 'forward') {
+      const state: DeepLinkState = { openRequest: outcome.id };
+      navigate(outcome.path, { replace: true, state });
+    } else {
+      navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
+    }
+  }, [settled, hasLinkState, outcome, navigate, location.pathname, location.search]);
+
+  return {
+    linked: outcome.kind === 'open' ? outcome.id : null,
+    unavailable: outcome.kind === 'missed' ? message : null,
+    dismiss: () => setOutcome({ kind: 'none' }),
+  };
 }

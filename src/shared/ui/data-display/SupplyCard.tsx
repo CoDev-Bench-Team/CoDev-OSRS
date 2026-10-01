@@ -78,10 +78,9 @@ export function SupplyCard({
      so a centred line box paints them 1px low. Two pixels of bottom padding
      lift the line box by one. Measured, not eyeballed.
 
-     `hit-area`: below the design width the global 44px touch-target rule
-     would grow the box and the stepper with it (73x26 became 113x48), so the
-     44px is supplied by an invisible pseudo-element instead and the drawn
-     geometry holds at every width. */
+     `hit-area`: the invisible 44px pseudo-element the touch-target rule
+     gives buttons below the design width, here at every width, so the 22px
+     squares are always comfortable to hit. */
   const stepBtn =
     'hit-area flex size-22 cursor-pointer items-center justify-center rounded-4 border-none bg-transparent p-0 pb-2 font-sans text-14 font-semibold leading-tight text-osrs-stone-600 transition-osrs hover:text-osrs-stone-900 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-osrs-stone-600';
 
@@ -191,9 +190,11 @@ export function SupplyCard({
               disabled={actionDisabled}
               /* 304px is the source's width. Capped rather than fixed so the
                  button still shrinks below the design width (spec 002 D2). */
-              className="flex h-control-height-md w-full max-w-[304px] flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-10 border-none bg-brand-primary px-18 type-ui-bold whitespace-nowrap text-brand-on-primary ring-brand transition-osrs hover:bg-osrs-red-550 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-brand-primary"
+              className="flex h-control-height-md w-full max-w-[304px] flex-1 cursor-pointer items-center justify-center rounded-10 border-none bg-brand-primary px-18 type-ui-bold whitespace-nowrap text-brand-on-primary ring-brand transition-osrs hover:bg-osrs-red-550 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-brand-primary"
             >
-              {actionLabel}
+              {/* Clipped here, not on the button, whose overflow would clip its
+                  44px touch-target pseudo-element. */}
+              <span className="min-w-0 truncate">{actionLabel}</span>
             </button>
           </div>
         )}

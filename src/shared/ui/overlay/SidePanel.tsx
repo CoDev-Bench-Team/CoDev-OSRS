@@ -32,6 +32,8 @@ export function SidePanel({
   footer,
   dismissible = true,
   width = 'default',
+  bodyClassName = 'gap-24 px-20 py-20',
+  footerClassName = 'flex flex-col gap-12 px-20 pb-20',
 }: {
   /** The dialog's accessible name, applied as `aria-label`. */
   title: string;
@@ -53,6 +55,11 @@ export function SidePanel({
   dismissible?: boolean;
   /** `wide` is the Accountability Form's 564px sheet (spec 012 D3). */
   width?: keyof typeof WIDTH;
+  /** Spacing of the scrolling body, for a panel drawn with a different inset
+   *  (the Assets panels: 14–16px sides, a 371px body). */
+  bodyClassName?: string;
+  /** Spacing of the footer band, replacing the default. */
+  footerClassName?: string;
 }) {
   const panel = useRef<HTMLDialogElement>(null);
   // The page behind the scrim stays put while the panel is open.
@@ -198,8 +205,8 @@ export function SidePanel({
           </svg>
         </button>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-24 overflow-y-auto px-20 py-20">{children}</div>
-      {footerContent ? <div className="flex flex-col gap-12 px-20 pb-20">{footerContent}</div> : null}
+      <div className={`flex min-h-0 flex-1 flex-col overflow-y-auto ${bodyClassName}`}>{children}</div>
+      {footerContent ? <div className={footerClassName}>{footerContent}</div> : null}
     </dialog>
   );
 }

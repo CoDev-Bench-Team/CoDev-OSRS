@@ -68,7 +68,7 @@ function StockBadge({ available }: { available: number | null }) {
     );
   }
   const tone = available > 0 ? 'bg-status-available-bg text-status-available-fg' : 'bg-status-unavailable-bg text-status-unavailable-fg';
-  return <span className={`inline-flex rounded-8 px-10 py-4 type-pill tabular-nums ${tone}`}>{available} in stock</span>;
+  return <span className={`inline-flex h-32 items-center rounded-8 px-10 type-pill tabular-nums ${tone}`}>{available} in stock</span>;
 }
 
 export function ReviewPanel({
