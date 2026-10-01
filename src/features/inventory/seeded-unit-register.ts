@@ -11,7 +11,7 @@ import type { UnitDetail } from './types';
  *  added, edited or removed on Inventory moves the Assets figures as the API
  *  would. Nothing writes a count (constitution III).
  *
- *  Non-production placeholders under constitution IX: every serial, PR,
+ *  Non-production placeholders under constitution IX: every serial, purchase request,
  *  BitLocker Identifier and Recovery Key/PIN is visibly fake (`DEMO-…`).
  *
  *  Module state, so a reload starts over. The catalog, the request submit and

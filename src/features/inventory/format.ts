@@ -18,3 +18,12 @@ export function parseAmount(typed: string): number | undefined {
   if (!plain) return undefined;
   return /^\d+(\.\d+)?$/.test(plain) ? Number(plain) : NaN;
 }
+
+/** What the Price field keeps of a keystroke or paste: digits, the thousands
+ *  commas and one decimal point. Letters and every other character are
+ *  dropped as they are typed. */
+export function amountInput(raw: string): string {
+  const kept = raw.replace(/[^\d.,]/g, '');
+  const dot = kept.indexOf('.');
+  return dot < 0 ? kept : kept.slice(0, dot + 1) + kept.slice(dot + 1).replace(/\./g, '');
+}

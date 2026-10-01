@@ -9,7 +9,7 @@ import type { UnitBatchDraft, UnitDetail, UnitDraft, UnitRow } from './types';
  *
  *  No endpoint, payload or error code lives behind this name. The published
  *  `/inventory-items` cannot carry the screen yet — no assignee on read, no
- *  PR, no upload, secrets on the employee's reads (contracts conflict 11) — so
+ *  purchase request, no upload, secrets on the employee's reads (contracts conflict 11) — so
  *  today's only implementation is seeded. A contract-backed one replaces it
  *  here and no page changes.
  *

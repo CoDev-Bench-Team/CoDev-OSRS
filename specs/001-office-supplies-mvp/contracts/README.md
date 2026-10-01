@@ -78,7 +78,7 @@ seeded data until the per-asset counts in 1 are published.
 | 3 | **Resolved**: `location` and `quantity` left the asset; `lowQtyAlert` stayed, one per asset, which the Add and Update Asset panels' `STOCKS · Low-stock threshold` matches (spec 014 D8). Spec 001 FR-003 now says per asset. | — |
 | 9 | **Open.** `model` is required for every category; the design asterisks it only on Laptop, Phone and Headset, offers it optionally on Wifi and Type C Hub, and draws no Model field on UPS, Mice and Other Device. | One of the two moves. See 9 below. |
 | 10 | **Withdrawn 2026-10-01.** The SPA misread the file: no Add or Update Asset frame draws a custom-spec row ([drift-2026-10-01](../../../docs/design-system/drift-2026-10-01.md) A2). The five fixed fields cover the design. | — |
-| 11 | **Open.** Spec 015 (Inventory, BEN-150) builds the unit register on a seeded source; nine gaps against the published inventory-items contract. | G1 to G9. See 11 below. |
+| 11 | **Open.** Spec 015 (Inventory, BEN-150) builds the unit register on a seeded source; ten gaps against the published inventory-items contract. | G1 to G10. See 11 below. |
 
 The sections below are the original write-up of 1–3.
 
@@ -344,7 +344,7 @@ Nothing is needed from the backend.
 
 Spec 015 (BEN-150) builds Inventory, the per-unit register of ADR-0008, against
 a seeded source behind `InventorySource`, because the published inventory-items
-contract leaves the gaps below. Each row states what is published and what the
+contract leaves the gaps below (G10 added 2026-10-02). Each row states what is published and what the
 design or the constitution needs. None of the asks proposes a route, parameter
 or field name: the shapes are the backend team's to choose. Until each is
 answered, the SPA keeps its rule client-side and MUST NOT send what the
@@ -362,6 +362,7 @@ contract does not accept (constitution VII). Evidence: spec 015 §Contract gaps,
 | G7 | **Attachment is a URL** (`attachmentUrl`), and no upload operation is published; the design draws a file uploader | An upload operation, or the design changes |
 | G8 | **`In Storage`** drawn, not in the status set (spec 015 D1) | One status set |
 | G9 | **Search, counts and order.** `search` matches asset name, model or category, not PR or serial; there is no office filter and no per-status count for the chips; the list is ordered by id ascending, not newest added first (spec 015 FR-005) | Search by PR and serial; status counts, or the SPA counts per status; a newest-first order |
+| G10 | **Create takes no status** (added 2026-10-02). A new unit is `available`, or `assigned` when a user is given; the project owner wants a unit addable as `Inactive` too (spec 015 D3) | A status on create, limited to available, assigned and inactive; or the SPA follows the create with a status update |
 
 What the seeded source does meanwhile, so QA can tell the stand-in from the
 contract: it refuses removing an `Assigned` or `Reserved` unit with `409`, keeps

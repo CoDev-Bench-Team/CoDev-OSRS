@@ -11,7 +11,7 @@ import type { Office } from '../auth/types';
 
 /** What Add Single Unit offers: the contract creates a unit Available, or
  *  Assigned when a user is given (spec 015 D3). */
-export type AddStatus = Extract<UnitStatus, 'Available' | 'Assigned'>;
+export type AddStatus = Extract<UnitStatus, 'Available' | 'Assigned' | 'Inactive'>;
 
 /** What Review/Edit offers for a unit that is not reserved (spec 015 D4).
  *  Reserved is in neither option type, so no control can set it (D2). */

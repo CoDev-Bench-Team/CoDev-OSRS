@@ -35,7 +35,7 @@ import { UnitFormPanel } from './UnitFormPanel';
 const COLUMNS: [label: string, width?: ColumnWidth][] = [
   ['MODEL', '200px'],
   ['CATEGORY', '150px'],
-  ['PR', '180px'],
+  ['PURCHASE REQUEST', '180px'],
   ['SERIAL NUMBER', '150px'],
   ['OFFICE', '167px'],
   ['ASSIGNED', '190px'],

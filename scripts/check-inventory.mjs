@@ -157,7 +157,7 @@ try {
 
   // ---- Helpers over the live page ------------------------------------------
 
-  const SEARCH = 'input[aria-label="Search by item name, model, PR or serial number"]';
+  const SEARCH = 'input[aria-label="Search by item name, model, purchase request or serial number"]';
   const REGION = '[aria-label="Inventory table"]';
 
   const register = () =>
@@ -394,7 +394,7 @@ try {
     [...document.querySelectorAll('[aria-label="Inventory table"] .bg-surface-table-header span')].map((s) => s.textContent.trim()),
   );
   check(
-    same(header, ['MODEL', 'CATEGORY', 'PR', 'SERIAL NUMBER', 'OFFICE', 'ASSIGNED', 'STATUS', 'ACTION']),
+    same(header, ['MODEL', 'CATEGORY', 'PURCHASE REQUEST', 'SERIAL NUMBER', 'OFFICE', 'ASSIGNED', 'STATUS', 'ACTION']),
     'the eight drawn columns, in order',
     JSON.stringify(header),
   );
@@ -421,7 +421,7 @@ try {
   check(same(pageSizes, [10, 25, 50, 100]), 'page sizes 10 · 25 · 50 · 100', JSON.stringify(pageSizes));
 
   const cells = await rowCells();
-  check(cells.some((c) => c[2] === '—') && cells.some((c) => c[3] === '—'), 'a missing PR or serial shows the no-value dash');
+  check(cells.some((c) => c[2] === '—') && cells.some((c) => c[3] === '—'), 'a missing purchase request or serial shows the no-value dash');
   check(cells.some((c) => c[5] === 'Unassigned') && cells.some((c) => /Maya Santos|Ethan Cruz/.test(c[5])), 'ASSIGNED reads a name, or Unassigned');
   check(
     await cdp.evaluate(() => [...document.querySelectorAll('[data-unit] button')].every((b) => /^Review \S/.test(b.getAttribute('aria-label') ?? ''))),
@@ -447,7 +447,7 @@ try {
   const laptop = seed.find((u) => u.assetId === 'asset-1' && u.status === 'Available' && u.serialNumber && u.pr);
   await searchMatches(assetNames['asset-1'].name, 'item name');
   await searchMatches(assetNames['asset-1'].model || assetNames['asset-1'].name, 'model');
-  await searchMatches(laptop.pr, 'PR');
+  await searchMatches(laptop.pr, 'purchase request');
   await searchMatches(laptop.serialNumber, 'serial number');
   await search('');
 
@@ -531,7 +531,8 @@ try {
   await panelOpen();
   check((await panelTitle()) === 'Add Single Unit', 'the menu opens Add Single Unit');
   check((await control('Office')).value === 'Cebu', 'Office defaults to Cebu');
-  check(same(await selectOptions('Status'), ['Available', 'Assigned']), 'Status offers exactly Available and Assigned');
+  check(same(await selectOptions('Status'), ['Available', 'Assigned', 'Inactive']), 'Status offers exactly Available, Assigned and Inactive');
+  check(!(await cdp.evaluate(() => [...document.querySelectorAll('dialog[open] label')].some((l) => /\bPR\b/.test(l.textContent)))), 'no field label abbreviates Purchase Request');
 
   await pressInPanel('Save Changes');
   await wait(150);
@@ -567,6 +568,8 @@ try {
   await pressInPanel(`Clear catalog item ${laptopName}`);
   await pick('Catalog Item', monitorName, monitorName);
 
+  await fill('Price', 'abc1,2x50');
+  check((await control('Price')).value === '1,250', 'Price keeps digits and commas, dropping letters');
   await fill('Price', '1,250.555');
   await fill('Serial Number', 'DEMO-CHECK-0001');
   await pressInPanel('Save Changes');
@@ -617,7 +620,7 @@ try {
   check((await panelTitle()) === laptopName, 'the header is the item name');
   check((await panelText()).includes('Available'), 'with the unit pill');
   check(await cdp.evaluate(() => !document.querySelector('dialog[open] input[placeholder="Search catalog item name or code"]')), 'the catalog item is not editable');
-  check((await control('Serial Number')).value === laptop.serialNumber && (await control('PR')).value === laptop.pr, 'the fields are prefilled');
+  check((await control('Serial Number')).value === laptop.serialNumber && (await control('Purchase Request')).value === laptop.pr, 'the fields are prefilled');
   check(same(await selectOptions('Status'), ['Available', 'Assigned', 'Inactive']), 'Status offers Available · Assigned · Inactive');
   const bl = await control('BitLocker Identifier');
   check(bl.masked === 'disc' && bl.type === 'text', 'the BitLocker identifier is masked on a text input');

@@ -169,7 +169,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
 
         <div className="flex flex-col gap-14">
           <div className="flex items-center justify-between gap-16">
-            <span id={`${formId}-count`} className="font-sans text-12-5 leading-body text-osrs-ink-800">
+            <span id={`${formId}-count`} className="font-sans text-12-5 font-bold leading-body text-osrs-ink-800">
               No. of Units
             </span>
             <div className="flex items-center gap-8" role="group" aria-labelledby={`${formId}-count`}>
@@ -178,7 +178,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
                 aria-label="Remove the last unit"
                 disabled={rows.length === 0}
                 onClick={() => changeRows((rs) => rs.slice(0, -1))}
-                className="h-control-height-lg w-[46px] px-0 text-20"
+                className="h-control-height-lg! w-[46px] px-0 text-20"
               >
                 −
               </Button>
@@ -194,7 +194,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
                 aria-label="Add a unit"
                 disabled={full}
                 onClick={addRow}
-                className="h-control-height-lg w-[50px] px-0 text-20"
+                className="h-control-height-lg! w-[50px] px-0 text-20"
               >
                 +
               </Button>
@@ -280,7 +280,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
                 type="button"
                 aria-label={`Remove unit ${i + 1}`}
                 onClick={() => changeRows((rs) => rs.filter((r) => r.key !== row.key))}
-                className="mt-[19px] inline-flex size-[42px] shrink-0 cursor-pointer items-center justify-center rounded-10 border-none bg-status-rejected-bg text-brand-primary-alt transition-osrs hover:bg-osrs-red-50"
+                className="mt-14 inline-flex size-[42px] shrink-0 cursor-pointer items-center justify-center rounded-10 border-none bg-status-rejected-bg text-brand-primary-alt transition-osrs hover:bg-osrs-red-50"
               >
                 <CloseLarge />
               </button>

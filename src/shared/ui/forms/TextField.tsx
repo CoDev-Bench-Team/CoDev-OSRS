@@ -25,6 +25,7 @@ export function TextField({
   invalid,
   message,
   tone = 'neutral',
+  size = 'md',
   className,
   onKeyDown,
   ...rest
@@ -34,6 +35,9 @@ export function TextField({
   invalid?: boolean;
   message?: string;
   tone?: 'neutral' | 'danger';
+  /** `sm` is Inventory's `Reason for removal *`: a 13px label over 12px text
+   *  in a 56px box (spec 015). */
+  size?: 'md' | 'sm';
 }) {
   const id = useId();
   const messageId = `${id}-message`;
@@ -49,11 +53,12 @@ export function TextField({
       : invalid
         ? 'bg-status-rejected-bg ring-brand'
         : 'bg-surface-card ring-default';
+  const small = size === 'sm';
   const labelColour =
     tone === 'danger' ? 'text-brand-primary-alt' : invalid ? 'text-status-rejected-fg' : 'text-ink-strong';
   return (
     <div className={`flex flex-col gap-12 rounded-10 p-20 ${block} ${className ?? ''}`}>
-      <label htmlFor={id} className={`type-subhead ${labelColour}`}>
+      <label htmlFor={id} className={`${small ? 'font-sans text-13 font-bold leading-tight' : 'type-subhead'} ${labelColour}`}>
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </label>
@@ -64,7 +69,7 @@ export function TextField({
         aria-invalid={invalid || undefined}
         aria-describedby={invalid && message ? messageId : undefined}
         onKeyDown={submitOnEnter}
-        className={`min-h-[58px] max-h-[160px] w-full resize-none [field-sizing:content] appearance-none rounded-8 border-none bg-surface-card px-14 py-14 font-sans text-14 text-ink-primary outline-none transition-osrs placeholder:text-ink-muted focus:ring-brand ${invalid ? 'ring-brand' : 'ring-default'}`}
+        className={`${small ? 'min-h-[56px] text-12' : 'min-h-[58px] text-14'} max-h-[160px] w-full resize-none [field-sizing:content] appearance-none rounded-8 border-none bg-surface-card px-14 py-14 font-sans text-ink-primary outline-none transition-osrs placeholder:text-ink-muted focus:ring-brand ${invalid ? 'ring-brand' : 'ring-default'}`}
         {...rest}
       />
       {invalid && message ? (

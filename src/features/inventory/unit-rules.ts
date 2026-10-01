@@ -7,12 +7,12 @@ import type { AddStatus, EditStatus } from './types';
  *  Reserved is in neither option list: only a request transition moves a unit
  *  into or out of it (D2). */
 
-const ADD: readonly AddStatus[] = ['Available', 'Assigned'];
+const ADD: readonly AddStatus[] = ['Available', 'Assigned', 'Inactive'];
 const EDIT: readonly EditStatus[] = ['Available', 'Assigned', 'Inactive'];
 
-/** What a Status control offers: on Add Single Unit, Available and Assigned
- *  (D3); on Review/Edit, Available, Assigned and Inactive (D4), or `null` —
- *  read-only — for a Reserved unit. */
+/** What a Status control offers: Available, Assigned and Inactive, on Add
+ *  Single Unit (D3) and on Review/Edit (D4); `null` — read-only — for a
+ *  Reserved unit. */
 export function statusOptions(mode: 'add'): readonly AddStatus[];
 export function statusOptions(mode: 'edit', unit: { status: UnitStatus }): readonly EditStatus[] | null;
 export function statusOptions(mode: 'add' | 'edit', unit?: { status: UnitStatus }): readonly (AddStatus | EditStatus)[] | null {

@@ -406,7 +406,7 @@ export function UnitFormPanel(props: Props) {
                   placeholder="Insert here..."
                   value={form.description}
                   onChange={(e) => set('description', e.target.value)}
-                  className="h-[75px] py-12!"
+                  className="h-[75px] min-h-[75px]! py-12!"
                 />
               )}
             </Field>

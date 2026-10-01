@@ -88,7 +88,7 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
 
   Files: `src/features/inventory/unit-fields.tsx`, `src/features/assets/ImageField.tsx`
 - [x] T029 [US2] [BEN-108] `UnitFormPanel` in add mode (400px):
-  - Catalog Item; PURCHASE DETAILS; DEVICE DETAILS; ASSIGNMENT (User, Office defaulting to Cebu, Status with *Select Status* offering Available and Assigned); NOTES (Description, Attachment via `ImageField`).
+  - Catalog Item; PURCHASE DETAILS; DEVICE DETAILS; ASSIGNMENT (User, Office defaulting to Cebu, Status with *Select Status* offering Available, Assigned and Inactive, per D3 as amended 2026-10-02); NOTES (Description, Attachment via `ImageField`).
   - Picking a User sets Assigned, and Available clears the User. Switching away from a Laptop drops the BitLocker values.
   - Client validation on Save; a refusal maps through `fieldErrors`, and a `409` shows the source's message. The panel stays open with every value on refusal (Story 2, FR-007, FR-008, FR-011 to FR-013).
 
@@ -111,7 +111,7 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
 - [x] T033 [US3] [US4] [BEN-108] Concurrent changes. On a `404` from `get`, `update` or `remove`, the body becomes a `Notice` with the source's message and **Close**; closing reloads the list. On a `409` from a unit reserved behind the panel, the message shows and the edits are kept (P12, P16, spec edge cases) — `src/features/inventory/UnitFormPanel.tsx`
 - [x] T034 [BEN-108] Check `SecretInput` masking in Chrome, Safari and Firefox. If one does not mask, decide the fallback and record it in plan P12 (R3) — `src/features/inventory/unit-fields.tsx`, `specs/015-inventory/plan.md`
 - [x] T035 [US2] [US3] [US4] [BEN-108] Extend the check (P19):
-  - Add Single Unit: exactly Available and Assigned; picking a User sets Assigned; the User field finds an Employee and an Admin by name and by email, at any office; switching from a Laptop to another category drops the BitLocker values; field errors; a `400` problem through `refuseNext` landing under the pointed field; a `409` serial conflict; counts after save.
+  - Add Single Unit: exactly Available, Assigned and Inactive; picking a User sets Assigned; the User field finds an Employee and an Admin by name and by email, at any office; switching from a Laptop to another category drops the BitLocker values; field errors; a `400` problem through `refuseNext` landing under the pointed field; a `409` serial conflict; counts after save.
   - Review/Edit per status, with the P6 options; Reserved read-only, with its other details still saveable; unassign, assign, inactivate and reactivate moving `__osrs.inventory.counts` by ±1; Assigned → Inactive and Inactive → Assigned moving nothing; an office move; the seeded serial-less Monitor cannot be saved until Serial is filled (Story 3 7a).
   - Masked secrets on a Laptop only; no `input[type="password"]`; a console captured through every panel flow, the URL and the table DOM free of any seeded secret value.
   - Removal only for Available and Inactive, with a reason; the refusal copy for Assigned and Reserved.

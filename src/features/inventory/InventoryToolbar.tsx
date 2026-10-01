@@ -11,7 +11,7 @@ export function InventoryToolbar({ query }: { query: TableQuery<UnitChip> }) {
       <div className="mt-18 flex flex-wrap items-center gap-16">
         <Search
           placeholder="Search inventory by item name or code"
-          aria-label="Search by item name, model, PR or serial number"
+          aria-label="Search by item name, model, purchase request or serial number"
           value={query.search}
           onChange={(e) => query.setSearch(e.target.value)}
           className="min-w-[260px] flex-1"

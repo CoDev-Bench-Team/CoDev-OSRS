@@ -2,6 +2,7 @@ import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Field, FieldGroup, Search, TextField, TextInput, type FieldControl } from '../../shared/ui';
 import type { Asset, Category } from '../assets/types';
 import { deviceFieldsFor } from './device-fields';
+import { amountInput } from './format';
 import { removal } from './unit-rules';
 import type { DirectoryUser } from './user-directory';
 import type { UnitStatus } from '../../shared/ui';
@@ -301,8 +302,8 @@ export function SecretInput({
 
 export type Purchase = { pr: string; price: string; supplier: string; purchasedAt: string };
 
-/** PURCHASE DETAILS: PR (ours, D14), Price in pesos, Supplier, Purchased Date
- *  no later than today (FR-013). */
+/** PURCHASE DETAILS: Purchase Request (ours, D14), Price in pesos, Supplier,
+ *  Purchased Date no later than today (FR-013). */
 export function PurchaseFields({
   value,
   onChange,
@@ -316,13 +317,13 @@ export function PurchaseFields({
 }) {
   return (
     <FieldGroup heading="PURCHASE DETAILS">
-      <Field label="PR" error={errors.pr}>
+      <Field label="Purchase Request" error={errors.pr}>
         {({ id, invalid, describedBy }) => (
           <TextInput
             id={id}
             invalid={invalid}
             aria-describedby={describedBy}
-            placeholder="e.g. PR-2026-0142"
+            placeholder="e.g. 2026-0142"
             value={value.pr}
             onChange={(e) => onChange('pr', e.target.value)}
           />
@@ -341,7 +342,7 @@ export function PurchaseFields({
               inputMode="decimal"
               placeholder="0.00"
               value={value.price}
-              onChange={(e) => onChange('price', e.target.value)}
+              onChange={(e) => onChange('price', amountInput(e.target.value))}
               className="pl-[44px]"
             />
           </div>
@@ -468,13 +469,14 @@ export function RemoveUnitSection({
   return (
     <FieldGroup heading="REMOVE UNIT">
       {!rule.allowed ? (
-        <p className="rounded-10 bg-status-rejected-bg p-20 font-sans text-12-5 leading-body text-brand-primary-alt ring-brand-alt">
+        <p className="rounded-10 border border-status-low-fg bg-status-low-bg p-20 font-sans text-12-5 leading-body text-status-low-fg">
           {rule.reason}
         </p>
       ) : removing ? (
         <TextField
           label="Reason for removal"
           tone="danger"
+          size="sm"
           required
           autoFocus
           placeholder="e.g item on hold, insufficient justification..."
