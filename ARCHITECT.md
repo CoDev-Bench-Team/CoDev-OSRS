@@ -1,7 +1,7 @@
 # Architecture — Office Supplies Request System
 
 **Status**: Accepted for MVP  
-**Date**: 2026-09-11 · **Last amended**: 2026-09-29 (the Admin or the Employee sets `Received`, the Employee signs on it; constitution 7.0.0)  
+**Date**: 2026-09-11 · **Last amended**: 2026-10-01 (an Admin cannot cancel a `For Delivery` request; constitution 8.0.0, ADR-0012). 2026-09-29: the Admin or the Employee sets `Received`, the Employee signs on it; constitution 7.0.0  
 **Companion docs**: [product](docs/product.md), [process flow](docs/process-flow.md), [ADRs](docs/adr/), [feature plan](specs/001-office-supplies-mvp/plan.md)
 
 This file is the cross-cutting HOW. Feature WHAT lives in specs. Do not duplicate user stories here.
@@ -107,7 +107,8 @@ Do not add an API implementation directory until an ADR names the stack. Configu
                          ▼                                               │
         For Delivery │ Ready for Pickup ── cancel (Admin, reason) ───────┘
                     (peers, not a sequence;
-                     Ready for Pickup records a location)
+                     Ready for Pickup records a location;
+                     For Delivery cannot be cancelled)
                          │
                          │ mark received (Admin, or owning Employee)
                          ▼
@@ -127,7 +128,7 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 - **Mark received**: the Admin, through Update Status above, or the owning Employee on their own request, with **Mark as Received** (spec 012); request is `For Delivery` or `Ready for Pickup`; target is `Received`. Moves the reserved units to `Assigned` in the same transaction.
 - **Accountability Form**: owning Employee; request is `Received` and not yet signed; the form is agreed and signed with the Employee's full name. Records the acknowledgement; no status or unit changes.
 - **Complete**: Admin; request is `Received` and its Accountability Form is signed.
-- **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved`, `For Delivery` or `Ready for Pickup`. **A reason is required from whoever cancels.** Never once `Received` or `Completed`. Releases the reservation in the same transaction, exactly as reject does.
+- **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved` or `Ready for Pickup`. Never while `For Delivery`: the items are out with the delivery, so a failed delivery goes back to `Ready for Pickup` first ([ADR-0012](docs/adr/0012-no-admin-cancel-on-for-delivery.md)). **A reason is required from whoever cancels.** Never once `Received` or `Completed`. Releases the reservation in the same transaction, exactly as reject does.
 
 The Admin or the Employee records the handover (`Received`); the Employee then confirms receipt with the Accountability Form; `Completed` is an Admin action once the form is signed — see [ADR-0011](docs/adr/0011-admin-sets-received-employee-signs.md), which amends [ADR-0009](docs/adr/0009-received-and-accountability-form.md) and [ADR-0010](docs/adr/0010-admin-marks-received.md).
 
@@ -173,7 +174,7 @@ Each asset carries one **low-stock threshold** (per asset, compared against Avai
 | Mark a handover `Received` | own, while `For Delivery` / `Ready for Pickup` | yes |
 | Sign the Accountability Form | own, while `Received` and unsigned | no |
 | Complete a request | no | yes, once the form is signed |
-| Cancel a request | own, while `Pending Approval`, reason required | any `Approved` / `For Delivery` / `Ready for Pickup`, reason required |
+| Cancel a request | own, while `Pending Approval`, reason required | any `Approved` / `Ready for Pickup`, reason required; not `For Delivery` |
 | View resolved history | own only (My Requests) | yes (History, all requestors) |
 | View own profile | yes | yes\*\* |
 

@@ -87,7 +87,7 @@ Depends on backend auth/session resources.
 - [x] T019 [P] [US6] My Requests table + status pills + detail panel — `src/features/requests/history/MyRequestsPage.tsx`
   - **Done across two specs.** The list is [spec 009](../009-my-requests/spec.md) (BEN-44); the detail panel is [spec 007](../007-employee-request-panel/spec.md) (BEN-45). Both read the seeded source until the request contract publishes.
 - [ ] T020 [US7] Cancel Request dialog with required reason (employee, while pending) — `src/features/requests/history/CancelDialog.tsx`
-- [ ] T021 [US7] Admin cancel from the review panel (approved / for delivery / for pickup) — `src/features/requests/queue/ReviewPanel.tsx` — **owned by spec 008 Phase 5 (G4, BEN-135, T046–T061)**; spec 008 Story 5 since 2026-09-30. Tick when G4 merges.
+- [ ] T021 [US7] Admin cancel from the review panel (approved / ready for pickup; not for delivery since constitution 8.0.0) — `src/features/requests/queue/ReviewPanel.tsx` — **owned by spec 008 Phase 5 and 5b (G4, BEN-135, T046–T068)**; spec 008 Story 5 since 2026-09-30. Tick when G4 merges.
 - [x] T022 [US6] History page: chips, table, read-only detail panel showing the stored reason — `src/features/requests/history/HistoryPage.tsx` — **owned by [spec 013](../013-admin-history/tasks.md)**
 
 ## Phase 8: User Story 8 — Profile (P3)

@@ -179,7 +179,8 @@ const choose = async (selectLabel, option) => {
 const EXPECTED = {
   'Pending Approval': ['Reject Request', 'Approve Request'],
   Approved: ['Cancel Request', 'Update Status'],
-  'For Delivery': ['Cancel Request', 'Update Status'],
+  // Its items are out with the delivery: no cancel (constitution 8.0.0 IV).
+  'For Delivery': ['Update Status'],
   'Ready for Pickup': ['Cancel Request', 'Update Status'],
 };
 
@@ -424,7 +425,7 @@ try {
   check(p.timeline[2] === 'Ready for Pickup', 'the handover node names the state taken', p.timeline[2]);
   check(
     JSON.stringify(p.buttons) === JSON.stringify(EXPECTED['Ready for Pickup']) && !p.buttons.includes('Complete'),
-    'a handover state offers Cancel Request and Update Status, and no Complete',
+    'Ready for Pickup offers Cancel Request and Update Status, and no Complete',
     p.buttons.join(' / '),
   );
 
@@ -439,6 +440,16 @@ try {
   await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.nextElementSibling?.textContent.trim() === 'For Delivery', 5000, 'For Delivery');
   p = await cdp.evaluate(panel);
   check(!p.text.includes('6th floor IT desk'), 'swapping to For Delivery clears the pickup location');
+  const fullWidth = await cdp.evaluate(() => {
+    const b = [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.trim() === 'Update Status');
+    const row = b?.parentElement.getBoundingClientRect();
+    return !!b && Math.abs(b.getBoundingClientRect().width - row.width) < 1;
+  });
+  check(
+    JSON.stringify(p.buttons) === JSON.stringify(EXPECTED['For Delivery']) && fullWidth,
+    'For Delivery offers Update Status alone, across the row, and no Cancel Request (constitution 8.0.0)',
+    p.buttons.join(' / '),
+  );
   pass('the peers swap');
 
   // The form never offers the current status, so only a race sends it: someone
@@ -735,7 +746,7 @@ try {
   await esc();
   await closed();
 
-  await open('REQ-2026-1748');
+  await open('REQ-2026-1698');
   await click('Update Status');
   await settle();
   p = await cdp.evaluate(panel);
@@ -785,7 +796,7 @@ try {
     p.alert?.includes('updated while you were viewing it') &&
       p.pill === 'For Delivery' &&
       JSON.stringify(p.buttons) === JSON.stringify(EXPECTED['For Delivery']),
-    'a cancel overtaken by another Admin’s handover shows For Delivery, still offering Cancel Request',
+    'a cancel overtaken by another Admin’s handover shows For Delivery, with Cancel Request gone',
     `${p.pill}: ${p.buttons.join(' / ')}`,
   );
   await esc();
@@ -846,19 +857,22 @@ try {
     const source = createSeededAdminRequestSource();
     const setup = await source.updateStatus('REQ-2026-1703', 'Received');
     const refused = {};
-    for (const id of ['REQ-2026-1847', 'REQ-2026-1703', 'REQ-2026-1690', 'REQ-2026-1684', 'REQ-2026-1677']) {
+    for (const id of ['REQ-2026-1847', 'REQ-2026-1748', 'REQ-2026-1703', 'REQ-2026-1690', 'REQ-2026-1684', 'REQ-2026-1677']) {
       refused[id] = await source.cancel(id, 'Not allowed');
     }
     const blank = await source.cancel('REQ-2026-1805', '   ');
     const missing = await source.cancel('REQ-2026-0000', 'No such request');
     const legal = await source.cancel('REQ-2026-1715', '  Recalled  ');
+    // A failed delivery: back to Ready for Pickup, then cancellable.
+    const swapped = await source.updateStatus('REQ-2026-1748', 'Ready for Pickup', { kind: 'office', office: 'Makati' });
+    const afterSwap = await source.cancel('REQ-2026-1748', 'Courier could not deliver');
     const after = (await source.load()).requests.find((r) => r.id === 'REQ-2026-1715');
-    return { setup, refused, blank, missing, legal, after };
+    return { setup, refused, blank, missing, legal, after, swapped, afterSwap };
   });
   check(guard.setup.ok, 'probe setup: REQ-2026-1703 reached Received', JSON.stringify(guard.setup));
   check(
     Object.values(guard.refused).every((r) => !r.ok && r.refusal === 'status-changed'),
-    'the seed refuses a cancel from Pending, Received, Completed, Rejected or Cancelled',
+    'the seed refuses a cancel from Pending, For Delivery, Received, Completed, Rejected or Cancelled',
     JSON.stringify(guard.refused),
   );
   check(!guard.blank.ok && guard.blank.refusal === 'reason-required', 'and a blank reason', JSON.stringify(guard.blank));
@@ -872,6 +886,11 @@ try {
       guard.after.handedOverAt === '2026-08-08T01:00:00Z',
     'a legal cancel stores the trimmed reason and keeps the earlier timestamps',
     JSON.stringify(guard.after),
+  );
+  check(
+    guard.swapped.ok && guard.afterSwap.ok,
+    'a failed delivery moved back to Ready for Pickup can then be cancelled',
+    JSON.stringify([guard.swapped, guard.afterSwap]),
   );
 
   // R10: the two-button row at the narrowest supported width.

@@ -12,7 +12,9 @@ import type { AdminRequestSource, TransitionResult } from '../review-types';
  *    `Ready for Pickup` at the requestor's office) (spec 008 FR-014). A cancel
  *    is overtaken: a handover state becomes `Received` (the Employee marked
  *    it received, constitution 7.0.0 IV), and `Approved` becomes `For Delivery`
- *    (another Admin handed it over) (spec 008 edge case "Received while cancelling").
+ *    (another Admin handed it over, which cannot be cancelled) (spec 008 edge
+ *    cases "Received while cancelling", "Handed over for delivery while
+ *    cancelling").
  *  - `failing`: every transition fails outright. The status is unchanged and
  *    the form keeps its input (FR-014).
  *  - `reload-fails`: the transition goes through, then the reload fails. The

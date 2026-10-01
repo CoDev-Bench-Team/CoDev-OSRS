@@ -16,7 +16,9 @@ const ACTIONS = {
   'Pending Approval': ['reject', 'approve'],
   // Cancel sits left of the forward action, as Reject does (spec 008 plan D14).
   Approved: ['cancel', 'updateStatus'],
-  'For Delivery': ['cancel', 'updateStatus'],
+  // Its items are out with the delivery, so it cannot be cancelled; a failed
+  // delivery goes back to Ready for Pickup first (constitution 8.0.0 IV).
+  'For Delivery': ['updateStatus'],
   'Ready for Pickup': ['cancel', 'updateStatus'],
   // Constitution 5.0.0 adopted `Received` (ADR-0009). Complete is its action,
   // and it is not built yet (spec 008 Story 4). Until it is, the panel offers

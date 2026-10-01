@@ -258,16 +258,33 @@ with the date each was resolved and a read-only panel carrying the stored reason
 Until then History reads the seeded Admin source (spec 013 FR-013). Nothing
 here proposes a route, parameter or field name.
 
+### 8. An Admin cancel on `for_delivery` (raised 2026-10-01)
+
+Constitution **8.0.0** IV ([ADR-0012](../../../docs/adr/0012-no-admin-cancel-on-for-delivery.md))
+lets an Admin cancel only an `approved` or `ready_for_pickup` request. A
+`for_delivery` request's items are out with the delivery, so releasing its
+reservation would put units back to Available that are not in the store. The
+published `POST /requests/{id}/cancel` still accepts an Admin cancel on
+`for_delivery`.
+
+**Needed from the API:** refuse an Admin cancel on `for_delivery` with the same
+`409` as every other status it refuses. Constitution IV requires the API to
+reject an illegal transition. A failed delivery is moved to `ready_for_pickup`
+first, which the API already allows, and is then cancellable.
+
+Until then the SPA does not offer the action (spec 008 FR-020, D19), and its
+seeded source refuses it `status-changed`.
+
 ### Cancel (published; read 2026-09-30)
 
-Not a conflict: the contract matches constitution 7.0.0 IV. Recorded here for the
-API-integration ticket, because spec 008 Story 5 (BEN-135) is built against the
-seeded source (spec 008 FR-017).
+Matches constitution 8.0.0 IV except for conflict 8 (`for_delivery`). Recorded
+here for the API-integration ticket, because spec 008 Story 5 (BEN-135) is built
+against the seeded source (spec 008 FR-017).
 
 `POST /requests/{id}/cancel` with `CancelRequestDto { reason }` (required;
 *"Shown to the requester"*). An Employee may cancel their own `pending_approval`
-request. An Admin may cancel `approved`, `ready_for_pickup` or `for_delivery`.
-Stock returns to Available and the requester is emailed. Any other status,
+request. An Admin may cancel `approved`, `ready_for_pickup` or `for_delivery`
+(the last is conflict 8). Stock returns to Available and the requester is emailed. Any other status,
 `received` included, is refused.
 
 | Response | SPA refusal (spec 008) |

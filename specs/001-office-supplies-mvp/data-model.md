@@ -136,9 +136,9 @@ One physical item of an asset, held at one office. Added 2026-09-26 (ADR-0008).
 | ready_for_pickup | for_delivery | admin | |
 | for_delivery \| ready_for_pickup | received | admin, or owning employee | |
 | received | completed | admin | the Accountability Form is signed |
-| approved \| for_delivery \| ready_for_pickup | cancelled | admin | non-empty reason |
+| approved \| ready_for_pickup | cancelled | admin | non-empty reason |
 
-`rejected`, `cancelled` and `completed` are terminal. `received` cannot be cancelled.
+`rejected`, `cancelled` and `completed` are terminal. `for_delivery` and `received` cannot be cancelled (constitution 8.0.0).
 
 **Accountability Form** (not a transition): the owning employee signs their own `received` request, once, agreeing to its conditions and typing their full name. It records `signedName` / `signedAt`; the status stays `received`. ~~There is **no** confirm-receipt transition.~~ (withdrawn 2026-09-26, ADR-0009)
 

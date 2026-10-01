@@ -91,9 +91,9 @@ export interface AdminRequestSource extends QueueSource {
    *  and keeps the handover and pickup location it had. A target equal to the
    *  current status is refused `status-changed`: the form never offers it. */
   updateStatus(id: string, to: UpdateStatusTarget, pickup?: PickupLocation): Promise<TransitionResult>;
-  /** Stops an `Approved`, `For Delivery` or `Ready for Pickup` request that
-   *  cannot be fulfilled (spec 008 FR-020). Any other status is refused
-   *  `status-changed`. `reason` is as for `reject`. */
+  /** Stops an `Approved` or `Ready for Pickup` request that cannot be
+   *  fulfilled (spec 008 FR-020). Any other status, `For Delivery` included,
+   *  is refused `status-changed`. `reason` is as for `reject`. */
   cancel(id: string, reason: string): Promise<TransitionResult>;
   // complete(id) lands with BEN-134 (constitution 4.0.0), plan D9.
 }

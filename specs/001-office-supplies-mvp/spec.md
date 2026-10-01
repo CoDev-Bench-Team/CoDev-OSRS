@@ -107,7 +107,7 @@ An Employee sees status and history for their own requests in **My Requests**, a
 
 ### User Story 7 - Cancel a request (Priority: P2)
 
-The owning Employee stops their own request while it is `Pending Approval`; an Admin stops an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled. Either way a reason is required and the reservation is released.
+The owning Employee stops their own request while it is `Pending Approval`; an Admin stops an `Approved` or `Ready for Pickup` request that cannot be fulfilled. A `For Delivery` request cannot be cancelled. Either way a reason is required and the reservation is released.
 
 **Why this priority**: The compensating path for requests that are never decided.
 **Independent Test**: Cancel as Employee with a reason and assert the reservation is released; attempt it on an approved request as the Employee and be refused.
@@ -117,6 +117,7 @@ The owning Employee stops their own request while it is `Pending Approval`; an A
 2. **Given** the cancel dialog, **When** the reason is empty, **Then** **Confirm Cancellation** is refused and status is unchanged.
 3. **Given** an `Approved` request, **When** the owning Employee attempts to cancel, **Then** the system refuses.
 4. **Given** a `Completed` request, **When** an Admin attempts to cancel, **Then** the system refuses.
+5. **Given** a `For Delivery` request, **When** an Admin attempts to cancel, **Then** the system refuses; moved to `Ready for Pickup` first, it can be cancelled. *(Added 2026-10-01, constitution 8.0.0.)*
 
 ### User Story 8 - Profile (Priority: P3)
 
@@ -165,8 +166,8 @@ A signed-in user opens **Profile** and sees their name, email, home office and t
 - **FR-009**: System MUST allow Admins to reject a `Pending Approval` request only when a non-empty reason is provided, moving it to `Rejected` and returning each line quantity from `Reserved` to `Available` in one atomic operation.
 - **FR-010**: System MUST NOT reopen a rejected or cancelled request; the Employee MUST create a new request if they still need the items.
 - **FR-010a**: System MUST allow the owning Employee to cancel their own request while it is `Pending Approval`, **only when a non-empty reason is provided**, with the same atomic status change and reservation release.
-- **FR-010b**: System MUST allow an Admin to cancel an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled, only when a non-empty reason is provided, with the same atomic status change and reservation release.
-- **FR-010c**: System MUST refuse cancellation of a `Received`, `Completed`, `Rejected` or already-`Cancelled` request.
+- **FR-010b**: System MUST allow an Admin to cancel an `Approved` or `Ready for Pickup` request that cannot be fulfilled, only when a non-empty reason is provided, with the same atomic status change and reservation release.
+- **FR-010c**: System MUST refuse cancellation of a `For Delivery`, `Received`, `Completed`, `Rejected` or already-`Cancelled` request. *(`For Delivery` added 2026-10-01.)*
 - **FR-011**: System MUST allow Admins to move an `Approved`, `For Delivery` or `Ready for Pickup` request to `For Delivery` or `Ready for Pickup` without changing any quantity, and a `For Delivery` or `Ready for Pickup` request to `Received` (FR-012a). The two are peers, not a sequence.
 - **FR-011a**: System MUST record a pickup location when the target status is `Ready for Pickup`, and MUST carry it in the resulting notification.
 - **FR-012**: System MUST allow Admins to move a `Received` request to `Completed`, without changing any quantity, **only once its Accountability Form has been signed**. *(Rewritten 2026-09-26; narrowed 2026-09-29.)*
@@ -237,6 +238,16 @@ Resolved from the Linear brief and process diagram with MVP defaults (no blockin
 - Q: Resubmit after reject? → A: New request, not reopen.
 - Q: Who can approve? → A: ~~Any user with Approver role~~ **any Admin** (small internal team).
 - Q: Auth for MVP? → A: ~~Username/password (email + password) with seeded demo users; SSO later.~~ **Superseded 2026-09-12 — see Session 2026-09-12 below.**
+
+### Session 2026-10-01 — Amendment (no Admin cancel on `For Delivery`)
+
+Raised while building the Admin cancel (BEN-135, [spec 008](../008-request-review-panel/spec.md) Story 5) and decided by the project owner.
+
+- Q: Is an "On Delivery" status missing between `For Delivery` and `Received`? → A: **No.** `For Delivery` already means the items are on their way. No frame draws another state and the contract publishes none.
+- Q: Can an Admin cancel a `For Delivery` request? → A: **No.** Cancel is offered only on `Pending Approval` (the owning Employee), `Approved` and `Ready for Pickup` (an Admin). A `For Delivery` request's items are out with the delivery, so releasing its reservation would show units as `Available` that are not in the store.
+- Q: What if a delivery falls through? → A: **The rule reads the current status only.** The Admin moves the request back to `Ready for Pickup` with Update Status, and can then cancel it.
+
+Constitution **8.0.0** (MAJOR: a transition is removed from IV), carried by [ADR-0012](../../docs/adr/0012-no-admin-cancel-on-for-delivery.md). US7, FR-010b and FR-010c are reworded in place. The published contract still lets an Admin cancel `for_delivery`; that is raised with the backend team in [contracts/README.md](contracts/README.md).
 
 ### Session 2026-09-29 — Amendment (the Admin or the Employee sets `Received`; the Employee signs on it)
 

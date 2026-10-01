@@ -20,7 +20,8 @@
  *  `Rejected` and `Cancelled` are both terminal and both need a reason, but
  *  they are different acts: a rejection is the Admin's decision on a pending
  *  request; a cancellation stops a request that was never refused — the owning
- *  Employee while it is pending, the Admin once it is approved or handed over.
+ *  Employee while it is pending, the Admin once it is approved or ready for
+ *  pickup (never while for delivery, constitution 8.0.0 IV).
  */
 
 export const REQUEST_STATUSES = [

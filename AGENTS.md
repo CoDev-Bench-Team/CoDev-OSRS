@@ -6,7 +6,7 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 7.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-09-29
+**Version**: 8.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-10-01
 
 ### I. Spec-Driven Development
 
@@ -36,11 +36,11 @@ A request quantity MUST NOT exceed Available at the requesting office at submit 
 
 ### IV. Explicit Request State Machine
 
-A request MUST move only through the documented statuses: `Pending Approval` → (`Approved` | `Rejected`); `Approved` → (`For Delivery` | `Ready for Pickup`) → `Received` → `Completed`; with `Cancelled` reachable from `Pending Approval`, `Approved`, `For Delivery` and `Ready for Pickup`. `For Delivery` and `Ready for Pickup` are peers, not a sequence. Illegal transitions MUST be rejected by the API.
+A request MUST move only through the documented statuses: `Pending Approval` → (`Approved` | `Rejected`); `Approved` → (`For Delivery` | `Ready for Pickup`) → `Received` → `Completed`; with `Cancelled` reachable from `Pending Approval`, `Approved` and `Ready for Pickup`. `For Delivery` and `Ready for Pickup` are peers, not a sequence. Illegal transitions MUST be rejected by the API.
 
 Rejection MUST require a reason, and is the Admin's decision on a request awaiting one.
 
-Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`. An Admin MAY cancel an `Approved`, `For Delivery` or `Ready for Pickup` request that cannot be fulfilled. **A cancellation MUST require a reason, from whoever cancels.** A `Received` or `Completed` request MUST NOT be cancelled.
+Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`. An Admin MAY cancel an `Approved` or `Ready for Pickup` request that cannot be fulfilled. **A cancellation MUST require a reason, from whoever cancels.** A `For Delivery`, `Received` or `Completed` request MUST NOT be cancelled: a `For Delivery` request's items have left the store with the delivery. If a delivery falls through and the items come back, the Admin first moves the request to `Ready for Pickup`, its peer, and may then cancel it.
 
 An Admin, or the owning Employee on their own request, sets `Received`, from `For Delivery` or `Ready for Pickup`, once the items are handed over. The owning Employee then confirms receipt by signing the **Accountability Form** on their own `Received` request. Signing records the acknowledgement and does not change the status; no other actor may sign, and a request is signed once. `Completed` MUST be set by an Admin, only from `Received`, and only once the Accountability Form has been signed.
 

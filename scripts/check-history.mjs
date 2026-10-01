@@ -49,7 +49,8 @@ const CANCELLED_TIMELINES = {
   'REQ-2026-1672': [['reached', 'Submitted'], ['cancelled', 'Cancelled']],
   'REQ-2026-1625': [['reached', 'Submitted'], ['cancelled', 'Cancelled']],
   'REQ-2026-1677': [['reached', 'Submitted'], ['reached', 'Approved'], ['cancelled', 'Cancelled']],
-  'REQ-2026-1650': [['reached', 'Submitted'], ['reached', 'Approved'], ['reached', 'For Delivery'], ['cancelled', 'Cancelled']],
+  // A failed delivery set back to Ready for Pickup, then cancelled (constitution 8.0.0 IV).
+  'REQ-2026-1650': [['reached', 'Submitted'], ['reached', 'Approved'], ['reached', 'Ready for Pickup'], ['cancelled', 'Cancelled']],
   'REQ-2026-1644': [['reached', 'Submitted'], ['reached', 'Approved'], ['reached', 'Ready for Pickup'], ['cancelled', 'Cancelled']],
 };
 

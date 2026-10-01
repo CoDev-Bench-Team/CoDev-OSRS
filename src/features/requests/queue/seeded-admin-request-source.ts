@@ -270,9 +270,12 @@ function seed(): ReviewRequest[] {
       items: ['UPS'],
       lines: [line('UPS - APC Back-UPS 650', 1, 2)],
       submittedAt: '2026-08-20T02:00:00Z',
-      // Cancelled by an Admin after it was handed over for delivery.
+      // The delivery failed and came back, so an Admin set it Ready for Pickup
+      // and then cancelled it: For Delivery cannot be cancelled (constitution
+      // 8.0.0 IV).
       status: 'Cancelled',
-      handover: 'For Delivery',
+      handover: 'Ready for Pickup',
+      pickupLocation: { kind: 'office', office: 'Makati' },
       approvedAt: '2026-08-20T05:00:00Z',
       handedOverAt: '2026-08-21T02:00:00Z',
       cancellation: { reason: 'Courier could not deliver; unit returned to stock', at: '2026-08-22T07:00:00Z' },
@@ -359,10 +362,10 @@ function seed(): ReviewRequest[] {
 }
 
 const HANDOVER_FROM = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup']);
-// The Admin cancels a request that cannot be fulfilled (constitution 7.0.0 IV).
-// Pending is the Employee's to cancel, and `Received` MUST NOT be cancelled, so
-// this set must not follow HANDOVER_FROM if that ever widens.
-const ADMIN_CANCEL_FROM = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup']);
+// The Admin cancels a request that cannot be fulfilled (constitution 8.0.0 IV).
+// Pending is the Employee's to cancel, and `For Delivery` and `Received` MUST
+// NOT be cancelled, so this set must not follow HANDOVER_FROM.
+const ADMIN_CANCEL_FROM = new Set<RequestStatus>(['Approved', 'Ready for Pickup']);
 const RECEIVED_FROM = new Set<RequestStatus>(['For Delivery', 'Ready for Pickup']);
 
 /** A fresh, independent store. The app uses the module-level instance below.

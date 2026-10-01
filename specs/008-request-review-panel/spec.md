@@ -3,7 +3,7 @@
 **Feature Branch**: `emmanuelr/ben-47-p2spa-request-review-panel-admin-transitions`  
 **Created**: 2026-09-26  
 **Status**: Draft  
-**Sources**: BEN-47, BEN-76 (G0), BEN-77/78/79, BEN-135 (Admin cancel), constitution 3.0.1 (7.0.0 for Story 5), `specs/001-office-supplies-mvp/spec.md` (US3–US5, FR-008–FR-014), `specs/004-approver-pending-queue/spec.md` (FR-010 seam), `specs/007-employee-request-panel/spec.md` (timeline, reason read-back), [ADR-0005](../../docs/adr/0005-two-role-model.md), [ADR-0006](../../docs/adr/0006-assets-and-inventory.md), [ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md), [drift-2026-09-22 §2–§3](../../docs/design-system/drift-2026-09-22.md), [drift-2026-09-24 §2, §5, §6](../../docs/design-system/drift-2026-09-24.md), [drift-2026-09-26 §2, §4](../../docs/design-system/drift-2026-09-26.md), [drift-2026-09-29](../../docs/design-system/drift-2026-09-29.md), Figma *Mockups* frames `02.2 - Requests Queue - Review`, `02.2.1 - … - Review - Approve`, `02.2.1 - … - Review - Update Status` (×2), `02.2.2- … - Review - Reject`, `02.2.2.1 - … - Review - Reject`, component `Status Timeline`
+**Sources**: BEN-47, BEN-76 (G0), BEN-77/78/79, BEN-135 (Admin cancel), constitution 3.0.1 (8.0.0 for Story 5), `specs/001-office-supplies-mvp/spec.md` (US3–US5, FR-008–FR-014), `specs/004-approver-pending-queue/spec.md` (FR-010 seam), `specs/007-employee-request-panel/spec.md` (timeline, reason read-back), [ADR-0005](../../docs/adr/0005-two-role-model.md), [ADR-0006](../../docs/adr/0006-assets-and-inventory.md), [ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md), [drift-2026-09-22 §2–§3](../../docs/design-system/drift-2026-09-22.md), [drift-2026-09-24 §2, §5, §6](../../docs/design-system/drift-2026-09-24.md), [drift-2026-09-26 §2, §4](../../docs/design-system/drift-2026-09-26.md), [drift-2026-09-29](../../docs/design-system/drift-2026-09-29.md), Figma *Mockups* frames `02.2 - Requests Queue - Review`, `02.2.1 - … - Review - Approve`, `02.2.1 - … - Review - Update Status` (×2), `02.2.2- … - Review - Reject`, `02.2.2.1 - … - Review - Reject`, component `Status Timeline`
 
 > **Amended 2026-09-26 after merging `dev`.** The `Received` amendment this
 > spec was gated on has landed: constitution **5.0.0** and ADR-0009 (BEN-43).
@@ -23,6 +23,12 @@
 > `Ready for Pickup` request that cannot be fulfilled, with a required reason
 > (spec 001 FR-010b, constitution 7.0.0 IV). No frame draws the control; its
 > placement is an undrawn addition. See Session 2026-09-30 in Clarifications.
+
+> **Amended 2026-10-01 (constitution 8.0.0, [ADR-0012](../../docs/adr/0012-no-admin-cancel-on-for-delivery.md)).**
+> An Admin no longer cancels a `For Delivery` request: its items are out with
+> the delivery. Cancel Request is offered on `Approved` and `Ready for Pickup`
+> only. A failed delivery goes back to `Ready for Pickup` first. See Session
+> 2026-10-01 in Clarifications.
 
 ## Overview
 
@@ -74,7 +80,7 @@ An Admin sets an approved request to `For Delivery` or `Ready for Pickup`, and c
 3. **Given** `Ready for Pickup` is selected, **When** the form renders, **Then** a required **Pickup location \*** select appears. It lists the offices the data source exposes, preselects the request's office, and ends with a last option, **Other…**, which reveals a required free-text field.
 4. **Given** `Ready for Pickup` with no location, or **Other…** with an empty or whitespace-only text, **When** the Admin confirms, **Then** the form shows its invalid state and nothing is sent.
 5. **Given** a valid choice, **When** the source accepts it, **Then** the pill and timeline show the new status, the handover node names it, and a `Ready for Pickup` request reads back its pickup location.
-6. **Given** a `For Delivery` or `Ready for Pickup` request, **When** the panel renders, **Then** it offers **Update Status** and **Cancel Request** (Story 5) only. The Status select offers **Received** and the other handover state, never the current one (FR-008, FR-008a).
+6. **Given** a `For Delivery` or `Ready for Pickup` request, **When** the panel renders, **Then** it offers **Update Status**, and on `Ready for Pickup` also **Cancel Request** (Story 5), and nothing else. The Status select offers **Received** and the other handover state, never the current one (FR-008, FR-008a).
 7. **Given** a handover state, **When** the panel renders, **Then** it does **not** offer **Complete**. Complete waits for `Received` (Story 4).
 8. **Given** a `For Delivery` or `Ready for Pickup` request, **When** the Admin selects **Received** and confirms, **Then** no pickup location is asked for, the pill shows `Received`, the timeline keeps the handover node it had and reaches **Received**, and the panel offers no action until Complete is built.
 9. **Given** an `Approved` request, **When** the Status select opens, **Then** it does not offer **Received**.
@@ -95,14 +101,14 @@ After the Employee has acknowledged receipt (`Received`), an Admin completes the
 
 ### Story 5 — Cancel a request that cannot be fulfilled (Priority: P2)
 
-An Admin stops an approved or handed-over request that cannot be fulfilled, for example because the item is no longer available. They give a reason, and the employee is told why.
+An Admin stops an approved request, or one waiting for pickup, that cannot be fulfilled, for example because the item is no longer available. They give a reason, and the employee is told why.
 
 **Why this priority**: Spec 001 FR-010b and constitution IV require it. Without it, an unfulfillable request cannot leave the queue and its units stay reserved. It is off the MVP demo path, so it ranks below Stories 1–4. It can be demonstrated on its own once Story 1 is built.
 
 **Acceptance Criteria**:
 
-1. **Given** an `Approved`, `For Delivery` or `Ready for Pickup` request, **When** the panel renders, **Then** it offers **Cancel Request**, a secondary action beside **Update Status**.
-2. **Given** a `Pending Approval`, `Received`, `Rejected`, `Cancelled` or `Completed` request, **When** the panel renders, **Then** **Cancel Request** is not rendered.
+1. **Given** an `Approved` or `Ready for Pickup` request, **When** the panel renders, **Then** it offers **Cancel Request**, a secondary action beside **Update Status**.
+2. **Given** a `Pending Approval`, `For Delivery`, `Received`, `Rejected`, `Cancelled` or `Completed` request, **When** the panel renders, **Then** **Cancel Request** is not rendered.
 3. **Given** the Admin activates **Cancel Request**, **When** the reason block opens in the panel in place of the actions, **Then** it asks for a required **Reason for cancellation \*** (placeholder `e.g item discontinued, no stock at this office...`) with **Cancel** and **Confirm Cancellation**, as the Employee's `04.2` does. Confirm Cancellation sends at once; there is no further dialog (FR-023).
 4. **Given** the reason is empty or only whitespace, **When** the Admin confirms, **Then** the block shows its invalid state with a message, nothing is sent, and the status is unchanged.
 5. **Given** a non-empty reason, **When** the source accepts it, **Then** the pill shows `Cancelled`, the timeline keeps the nodes the request had reached and ends at **Cancelled**, the reason is read back under **Reason for cancellation**, the panel offers only **Close**, and the request leaves the queue.
@@ -113,6 +119,8 @@ An Admin stops an approved or handed-over request that cannot be fulfilled, for 
 
 - **Stale status.** The request changed while the panel was open (another Admin acted, or the Employee cancelled). Any action is refused. The panel says the request changed and shows its current status and actions.
 - **Received while cancelling.** The Employee marks the request received (constitution 7.0.0 IV) while the Admin is typing a cancellation reason, so the request is now `Received`. The cancel is refused as a stale status, the panel shows `Received`, and **Cancel Request** is gone (FR-020).
+- **Handed over for delivery while cancelling.** Another Admin moves an `Approved` request to `For Delivery` while this Admin is typing a cancellation reason. The cancel is refused as a stale status, the panel shows `For Delivery`, and **Cancel Request** is gone (FR-020).
+- **Delivery falls through.** A `For Delivery` request cannot be cancelled. The Admin moves it to `Ready for Pickup` with Update Status, then cancels it (FR-020).
 - **Cancelled after handover.** A `Ready for Pickup` request is cancelled. Its timeline still names **Ready for Pickup** before **Cancelled** (FR-022). The pickup location is not read back, because nothing will be collected.
 - **Source failure.** A transition fails for a reason other than a stale status. The panel keeps the request's previous status, shows a failure message, and keeps the form's input so the Admin can retry.
 - **Double submit.** While a transition is in flight, its confirm control is inert, so one click is one request.
@@ -135,7 +143,8 @@ An Admin stops an approved or handed-over request that cannot be fulfilled, for 
   |--------|---------|
   | `Pending Approval` | Reject Request · Approve Request |
   | `Approved` | Cancel Request · Update Status |
-  | `For Delivery` / `Ready for Pickup` | Cancel Request · Update Status |
+  | `For Delivery` | Update Status |
+  | `Ready for Pickup` | Cancel Request · Update Status |
   | `Received` | Complete (FR-012; not built yet, so nothing today) |
   | `Rejected` / `Cancelled` / `Completed` | Close |
 
@@ -156,7 +165,7 @@ An Admin stops an approved or handed-over request that cannot be fulfilled, for 
 - **FR-017**: The SPA MUST NOT invent REST routes, payloads, response fields or error codes. Until the contract publishes, data MAY come from a typed seeded source behind an interface, as spec 004 FR-018 allows.
 - **FR-018**: The panel and its forms MUST compose shared UI from `src/shared/ui`, and MUST reuse the timeline spec 007 established.
 - **FR-019**: Every control MUST be keyboard-operable with visible focus. The panel MUST stay usable from 360px to 1440px without page-level horizontal overflow.
-- **FR-020**: Cancel MUST move `Approved`, `For Delivery` or `Ready for Pickup` → `Cancelled`, and MUST be offered on those three statuses only (constitution 7.0.0 IV, spec 001 FR-010b). A `Pending Approval` request is the Employee's to cancel or the Admin's to reject. A `Received` or `Completed` request MUST NOT be cancelled.
+- **FR-020**: Cancel MUST move `Approved` or `Ready for Pickup` → `Cancelled`, and MUST be offered on those two statuses only (constitution 8.0.0 IV, spec 001 FR-010b). A `Pending Approval` request is the Employee's to cancel or the Admin's to reject. A `For Delivery`, `Received` or `Completed` request MUST NOT be cancelled. *(Narrowed 2026-10-01: `For Delivery` removed.)*
 - **FR-021**: Cancel MUST require a reason that is non-empty after trimming, and MUST send it trimmed. An empty reason MUST NOT reach the source. When the source refuses the reason itself, the reason field MUST return to its invalid state with its required message. Showing the API's own `detail` there is the integration ticket's to add (contracts README, Cancel). A successful cancel MUST read the reason back under **Reason for cancellation**.
 - **FR-022**: A `Cancelled` request's timeline MUST show the nodes the request reached before it was cancelled, in order, then **Cancelled**. The handover node MUST name the state it took. This is [spec 013](../013-admin-history/spec.md) FR-009a's rule (BEN-144), which this spec follows: each reached node is dated, and a node is drawn only when the source gives its facts, so the timeline can understate how far a request got but never overstates it. An Employee's cancel always comes from `Pending Approval`, so it still reads Submitted → Cancelled, as `04.2 - Cancelled` draws it. The mapping is shared with the Employee's panel (spec 007), so an Employee opening an Admin-cancelled request sees the same shape. `Rejected` is unchanged: it is only ever reached from `Pending Approval`.
 - **FR-023**: Confirm Cancellation with a valid reason MUST send the cancel at once, with no further dialog. The required reason is the deliberate second step, as it is for reject and for the Employee's cancel.
@@ -190,7 +199,7 @@ An Admin stops an approved or handed-over request that cannot be fulfilled, for 
 - **SC-005**: No handover state offers Complete. Once Complete is built, only `Received` offers it, and only after confirmation.
 - **SC-006**: An Employee cannot reach any control in this feature through navigation or a direct address.
 - **SC-007**: Review of the feature finds no invented route, payload, field, error code, stock calculation or office name.
-- **SC-008**: **Cancel Request** appears on exactly the `Approved`, `For Delivery` and `Ready for Pickup` requests in the seeded data set, and on no other.
+- **SC-008**: **Cancel Request** appears on exactly the `Approved` and `Ready for Pickup` requests in the seeded data set, and on no other.
 - **SC-009**: An empty or whitespace-only cancellation reason never changes a request's status. A valid one takes the request out of the queue, and its panel reads the reason back.
 
 ## Clarifications
@@ -237,6 +246,14 @@ Inferred, not asked:
 - The note goes with the decision, approve or reject, because it sits above both buttons. It is shown only where a decision is offered, which is `Pending Approval`.
 - It is built against the seeded source while the contract lacks the field, as the rest of this panel is (FR-017), and the gap is raised as contracts conflict 6 rather than papered over.
 
+### Session 2026-10-01 — No Admin cancel on `For Delivery` (BEN-135)
+
+Raised by the project owner during review of PR #50.
+
+- Q: Is an "On Delivery" status missing, where Cancel Request should not be shown? → A: **No new status.** `For Delivery` already means the items are on their way; no frame or contract has another state.
+- Q: Should an Admin cancel a `For Delivery` request? → A: **No.** Cancel is offered only on `Pending Approval` (the Employee's own), `Approved` and `Ready for Pickup`. Constitution 8.0.0 IV, [ADR-0012](../../docs/adr/0012-no-admin-cancel-on-for-delivery.md). FR-005, FR-020, SC-008, Story 1 criterion 6 and Story 5 criteria 1–2 are reworded in place.
+- Q: Can a request that was `For Delivery` be cancelled after it goes back to `Ready for Pickup`? → A: **Yes.** The rule reads the current status only, so a delivery that falls through is moved to `Ready for Pickup` first (edge case "Delivery falls through").
+
 ### Session 2026-09-30 — Admin cancel (BEN-135)
 
 Raised by BEN-135, which the project owner had scoped out of BEN-47 on 2026-09-26, and decided by the project owner.
@@ -250,7 +267,7 @@ Raised by BEN-135, which the project owner had scoped out of BEN-47 on 2026-09-2
 Inferred, not asked:
 
 - Whether `Received` can be cancelled was left open on the ticket, pending the constitution 4.0.0 amendment. Constitution 6.0.0 IV settles it, and 7.0.0 IV keeps it: **no**.
-- The backend item on the ticket is met. The published contract has a cancel operation with a required reason. It lets an Admin cancel only from `Approved`, `Ready for Pickup` or `For Delivery`, and refuses every other status, `Received` included, as a conflict. The plan types the source against it and records it in `contracts/README.md`. No invented shape is needed.
+- The backend item on the ticket is met. The published contract has a cancel operation with a required reason. It lets an Admin cancel only from `Approved`, `Ready for Pickup` or `For Delivery`, and refuses every other status, `Received` included, as a conflict. The plan types the source against it and records it in `contracts/README.md`. No invented shape is needed. *(2026-10-01: constitution 8.0.0 removes `For Delivery`; the API still allows it, which is raised with the backend team.)*
 - The Admin's **Other Notes** (FR-007a) are not offered with a cancel. The field is drawn only where a decision is offered.
 - The reason block replaces the action row, as reject's does in `02.2.2`. So at most one of Update Status and the reason block is open at a time (Story 5 criterion 7).
 
@@ -258,7 +275,7 @@ Inferred, not asked:
 
 - Completeness: PASS. All four P1 stories and P2 Story 5 have acceptance criteria. Story 4 is explicitly gated.
 - Clarity: PASS
-- Consistency: PASS against constitution 7.0.0. FR-022 follows spec 013 FR-009a, which amended spec 007's cancelled timeline without contradicting `04.2`.
+- Consistency: PASS against constitution 8.0.0. FR-022 follows spec 013 FR-009a, which amended spec 007's cancelled timeline without contradicting `04.2`.
 - Measurability: PASS
 - Coverage: PASS. Admin cancel is in scope as of 2026-09-30.
 - Edge cases: PASS. ~~CHK001 (2026-09-30): a reached node with no time from the source still shows as reached, with no time printed (FR-022).~~ Superseded at the rebase on `dev` (2026-10-01): spec 013 FR-009a draws a node only when its facts are present (FR-022).
