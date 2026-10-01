@@ -359,9 +359,10 @@ function seed(): ReviewRequest[] {
 }
 
 const HANDOVER_FROM = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup']);
-// The Admin cancels a request that cannot be fulfilled, from the same three
-// statuses (constitution 7.0.0 IV). Pending is the Employee's to cancel.
-const ADMIN_CANCEL_FROM = HANDOVER_FROM;
+// The Admin cancels a request that cannot be fulfilled (constitution 7.0.0 IV).
+// Pending is the Employee's to cancel, and `Received` MUST NOT be cancelled, so
+// this set must not follow HANDOVER_FROM if that ever widens.
+const ADMIN_CANCEL_FROM = new Set<RequestStatus>(['Approved', 'For Delivery', 'Ready for Pickup']);
 const RECEIVED_FROM = new Set<RequestStatus>(['For Delivery', 'Ready for Pickup']);
 
 /** A fresh, independent store. The app uses the module-level instance below.

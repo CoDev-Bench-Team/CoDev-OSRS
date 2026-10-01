@@ -130,11 +130,11 @@ An Admin cancels an `Approved`, `For Delivery` or `Ready for Pickup` request tha
 - Phase 1 → Phase 2 → Phase 3 → Phase 4.
 - Phase 4 needs a `Received` request to act on, which the Admin's **Received** (T039) or the Accountability Form (spec 001 T018b) produces.
 - Phase 5 (G4) needs only Phases 1–3, all merged in PR #46. It is independent of Phase 4: the two touch different `reviewActions` rows, and whichever lands second rebases (R11).
-- Within Phase 5: T047 → T050, T051, T054. T048 → T049, T055. T051 → T052 → T053. T049–T055 → T056, T057. T061 last. T058–T060 at any point.
+- Within Phase 5: T047 → T050, T051, T054. T051 → T052 → T053. T050–T055 → T056, T057. T061 last. T058–T060 at any point. (T048 and T049 were withdrawn at the rebase on `dev`.)
 
 ## Parallel opportunities
 
-T002, T003, T004 together. T010 and T011 alongside T006–T009. In Phase 5: T047 with T048; then T050, T051 and T054 together, alongside T049 and T055; T058–T060 at any time.
+T002, T003, T004 together. T010 and T011 alongside T006–T009. In Phase 5: T047 with T055; then T050, T051 and T054 together; T058–T060 at any time.
 
 ## MVP slice
 
