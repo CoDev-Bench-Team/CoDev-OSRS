@@ -86,7 +86,7 @@ Do not add an API implementation directory until an ADR names the stack. Configu
 | Auth | Login, logout, current user | Role-specific business rules in the UI |
 | Users | Identity, role, home office | Request workflow |
 | Assets | Asset record: name, category, model, description, image, category-dependent specs, low-stock threshold | Units and quantities |
-| Inventory | Units (tag, serial, office, status, assignee, purchase and device details); Total / Available / Reserved per (asset, office) derived from unit statuses | Request status; the low-stock threshold (on the Asset) |
+| Inventory | Units (purchase request number (PR), serial, office, status, assignee, purchase and device details); Total / Available / Reserved per (asset, office) derived from unit statuses | Request status; the low-stock threshold (on the Asset) |
 | Requests | Request aggregate, line items, legal transitions, reasons, pickup location | Email transport internals |
 | Notifications | Templates, recipients, send, send log | Whether a transition is allowed |
 
@@ -142,6 +142,8 @@ Stock is a register of **units** ([ADR-0008](docs/adr/0008-per-unit-inventory-re
 | Unit made `Inactive`, or an `Available` unit removed | — | `Available` → `Inactive` / removed | −n | −n | — |
 | Unit reactivated | — | `Inactive` → `Available` | +n | +n | — |
 | Existing assignment recorded (Admin, outside a request) | — | `Available` → `Assigned` | −n | −n | — |
+| Assignment cleared (Admin, outside a request) | — | `Assigned` → `Available` | +n | +n | — |
+| Assignment cleared to inactive, or recorded on an inactive unit (Admin) | — | `Assigned` → `Inactive` / `Inactive` → `Assigned` | — | — | — |
 | Request submitted | Pending Approval | *qty* units `Available` → `Reserved` | — | −qty | +qty |
 | Request rejected | Rejected | those units → `Available` | — | +qty | −qty |
 | Request cancelled | Cancelled | those units → `Available` | — | +qty | −qty |
@@ -153,7 +155,7 @@ Stock is a register of **units** ([ADR-0008](docs/adr/0008-per-unit-inventory-re
 
 `Received` is the only request transition that reduces `Total`; those units are what the Assets screen counts as *Assigned units*. Concurrent submits for the last units MUST serialize so `Available` never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract's choice.
 
-A unit that is `Assigned` or `Reserved` cannot be removed. Only request transitions move a unit into or out of `Reserved`; a manual edit may set `Available` ↔ `Inactive` or record an existing assignment.
+A unit that is `Assigned` or `Reserved` cannot be removed. Only request transitions move a unit into or out of `Reserved`; a manual edit may set `Available` ↔ `Inactive`, record an existing assignment (on an `Available` or `Inactive` unit), or clear one (to `Available` or `Inactive`).
 
 Each asset carries one **low-stock threshold** (per asset, compared against Available in the scope on screen), which drives the `In Stock` / `Low Stock` / `Out of Stock` pill and the chip counts on Assets and Inventory.
 

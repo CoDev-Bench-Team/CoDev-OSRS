@@ -190,7 +190,10 @@ step, retired by ADR-0007, returns as the Accountability Form
    counts against Available in the scope on screen.
 10. Only request transitions move a unit into or out of `Reserved`. An Admin
     editing a unit may set `Available` ↔ `Inactive`, or record an existing
-    assignment (`Assigned` + user) for equipment handed out outside a request.
+    assignment (`Assigned` + user) for equipment handed out outside a request,
+    on an `Available` unit or, with no count change, an `Inactive` one. An
+    Admin may also clear an assignment: `Assigned` → `Available` returns the
+    unit to the store; `Assigned` → `Inactive` changes no count.
     A unit that is `Assigned` or `Reserved` cannot be removed. A unit's BitLocker
     identifier and recovery key/PIN are Admin-only secrets.
 

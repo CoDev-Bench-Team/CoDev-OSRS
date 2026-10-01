@@ -7,6 +7,8 @@ Accepted — 2026-09-26. Decided by the project owner (BEN-116).
 
 **Amended 2026-09-26 by [ADR-0009](0009-received-and-accountability-form.md)**: the reserved units move to `Assigned` on `Received` (the Employee's Accountability Form), not on completion. In the tables below, read the "Request completed" row as `Received`; `Completed` now changes no unit's status.
 
+**Amended 2026-10-01 with constitution 9.0.0** (project owner, BEN-150; spec 015 D4, D5, D14): decision 1's tag is the unit's **purchase request number (PR)**, not a unit tag. Decision 3 adds three Admin moves outside a request: clearing an assignment to `Available` or `Inactive`, and recording an assignment on an `Inactive` unit. `Reserved` stays the pipeline's alone. Source: the drawn *"Remove assignment first before removing this unit"* ([drift-2026-10-01 §5](../design-system/drift-2026-10-01.md)).
+
 ## Context
 
 ADR-0006 modelled stock as three stored numbers per (asset, office), set with
@@ -38,8 +40,8 @@ to follow the file.
 ## Decision
 
 **1. Inventory is a register of units.** A unit is one physical item of one
-asset, held at one office. It carries a tag (`PR`, e.g. `CODEV-LAPTOP-1232`), a
-serial number, an office, a status, an optional assignee and assigned-on date,
+asset, held at one office. It carries a purchase request number (`PR`; the
+drawn `CODEV-LAPTOP-1232` is sample data), a serial number, an office, a status, an optional assignee and assigned-on date,
 purchase details (price, supplier, purchased date), device details (BitLocker
 identifier, recovery key/PIN) and notes (description, attachment). The status
 set is the **contract's**: `Available`, `Reserved`, `Assigned`, `Inactive`.
@@ -63,8 +65,9 @@ set is the **contract's**: `Available`, `Reserved`, `Assigned`, `Inactive`.
 | Unit made `Inactive`, or an `Available` unit removed | `Available` → `Inactive` / removed | −n | — | −n |
 | Unit reactivated | `Inactive` → `Available` | +n | — | +n |
 | Existing assignment recorded by an Admin (outside a request) | `Available` → `Assigned` | −n | — | −n |
+| Assignment cleared by an Admin (outside a request) | `Assigned` → `Available` | +n | — | +n |
 
-Removing an `Inactive` unit, or adding a unit directly as `Assigned`, changes no count.
+Removing an `Inactive` unit, adding a unit directly as `Assigned`, clearing an assignment to `Inactive` (`Assigned` → `Inactive`), or recording one on an `Inactive` unit (`Inactive` → `Assigned`), changes no count.
 | Request submitted | *qty* units `Available` → `Reserved` | −qty | +qty | — |
 | Request rejected / cancelled | those units `Reserved` → `Available` | +qty | −qty | — |
 | Approved, For Delivery, Ready for Pickup | none | — | — | — |
@@ -73,7 +76,8 @@ Removing an `Inactive` unit, or adding a unit directly as `Assigned`, changes no
 The API chooses which units are reserved, and does so in the same transaction as
 the status change. **Only the request transitions move a unit into or out of
 `Reserved`.** An Admin editing a unit may move it between `Available` and
-`Inactive`, or record an existing assignment. `Reserved` is never offered as a
+`Inactive`, record an existing assignment (on an `Available` or `Inactive` unit),
+or clear one (to `Available` or `Inactive`). `Reserved` is never offered as a
 manual status, so Reserved always equals the units held by live requests. This ADR states that as a **requirement on the API**. It does
 not describe current API behaviour.
 

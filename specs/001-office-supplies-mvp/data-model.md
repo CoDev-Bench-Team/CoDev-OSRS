@@ -65,7 +65,7 @@ One physical item of an asset, held at one office. Added 2026-09-26 (ADR-0008).
 |-------|------|--------|
 | id | id | |
 | assetId | id | → Asset |
-| tag | string | `PR` on the table, e.g. `CODEV-LAPTOP-1232` |
+| pr | string? | Purchase Request number, `PR` on the table; the drawn `CODEV-LAPTOP-1232` is sample data (constitution 9.0.0). Not in the contract yet |
 | serialNumber | string? | |
 | office | enum | Office |
 | status | enum | The contract's set: `Available` \| `Reserved` \| `Assigned` \| `Inactive` |
@@ -77,7 +77,7 @@ One physical item of an asset, held at one office. Added 2026-09-26 (ADR-0008).
 | description / attachment | string? / file? | Notes; `.jpeg` / `.png`, max 25 MB |
 | createdAt / updatedAt | datetime | |
 
-**Rules**: Only an Admin creates, edits or removes units. A unit that is `Assigned` or `Reserved` cannot be removed. Only request transitions move a unit into or out of `Reserved`. A manual edit may set `Available` ↔ `Inactive` or record an existing assignment. Units can be added one at a time or in bulk.
+**Rules**: Only an Admin creates, edits or removes units. A unit that is `Assigned` or `Reserved` cannot be removed. Only request transitions move a unit into or out of `Reserved`. A manual edit may set `Available` ↔ `Inactive`, record an existing assignment on an `Available` or `Inactive` unit, or clear one (`Assigned` → `Available` or `Inactive`). Units can be added one at a time or in bulk.
 
 > The design's `Inventory Status` also draws `In Storage`, which the contract lacks. The SPA shows the contract's set and raises the gap (constitution VII).
 
@@ -198,7 +198,7 @@ Per line, at the requesting office. The API chooses which units.
 | Accountability Form signed | none | — | — | — |
 | → completed | none | — | — | — |
 
-Outside a request (Admin unit edits): `Available` → `Inactive` or removed: total −n, available −n; `Inactive` → `Available`: +n, +n; existing assignment recorded (`Available` → `Assigned`): −n, −n. Removing an `Inactive` unit, or adding one directly as `Assigned`, changes no count.
+Outside a request (Admin unit edits): `Available` → `Inactive` or removed: total −n, available −n; `Inactive` → `Available`: +n, +n; existing assignment recorded (`Available` → `Assigned`): −n, −n; assignment cleared (`Assigned` → `Available`): +n, +n. Removing an `Inactive` unit, adding one directly as `Assigned`, clearing an assignment to `Inactive` (`Assigned` → `Inactive`), or recording one on an `Inactive` unit (`Inactive` → `Assigned`), changes no count.
 
 `available` at the requesting office is authoritative for new submits.
 
