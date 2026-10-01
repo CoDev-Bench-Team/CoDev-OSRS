@@ -113,7 +113,7 @@ An Admin cancels an `Approved`, `For Delivery` or `Ready for Pickup` request tha
   - on REQ-2026-1715: Submitted → Approved → Ready for Pickup → Cancelled, and no Pickup location card
   - the Update Status form open → no Cancel Request
   - `?review=changes` → stale copy, `Received`, no Cancel Request; `?review=failing` → status and reason kept; `?review=reload-fails` → stale notice
-  - `/requests/REQ-2026-1677` as Admin → Submitted → Approved → Cancelled
+  - `/requests/REQ-2026-1677` as Admin → Submitted → Approved → Cancelled, read-only in History with no Cancel Request (spec 013 FR-016, since the rebase on `dev`)
   - at 360px the two-button row stays on one line with no overflow (R10)
 
   — `scripts/check-review-panel.mjs`
@@ -121,7 +121,7 @@ An Admin cancels an `Approved`, `For Delivery` or `Ready for Pickup` request tha
 - [x] T058 [P] [US5] [BEN-135] Additions §3h: **Cancel Request** placement and its placeholder, each flagged to the designer, and **Cancelled after a handover** (no pickup card), pointing at §3j for the timeline (D18; revised at the rebase on `dev`, 2026-10-01) — `docs/design-system/additions.md`
 - [x] T059 [P] [BEN-135] Contracts: record the published `POST /requests/{id}/cancel` (`CancelRequestDto { reason }`, `200`/`400 #/reason`/`404`/`409`), the SPA mapping (`409` → `status-changed`, `400 #/reason` → `reason-required`, `404` → `unavailable`; `cancelledBy` not read), the unpublished cancelled-request body fields (handover, times; with History H4), and, under conflict 5, `/sign` described as *completing* a received request (D18) — `specs/001-office-supplies-mvp/contracts/README.md`
 - [ ] T060 [P] [BEN-135] Point spec 001 T021 at spec 008 Phase 5, and tick it when G4 merges — `specs/001-office-supplies-mvp/tasks.md` *(pointer written 2026-09-30; the tick waits for the merge)*
-- [ ] T061 [BEN-135] `npm run lint`, `npm run build`, `npm run verify` green (every gate, including `check-request-detail` and `check-a11y-responsive`); manual look at the cancel form and the cancelled panel at 1440px and 360px; PR to `dev` — `scripts/verify.mjs` *(2026-09-30: all 15 gates green; manual look done at 1440px and 360px. What remains: the PR.)*
+- [x] T061 [BEN-135] `npm run lint`, `npm run build`, `npm run verify` green (every gate, including `check-request-detail` and `check-a11y-responsive`); manual look at the cancel form and the cancelled panel at 1440px and 360px; PR to `dev` — `scripts/verify.mjs` *(2026-09-30: all 15 gates green; manual look done at 1440px and 360px. 2026-10-01: rebased on `dev`, gates green again; [PR #50](https://github.com/CoDev-Bench-Team/CoDev-OSRS/pull/50) open against `dev`.)*
 
 ## Dependencies
 
