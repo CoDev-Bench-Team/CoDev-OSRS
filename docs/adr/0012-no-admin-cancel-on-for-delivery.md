@@ -57,6 +57,10 @@ Until the API changes, the SPA does not offer the action.
 
 - **Cancelling a failed delivery takes two steps** (Update Status to `Ready for
   Pickup`, then Cancel), and two `Status changed` emails.
+- **The delivery attempt drops off the timeline.** A request holds one handover
+  status and time, so a failed delivery that was moved to `Ready for Pickup`
+  and cancelled reads Submitted → Approved → Ready for Pickup → Cancelled. Only
+  the `Status changed` emails record that it was ever `For Delivery`.
 - **The SPA is narrower than the published API** until the backend refuses
   `for_delivery` too. A client other than this SPA could still cancel one.
 - History may hold requests cancelled from `For Delivery` before this change.

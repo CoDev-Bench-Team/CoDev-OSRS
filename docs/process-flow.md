@@ -304,7 +304,7 @@ flowchart TD
 
   reserve -.->|Employee cancels + reason| canc[Release reservation / Cancelled]
   approve -.->|Admin cannot fulfil + reason| canc
-  fd -.->|Admin cannot fulfil + reason| canc
+  fd -.->|Delivery fails: Update Status| fp
   fp -.->|Admin cannot fulfil + reason| canc
   canc --> mailX[Email: Status changed]
   mailX --> endNode
