@@ -691,11 +691,16 @@ try {
   await esc();
   await closed();
 
+  // A terminal request's deep link opens History's read-only panel (spec 013 FR-016).
   await go('/requests/REQ-2026-1677');
   await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.textContent.trim() === 'REQ-2026-1677', 8000, 'the deep-linked cancelled request');
   p = await cdp.evaluate(panel);
   check(p.timeline.join(' → ') === 'Submitted → Approved → Cancelled', 'the seeded Admin cancel reads Submitted → Approved → Cancelled', p.timeline.join(' → '));
-  check(JSON.stringify(p.buttons) === '["Close"]', 'a cancelled request offers Close only, and no Cancel Request', p.buttons.join(' / '));
+  check(
+    (await cdp.evaluate(() => location.pathname)) === '/history' && p.buttons.length === 0,
+    'a cancelled request opens read-only in History, with no Cancel Request',
+    p.buttons.join(' / '),
+  );
   await esc();
   await closed();
 
