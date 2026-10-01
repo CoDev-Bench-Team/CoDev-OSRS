@@ -866,8 +866,10 @@ try {
     // A failed delivery: back to Ready for Pickup, then cancellable.
     const swapped = await source.updateStatus('REQ-2026-1748', 'Ready for Pickup', { kind: 'office', office: 'Makati' });
     const afterSwap = await source.cancel('REQ-2026-1748', 'Courier could not deliver');
-    const after = (await source.load()).requests.find((r) => r.id === 'REQ-2026-1715');
-    return { setup, refused, blank, missing, legal, after, swapped, afterSwap };
+    const { requests } = await source.load();
+    const after = requests.find((r) => r.id === 'REQ-2026-1715');
+    const failed = requests.find((r) => r.id === 'REQ-2026-1748');
+    return { setup, refused, blank, missing, legal, after, swapped, afterSwap, failed };
   });
   check(guard.setup.ok, 'probe setup: REQ-2026-1703 reached Received', JSON.stringify(guard.setup));
   check(
@@ -888,9 +890,15 @@ try {
     JSON.stringify(guard.after),
   );
   check(
-    guard.swapped.ok && guard.afterSwap.ok,
-    'a failed delivery moved back to Ready for Pickup can then be cancelled',
-    JSON.stringify([guard.swapped, guard.afterSwap]),
+    guard.swapped.ok &&
+      guard.afterSwap.ok &&
+      guard.failed?.status === 'Cancelled' &&
+      guard.failed.handover === 'Ready for Pickup' &&
+      guard.failed.pickupLocation?.kind === 'office' &&
+      guard.failed.pickupLocation.office === 'Makati' &&
+      guard.failed.cancellation?.reason === 'Courier could not deliver',
+    'a failed delivery moved back to Ready for Pickup can then be cancelled, and reads as a pickup',
+    JSON.stringify([guard.swapped, guard.afterSwap, guard.failed]),
   );
 
   // R10: the two-button row at the narrowest supported width.
