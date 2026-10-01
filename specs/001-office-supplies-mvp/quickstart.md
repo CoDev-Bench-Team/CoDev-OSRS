@@ -41,6 +41,24 @@ disappears on its own once a source backed by the published contract replaces
 it. A third entry, **Refused account**, makes sign-in fail, so the refusal path
 can be demonstrated.
 
+Inventory (spec 015) assigns units to users from a seeded directory,
+`src/features/inventory/seeded-user-directory.ts`. These are non-production
+placeholders too, and only Maya and Ethan can sign in:
+
+| Name | Email | Department |
+|------|-------|------------|
+| Maya Santos | mayas@codev.com | Engineering |
+| Ethan Cruz | ethanc@codev.com | IT Operations |
+| Samantha Reyes | samanthar@codev.com | Design |
+| Paolo Garcia | paolog@codev.com | Engineering |
+| Lea Villanueva | leav@codev.com | Finance |
+| Marco Dizon | marcod@codev.com | Quality Assurance |
+| Nina Bautista | ninab@codev.com | People Operations |
+| Carlo Mendoza | carlom@codev.com | — |
+
+The seeded units' serial numbers, PRs, BitLocker Identifiers and Recovery
+Key/PINs are visibly fake (`DEMO-…`) and reset on reload.
+
 **There is no role switcher inside the application** (spec 003 D5). Changing role
 means signing out and signing back in, which is deliberate: it keeps one role
 per user absolute and makes the demo exercise the real sign-in path.

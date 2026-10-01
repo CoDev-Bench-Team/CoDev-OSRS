@@ -48,14 +48,19 @@ export type Availability = (typeof AVAILABILITIES)[number];
  *  8px chip. `02 - Catalog` and `02.1 - Catalog - View Specs` use it, and it
  *  replaced the `In Stock` label with `Available`.
  *
- *  The same component also carries per-unit states — `Assigned`,
- *  `In Storage`, `Reserved`, `Inactive` — for the unit register, which is out
- *  of scope for the MVP (constitution VIII). They are not modelled here.
+ *  The same component also carries the per-unit states, modelled below as
+ *  `UnitStatus`.
  *
  *  `StockStatus` above is a different vocabulary on a different pill, and the
  *  Assets screen's chips still use it ("In stock / Low stock / Out of stock"). */
 export const INVENTORY_STATUSES = ['Available', 'Low in Stock', 'Out of Stock'] as const;
 export type InventoryStatus = (typeof INVENTORY_STATUSES)[number];
+
+/** A unit's status in the register (constitution 9.0.0 III, ADR-0008):
+ *  Available and Reserved are in the store; Assigned and Inactive are not.
+ *  The contract's set; the design's `In Storage` is not shown (spec 015 D1). */
+export const UNIT_STATUSES = ['Available', 'Reserved', 'Assigned', 'Inactive'] as const;
+export type UnitStatus = (typeof UNIT_STATUSES)[number];
 
 /** Colour meaning: amber = waiting on a human · green = moving · red = stopped
  *  by a decision · purple = closed, done · slate = stopped without a decision ·

@@ -1,0 +1,16 @@
+/** Who a unit can be assigned to: every user, Employee or Admin, at any office
+ *  (spec 015 FR-008, plan P16).
+ *
+ *  A contract-backed directory reads the published `GET /users`, which
+ *  carries no department, so `department` stays unset there (contracts
+ *  conflict 11, G6). */
+export type DirectoryUser = {
+  id: string;
+  name: string;
+  email: string;
+  department?: string;
+};
+
+export interface UserDirectory {
+  list(): Promise<DirectoryUser[]>;
+}
