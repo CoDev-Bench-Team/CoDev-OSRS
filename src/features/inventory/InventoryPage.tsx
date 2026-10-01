@@ -143,7 +143,7 @@ export function InventoryPage() {
                     {unit.location}
                   </span>
                 </span>
-                <span className="flex min-w-0 flex-col gap-1 pr-16" style={tableColumnStyle('190px')}>
+                <span className="flex min-w-0 flex-col gap-2 pr-16" style={tableColumnStyle('190px')}>
                   {unit.assignee ? (
                     <>
                       <span className="truncate type-ui text-ink-strong">{unit.assignee.name}</span>
