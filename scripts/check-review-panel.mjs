@@ -63,6 +63,9 @@ const panel = () => {
     text: d.textContent,
     stock: [...d.querySelectorAll('ul li')].map((li) => li.lastElementChild?.textContent.trim()),
     timeline: [...d.querySelectorAll('ol li')].map((li) => li.querySelector('span span')?.textContent.trim()),
+    // Each node's date line: the last line of its label column.
+    when: [...d.querySelectorAll('ol li')].map((li) => li.lastElementChild?.lastElementChild?.textContent.trim()),
+    headingFocused: document.activeElement === d.querySelector('h2'),
     invalid: [...d.querySelectorAll('textarea')].some((t) => t.getAttribute('aria-invalid') === 'true'),
     alert: d.querySelector('[role="alert"]')?.textContent.trim() ?? null,
     selects: Object.fromEntries(
@@ -620,6 +623,12 @@ try {
       5000,
       want,
     );
+  // Seeded timestamps as the panel prints them, through the app's own formatter.
+  const formatted = (isos) =>
+    cdp.evaluate(async (xs) => {
+      const { formatDateTime } = await import('/src/features/requests/format.ts');
+      return xs.map(formatDateTime);
+    }, isos);
 
   await go('/queue');
   const beforeCancel = await cdp.evaluate(page);
@@ -629,7 +638,7 @@ try {
     return { label: t.labels?.[0]?.textContent.trim(), placeholder: t.placeholder, required: t.required };
   }, REASON);
   check(
-    field.required && field.label?.startsWith('Reason for cancellation') && field.placeholder === 'e.g item discontinued, no stock at this office...',
+    field.required && field.label === 'Reason for cancellation *' && field.placeholder === 'e.g item discontinued, no stock at this office...',
     'Cancel Request asks for a required Reason for cancellation, with the Admin’s placeholder',
     JSON.stringify(field),
   );
@@ -654,10 +663,18 @@ try {
   check(await cdp.evaluate((sel) => document.querySelector(sel).value === '', REASON), 'backing out discarded the typed reason');
   await typeInto(REASON, 'Model discontinued by the supplier');
   await click('Confirm Cancellation');
-  await toPill('Cancelled');
+  await settle();
   check((await confirmation()) === null, 'no confirmation dialog follows the reason (FR-023)');
+  await toPill('Cancelled');
   p = await cdp.evaluate(panel);
   check(p.timeline.join(' → ') === 'Submitted → Approved → Cancelled', 'the timeline keeps Approved before Cancelled (FR-022)', p.timeline.join(' → '));
+  const seededDates1805 = await formatted(['2026-08-29T13:20:00Z', '2026-08-30T02:05:00Z']);
+  check(
+    p.when[0] === seededDates1805[0] && p.when[1] === seededDates1805[1] && !!p.when[2] && p.when[2] !== '—',
+    'each node keeps its date: the seeded Submitted and Approved, and the cancel’s own',
+    p.when.join(' / '),
+  );
+  check(p.headingFocused, 'focus lands on the panel heading once the form closes');
   check(p.text.includes('Reason for cancellation') && p.text.includes('Model discontinued by the supplier'), 'the reason reads back under Reason for cancellation');
   check(JSON.stringify(p.buttons) === '["Close"]', 'Close is the only action', p.buttons.join(' / '));
   const afterCancel = await cdp.evaluate(page);
@@ -670,6 +687,17 @@ try {
   await click('Close');
   await closed();
 
+  // In-app navigation keeps the seeded store, so History shows the cancel.
+  await cdp.evaluate(() =>
+    [...document.querySelectorAll('header nav a')].find((a) => a.getBoundingClientRect().width > 0 && a.textContent.trim() === 'History').click(),
+  );
+  await cdp.waitFor(() => location.pathname === '/history' && !!document.querySelector('button[aria-label^="Review request "]'), 8000, 'the History rows');
+  check(
+    await cdp.evaluate(() => !!document.querySelector('button[aria-label="Review request REQ-2026-1805"]')),
+    'the just-cancelled request is listed in History',
+  );
+  await go('/queue');
+
   await cancelIn('REQ-2026-1715', 'Phone model recalled');
   await click('Confirm Cancellation');
   await toPill('Cancelled');
@@ -678,6 +706,12 @@ try {
     p.timeline.join(' → ') === 'Submitted → Approved → Ready for Pickup → Cancelled',
     'a cancelled pickup keeps its handover node',
     p.timeline.join(' → '),
+  );
+  const seededDates1715 = await formatted(['2026-08-07T04:00:00Z', '2026-08-08T01:00:00Z']);
+  check(
+    p.when[1] === seededDates1715[0] && p.when[2] === seededDates1715[1],
+    'with the seeded Approved and handover dates',
+    p.when.join(' / '),
   );
   check(!p.text.includes('Pickup location') && !p.text.includes('6th floor IT desk'), 'and no longer reads back a pickup location');
   await esc();
@@ -696,6 +730,12 @@ try {
   await cdp.waitFor(() => document.querySelector('dialog[open] h2')?.textContent.trim() === 'REQ-2026-1677', 8000, 'the deep-linked cancelled request');
   p = await cdp.evaluate(panel);
   check(p.timeline.join(' → ') === 'Submitted → Approved → Cancelled', 'the seeded Admin cancel reads Submitted → Approved → Cancelled', p.timeline.join(' → '));
+  const seededDates1677 = await formatted(['2026-07-28T06:00:00Z', '2026-07-29T02:00:00Z']);
+  check(
+    p.when[1] === seededDates1677[0] && p.when[2] === seededDates1677[1],
+    'dated by approvedAt and cancellation.at',
+    p.when.join(' / '),
+  );
   check(
     (await cdp.evaluate(() => location.pathname)) === '/history' && p.buttons.length === 0,
     'a cancelled request opens read-only in History, with no Cancel Request',
@@ -715,6 +755,7 @@ try {
     `${p.pill}: ${p.alert}`,
   );
   check(!p.buttons.includes('Cancel Request'), 'and Cancel Request is gone', p.buttons.join(' / '));
+  check(p.headingFocused, 'and focus lands on the panel heading');
   await esc();
   await closed();
 
@@ -736,6 +777,40 @@ try {
   check(!!p && p.alert?.includes('could not be loaded'), 'a cancel whose reload fails keeps the panel open and says so');
   await esc();
   await closed();
+
+  // The dev stubs above replace `cancel`, so the seed's own guard is probed
+  // directly: the API will refuse these, and the seed must not let them through.
+  const guard = await cdp.evaluate(async () => {
+    const { createSeededAdminRequestSource } = await import('/src/features/requests/queue/seeded-admin-request-source.ts');
+    const source = createSeededAdminRequestSource();
+    await source.updateStatus('REQ-2026-1703', 'Received');
+    const refused = {};
+    for (const id of ['REQ-2026-1847', 'REQ-2026-1703', 'REQ-2026-1690', 'REQ-2026-1684', 'REQ-2026-1677']) {
+      refused[id] = await source.cancel(id, 'Not allowed');
+    }
+    const blank = await source.cancel('REQ-2026-1805', '   ');
+    const missing = await source.cancel('REQ-2026-0000', 'No such request');
+    const legal = await source.cancel('REQ-2026-1715', '  Recalled  ');
+    const after = (await source.load()).requests.find((r) => r.id === 'REQ-2026-1715');
+    return { refused, blank, missing, legal, after };
+  });
+  check(
+    Object.values(guard.refused).every((r) => !r.ok && r.refusal === 'status-changed'),
+    'the seed refuses a cancel from Pending, Received, Completed, Rejected or Cancelled',
+    JSON.stringify(guard.refused),
+  );
+  check(!guard.blank.ok && guard.blank.refusal === 'reason-required', 'and a blank reason', JSON.stringify(guard.blank));
+  check(!guard.missing.ok && guard.missing.refusal === 'unavailable', 'and an unknown request', JSON.stringify(guard.missing));
+  check(
+    guard.legal.ok &&
+      guard.after.status === 'Cancelled' &&
+      guard.after.cancellation?.reason === 'Recalled' &&
+      !!guard.after.cancellation?.at &&
+      guard.after.approvedAt === '2026-08-07T04:00:00Z' &&
+      guard.after.handedOverAt === '2026-08-08T01:00:00Z',
+    'a legal cancel stores the trimmed reason and keeps the earlier timestamps',
+    JSON.stringify(guard.after),
+  );
 
   // R10: the two-button row at the narrowest supported width.
   await cdp.setViewport(360, 800);
