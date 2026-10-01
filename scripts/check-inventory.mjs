@@ -540,8 +540,17 @@ try {
   check((await control('Status')).message === 'Choose a status', 'and for a status');
   check((await control('Serial Number')).message === 'Enter the serial number', 'and for a serial number');
 
+  const userAt = await cdp.evaluate(() => {
+    const input = document.getElementById([...document.querySelectorAll('dialog[open] label')].find((l) => l.textContent.trim() === 'User').htmlFor);
+    input.scrollIntoView({ block: 'center' });
+    const r = input.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  });
+  await clickAt(userAt);
+  check(await until(() => document.querySelectorAll('dialog[open] [role="option"]').length === 8), 'clicking User lists every user before anything is typed');
   await fill('User', 'Maya');
-  await until(() => document.querySelectorAll('dialog[open] [role="option"]').length > 0);
+  await until(() => document.querySelectorAll('dialog[open] [role="option"]').length === 1);
+  check((await options()).length === 1, 'typing filters the list');
   check((await options()).some((o) => o.startsWith('Maya Santos')), 'the User field finds an Employee by name');
   await fill('User', 'ethanc@');
   await until(() => [...document.querySelectorAll('dialog[open] [role="option"]')].some((o) => o.textContent.includes('Ethan Cruz')));

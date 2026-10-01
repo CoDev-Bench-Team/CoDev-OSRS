@@ -191,8 +191,8 @@ export function CatalogItemPicker({
   );
 }
 
-/** `User` — every user, any role, any office, by name or email (FR-008). The
- *  field reads the chosen user's name; typing searches again. */
+/** `User` — every user, any role, any office, by name or email (FR-008). Focus
+ *  lists them all; typing filters. The field reads the chosen user's name. */
 export function UserPicker({
   users,
   value,
@@ -233,6 +233,9 @@ export function UserPicker({
               if (value) onChange(undefined);
             }}
             {...box.inputProps}
+            // The whole directory opens on focus; typing narrows it.
+            onFocus={box.reveal}
+            onClick={box.reveal}
             onBlur={() => {
               box.inputProps.onBlur();
               setQuery(null);
