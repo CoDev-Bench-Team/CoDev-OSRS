@@ -54,8 +54,8 @@ Depends on backend auth/session resources.
 - [ ] T008 [US1] Assets table + search + category filter + chips + pagination — `src/features/assets/AssetsPage.tsx`
 - [ ] T009 [US1] Add Asset panel with category-dependent fields (FR-002a) — `src/features/assets/AddAssetPanel.tsx`
 - [ ] T009a [US1] View Asset panel + Update Asset panel (prefilled, custom spec row) — `src/features/assets/AssetPanels.tsx`
-- [ ] T010 [US1] ~~Inventory table: Total / Available / Reserved / status pill / Update stock~~ **Re-scoped 2026-09-26 (BEN-107):** Inventory unit table: MODEL · CATEGORY · PR · SERIAL NUMBER · OFFICE · ASSIGNED · STATUS · ACTION, chips All items · Assigned · Available · Reserved — `src/features/inventory/InventoryPage.tsx`
-- [ ] T010a [US1] ~~Update stocks panel: low-stock threshold + one stepper per office~~ **Re-scoped 2026-09-26 (BEN-108):** unit panels: Add Inventory dropdown, Add Single Unit, Add Multiple Units, Review/Edit unit, Remove Unit + confirmation. The threshold moves to Update Asset (T009a) — `src/features/inventory/`
+- [ ] T010 [US1] ~~Inventory table: Total / Available / Reserved / status pill / Update stock~~ **Re-scoped 2026-09-26 (BEN-107):** Inventory unit table: MODEL · CATEGORY · PR · SERIAL NUMBER · OFFICE · ASSIGNED · STATUS · ACTION, chips All items · Assigned · Available · Reserved — `src/features/inventory/InventoryPage.tsx` — **owned by [spec 015](../015-inventory/tasks.md)** (BEN-150)
+- [ ] T010a [US1] ~~Update stocks panel: low-stock threshold + one stepper per office~~ **Re-scoped 2026-09-26 (BEN-108):** unit panels: Add Inventory dropdown, Add Single Unit, Add Multiple Units, Review/Edit unit, Remove Unit + confirmation. The threshold moves to Update Asset (T009a) — `src/features/inventory/` — **owned by [spec 015](../015-inventory/tasks.md)** (BEN-150)
 
 ## Phase 4: User Story 2 — Catalog and submit (P1)
 
