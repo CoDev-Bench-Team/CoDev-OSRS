@@ -157,9 +157,8 @@ function DemoAccountChooser({ source }: { source: DemoAccountSource }) {
       </div>
       <fieldset className="flex flex-col gap-8 border-none p-0">
         <legend className="sr-only">Seeded demo account</legend>
-        {/* The label is the 44px touch target, so the radio inside it opts out
-            of the base-layer minimum (index.css) and keeps its drawn 16px. At
-            44px it overflowed the 240px row and wrapped each label mid-phrase. */}
+        {/* The label is the 44px touch target; the radio inside it keeps its
+            drawn 16px. */}
         {source.accounts().map((account) => (
           <label key={account.id} className="flex min-h-touch-target cursor-pointer items-center gap-8">
             <input
@@ -171,7 +170,7 @@ function DemoAccountChooser({ source }: { source: DemoAccountSource }) {
                 setSelected(account.id);
                 source.select(account.id);
               }}
-              className="h-16 min-h-0 w-16 min-w-0 shrink-0 accent-brand-primary"
+              className="size-16 shrink-0 accent-brand-primary"
             />
             <span className="type-ui-bold text-ink-primary">{account.label}</span>
             <span className="type-ui text-ink-secondary">{account.detail}</span>

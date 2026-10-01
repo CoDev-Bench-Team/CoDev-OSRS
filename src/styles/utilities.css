@@ -102,12 +102,13 @@
 }
 
 /* A control the source draws smaller than the 44px touch minimum — the
-   stepper's "-" / "+" are 22px squares — keeps its drawn box and grows an
-   invisible, centred 44px hit area instead. Pseudo-elements are hit-testable
-   and their events target the button, so the pointer gets 44px while layout
-   and the pixel diff see the source's geometry. index.css exempts the class
-   from the blanket min-size rule; check-a11y-responsive.mjs measures the
-   hit area rather than the box. */
+   stepper's "-" / "+" are 22px squares, a checkbox is 24px — keeps its drawn
+   box and grows an invisible, centred 44px hit area instead. Pseudo-elements
+   are hit-testable and their events target the control, so the pointer gets
+   44px while layout and the pixel diff see the source's geometry. index.css
+   gives enabled links and buttons the same area below 1440; this one applies
+   at every width, disabled or not, and to elements that rule does not reach.
+   check-a11y-responsive.mjs hit-tests the area rather than the box. */
 @utility hit-area {
   position: relative;
   &::before {

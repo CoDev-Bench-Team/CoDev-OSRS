@@ -47,7 +47,7 @@ this table was first written; the previous `type`, `location`, `specs[]` and
 | `category` | Required on create. Enum: Laptop, Headset, Monitor, Phone, UPS, Mice, **Wifi**, Type C Hub, Other Devices. Replaces `type` |
 | `model` | Required on create, **for every category** — see conflict 9 |
 | `description` | Optional free text |
-| `ram` · `storage` · `processor` · `graphics` · `operatingSystem` | Optional spec strings. Replace the `specs[]` key/value list — see conflict 10 |
+| `ram` · `storage` · `processor` · `graphics` · `operatingSystem` | Optional spec strings. Replace the `specs[]` key/value list |
 | `lowQtyAlert` | Low-stock threshold, one per asset, default 5 — see conflict 3 |
 
 `GET /assets` takes `page`, `limit`, `search` (name, model or category),
@@ -75,9 +75,9 @@ seeded data until the per-asset counts in 1 are published.
 |---|-------|----------------------|
 | 1 | **Decided 2026-09-26: the per-unit register** (constitution 4.0.0, ADR-0008). Available / Reserved / Total are counts of unit records by status. | The published read of per-asset counts (available / reserved / assigned) the Assets table needs — see the 2026-09-26 note under 1 below. |
 | 2 | **Resolved: `Ortigas`**, in every location enum (users, assets, inventory items). | — |
-| 3 | **Resolved**: `location` and `quantity` left the asset; `lowQtyAlert` stayed, one per asset, which the Update Asset panel's `STOCKS · Low-stock threshold` matches. Spec 001 FR-003 now says per asset. | — |
+| 3 | **Resolved**: `location` and `quantity` left the asset; `lowQtyAlert` stayed, one per asset, which the Add and Update Asset panels' `STOCKS · Low-stock threshold` matches (spec 014 D8). Spec 001 FR-003 now says per asset. | — |
 | 9 | **Open.** `model` is required for every category; the design asterisks it only on Laptop, Phone and Headset, offers it optionally on Wifi and Type C Hub, and draws no Model field on UPS, Mice and Other Device. | One of the two moves. See 9 below. |
-| 10 | **Open.** `specs[]` was replaced by five fixed fields, so the Update Asset panel's free custom-spec row (`e.g. External Keyboard`) has nowhere to be saved. | Restore a custom-spec field, or the designer drops the row. See 10 below. |
+| 10 | **Withdrawn 2026-10-01.** The SPA misread the file: no Add or Update Asset frame draws a custom-spec row ([drift-2026-10-01](../../../docs/design-system/drift-2026-10-01.md) A2). The five fixed fields cover the design. | — |
 
 The sections below are the original write-up of 1–3.
 
@@ -332,6 +332,12 @@ The DTO replaced the `specs[]` key/value list with five fixed fields (`ram`,
 still draws a free row (`e.g. External Keyboard`). Spec 014 D7 builds it on the
 seeded source only. **Needed:** a custom-spec field on the asset, or the
 designer drops the row. A contract-backed source MUST NOT send it until then.
+
+**2026-10-01 — withdrawn.** Re-reading the 2026-10-01 export, no Add Asset or
+Update Asset frame draws the row; it was a misreading on the SPA side, not a
+gap in the DTO. Spec 014 D7 is withdrawn and the row is gone from the SPA
+([drift-2026-10-01](../../../docs/design-system/drift-2026-10-01.md) A2).
+Nothing is needed from the backend.
 
 ### Also worth a word
 

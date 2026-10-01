@@ -140,24 +140,43 @@ for (const w of [360, 768, 1024, 1440]) {
       .filter((el) => el.getBoundingClientRect().right > width + 1)
       .map((el) => el.tagName + '.' + String(el.className).slice(0, 30))
       .slice(0, 4);
-    // The target is what the pointer can hit, not only the element's box. A
-    // `.hit-area` control (utilities.css) keeps the source's small box and
-    // grows a centred, absolutely positioned ::before to 44px; that pseudo is
-    // hit-testable and its events reach the button, so it counts.
-    const target = (el) => {
-      const r = el.getBoundingClientRect();
-      const p = getComputedStyle(el, '::before');
-      if (p.content === 'none' || p.position !== 'absolute') return { width: r.width, height: r.height };
-      return {
-        width: Math.max(r.width, parseFloat(p.width) || 0),
-        height: Math.max(r.height, parseFloat(p.height) || 0),
-      };
+    // The target is what the pointer can hit, not only the element's box: a
+    // control keeps its drawn box and a centred ::before grows the hit area to
+    // 44px (index.css, `.hit-area`). Each control is scrolled into view and
+    // probed just inside the edges of that area, on the axes where its box is
+    // under 44px. A probe must reach the control, or fall in a gap where a
+    // neighbour's hit area overlaps it; landing on the page (clipped) or on a
+    // neighbour's drawn box (covered) fails.
+    const CONTROL =
+      'a[href]:not([aria-disabled="true"]), button:not([disabled]):not([aria-disabled="true"]), input[type="checkbox"]:not([disabled])';
+    const inBox = (el, x, y) => {
+      const b = el.getBoundingClientRect();
+      return x >= b.left && x < b.right && y >= b.top && y < b.bottom;
     };
-    const small = [...document.querySelectorAll('a[href], button:not([disabled])')]
-      .map((el) => ({ el, r: target(el) }))
-      .filter(({ r }) => r.width > 0 && (r.width < 44 || r.height < 44))
-      .map(({ el, r }) => `${el.tagName}.${String(el.className).slice(0, 24)} ${Math.round(r.width)}x${Math.round(r.height)}`)
+    const misses = (el) => {
+      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+      const r = el.getBoundingClientRect();
+      const own = el.closest('label') ?? el;
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const probes = [
+        ...(r.width < 44 ? [[cx - 21, cy], [cx + 21, cy]] : []),
+        ...(r.height < 44 ? [[cx, cy - 21], [cx, cy + 21]] : []),
+      ];
+      return probes.filter(([x, y]) => {
+        const hit = document.elementFromPoint(x, y);
+        if (own.contains(hit)) return false;
+        const other = hit?.closest('a[href], button, label');
+        return !other || inBox(other, x, y);
+      }).length;
+    };
+    const small = [...document.querySelectorAll(CONTROL)]
+      .filter((el) => el.getBoundingClientRect().width > 0)
+      .map((el) => ({ el, missed: misses(el) }))
+      .filter(({ missed }) => missed > 0)
+      .map(({ el, missed }) => `${el.tagName}.${String(el.className).slice(0, 24)} misses ${missed} edge(s)`)
       .slice(0, 6);
+    scrollTo(0, 0);
     return { scrollW: doc.scrollWidth, overflowing, small };
   }, w);
   const scrolls = r.scrollW > w + 1;

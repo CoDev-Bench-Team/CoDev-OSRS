@@ -75,7 +75,7 @@ export function ViewSpecsPanel({
         <Field label="Office">
           {/* The design's `Site Office Label`: an outlined tag on a 10% warm
               tint (near-white), its label in `Label 1` and `Ink-400`. */}
-          <span className="inline-flex rounded-8 bg-surface-card p-10 font-sans text-11-5 font-bold leading-display text-ink-muted ring-default">
+          <span className="inline-flex h-32 items-center rounded-8 bg-surface-card px-10 font-sans text-11-5 font-bold leading-display text-ink-muted ring-default">
             {office}
           </span>
         </Field>

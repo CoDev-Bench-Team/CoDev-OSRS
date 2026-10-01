@@ -3,6 +3,39 @@ import { createPortal } from 'react-dom';
 import { MdiChevronDown } from '../icons/MdiChevronDown';
 import { onDismissPopovers } from '../overlay/popover-layer';
 
+const OPEN_KEYS = new Set(['Enter', ' ', 'ArrowDown', 'ArrowUp']);
+
+/** The keys that move the active option, as (current, count) → next. */
+const NAVIGATION: Record<string, (i: number, n: number) => number> = {
+  ArrowDown: (i, n) => (n ? (i + 1) % n : 0),
+  ArrowUp: (i, n) => (n ? (i - 1 + n) % n : 0),
+  Home: () => 0,
+  End: (_, n) => n - 1,
+};
+
+/** Type-ahead: keys typed within 800ms of each other build one prefix. Returns
+ *  the first option starting with it, or -1. */
+function typeAhead(typed: { buffer: string; at: number }, key: string, options: readonly string[]): number {
+  const now = Date.now();
+  typed.buffer = now - typed.at > 800 ? key : typed.buffer + key;
+  typed.at = now;
+  const q = typed.buffer.toLowerCase();
+  return options.findIndex((o) => o.toLowerCase().startsWith(q));
+}
+
+function triggerClass(field: boolean, invalid: boolean, disabled: boolean): string {
+  const shape = field
+    ? `h-[39px] rounded-6 border px-12 ${invalid ? 'border-status-rejected-fg' : 'border-osrs-border-warm'}`
+    : 'h-control-height-lg rounded-10 border-none px-16 ring-default';
+  const pointer = disabled ? 'cursor-default' : 'cursor-pointer hover:text-ink-secondary';
+  return `flex w-full items-center justify-between gap-8 bg-surface-card text-left transition-osrs ${shape} ${pointer}`;
+}
+
+function valueClass(field: boolean, hasValue: boolean): string {
+  const ink = !hasValue ? 'text-ink-secondary' : field ? 'text-osrs-ink-800' : 'text-ink-primary';
+  return `truncate font-sans leading-tight ${field ? 'text-12' : 'text-14'} ${ink}`;
+}
+
 /** A custom select with an overlay panel, styled from the design system.
  *
  *  Replacing a native <select> means giving up everything the platform provided
@@ -28,6 +61,7 @@ export function Select({
   describedBy,
   className,
   id: triggerId,
+  size = 'md',
 }: {
   value?: string;
   options: string[];
@@ -46,14 +80,19 @@ export function Select({
   className?: string;
   /** For a visible `<label htmlFor>` naming the control, as a form field has. */
   id?: string;
+  /** `field` is the admin side panels' 39px input: 6px radius, warm hairline,
+   *  12px text, matching `TextInput` beside it. */
+  size?: 'md' | 'field';
 }) {
   // Disabled only when asked. A single option is not a reason to disable: the
   // control still opens and shows what is there, which is what a native select
   // does. Using the real `disabled` attribute rather than only `aria-disabled`
   // keeps it out of the tab order when it is set.
   const isDisabled = disabled === true;
+  const field = size === 'field';
+  const selectedIndex = () => Math.max(0, options.indexOf(value ?? ''));
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(() => Math.max(0, options.indexOf(value ?? '')));
+  const [active, setActive] = useState(selectedIndex);
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
   // Where the open list is portalled; resolved when it opens, not in render.
   const [layer, setLayer] = useState<HTMLElement | null>(null);
@@ -155,61 +194,31 @@ export function Select({
     else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
   }, [open, active]);
 
-  const move = (delta: number) => {
-    setActive((i) => {
-      const n = options.length;
-      return n ? (i + delta + n) % n : 0;
-    });
-  };
-
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (isDisabled) return;
     if (!open) {
-      if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+      if (OPEN_KEYS.has(e.key)) {
         e.preventDefault();
-        setActive(Math.max(0, options.indexOf(value ?? '')));
+        setActive(selectedIndex());
         setOpen(true);
       }
       return;
     }
-    switch (e.key) {
-      case 'Escape':
-        e.preventDefault();
-        close();
-        break;
-      case 'Tab':
-        setOpen(false);
-        break;
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        commit(active);
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        move(1);
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        move(-1);
-        break;
-      case 'Home':
-        e.preventDefault();
-        setActive(0);
-        break;
-      case 'End':
-        e.preventDefault();
-        setActive(options.length - 1);
-        break;
-      default: {
-        if (e.key.length !== 1) return;
-        const now = Date.now();
-        typed.current.buffer = now - typed.current.at > 800 ? e.key : typed.current.buffer + e.key;
-        typed.current.at = now;
-        const q = typed.current.buffer.toLowerCase();
-        const hit = options.findIndex((o) => o.toLowerCase().startsWith(q));
-        if (hit >= 0) setActive(hit);
-      }
+    const step = NAVIGATION[e.key];
+    if (step) {
+      e.preventDefault();
+      setActive((i) => step(i, options.length));
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+    } else if (e.key === 'Tab') {
+      setOpen(false);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      commit(active);
+    } else if (e.key.length === 1) {
+      const hit = typeAhead(typed.current, e.key, options);
+      if (hit >= 0) setActive(hit);
     }
   };
 
@@ -220,8 +229,8 @@ export function Select({
         id={triggerId}
         type="button"
         role="combobox"
+        aria-expanded={open}
         aria-haspopup={isDisabled ? undefined : 'listbox'}
-        aria-expanded={isDisabled ? undefined : open}
         aria-controls={isDisabled ? undefined : `${id}-list`}
         aria-label={label}
         aria-required={required || undefined}
@@ -233,18 +242,19 @@ export function Select({
         data-option-count={options.length}
         onClick={() => {
           if (isDisabled) return;
-          setActive(Math.max(0, options.indexOf(value ?? '')));
+          setActive(selectedIndex());
           setOpen((o) => !o);
         }}
         onKeyDown={onKeyDown}
-        className={`flex h-control-height-lg w-full items-center justify-between gap-8 rounded-10 border-none bg-surface-card px-16 text-left ring-default transition-osrs ${
-          isDisabled ? 'cursor-default' : 'cursor-pointer hover:text-ink-secondary'
-        }`}
+        className={triggerClass(field, invalid === true, isDisabled)}
       >
-        <span className={`truncate font-sans text-14 leading-tight ${value ? 'text-ink-primary' : 'text-ink-secondary'}`}>
+        <span className={valueClass(field, value !== undefined)}>
           {value ?? placeholder}
         </span>
-        <MdiChevronDown className={`shrink-0 text-ink-secondary transition-osrs ${open ? 'rotate-180' : ''}`} />
+        <MdiChevronDown
+          size={field ? 16 : 20}
+          className={`shrink-0 text-ink-secondary transition-osrs ${open ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {open &&

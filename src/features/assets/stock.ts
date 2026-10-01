@@ -1,4 +1,4 @@
-import type { StockStatus } from '../../shared/ui';
+import type { InventoryStatus, StockStatus } from '../../shared/ui';
 import { OFFICES } from '../auth/types';
 import type { Asset } from './types';
 
@@ -27,4 +27,16 @@ export function stockStatus(availableUnits: number, lowStockThreshold: number): 
 
 export function assetStockStatus(asset: Pick<Asset, 'stock' | 'lowStockThreshold'>): StockStatus {
   return stockStatus(stockTotals(asset).available, asset.lowStockThreshold);
+}
+
+/** The same band in the `Inventory Status` pill's words, as View Asset draws
+ *  it beside the item name — the catalog's labels for the catalog's rule. */
+const PILL: Record<StockStatus, InventoryStatus> = {
+  'In Stock': 'Available',
+  'Low Stock': 'Low in Stock',
+  'Out of Stock': 'Out of Stock',
+};
+
+export function assetInventoryStatus(asset: Pick<Asset, 'stock' | 'lowStockThreshold'>): InventoryStatus {
+  return PILL[assetStockStatus(asset)];
 }

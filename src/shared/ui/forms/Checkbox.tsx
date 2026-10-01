@@ -83,7 +83,7 @@ export function Checkbox({
   return (
     <div className={`flex flex-col gap-6 ${className ?? ''}`}>
       <label htmlFor={id} className={`flex items-center gap-4 ${unavailable ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-        <span className="relative flex size-24 shrink-0 items-center justify-center rounded-8 has-focus-visible:shadow-[0_0_0_2px_var(--color-brand-primary)]">
+        <span className="hit-area flex size-24 shrink-0 items-center justify-center rounded-8 has-focus-visible:shadow-[0_0_0_2px_var(--color-brand-primary)]">
           <input
             {...rest}
             ref={ref}

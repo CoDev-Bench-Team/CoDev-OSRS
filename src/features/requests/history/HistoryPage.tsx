@@ -123,17 +123,19 @@ export function HistoryPage({
     () => (state.kind === 'loaded' ? state.snapshot.requests.filter(isResolved).map((request) => request.id) : null),
     [state],
   );
-  const { unavailable, dismiss } = useDeepLinkedRequest(resolvedIds, setOpenId, REQUEST_NOT_FOUND);
+  const { linked, unavailable, dismiss } = useDeepLinkedRequest(resolvedIds, REQUEST_NOT_FOUND);
   const review = (id: string) => {
     dismiss();
     setOpenId(id);
   };
 
-  const found = openId && state.kind === 'loaded' ? state.snapshot.requests.find((r) => r.id === openId) : undefined;
+  const shownId = openId ?? linked;
+  const found = shownId && state.kind === 'loaded' ? state.snapshot.requests.find((r) => r.id === shownId) : undefined;
   const openRequest = found && isResolved(found) ? found : undefined;
 
   const closePanel = () => {
     setOpenId(null);
+    dismiss();
     // SidePanel returns focus to the Review that opened it. A deep-linked
     // panel was opened by no Review on this page, so focus goes to the chips.
     requestAnimationFrame(() => {

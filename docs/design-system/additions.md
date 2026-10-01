@@ -15,6 +15,8 @@ Grouped by how much judgement each required.
 | **24 token renames** | Values identical; names changed only where the source name could not survive the port. Full list in [token-map.md](token-map.md). The sharpest case: seven text *colours* (`--text-body`, `--text-primary`…) collided with the font-size namespace where `--text-11`–`--text-32` live. They became `--color-ink-*`. |
 | **`--spacing-0: 0px`** | Zero is not a design value, but `inset-0` and `min-w-0` derive from the spacing scale, which the port clears. |
 | **`StatusPills` → `StatusPill`** | Renders one pill. Singular. |
+| **Truncated text keeps its descenders** | `.truncate` gets 0.15em block padding cancelled by a matching negative margin (`index.css`). The type roles set a 100% line height, and `truncate` clips to the padding box, so g / y / p were cut in the select, its options, table cells and the top bar (design review 2026-10-01). Layout is unchanged. |
+| **One pill height: 32px** | Every `StatusPill` variant, `FilterChip`, the catalog's Office tag and the review panel's `in stock` badge are 32px high with 10px sides (chips 14px). The file draws 24px request pills, 35px inventory pills and 31px chips; one height reads as one component (product decision, 2026-10-01). Shape and type still follow the variant. |
 
 ## 2. Required for a usable product — the source designs none of these
 
@@ -130,7 +132,7 @@ designer should ratify the sentence, not just the swatches.
 | Addition | What was decided |
 |----------|------------------|
 | **Responsive breakpoints** | Exact source geometry at ≥1440. Fluid 768–1439. Single column below 768. The source has only the 1440 frame, so every breakpoint here is invented. |
-| **44px minimum touch target** | Below the design width. `--spacing-touch-target`. Applied as a minimum box size on links, buttons and fields. The one control the source draws smaller than 44px — the stepper's 22px `-` / `+` — is exempt from the box rule and meets the minimum with an invisible, centred 44px pseudo-element instead (`hit-area` in `utilities.css`), so the stepper keeps its 1440 geometry at every width. |
+| **44px minimum touch target** | Below the design width. `--spacing-touch-target`. Every link and button meets it with an invisible, centred pseudo-element at least 44×44px (`index.css`), never by growing its box, so every control keeps its drawn size at every width (design review 2026-10-01; until then the rule set a minimum box size and grew 42px buttons, 32px chips, 36px pagination and 39px fields to 44px). `hit-area` in `utilities.css` does the same at every width, for the stepper's 22px `-` / `+` and the 24px checkbox. Fields cannot carry a pseudo-element and keep their drawn 39px; their label is a click target for them too (spec 002 FR-012, amended 2026-10-01). |
 | **`TopBar` redesign** | The source positions it absolutely — logo (32,22), nav x=618, account right:64. Converted to flow layout with a centred nav that wraps below `md`. Preserved exactly: 87px height, white surface, hairline ring, 32px gutter, brand red on the current item, 31px divider. |
 | **`PageHeader` redesign** | Source places it at (32,121) absolutely. Now a flow block with the same 32/1.3 title, 8px gap and 14/1.5 subtitle. |
 | **8 promotions** | `TopBar`, `Avatar`, `PageHeader`, `SummaryCard`, `Button`, `TableCard`, `TableHead`, `SectionTitle` were drawn as frames inside the UI kit, not published as components. They are first-class components here. **Worth publishing in Figma** so future exports stay in sync. |
@@ -499,17 +501,22 @@ fills what it leaves open.
 ## 3k. Assets (BEN-48, spec 014)
 
 `03- Assets` (×2), `03.1 Add Asset - <category>` and `03.2- View Asset` are
-drawn, as of the 2026-09-26 export. The following are ours. The Inventory rows
+drawn, as of the 2026-10-01 export. The following are ours. The Inventory rows
 this section carried until 2026-09-30 (stepper floor, typeable stepper, disabled
-`+ Add Inventory`) went with frame B and `03.4 - Update Stocks` (ADR-0008).
+`+ Add Inventory`) went with frame B and `03.4 - Update Stocks` (ADR-0008). The
+custom specification rows it carried until 2026-10-01 went too: the frames
+draw no such row ([drift-2026-10-01](drift-2026-10-01.md) A2).
 
 | Addition | What was decided | Basis |
 |----------|------------------|-------|
 | **Field error line** | A 12px line in rejected ink under the control, and the control's hairline turns rejected red. | The panels draw no error state. Same colours as the shell's refusals. |
-| **Custom specification rows** | On Update Asset: `Specification *` and `Value` side by side with `Remove`, and `+ Add specification` under the category rows. | The frame draws one free row with the placeholder `e.g. External Keyboard` and no add or remove control. |
+| **Image action colours** | The Replace / Download / Remove chips use `line-default` for the 40px chip's hairline, `brand-primary-alt` at 10% for the 18px tile with `osrs-ink-800` for the glyph, and `status-rejected-bg` / `status-rejected-fg` for Remove's tile. | The file paints `#e6e7ea`, `#fcebe9`, `#393039` and `#e33326`, none of them a token; each maps to the nearest existing one (drift-2026-10-01 A5). |
+| **Download as a link** | Download is an `<a download>` over the image's data URI, so the browser saves it without a round trip. | The frame draws the chip, not what it does. |
 | **Monitor's form** | Headset's shape: Model required, no specifications. | No `03.1 Add Asset - Monitor` frame; Monitor is in the contract's category enum (spec 014 D4). |
 | **Table loading, failure and empty** | Loading: the shell's dots at the height of three rows. Failure: the shell's `Notice` with `Try again`. Empty: `No asset matches that search` in a row. | None drawn. |
 | **Panel footer pinned** | Cancel / Save Changes sit in a footer under a hairline, outside the scrolling body. | The frames draw the pair at the foot of a panel that does not scroll; Add Asset - Laptop is taller than a 1024px viewport. |
+| **Panel inset as props** | `SidePanel` takes `bodyClassName` / `footerClassName` so the Assets panels get their drawn 14–16px inset and full-width footer band; the request panels keep the defaults. The header stays shared: the Assets frames draw it 78px with the close control 16px from the edge, against the shared 81px / 20px. | One header for every panel; a 3–4px difference does not justify a fork. |
+| **Uploader hint colour** | The format hint uses `ink-secondary`. | The file paints `#6c606c`, not a token; `ink-secondary` is the nearest. |
 
 ---
 

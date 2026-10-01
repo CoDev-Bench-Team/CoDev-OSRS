@@ -22,14 +22,15 @@ import type { Asset } from './types';
  *  summed across the five offices: Available, Reserved and Assigned
  *  (ADR-0008). A row opens View Asset; **+ Add Asset** opens the Add panel.
  *
- *  Column widths are the drawn ones inside 20px padding, so below about 1100px
+ *  Column widths are the drawn ones (320 / 180 / 264 / 180 / 180, the last
+ *  taking the rest) inside 20px padding, so below about 1300px
  *  the table scrolls sideways inside its card rather than reflowing. */
 const COLUMNS: [label: string, width?: ColumnWidth][] = [
-  ['ITEM NAME', '300px'],
-  ['CATEGORY', '160px'],
-  ['MODEL', '200px'],
-  ['AVAILABLE UNITS', '160px'],
-  ['PENDING/RESERVED UNITS', '200px'],
+  ['ITEM NAME', '320px'],
+  ['CATEGORY', '180px'],
+  ['MODEL', '264px'],
+  ['AVAILABLE UNITS', '180px'],
+  ['PENDING/RESERVED UNITS', '180px'],
   ['ASSIGNED UNITS'],
 ];
 
@@ -61,12 +62,19 @@ export function AssetsPage() {
         </Button>
       </div>
 
-      <TableToolbar query={query} allLabel="All assets" />
+      <TableToolbar query={query} allLabel="All items" />
 
       <TableCard className="mt-[34px] min-w-0">
-        <div className="w-full min-w-0 overflow-x-auto">
+        {/* Focusable, as the Requests Queue's is, so a keyboard can scroll the
+            count columns into view when the table is wider than the window. */}
+        <div
+          role="region"
+          aria-label="Assets table"
+          tabIndex={0}
+          className="w-full min-w-0 overflow-x-auto focus-visible:-outline-offset-2"
+        >
           <div style={{ minWidth: TABLE_MIN_WIDTH }}>
-            <div className={`flex h-[48px] items-center bg-surface-table-header ${TABLE_ROW_PADDING_CLASS}`} role="presentation">
+            <div className={`flex h-[48px] items-center bg-surface-table-header ${TABLE_ROW_PADDING_CLASS}`}>
               {COLUMNS.map(([label, width]) => (
                 <span key={label} className="type-eyebrow uppercase text-ink-secondary" style={tableColumnStyle(width)}>
                   {label}
@@ -79,32 +87,40 @@ export function AssetsPage() {
             {query.rows.map((asset) => {
               const { available, reserved } = stockTotals(asset);
               return (
-                <button
+                <div
                   key={asset.id}
-                  type="button"
-                  aria-label={`View ${asset.name}`}
-                  onClick={() => setPanel({ kind: 'view', id: asset.id })}
-                  className={`flex h-row-height-inventory w-full cursor-pointer items-center border-x-0 border-t-0 border-b border-line-default bg-surface-card text-left ${TABLE_ROW_PADDING_CLASS} transition-osrs hover:bg-osrs-surface-subtle`}
+                  className={`relative flex h-row-height-inventory w-full items-center border-b border-line-default bg-surface-card ${TABLE_ROW_PADDING_CLASS} transition-osrs hover:bg-osrs-surface-subtle`}
                 >
-                  <span className="truncate pr-16 type-ui-bold text-ink-strong" style={tableColumnStyle('300px')}>
-                    {asset.name}
+                  {/* The name is the row's one control, so the other cells stay
+                      readable text. `static` lets its ::after reach the row,
+                      making the whole row clickable as drawn and carrying the
+                      focus ring around it; the touch-target rule would
+                      otherwise position the button (index.css). */}
+                  <span className="min-w-0 pr-16" style={tableColumnStyle('320px')}>
+                    <button
+                      type="button"
+                      onClick={() => setPanel({ kind: 'view', id: asset.id })}
+                      className="static block w-full cursor-pointer truncate border-none bg-transparent p-0 text-left type-ui-bold text-ink-strong after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-brand-primary"
+                    >
+                      {asset.name}
+                    </button>
                   </span>
-                  <span className="type-ui text-ink-strong" style={tableColumnStyle('160px')}>
+                  <span className="type-ui text-ink-strong" style={tableColumnStyle('180px')}>
                     {asset.category}
                   </span>
-                  <span className="truncate pr-16 type-ui text-ink-strong" style={tableColumnStyle('200px')}>
+                  <span className="truncate pr-16 type-ui text-ink-strong" style={tableColumnStyle('264px')}>
                     {asset.model ?? '—'}
                   </span>
-                  <span className="type-ui text-ink-strong" style={tableColumnStyle('160px')}>
+                  <span className="type-ui text-ink-strong" style={tableColumnStyle('180px')}>
                     {available}
                   </span>
-                  <span className="type-ui text-ink-strong" style={tableColumnStyle('200px')}>
+                  <span className="type-ui text-ink-strong" style={tableColumnStyle('180px')}>
                     {reserved}
                   </span>
                   <span className="type-ui text-ink-strong" style={tableColumnStyle()}>
                     {asset.assigned}
                   </span>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -113,7 +129,17 @@ export function AssetsPage() {
 
       <TablePager query={query} />
 
-      {panel?.kind === 'add' ? <AssetFormPanel onClose={() => setPanel(null)} onSave={create} /> : null}
+      {/* New assets lead the list, so with no filter set page 1 shows the one
+          just added. Filters are the Admin's and are left as they are. */}
+      {panel?.kind === 'add' ? (
+        <AssetFormPanel
+          onClose={() => setPanel(null)}
+          onSave={async (draft) => {
+            await create(draft);
+            query.setPage(1);
+          }}
+        />
+      ) : null}
       {panel?.kind === 'view' && selected ? (
         <ViewAssetPanel
           asset={selected}

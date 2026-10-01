@@ -2,10 +2,9 @@ import type { RequestListLine } from './request-list-types';
 
 /** The drawn stepper square in `03 - Request List`: 30px, white, `line-default`
  *  hairline, r6, the sign in Inter Regular 12 black (U+2212 minus to match
- *  `+`, as `SupplyCard` does). `hit-area` keeps the drawn box at every width
- *  and meets the 44px touch minimum with an invisible pseudo-element — without
- *  it, the global rule below 1440px grows only the ENABLED square to 44px, so
- *  `−` and `+` differ in size. */
+ *  `+`, as `SupplyCard` does). `hit-area` meets the 44px touch minimum with
+ *  an invisible pseudo-element at every width and on both squares; the global
+ *  rule below 1440px reaches only an enabled one. */
 const STEP =
   'hit-area flex size-[30px] cursor-pointer items-center justify-center rounded-6 border-none bg-surface-card p-0 type-meta text-ink-primary ring-default transition-osrs hover:text-ink-secondary disabled:cursor-not-allowed disabled:opacity-40';
 

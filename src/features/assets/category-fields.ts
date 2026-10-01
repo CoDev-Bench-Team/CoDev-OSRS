@@ -6,7 +6,7 @@ import type { AssetDraft, Category, SpecKey } from './types';
  *
  *  - `model` — `required` where the frame asterisks it, `optional` where it
  *    draws the field without one, `absent` where it draws none. The live
- *    contract requires `model` for every category (contract conflict 8).
+ *    contract requires `model` for every category (contract conflict 9).
  *  - `specs` — the SPECIFICATIONS rows, in the frame's order.
  *
  *  Monitor has no frame; it takes Headset's shape (spec 014 D4, flagged). */
@@ -34,6 +34,14 @@ export const SPEC_LABEL: Record<SpecKey, string> = {
   operatingSystem: 'Operating System',
 };
 
+export const SPEC_PLACEHOLDER: Record<SpecKey, string> = {
+  ram: 'e.g. 16GB',
+  storage: 'e.g. 512GB SSD',
+  processor: 'e.g. Intel Core i7-1365U',
+  graphics: 'e.g. Intel Iris Xe Graphics',
+  operatingSystem: 'e.g. Windows 11 Pro',
+};
+
 /** Drops what the category does not draw, so switching Laptop → Mice → Laptop
  *  in the form keeps values on screen but never submits a hidden field. */
 export function draftForCategory(draft: AssetDraft): AssetDraft {
@@ -50,10 +58,7 @@ export function draftForCategory(draft: AssetDraft): AssetDraft {
     description: draft.description?.trim() || undefined,
     image: draft.image,
     specs,
-    customSpecs: draft.customSpecs
-      .map((s) => ({ key: s.key.trim(), value: s.value.trim() }))
-      .filter((s) => s.key || s.value),
-    ...(draft.lowStockThreshold === undefined ? {} : { lowStockThreshold: draft.lowStockThreshold }),
+    lowStockThreshold: draft.lowStockThreshold,
   };
 }
 
@@ -64,11 +69,8 @@ export function missingFields(draft: AssetDraft): Record<string, string> {
   const errors: Record<string, string> = {};
   if (!draft.name) errors.name = 'Enter the item name';
   if (CATEGORY_FIELDS[draft.category].model === 'required' && !draft.model) errors.model = 'Enter the model';
-  draft.customSpecs.forEach((s, i) => {
-    if (!s.key) errors[`customSpecs.${i}.key`] = 'Name this specification';
-  });
   const threshold = draft.lowStockThreshold;
-  if (threshold !== undefined && (!Number.isInteger(threshold) || threshold < 0)) {
+  if (!Number.isInteger(threshold) || threshold < 0) {
     errors.lowStockThreshold = 'Enter a whole number, 0 or more';
   }
   return errors;

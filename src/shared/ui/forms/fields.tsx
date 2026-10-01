@@ -40,7 +40,7 @@ export function Field({
   const message = error ?? hint;
   return (
     <div className={`flex w-full flex-col gap-6 ${className ?? ''}`}>
-      <label htmlFor={id} className="font-sans text-11 font-bold text-osrs-ink-800">
+      <label htmlFor={id} className="font-sans text-11 font-bold leading-tight text-osrs-ink-800">
         {label}
         {required ? <span className="text-brand-primary"> *</span> : null}
       </label>

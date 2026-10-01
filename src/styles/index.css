@@ -33,25 +33,39 @@
     pointer-events: none;
   }
 
+  /* `truncate` clips to the padding box, and most type roles set a 100% line
+     height, so Inter's descenders (g, y, p) and accents, which reach about
+     0.1em past such a box, were cut off. A little block padding widens the
+     clip and the matching negative margin keeps the layout where it was. A
+     `py-*` utility replaces only the padding, so pair it with `my-0`. */
+  .truncate {
+    padding-block: 0.15em;
+    margin-block: -0.15em;
+  }
 
-  /* Below the design width, every interactive target is at least 44x44px
-     (spec 002 FR-012). This deliberately does NOT apply at 1440 and above,
-     where the source's own geometry wins — its buttons are 42px high and its
-     steppers smaller still. An addition, logged in additions.md.
-
-     `.hit-area` (utilities.css) is exempt: it meets the 44px minimum with an
-     invisible pseudo-element instead of growing its box, so a control the
-     source draws at 22px — the stepper's "-" / "+" — keeps its drawn size at
-     every width. */
+  /* Below the design width, every link and button is a 44x44px target (spec
+     002 FR-012) without growing its drawn box: an invisible, centred 44px
+     pseudo-element takes the pointer, as `.hit-area` (utilities.css) does at
+     every width. Pseudo-elements are hit-testable and their events reach the
+     control. A positioning utility on the control still wins over the
+     `relative` here, because utilities sit above the base layer. Fields
+     cannot carry a pseudo-element and keep their drawn 39px. An addition,
+     logged in additions.md. */
   @media (max-width: 1439px) {
     a[href],
-    button:not([disabled]):not(.hit-area),
-    input,
-    select,
-    textarea,
+    button:not([disabled]),
     [role='button'] {
-      min-block-size: var(--spacing-touch-target);
-      min-inline-size: var(--spacing-touch-target);
+      position: relative;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: max(100%, var(--spacing-touch-target));
+        height: max(100%, var(--spacing-touch-target));
+        translate: -50% -50%;
+      }
     }
   }
 }

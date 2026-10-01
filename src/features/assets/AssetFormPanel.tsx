@@ -1,9 +1,9 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Button, Field, FieldGroup, Select, SidePanel, TextArea, TextInput } from '../../shared/ui';
 import { fieldErrors, isValidationProblem } from '../../shared/validation';
-import { CATEGORY_FIELDS, SPEC_LABEL, draftForCategory, missingFields } from './category-fields';
+import { CATEGORY_FIELDS, SPEC_LABEL, SPEC_PLACEHOLDER, draftForCategory, missingFields } from './category-fields';
 import { ImageField } from './ImageField';
-import { CATEGORIES, SPEC_KEYS, type Asset, type AssetDraft, type Category, type CustomSpec, type SpecKey } from './types';
+import { CATEGORIES, SPEC_KEYS, type Asset, type AssetDraft, type Category, type SpecKey } from './types';
 
 /** Add Asset and Update Asset — `03.1 Add Asset - <category>` and the update
  *  panel on the second `03- Assets` frame (spec 014 Stories 2 and 3).
@@ -14,11 +14,12 @@ import { CATEGORIES, SPEC_KEYS, type Asset, type AssetDraft, type Category, type
  *  Laptop loses nothing; `draftForCategory` drops what the category does not
  *  draw at submit, so a hidden field is never sent.
  *
+ *  Description is a single-line field on Add Asset and a 99px multi-line one
+ *  on Update Asset, as the two frames draw it.
+ *
  *  No location or quantity: stock is units, added on Inventory (ADR-0008).
- *  Update Asset ends with STOCKS · Low-stock threshold, one per asset
- *  (drift-2026-09-26 §2, spec 014 D8); Add Asset draws none, so a new asset
- *  takes the source's default. The custom-spec rows are Update-only, as drawn,
- *  and have no contract field (spec 014 D7). */
+ *  Both panels end with STOCKS · Low-stock threshold, one per asset; Add Asset
+ *  prefills the drawn `5`, the contract's `lowQtyAlert` default (spec 014 D8). */
 type FormState = {
   name: string;
   category: Category;
@@ -26,10 +27,11 @@ type FormState = {
   description: string;
   image?: string;
   specs: Record<SpecKey, string>;
-  customSpecs: CustomSpec[];
-  /** As typed; parsed on submit. Update only. */
+  /** As typed; parsed on submit. */
   lowStockThreshold: string;
 };
+
+const DEFAULT_THRESHOLD = 5;
 
 function initial(asset?: Asset): FormState {
   return {
@@ -39,17 +41,33 @@ function initial(asset?: Asset): FormState {
     description: asset?.description ?? '',
     image: asset?.image,
     specs: Object.fromEntries(SPEC_KEYS.map((k) => [k, asset?.specs[k] ?? ''])) as Record<SpecKey, string>,
-    customSpecs: asset?.customSpecs.map((s) => ({ ...s })) ?? [],
-    lowStockThreshold: asset ? String(asset.lowStockThreshold) : '',
+    lowStockThreshold: String(asset?.lowStockThreshold ?? DEFAULT_THRESHOLD),
   };
 }
 
-/** Blank is not 0: it is refused, as any non-whole number is. */
+/** Digits only. Blank is not 0, and `Number` would read `0x10` or `1e2` as
+ *  whole numbers the Admin never typed; all of them are refused. */
 function parseThreshold(typed: string): number {
-  return typed.trim() === '' ? NaN : Number(typed);
+  const trimmed = typed.trim();
+  return /^\d+$/.test(trimmed) ? Number(trimmed) : NaN;
+}
+
+/** The error keys the panel can show under a field for this category. */
+function shownFields(category: Category): Set<string> {
+  const rule = CATEGORY_FIELDS[category];
+  return new Set([
+    'name',
+    'category',
+    'description',
+    'image',
+    'lowStockThreshold',
+    ...(rule.model === 'absent' ? [] : ['model']),
+    ...rule.specs.map((key) => `specs.${key}`),
+  ]);
 }
 
 const MODEL_PLACEHOLDER = 'e.g. Latitude 7440';
+const DESCRIPTION_PLACEHOLDER = 'What it is and who it is for';
 
 export function AssetFormPanel({
   asset,
@@ -69,32 +87,31 @@ export function AssetFormPanel({
   const rule = CATEGORY_FIELDS[form.category];
   const formId = useId();
 
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+  // A save that settles after the panel has closed must not close, or write
+  // to, whatever panel replaced it.
+  const live = useRef(true);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
+
+  /** `errorKey` is the message the edit clears: the field's own, or for a
+   *  specification row its `specs.<key>`. */
+  const set = <K extends keyof FormState>(key: K, value: FormState[K], errorKey: string = key) => {
     setForm((f) => ({ ...f, [key]: value }));
     setErrors((e) => {
-      if (!(key in e)) return e;
+      if (!(errorKey in e)) return e;
       const next = { ...e };
-      delete next[key];
+      delete next[errorKey];
       return next;
     });
   };
 
-  const setCustom = (index: number, patch: Partial<CustomSpec>) =>
-    set(
-      'customSpecs',
-      form.customSpecs.map((s, i) => (i === index ? { ...s, ...patch } : s)),
-    );
-
   async function submit(event: FormEvent) {
     event.preventDefault();
-    // Blank custom rows are dropped from the form too, so an error's
-    // `customSpecs.<i>` index names the same row on screen as in the draft.
-    const kept = { ...form, customSpecs: form.customSpecs.filter((s) => s.key.trim() || s.value.trim()) };
-    setForm(kept);
-    const draft = draftForCategory({
-      ...kept,
-      lowStockThreshold: updating ? parseThreshold(kept.lowStockThreshold) : undefined,
-    });
+    const draft = draftForCategory({ ...form, lowStockThreshold: parseThreshold(form.lowStockThreshold) });
     const missing = missingFields(draft);
     if (Object.keys(missing).length) {
       setErrors(missing);
@@ -103,15 +120,20 @@ export function AssetFormPanel({
     setSaving(true);
     try {
       await onSave(draft);
-      onClose();
+      if (live.current) onClose();
     } catch (error) {
+      if (!live.current) return;
       if (isValidationProblem(error)) {
-        setErrors(fieldErrors(error));
+        const mapped = fieldErrors(error);
+        const shown = shownFields(draft.category);
+        const unshown = Object.keys(mapped).find((key) => !shown.has(key));
+        setErrors(unshown === undefined ? mapped : { ...mapped, '': `The asset could not be saved: ${mapped[unshown]}` });
       } else {
         console.error('[assets] save failed', error);
         setErrors({ '': 'The asset could not be saved. Try again' });
       }
-      setSaving(false);
+    } finally {
+      if (live.current) setSaving(false);
     }
   }
 
@@ -120,9 +142,11 @@ export function AssetFormPanel({
       title={title}
       onClose={onClose}
       header={<h2 className="font-display text-[22px] font-medium leading-display text-ink-primary">{title}</h2>}
+      bodyClassName="px-14 pt-10 pb-24"
+      footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
       footer={
-        <div className="flex items-center justify-center gap-12 border-t border-line-default pt-16">
-          <Button variant="ghost" onClick={onClose}>
+        <div className="flex items-center justify-center gap-12">
+          <Button variant="ghost" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Button type="submit" form={formId} disabled={saving}>
@@ -154,10 +178,14 @@ export function AssetFormPanel({
             )}
           </Field>
           <Field label="Category" required error={errors.category}>
-            {({ id }) => (
+            {({ id, required, invalid, describedBy }) => (
               <Select
                 id={id}
                 label="Category"
+                size="field"
+                required={required}
+                invalid={invalid}
+                describedBy={describedBy}
                 options={[...CATEGORIES]}
                 value={form.category}
                 onChange={(v) => set('category', v as Category)}
@@ -180,20 +208,21 @@ export function AssetFormPanel({
             </Field>
           ) : null}
           <Field label="Description" error={errors.description}>
-            {({ id, invalid, describedBy }) => (
-              <TextArea
-                id={id}
-                invalid={invalid}
-                aria-describedby={describedBy}
-                value={form.description}
-                onChange={(e) => set('description', e.target.value)}
-                placeholder="What it is and who it is for"
-              />
-            )}
+            {({ id, invalid, describedBy }) => {
+              const shared = {
+                id,
+                invalid,
+                'aria-describedby': describedBy,
+                value: form.description,
+                onChange: (e: { target: { value: string } }) => set('description', e.target.value),
+                placeholder: DESCRIPTION_PLACEHOLDER,
+              };
+              return updating ? <TextArea {...shared} className="h-[99px] py-12!" /> : <TextInput {...shared} />;
+            }}
           </Field>
         </FieldGroup>
 
-        {rule.specs.length || updating ? (
+        {rule.specs.length ? (
           <FieldGroup heading="SPECIFICATIONS">
             {rule.specs.map((key) => (
               <Field key={key} label={SPEC_LABEL[key]} error={errors[`specs.${key}`]}>
@@ -202,79 +231,30 @@ export function AssetFormPanel({
                     id={id}
                     invalid={invalid}
                     aria-describedby={describedBy}
+                    placeholder={SPEC_PLACEHOLDER[key]}
                     value={form.specs[key]}
-                    onChange={(e) => set('specs', { ...form.specs, [key]: e.target.value })}
+                    onChange={(e) => set('specs', { ...form.specs, [key]: e.target.value }, `specs.${key}`)}
                   />
                 )}
               </Field>
             ))}
-
-            {updating ? (
-              <>
-                {form.customSpecs.map((spec, i) => (
-                  <div key={i} className="flex items-start gap-8">
-                    <Field label="Specification" required className="flex-1" error={errors[`customSpecs.${i}.key`]}>
-                      {({ id, required, invalid, describedBy }) => (
-                        <TextInput
-                          id={id}
-                          required={required}
-                          invalid={invalid}
-                          aria-describedby={describedBy}
-                          value={spec.key}
-                          onChange={(e) => setCustom(i, { key: e.target.value })}
-                          placeholder="e.g. External Keyboard"
-                        />
-                      )}
-                    </Field>
-                    <Field label="Value" className="flex-1" error={errors[`customSpecs.${i}.value`]}>
-                      {({ id, invalid, describedBy }) => (
-                        <TextInput
-                          id={id}
-                          invalid={invalid}
-                          aria-describedby={describedBy}
-                          value={spec.value}
-                          onChange={(e) => setCustom(i, { value: e.target.value })}
-                        />
-                      )}
-                    </Field>
-                    <button
-                      type="button"
-                      aria-label={`Remove ${spec.key || 'this specification'}`}
-                      onClick={() => set('customSpecs', form.customSpecs.filter((_, j) => j !== i))}
-                      className="mt-[19px] flex h-[39px] cursor-pointer items-center border-none bg-transparent px-4 type-meta text-ink-secondary hover:text-brand-primary"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => set('customSpecs', [...form.customSpecs, { key: '', value: '' }])}
-                  className="w-fit cursor-pointer border-none bg-transparent p-0 font-sans text-11-5 font-bold leading-display text-brand-primary-alt transition-osrs hover:text-brand-primary"
-                >
-                  + Add specification
-                </button>
-              </>
-            ) : null}
           </FieldGroup>
         ) : null}
 
-        {updating ? (
-          <FieldGroup heading="STOCKS">
-            <Field label="Low-stock threshold" error={errors.lowStockThreshold}>
-              {({ id, invalid, describedBy }) => (
-                <TextInput
-                  id={id}
-                  inputMode="numeric"
-                  invalid={invalid}
-                  aria-describedby={describedBy}
-                  value={form.lowStockThreshold}
-                  onChange={(e) => set('lowStockThreshold', e.target.value)}
-                />
-              )}
-            </Field>
-          </FieldGroup>
-        ) : null}
+        <FieldGroup heading="STOCKS">
+          <Field label="Low-stock threshold" error={errors.lowStockThreshold}>
+            {({ id, invalid, describedBy }) => (
+              <TextInput
+                id={id}
+                inputMode="numeric"
+                invalid={invalid}
+                aria-describedby={describedBy}
+                value={form.lowStockThreshold}
+                onChange={(e) => set('lowStockThreshold', e.target.value)}
+              />
+            )}
+          </Field>
+        </FieldGroup>
       </form>
     </SidePanel>
   );

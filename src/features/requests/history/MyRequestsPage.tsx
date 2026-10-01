@@ -157,11 +157,16 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   // Only their own ids are in the list, so another Employee's request and a
   // missing one get the same notice (spec 003 FR-012a).
   const ownIds = useMemo(() => (load.state === 'ready' ? load.requests.map((r) => r.id) : null), [load]);
-  const { unavailable, dismiss } = useDeepLinkedRequest(ownIds, setOpenId, REQUEST_UNAVAILABLE);
+  const { linked, unavailable, dismiss } = useDeepLinkedRequest(ownIds, REQUEST_UNAVAILABLE);
+  const closePanel = () => {
+    setOpenId(null);
+    dismiss();
+  };
 
   const { title, purpose } = DESTINATIONS.requests;
   const requests = useMemo(() => (load.state === 'ready' ? newestFirst(load.requests) : []), [load]);
-  const open = requests.find((r) => r.id === openId);
+  const shownId = openId ?? linked;
+  const open = requests.find((r) => r.id === shownId);
 
   return (
     // The frame sets the title 34px under the bar and the table 40px under the
@@ -233,7 +238,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
         </TableCard>
       ) : null}
 
-      {open ? <RequestDetailPanel request={open} onClose={() => setOpenId(null)} onCancel={cancel} onSign={sign} onMarkReceived={markReceived} /> : null}
+      {open ? <RequestDetailPanel request={open} onClose={closePanel} onCancel={cancel} onSign={sign} onMarkReceived={markReceived} /> : null}
     </div>
   );
 }

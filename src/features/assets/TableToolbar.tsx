@@ -18,8 +18,8 @@ export function TableToolbar({ query, allLabel }: { query: TableQuery; allLabel:
     <>
       <div className="mt-18 flex flex-wrap items-center gap-16">
         <Search
-          placeholder="Search inventory by item name or code"
-          aria-label="Search by item name or code"
+          placeholder="Search asset by item name or model"
+          aria-label="Search by item name or model"
           value={query.search}
           onChange={(e) => query.setSearch(e.target.value)}
           className="min-w-[260px] flex-1"
@@ -56,8 +56,9 @@ export function TableToolbar({ query, allLabel }: { query: TableQuery; allLabel:
   );
 }
 
-/** The table card's body for the three states that are not rows: loading, a
- *  failed load, and nothing matching. Returns `null` when there are rows. */
+/** The table card's body for the states that are not rows: loading, a failed
+ *  load, a list left stale by a failed refresh after a save, and nothing
+ *  matching. The last two can show together, above any rows. */
 export function TableState({
   state,
   empty,
@@ -97,10 +98,33 @@ export function TableState({
       />
     );
   }
-  if (rowCount === 0) {
-    return <p className="flex h-row-height-inventory items-center px-20 type-body text-ink-secondary">{empty}</p>;
-  }
-  return null;
+  const stale = state.stale ? (
+    <Notice
+      eyebrow="Not refreshed"
+      tone="info"
+      title="Saved, but the list could not be refreshed"
+      body="Your change is shown. Other changes since may be missing"
+      actions={
+        <button
+          type="button"
+          onClick={onRetry}
+          className="cursor-pointer border-none bg-transparent p-0 type-ui-bold text-ink-link"
+        >
+          Refresh
+        </button>
+      }
+    />
+  ) : null;
+  const nothing =
+    rowCount === 0 ? (
+      <p className="flex h-row-height-inventory items-center px-20 type-body text-ink-secondary">{empty}</p>
+    ) : null;
+  return (
+    <>
+      {stale}
+      {nothing}
+    </>
+  );
 }
 
 export function TablePager({ query }: { query: TableQuery }) {
