@@ -10,12 +10,14 @@ import { identityLine } from './format';
  *  Sizes follow the rendered `05 - Profile` frame, not the UI kit's JSX, whose
  *  cached 13px / 11px values drift §9 records as wrong. */
 export function IdentityBlock({ user }: { user: User }) {
+  const name = user.name?.trim() ?? '';
+  const line = identityLine(user.email, user.office);
   return (
     <div className="flex items-center gap-8">
-      <Avatar initials={user.initials} color={user.avatarColor} size={56} />
+      <Avatar initials={name ? user.initials : ''} color={user.avatarColor} size={56} />
       <div className="flex min-w-0 flex-col gap-2">
-        <p className="break-words font-sans text-24 font-medium leading-body text-ink-primary">{user.name}</p>
-        <p className="break-words type-body text-ink-secondary">{identityLine(user.email, user.office)}</p>
+        {name ? <p className="break-words font-sans text-24 font-medium leading-body text-ink-primary">{name}</p> : null}
+        {line ? <p className="break-words type-body text-ink-secondary">{line}</p> : null}
       </div>
     </div>
   );

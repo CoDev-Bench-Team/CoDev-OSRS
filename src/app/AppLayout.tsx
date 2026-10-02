@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { Button, ErrorBoundary, TopBar, type NavItem } from '../shared/ui';
 import { navigationFor } from '../features/auth/navigation';
@@ -25,6 +25,7 @@ export function AppLayout() {
   const { openList, closeList } = useRequestList();
   const location = useLocation();
   const navigate = useNavigate();
+  const [signOutError, setSignOutError] = useState<string | null>(null);
 
   // Exactly one item is current (FR-014). `startsWith` so a nested address —
   // /requests/REQ-2026-1847 — still marks My Requests, but only on a path
@@ -84,7 +85,12 @@ export function AppLayout() {
           event.preventDefault();
           void navigate(href);
         }}
-        user={{ name: user.name, role: ROLE_LABEL[role], initials: user.initials, color: user.avatarColor }}
+        user={{
+          name: user.name?.trim() ? user.name : ROLE_LABEL[role],
+          role: ROLE_LABEL[role],
+          initials: user.name?.trim() ? user.initials : '',
+          color: user.avatarColor,
+        }}
         // FR-015: employees only. `undefined` removes the marker entirely for
         // the other two roles rather than showing them a zero.
         requestListCount={role === 'employee' ? count : undefined}
@@ -109,14 +115,28 @@ export function AppLayout() {
           // the account cluster is an addition (docs/design-system/additions.md).
           // History is REPLACED so back cannot restore a signed-in screen
           // (FR-016).
-          <Button
-            variant="ghost"
-            onClick={() => {
-              void signOut().then(() => navigate(SIGN_IN_PATH, { replace: true }));
-            }}
-          >
-            Sign Out
-          </Button>
+          <div className="flex flex-col items-end gap-4">
+            {signOutError ? (
+              <p role="alert" className="max-w-xs text-right type-body text-red-error">
+                {signOutError}
+              </p>
+            ) : null}
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSignOutError(null);
+                void signOut()
+                  .then(() => navigate(SIGN_IN_PATH, { replace: true }))
+                  .catch((error: unknown) => {
+                    setSignOutError(
+                      error instanceof Error ? error.message : 'Sign-out did not succeed. Please try again.',
+                    );
+                  });
+              }}
+            >
+              Sign Out
+            </Button>
+          </div>
         }
       />
 

@@ -12,10 +12,18 @@ This repo runs the **SPA**. A REST API **from the backend team** must be reachab
 Create `.env` (never commit secrets):
 
 ```
-VITE_API_ORIGIN=http://localhost:8080
+VITE_API_BASE_URL=https://codev-osrs-backend.vercel.app
+VITE_GOOGLE_CLIENT_ID=
+VITE_COMPANY_DOMAIN=codev.com
 ```
 
-Use the origin the backend team documents. Optionally proxy through Vite (`vite.config.ts`) so the browser stays same-origin.
+`VITE_API_BASE_URL` is the session switch. Leave it unset and the SPA keeps the seeded session below. Set it and login, refresh, and logout use the published API (`credentials: 'include'`).
+
+`VITE_GOOGLE_CLIENT_ID` is the Web client id from the same Google Cloud project the API verifies (BEN-96). It is not a secret. Put it in `.env` only. `.env.example` names the variable and leaves it empty, and the id is not written into source. API-mode sign-in renders Google's button only when it is set. `VITE_COMPANY_DOMAIN` is an account-picker hint; the API still decides which domains may sign in.
+
+The dev server is pinned to port 5173. That origin is the one authorized on the OAuth client. A busy port fails to start.
+
+In development, Vite proxies `/auth` to `VITE_API_BASE_URL` so the session cookie is first-party on the Vite origin. That proxy is not in the production build. Production calls `VITE_API_BASE_URL` directly, so the SPA and the API must be on the same site, with the cookie `Secure` and `SameSite=Lax`. A refresh on those real hosts must restore the same person. A session that works on localhost does not satisfy that check.
 
 ## Demo users
 

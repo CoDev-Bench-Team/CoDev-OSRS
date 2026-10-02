@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 import { createReadStream, existsSync, statSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
@@ -37,13 +37,32 @@ function designSystemAssets(): Plugin {
   }
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), designSystemAssets()],
-  resolve: {
-    alias: {
-      // Resolves the vendored design-system source for the dev-only fidelity
-      // harness (spec 002 FR-005a). Never used by product code.
-      '@ds': fileURLToPath(new URL('./design-system', import.meta.url)),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const apiBase = env.VITE_API_BASE_URL?.trim()
+  return {
+    plugins: [react(), tailwindcss(), designSystemAssets()],
+    // Dev only. Vite does not apply `server.proxy` to a production build.
+    // `/auth` alone: `/assets` is already the design-system middleware.
+    server: {
+      // Google's OAuth client authorizes http://localhost:5173 only. A busy
+      // port must fail to start rather than move to a port sign-in cannot use.
+      port: 5173,
+      strictPort: true,
+      ...(apiBase
+        ? {
+            proxy: {
+              '/auth': { target: apiBase, changeOrigin: true },
+            },
+          }
+        : {}),
     },
-  },
+    resolve: {
+      alias: {
+        // Resolves the vendored design-system source for the dev-only fidelity
+        // harness (spec 002 FR-005a). Never used by product code.
+        '@ds': fileURLToPath(new URL('./design-system', import.meta.url)),
+      },
+    },
+  }
 })

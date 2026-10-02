@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { SessionUnreachable } from '../../shared/api';
 import { seededSessionSource } from './seeded-source';
 import type { SessionSource } from './session-source';
 import { SessionContext, type SessionNotice } from './session-context';
+import { SessionRefusal } from './session-errors';
 import type { Session, SessionStatus } from './types';
+
+function refusalNotice(error: unknown): SessionNotice | null {
+  if (error instanceof SessionRefusal) return { kind: 'refused', message: error.sessionNotice };
+  if (error instanceof SessionUnreachable) return { kind: 'refused', message: error.message };
+  return null;
+}
 
 /** The status machine and the one place the session boundary is called.
  *
@@ -35,7 +43,20 @@ export function SessionProvider({
 
   const resolve = useCallback(async () => {
     const ticket = ++resolution.current;
-    const next = await source.current().catch(() => null);
+    let next: Session | null;
+    try {
+      next = await source.current();
+    } catch (error) {
+      if (ticket !== resolution.current) return;
+      // A refusal or an unreachable API stays on sign-in. The seeded source is
+      // never substituted for a configured API that failed.
+      const refused = refusalNotice(error);
+      if (refused) setNotice(refused);
+      signedIn.current = false;
+      setSession(null);
+      setStatus('signed-out');
+      return;
+    }
     if (ticket !== resolution.current) return;
 
     if (next) {
@@ -45,6 +66,7 @@ export function SessionProvider({
       return;
     }
     // Losing a session we had, without asking to, is the invalidated case.
+    // A `401` from the current-user read arrives here as `null`.
     if (signedIn.current && !signingOut.current) setNotice('expired');
     signedIn.current = false;
     setSession(null);
@@ -60,14 +82,20 @@ export function SessionProvider({
     });
   }, [resolve, source]);
 
-  const signIn = useCallback(async () => {
-    const next = await source.signIn();
-    ++resolution.current; // this answer supersedes any resolution in flight
-    signedIn.current = true;
-    setNotice(null);
-    setSession(next);
-    setStatus('signed-in');
-    return next;
+  const signIn = useCallback(async (credential?: string) => {
+    try {
+      const next = await source.signIn(credential);
+      ++resolution.current; // this answer supersedes any resolution in flight
+      signedIn.current = true;
+      setNotice(null);
+      setSession(next);
+      setStatus('signed-in');
+      return next;
+    } catch (error) {
+      const refused = refusalNotice(error);
+      if (refused) setNotice(refused);
+      throw error;
+    }
   }, [source]);
 
   const signOut = useCallback(async () => {

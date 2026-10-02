@@ -1,9 +1,11 @@
 import type { Office } from '../auth/types';
 
-/** `<email> • <Office> Office` — or the email alone when the session
- *  carries no office, so the separator never dangles (spec 006 Edge Cases). */
-export function identityLine(email: string, office?: Office): string {
-  return office ? `${email} • ${office} Office` : email;
+/** `<email> • <Office> Office`, either part alone, or `''` when the session
+ *  carries neither — so the separator never dangles (spec 006 Edge Cases). */
+export function identityLine(email?: string, office?: Office): string {
+  const address = email?.trim() ?? '';
+  const place = office ? `${office} Office` : '';
+  return [address, place].filter(Boolean).join(' • ');
 }
 
 const ASSIGNED_DATE = new Intl.DateTimeFormat('en-US', {
