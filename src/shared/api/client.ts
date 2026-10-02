@@ -37,11 +37,12 @@ function notifySessionEnded(): void {
   for (const listener of sessionEnded) listener();
 }
 
-/** Same-origin in development, where Vite proxies `/auth`. Production calls
- *  the configured base directly. */
+/** Same-origin where a proxy keeps the session cookie on this host: the Vite
+ *  dev server, and a Netlify build. Any other production build calls the
+ *  configured base directly, so that host must be the same site as the API. */
 export function apiUrl(path: string): string {
+  if (import.meta.env.DEV || __OSRS_NETLIFY__) return path;
   const configured = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
-  if (import.meta.env.DEV) return path;
   return `${configured.replace(/\/$/, '')}${path}`;
 }
 

@@ -98,7 +98,7 @@ No edits to the source pickers for catalog, My Requests, profile, the admin queu
 
 ### Cookie and the one switch
 
-- `vite.config.ts` — when `VITE_API_BASE_URL` is set, the dev server proxies API paths to it so the session cookie is first-party on the Vite origin. The client then uses a same-origin base in development. The proxy is not part of the production build. Production calls `VITE_API_BASE_URL` directly.
+- `vite.config.ts` — when `VITE_API_BASE_URL` is set, the dev server proxies `/auth` to it so the session cookie is first-party on the Vite origin. The client then uses a same-origin path in development. A Netlify build does the same with a `/auth/*` rewrite, because a deploy preview is a different site from the API and a direct call is blocked. Any other production build calls `VITE_API_BASE_URL` directly.
 - `specs/001-office-supplies-mvp/quickstart.md` and the README line that mentions `VITE_API_ORIGIN` — document `VITE_API_BASE_URL`, the dev-only proxy, `credentials: 'include'`, and that an unset variable keeps the seeded session. Do not document a second variable. Quickstart also carries a production check: the SPA and the API are on the same site, the cookie is `Secure` and `SameSite=Lax`, and a refresh on those real hosts restores the person. A passing localhost session does not satisfy that check.
 
 ### Contract record and checks
@@ -170,7 +170,7 @@ No new npm dependency. Google Identity Services is loaded from Google's script o
 | FR-021 | Mapper file gated on the live comparison note |
 | FR-022 | `asset-image.ts` |
 | FR-023 | Client writes no browser storage; no `/users` call |
-| FR-024 | Dev-only proxy; quickstart production same-site check on the real hosts |
+| FR-024 | Dev proxy and the Netlify `/auth` proxy; quickstart production same-site check on the real hosts |
 | FR-025 | Contract README notes. The Google client id is `VITE_GOOGLE_CLIENT_ID`, not a Swagger field |
 
 ## Known Risks
@@ -180,7 +180,7 @@ Red-team on 2026-10-02. All five risks are mitigated. None are accepted.
 | Risk | Mitigation in this plan |
 |------|-------------------------|
 | The live document never names a Google client id | Read `VITE_GOOGLE_CLIENT_ID` (BEN-96). Do not write the id into source. Unset, API-mode sign-in refuses. Seeded sign-in keeps working. |
-| The dev proxy makes the cookie look fine on localhost while production drops it | The proxy stays in the dev server only. Quickstart requires a refresh on the real SPA and API hosts, on the same site, before the cookie setup is called done. |
+| The dev proxy makes the cookie look fine on localhost while production drops it | A Netlify build proxies `/auth` the same way, because that host is a different site from the API. Quickstart requires a refresh on the real SPA and API hosts, on the same site, before the cookie setup is called done. A localhost or deploy-preview session does not satisfy that check. |
 | `GET /auth/me` has no name, and the shell looks empty | The account cluster shows the existing role label. Profile shows email and office only when the body has them. The missing fields are recorded. No person is invented. |
 | Another tab stays signed in because `BroadcastChannel` is blocked | That tab re-reads `GET /auth/me` when it becomes visible again, as well as when the channel fires. |
 | A later rename of the session-ending writes leaves a `403` on the screen | The check script asserts `POST /requests`, `POST /requests/:id/receive`, and `POST /requests/:id/sign`. A path change lands with a contract-record note in the same change. |

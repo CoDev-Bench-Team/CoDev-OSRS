@@ -11,3 +11,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** True when Netlify is building the site. The client then calls `/auth` on
+ *  that host, and the build proxies it to `VITE_API_BASE_URL`. */
+declare const __OSRS_NETLIFY__: boolean;

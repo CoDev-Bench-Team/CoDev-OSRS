@@ -23,7 +23,7 @@ VITE_COMPANY_DOMAIN=codev.com
 
 The dev server is pinned to port 5173. That origin is the one authorized on the OAuth client. A busy port fails to start.
 
-In development, Vite proxies `/auth` to `VITE_API_BASE_URL` so the session cookie is first-party on the Vite origin. That proxy is not in the production build. Production calls `VITE_API_BASE_URL` directly, so the SPA and the API must be on the same site, with the cookie `Secure` and `SameSite=Lax`. A refresh on those real hosts must restore the same person. A session that works on localhost does not satisfy that check.
+In development, Vite proxies `/auth` to `VITE_API_BASE_URL` so the session cookie is first-party on the Vite origin. A Netlify build does the same: the browser calls `/auth` on the Netlify host, and Netlify proxies that path to `VITE_API_BASE_URL`. A deploy preview needs that, because the preview and the API are different sites and the browser blocks a direct call. A production build that is not on Netlify calls `VITE_API_BASE_URL` directly, so those hosts must be on the same site, with the cookie `Secure` and `SameSite=Lax`. A refresh on those real hosts must restore the same person. A session that works on localhost or a deploy preview does not satisfy that check.
 
 ## Demo users
 

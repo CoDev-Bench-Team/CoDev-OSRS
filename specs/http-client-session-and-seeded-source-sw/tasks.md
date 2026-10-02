@@ -30,7 +30,7 @@ Format: `- [ ] [TaskID] [P?] [Story?] Description — path`
 - [x] T011 [P] [US2] `signIn(credential?: string)`. The notice can carry the published problem text — `src/features/auth/session-context.ts`
 - [x] T012 [US2] Pass the credential through to the source. A `403` refusal and an unreachable API become sign-in notices and do not swap in the seeded source. `status` still starts at `unknown` — `src/features/auth/SessionProvider.tsx`
 - [x] T013 [US2] Keep the designed Google control. Demo accounts call `signIn()` as they do today. API mode renders Google's own button over that control when `VITE_GOOGLE_CLIENT_ID` is set, holds the credential only for the call, and otherwise refuses without inventing an id — `src/features/auth/LoginScreen.tsx`
-- [x] T014 [P] [US2] Dev-server proxy to `VITE_API_BASE_URL` so the session cookie is first-party on the Vite origin. The production build does not use that proxy — `vite.config.ts`
+- [x] T014 [P] [US2] Dev-server proxy to `VITE_API_BASE_URL` so the session cookie is first-party on the Vite origin. A Netlify build proxies `/auth` the same way. Any other production build calls the base directly — `vite.config.ts`
 - [x] T015 [P] [US2] Document the one switch, the dev-only proxy, `credentials: 'include'`, and the production check that a refresh on the real same-site hosts restores the person. Drop `VITE_API_ORIGIN` as a second switch — `specs/001-office-supplies-mvp/quickstart.md`, `README.md`
 
 ## Phase 5: Screens follow the current user (P1)

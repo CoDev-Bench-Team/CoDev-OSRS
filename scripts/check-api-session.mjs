@@ -87,6 +87,8 @@ const contract = read('../specs/001-office-supplies-mvp/contracts/README.md');
 check(app.includes('selectSessionSource()'), 'the app root passes selectSessionSource()');
 check(sessionSource.includes('apiConfigured() ? apiSessionSource : seededSessionSource'), 'a blank base keeps the seeded source');
 check(client.includes("credentials: 'include'"), "the client sends credentials: 'include'");
+check(client.includes('__OSRS_NETLIFY__'), 'a Netlify build calls /auth on its own host');
+check(read('../vite.config.ts').includes('/auth/:splat'), 'the Netlify build proxies /auth to the configured base');
 check((client.match(/fetch\(/g) ?? []).length === 1, 'the client issues each call once');
 check(!/localStorage|sessionStorage/.test(client), 'the client writes no browser storage');
 check(apiSource.includes("'/auth/me'") && apiSource.includes("'/auth/google'") && apiSource.includes("'/auth/logout'"), 'the API source names the three auth calls');
