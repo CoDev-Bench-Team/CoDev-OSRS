@@ -159,8 +159,9 @@ async function ensureInitialized(clientId: string, companyDomain?: string): Prom
   return id;
 }
 
-/** Render Google's sign-in button into `container`. The caller hides it and
- *  lays it over the drawn 242px pill. */
+/** Render Google's sign-in button into `container`. The sign-in screen
+ *  paints the drawn 242×64 pill over this frame; the frame stays the hit
+ *  target. */
 export async function mountGoogleButton(
   container: HTMLElement,
   clientId: string,

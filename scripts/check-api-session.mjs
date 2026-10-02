@@ -110,6 +110,15 @@ check(
 );
 check(login.includes('hasGoogleButton') && login.includes('GoogleSignInOverlay'), "API sign-in lays Google's button over the drawn control");
 check(googleIdentity.includes('renderButton') && !googleIdentity.includes('.prompt('), 'sign-in uses Google\'s button, not One Tap');
+const overlay = read('../src/features/auth/GoogleSignInOverlay.tsx');
+check(!/opacity:\s*0(?:\s|;|$)/.test(overlay), 'an ancestor of the Google button is not fully transparent');
+check(overlay.includes('zoom'), 'the Google frame is zoomed to the pill instead of stretched with a transform');
+check(!overlay.includes('scaleY'), 'the Google button is not scaled, or a public origin stops accepting clicks after a few seconds');
+check(!overlay.includes('onPress'), 'the overlay does not start sign-in before Google opens the account chooser');
+check(
+  login.includes('pointer-events-none absolute inset-0 z-20'),
+  'the drawn pill paints over the Google frame and does not take the click',
+);
 check(contract.includes('VITE_GOOGLE_CLIENT_ID'), 'the contract note records the frontend client id variable');
 const leakedClientIds = googleClientIdHits(root);
 check(leakedClientIds.length === 0, 'the Google client id is not written into the tree', leakedClientIds.join(', '));

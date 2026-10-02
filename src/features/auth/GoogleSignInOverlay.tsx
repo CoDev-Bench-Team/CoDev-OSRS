@@ -1,30 +1,46 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GoogleButtonSource } from './google-button-source';
 
-/** Google's real sign-in button, invisible, laid over the drawn 242×64 pill.
+/** Google's real sign-in button, under the drawn 242×64 pill.
  *
- *  Google's button cannot be restyled into that pill: it caps near 40px tall
- *  and draws its own border and type. It is rendered at `opacity: 0`, stretched
- *  to the full pill, and receives the click. A keyboard focus reveals it
- *  (`:focus-visible`) so the focus ring stays visible. A mouse click also
- *  focuses the button, and `:focus-within` would flash Google's button on every
- *  press, so the reveal is keyboard-only.
+ *  The pill paints over this frame, so the visitor sees the drawing and not
+ *  Google's own border and label. The pill does not take the click; this
+ *  frame does. Fading the frame does not hide it in every browser, which is
+ *  why the pill has to cover it.
  *
- *  The credential request opens on `pointerdown` capture, before Google's
- *  button handles the press. A keyboard activation inside Google's iframe does
- *  not produce that event; `onGoogleCredential` delivers that credential. */
+ *  Google's button is shorter than the pill. A scale transform makes the
+ *  on-screen box disagree with the size Google rendered, and after a few
+ *  seconds Google then refuses the click. Zoom grows the frame's own box to
+ *  the pill instead. The frame is fitted once: writing zoom again makes the
+ *  observer that watches it loop.
+ *
+ *  The credential arrives through `onGoogleCredential`. This overlay does not
+ *  start sign-in on the press, or the screen says "Signing in…" before Google
+ *  has opened anything. */
+
+const PILL_HEIGHT = 64;
+const fitted = new WeakSet<HTMLIFrameElement>();
+
+/** Grow Google's own box until it fills the pill. The height is read once,
+ *  before zoom changes it. */
+function fitGoogleFrame(container: HTMLElement): void {
+  const frame = container.querySelector('iframe');
+  if (!(frame instanceof HTMLIFrameElement) || fitted.has(frame)) return;
+  const height = frame.offsetHeight;
+  if (height < 32 || height > 56) return;
+  frame.style.setProperty('zoom', (PILL_HEIGHT / height).toFixed(4));
+  fitted.add(frame);
+}
+
 export function GoogleSignInOverlay({
   source,
-  onPress,
   onUnavailable,
 }: {
   source: GoogleButtonSource;
-  onPress: () => void;
   onUnavailable: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const alive = useRef(true);
-  const [keyboardFocus, setKeyboardFocus] = useState(false);
   const [phase, setPhase] = useState<'loading' | 'ready' | 'failed'>('loading');
 
   useEffect(() => {
@@ -43,7 +59,9 @@ export function GoogleSignInOverlay({
     void source
       .mountButton(container)
       .then(() => {
-        if (!cancelled) setPhase('ready');
+        if (cancelled) return;
+        fitGoogleFrame(container);
+        setPhase('ready');
       })
       .catch(() => {
         if (cancelled) return;
@@ -52,23 +70,21 @@ export function GoogleSignInOverlay({
         onUnavailable();
       });
 
+    const observer = new MutationObserver(() => fitGoogleFrame(container));
+    observer.observe(container, { subtree: true, attributes: true, attributeFilter: ['style'] });
+
     return () => {
       cancelled = true;
+      observer.disconnect();
     };
   }, [source, onUnavailable]);
 
   return (
     <div
       className="absolute inset-0 overflow-hidden rounded-32"
-      style={{ opacity: keyboardFocus ? 1 : 0 }}
       onPointerDownCapture={() => {
-        if (phase === 'ready') {
-          onPress();
-          return;
-        }
-        // The first press after a failed script load retries the mount. That
-        // press cannot reach a button that is not in the document yet, so the
-        // credential waiter stays closed until a later press on the live button.
+        // A failed script load has no button yet. Retry the mount. The press
+        // cannot open the chooser until a later press on the live button.
         if (phase !== 'failed') return;
         const container = host.current;
         if (!container) return;
@@ -76,7 +92,9 @@ export function GoogleSignInOverlay({
         void source
           .mountButton(container)
           .then(() => {
-            if (alive.current) setPhase('ready');
+            if (!alive.current) return;
+            fitGoogleFrame(container);
+            setPhase('ready');
           })
           .catch(() => {
             if (!alive.current) return;
@@ -85,20 +103,8 @@ export function GoogleSignInOverlay({
             onUnavailable();
           });
       }}
-      onFocusCapture={(event) => {
-        const target = event.target;
-        setKeyboardFocus(target instanceof Element && target.matches(':focus-visible'));
-      }}
-      onBlurCapture={() => setKeyboardFocus(false)}
     >
-      <div
-        ref={host}
-        className="absolute top-1/2 left-1/2"
-        style={{
-          width: 242,
-          transform: `translate(-50%, -50%) scaleY(${keyboardFocus ? 1 : 1.6})`,
-        }}
-      />
+      <div ref={host} className="relative h-full w-full" />
     </div>
   );
 }
