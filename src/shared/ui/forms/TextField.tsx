@@ -1,24 +1,5 @@
 import { useId, type KeyboardEvent, type TextareaHTMLAttributes } from 'react';
 
-/** A labelled text box. The design draws one, the cancel reason in
- *  `04.2 - Cancel Request`, and that is `tone="danger"`.
- *
- *  - `danger` — the drawn pink block, red label and red outline, around a 58px
- *    white box. It marks a destructive step, so it is the block's resting look.
- *  - `neutral` (default) — a plain white card with the same box inside, for any
- *    field that is not a destructive step. It turns pink only when invalid.
- *
- *  The box is a one-row textarea that grows with its text (`field-sizing`), up
- *  to 160px, then scrolls; a browser without `field-sizing` keeps the 58px box
- *  and scrolls sooner. Enter still submits the form, as a one-line field would, and
- *  Shift+Enter breaks the line. `required` draws the asterisk; `invalid` rings
- *  the box in red and adds the message that says why, announced to a screen
- *  reader through `aria-describedby`. Validation itself is the caller's — this
- *  only shows the result.
- *
- *  For a one-line field, use `InputField` (`04.1`'s *Type full name to sign*).
- *  The two share `required` / `invalid` / `message` and the `aria-describedby`
- *  wiring, so a form treats them alike (spec 012 D6). */
 /** The block and label colours: a danger field keeps its pink at rest; a
  *  neutral one turns pink only when invalid. */
 const LOOK = {
@@ -38,6 +19,25 @@ function submitsOnEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
   return !e.defaultPrevented && e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing;
 }
 
+/** A labelled text box. The design draws one, the cancel reason in
+ *  `04.2 - Cancel Request`, and that is `tone="danger"`.
+ *
+ *  - `danger` — the drawn pink block, red label and red outline, around a 58px
+ *    white box. It marks a destructive step, so it is the block's resting look.
+ *  - `neutral` (default) — a plain white card with the same box inside, for any
+ *    field that is not a destructive step. It turns pink only when invalid.
+ *
+ *  The box is a one-row textarea that grows with its text (`field-sizing`), up
+ *  to 160px, then scrolls; a browser without `field-sizing` keeps the 58px box
+ *  and scrolls sooner. Enter still submits the form, as a one-line field would, and
+ *  Shift+Enter breaks the line. `required` draws the asterisk; `invalid` rings
+ *  the box in red and adds the message that says why, announced to a screen
+ *  reader through `aria-describedby`. Validation itself is the caller's — this
+ *  only shows the result.
+ *
+ *  For a one-line field, use `InputField` (`04.1`'s *Type full name to sign*).
+ *  The two share `required` / `invalid` / `message` and the `aria-describedby`
+ *  wiring, so a form treats them alike (spec 012 D6). */
 export function TextField({
   label,
   required,

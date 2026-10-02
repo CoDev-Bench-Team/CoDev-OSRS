@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Button, Field, FieldGroup, LoadingState, Notice, Select, SidePanel, StatusPill, TextArea } from '../../shared/ui';
+import { Button, ConfirmDialog, Field, FieldGroup, LoadingState, Notice, Select, SidePanel, StatusPill, TextArea } from '../../shared/ui';
 import { useAssets } from '../assets/asset-store';
 import { ImageField } from '../assets/ImageField';
 import type { Asset, Category } from '../assets/types';
@@ -332,11 +332,13 @@ export function UnitFormPanel(props: Props) {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [removing, setRemoving] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [reason, setReason] = useState('');
   const editing = props.mode === 'edit' ? props : null;
   const { loaded, retry, gone } = useUnitLoad(editing?.unitId ?? null, editing?.load ?? null, (unit) => setForm(fromUnit(unit)));
 
   const { saving, attempt } = useAttempt(props.onClose, (error, what) => {
+    setConfirming(false);
     const result = refusal(error, what, (key) => SHOWN.has(key));
     if (!('problem' in result)) setErrors(result.errors);
     else if (result.problem.status === 404) gone(result.problem.detail);
@@ -366,11 +368,18 @@ export function UnitFormPanel(props: Props) {
     props.onClose();
   };
 
-  function remove(target: NonNullable<typeof editing>) {
+  /** A blank reason stays on the field. A reason asks first: removal deletes
+   *  the unit permanently (spec 015 Story 4). */
+  function askRemove() {
     if (!reason.trim()) {
       setErrors({ reason: 'Enter a reason for removal' });
       return;
     }
+    setConfirming(true);
+  }
+
+  function confirmRemove(target: NonNullable<typeof editing>) {
+    if (saving) return;
     void attempt(() => target.onRemove(target.unitId, reason.trim()), 'The unit could not be removed');
   }
 
@@ -387,12 +396,13 @@ export function UnitFormPanel(props: Props) {
   function submit(event: FormEvent) {
     event.preventDefault();
     if (saving) return;
-    if (removing && editing) remove(editing);
+    if (removing && editing) askRemove();
     else save();
   }
 
   const leaveRemoving = () => {
     setRemoving(false);
+    setConfirming(false);
     setReason('');
     clear('reason');
   };
@@ -464,6 +474,18 @@ export function UnitFormPanel(props: Props) {
               }}
               onStart={() => setRemoving(true)}
             />
+          ) : null}
+
+          {confirming && editing ? (
+            <ConfirmDialog
+              title="Remove this unit?"
+              confirmLabel="Remove unit"
+              busy={saving}
+              onCancel={() => setConfirming(false)}
+              onConfirm={() => confirmRemove(editing)}
+            >
+              <p>This permanently deletes the unit. You cannot undo it.</p>
+            </ConfirmDialog>
           ) : null}
         </form>
       )}

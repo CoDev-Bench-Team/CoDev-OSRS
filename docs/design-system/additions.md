@@ -541,6 +541,7 @@ Remove states, and `03 - Inventory - Bulk Add Units` are drawn, as of the
 | **Focus when a control goes** | A bulk row's ✕ hands focus to the next row's ✕, else the one above, else **+ Add another unit**. `−` at 0 hands it to `+`; `+` at 100 to `−`; **+ Add another unit** at 100 to the new row's ✕. Clearing the catalog item focuses its search. | FR-016: focus never drops to the page. |
 | **Concurrent-reservation message** | *This unit was reserved by a request. Reload to see its current status.*, above the fields; the edits are kept. | Seeded; the contract publishes no such refusal (spec 015 P16, contracts conflict 11 G4). |
 | **Menu item height** | The Add Inventory menu's items are 40px tall rather than the drawn 28px, keeping their 44px touch targets below the design width from overlapping. | Spec 002 FR-012's touch-target rule. |
+| **Remove confirmation** | A reason and **Confirm Removal** open the shared `ConfirmDialog`: *Remove this unit?* · *This permanently deletes the unit. You cannot undo it.* · Cancel / **Remove unit**. Cancel, Esc and the scrim close it and keep the reason. An empty reason never opens it. | Asked by the project owner, 2026-10-02. The Delete Unit Confirmation frame ends on **Confirm Removal**, with no second dialog. **Flagged to the designer.** |
 
 ---
 

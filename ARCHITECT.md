@@ -1,7 +1,7 @@
 # Architecture — Office Supplies Request System
 
 **Status**: Accepted for MVP  
-**Date**: 2026-09-11 · **Last amended**: 2026-10-01 (an Admin cannot cancel a `For Delivery` request; constitution 8.0.0, ADR-0012). 2026-09-29: the Admin or the Employee sets `Received`, the Employee signs on it; constitution 7.0.0  
+**Date**: 2026-09-11 · **Last amended**: 2026-10-02 (a unit may be added as `Inactive`, spec 015 D3). 2026-10-01: an Admin may clear an assignment and the unit's tag is its Purchase Request number; constitution 9.0.0, ADR-0008 amended. 2026-10-01: an Admin cannot cancel a `For Delivery` request; constitution 8.0.0, ADR-0012. 2026-09-29: the Admin or the Employee sets `Received`, the Employee signs on it; constitution 7.0.0  
 **Companion docs**: [product](docs/product.md), [process flow](docs/process-flow.md), [ADRs](docs/adr/), [feature plan](specs/001-office-supplies-mvp/plan.md)
 
 This file is the cross-cutting HOW. Feature WHAT lives in specs. Do not duplicate user stories here.
@@ -139,6 +139,7 @@ Stock is a register of **units** ([ADR-0008](docs/adr/0008-per-unit-inventory-re
 | Event | Status after | Unit status change | Total | Available | Reserved |
 |-------|--------------|--------------------|-------|-----------|----------|
 | Units added (single or bulk) | — | → `Available` | +n | +n | — |
+| A unit added directly as `Assigned` or `Inactive` (Admin) | — | → `Assigned` / `Inactive` | — | — | — |
 | Unit made `Inactive`, or an `Available` unit removed | — | `Available` → `Inactive` / removed | −n | −n | — |
 | Unit reactivated | — | `Inactive` → `Available` | +n | +n | — |
 | Existing assignment recorded (Admin, outside a request) | — | `Available` → `Assigned` | −n | −n | — |

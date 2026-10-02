@@ -103,8 +103,10 @@ Under REMOVE UNIT, an Admin removes a unit that no one holds, giving a reason.
 1. **Given** an `Available` or `Inactive` unit, **When** the panel renders, **Then** REMOVE UNIT shows a **Remove Unit** link with a delete icon.
 2. **Given** **Remove Unit** is activated, **When** the section changes, **Then** it shows `Reason for removal *` (*"e.g item on hold, insufficient justification..."*) and the footer becomes **Cancel** / **Confirm Removal**.
 2a. **Given** removal mode, **When** the Admin presses **Cancel**, **Then** the section returns to the **Remove Unit** link and the footer to **Cancel** / **Save Changes**; the panel stays open.
-3. **Given** an empty reason, **When** **Confirm Removal** is pressed, **Then** nothing is removed and a message appears under the field.
-4. **Given** a reason, **When** **Confirm Removal** is pressed, **Then** the unit is removed (any unsaved field edits are discarded, not saved first), the panel closes, the row leaves the table, and an `Available` unit's asset loses one Available and one Total at that office.
+3. **Given** an empty reason, **When** **Confirm Removal** is pressed, **Then** nothing is removed, the confirmation does not open, and a message appears under the field.
+4. **Given** a reason, **When** **Confirm Removal** is pressed, **Then** a dialog asks *Remove this unit?* and says *This permanently deletes the unit. You cannot undo it.* Nothing is removed yet.
+4a. **Given** that dialog, **When** the Admin presses **Cancel**, Esc, or the scrim, **Then** the dialog closes, the reason stays, and the unit is not removed.
+4b. **Given** that dialog, **When** the Admin presses **Remove unit**, **Then** the unit is removed (any unsaved field edits are discarded, not saved first), the panel closes, the row leaves the table, and an `Available` unit's asset loses one Available and one Total at that office.
 5. **Given** an `Assigned` unit, **When** the panel renders, **Then** REMOVE UNIT shows *"This unit can’t be removed because it is assigned to a user. Remove assignment first before removing this unit."* and no removal control.
 6. **Given** a `Reserved` unit, **When** the panel renders, **Then** REMOVE UNIT shows that the unit can't be removed because it is reserved for a request, and no removal control (D9).
 
@@ -148,7 +150,7 @@ Only an Admin reaches Inventory, and no unit secret ever reaches an Employee.
 - **A serial number already in use** (source conflict). The panel shows the source's message, for example *"Serial numbers already in use: PF3ABCXY."*, and saves nothing.
 - **A unit with no serial number.** Only a Mice or Other Devices unit may be saved without one (D13). A unit stored without one (one of those two, or a unit created before this rule) shows an explicit empty marker in `SERIAL NUMBER`.
 - **The contract is looser than the SPA.** The contract makes every device field optional for every category. Requiring Serial Number and hiding the BitLocker fields by category is stricter client validation, not an invented field.
-- **No PR.** PR is optional. A unit without one shows an explicit empty marker in `PR`. The SPA does not make one up.
+- **No PR.** PR is optional. A unit without one shows an explicit empty marker in `PURCHASE REQUEST`. The SPA does not make one up.
 - **The asset of a unit has no units left at an office** after a removal or inactivation. The Assets screen's counts show it. Against the API, where the catalog reads the same register, the catalog shows it unavailable there (spec 005); until then the catalog keeps its own seeded stock. Nothing on this screen warns about it.
 - **Loading.** The shared loading state shows until the source settles. The empty state never flashes first.
 - **Source failure.** The page shows an error state with a retry, not an empty table. A failed save keeps the panel open with the entered values.
@@ -164,7 +166,7 @@ Only an Admin reaches Inventory, and no unit secret ever reaches an Employee.
 - **FR-006**: **+ Add Inventory** MUST be a menu button (chevron-down) that opens a menu of **Add Single Unit** and **Add Multiple Units** under it; both panels are reached only from this menu, and the menu MUST expose its expanded state and close on Esc and an outside click. The row's **Review** MUST open Review/Edit. The hidden **View details →** link MUST NOT be built.
 - **FR-007**: No Status control MUST offer `Reserved`. Add Single Unit MUST offer `Available` · `Assigned` · `Inactive` (D3, amended 2026-10-02). Review/Edit MUST offer `Available` · `Assigned` · `Inactive` for a unit that is not reserved, and MUST make Status, User and Office read-only for a reserved one.
 - **FR-008**: `Assigned` MUST require a User. Picking a User MUST set Status to `Assigned`; choosing `Available` or `Inactive` MUST clear the User. The User field MUST search every user by name or email, whatever their role or office.
-- **FR-009**: Removal MUST be refused for `Assigned` and `Reserved` units, with the reason shown in REMOVE UNIT, and MUST require a non-blank **Reason for removal** for the rest.
+- **FR-009**: Removal MUST be refused for `Assigned` and `Reserved` units, with the reason shown in REMOVE UNIT, and MUST require a non-blank **Reason for removal** for the rest. A non-blank reason MUST open a confirmation before the unit is deleted; cancelling that confirmation MUST leave the unit in place.
 - **FR-010**: Add Multiple Units MUST open with one empty row and keep the **No. of Units** count equal to the number of unit rows, between 0 and 100. Every row MUST stay editable until save, with a ✕ to remove it and no per-row confirm. It MUST refuse to save with zero rows, a row missing a required serial number, or a non-blank serial number repeated within the batch, and MUST save the batch all or nothing. Every unit it creates MUST start `Available`.
 - **FR-011**: Validation problems MUST be mapped to fields by the shared parser (`errors[].pointer`), including per-row pointers in a batch. A conflict MUST show the source's own message. The SPA MUST NOT invent an error code.
 - **FR-011a**: The device fields MUST follow the asset's category from one data table (D13): BitLocker Identifier and Recovery Key/PIN for Laptop only; Serial Number for every category, required except for Mice and Other Devices. A hidden field MUST NOT be submitted.
@@ -251,7 +253,7 @@ No CRITICAL or HIGH item. Seven MEDIUM / LOW items, all fixed at the project own
 
 - CHK001: the User field searches every user by name or email, any role, any office (Story 2 criterion 5a, FR-008).
 - CHK002: picking a User sets Status to `Assigned`; `Available` or `Inactive` clears it (Story 2 criterion 5, FR-008).
-- CHK003: removal mode's Cancel returns to Review/Edit; Confirm Removal discards unsaved field edits (Story 4 criteria 2a, 4).
+- CHK003: removal mode's Cancel returns to Review/Edit; Confirm Removal asks before deleting, and confirming discards unsaved field edits (Story 4 criteria 2a, 4, 4b).
 - CHK004: Bulk `-` removes the last row, even a filled one; a row's ✕ removes that row (Story 5 criterion 2).
 - CHK005: newest added first; Result per page defaults to 50 (FR-005).
 - CHK006: Price in Philippine pesos with two decimals; Purchased Date not in the future (Story 2 criterion 6, FR-013).

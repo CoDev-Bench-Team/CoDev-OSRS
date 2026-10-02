@@ -100,7 +100,11 @@ export function useInventory(source: InventorySource) {
         () => {
           if (!live.current) return;
           setState((s) => {
-            if (s.kind !== 'loaded') return { kind: 'failed' };
+            if (s.kind !== 'loaded') {
+              // A save from the failed state went through: show what was saved,
+              // marked stale, rather than a notice saying nothing changed.
+              return change && 'saved' in change ? { kind: 'loaded', units: change.saved, stale: true } : { kind: 'failed' };
+            }
             if (!change) return s;
             let units = s.units;
             if ('removed' in change) units = units.filter((u) => u.id !== change.removed);

@@ -536,6 +536,26 @@ try {
   console.log('\nAdd Single Unit (US2, FR-007, FR-008, FR-011 to FR-013)');
   const monitorName = assetNames['asset-2'].name;
   const laptopName = assetNames['asset-1'].name;
+
+  await go('/inventory?inventory=failing');
+  await until(() => document.querySelector('main').textContent.includes('Inventory could not be loaded'), undefined, 6000);
+  await openMenu('Add Single Unit');
+  await panelOpen();
+  await pick('Catalog Item', monitorName, monitorName);
+  await fill('Serial Number', 'DEMO-FAILING-0001');
+  await chooseSelect('Status', 'Available');
+  check(await save(), 'a save from the failed list goes through');
+  check(
+    await until(() => {
+      const text = document.querySelector('main').textContent;
+      return text.includes('Saved, but the list could not be refreshed') && !text.includes('Nothing was changed');
+    }),
+    'the page then shows the list as stale, not "Nothing was changed"',
+  );
+  check((await rowCells()).some((cells) => cells[3] === 'DEMO-FAILING-0001'), 'with the saved unit in the table');
+  await go('/inventory');
+  await rowsReady();
+
   await openMenu('Add Single Unit');
   await panelOpen();
   check((await panelTitle()) === 'Add Single Unit', 'the menu opens Add Single Unit');
@@ -757,7 +777,22 @@ try {
   await pressInPanel('Remove Unit');
   await fill('Reason for removal', 'Damaged beyond repair');
   await pressInPanel('Confirm Removal');
-  check(await panelClosed(), 'Confirm removes it and closes the panel');
+  check(
+    await until(() => {
+      const d = document.querySelector('dialog[open][role="alertdialog"]');
+      return !!d && d.textContent.includes('Remove this unit?') && d.textContent.includes('This permanently deletes the unit. You cannot undo it.');
+    }),
+    'Confirm Removal asks before deleting',
+  );
+  await pressInPanel('Cancel');
+  check(
+    await until(() => !document.querySelector('dialog[open][role="alertdialog"]') && !!document.querySelector('dialog[open]')),
+    'cancelling the dialog leaves the panel open',
+  );
+  check((await control('Reason for removal')).value === 'Damaged beyond repair', 'and keeps the reason');
+  await pressInPanel('Confirm Removal');
+  await pressInPanel('Remove unit');
+  check(await panelClosed(), 'Remove unit deletes it and closes the panel');
   const afterRemoval = await register();
   check(!afterRemoval.units.some((u) => u.id === inactive.id), 'the unit is gone from the register');
   check(afterRemoval.removals.some((r) => r.id === inactive.id && r.reason === 'Damaged beyond repair'), 'with its reason recorded');

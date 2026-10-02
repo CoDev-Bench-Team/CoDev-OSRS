@@ -105,7 +105,7 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
 - [x] T032 [US4] [BEN-108] `RemoveUnitSection` and the removing mode:
   - **Remove Unit** link for Available and Inactive; the assigned and reserved refusal copy otherwise, from `removal(unit)`.
   - Removing mode shows `Reason for removal *` and the footer becomes **Cancel** / **Confirm Removal**. Cancel returns to edit; an empty reason is refused under the field.
-  - Confirm calls `remove(id, reason)`, discarding unsaved edits (Story 4, FR-009).
+  - A reason opens a confirmation (*Remove this unit?*); **Remove unit** calls `remove(id, reason)`, discarding unsaved edits. Cancel, Esc and the scrim leave the unit (Story 4, FR-009).
 
   Files: `src/features/inventory/unit-fields.tsx`, `src/features/inventory/UnitFormPanel.tsx`
 - [x] T033 [US3] [US4] [BEN-108] Concurrent changes. On a `404` from `get`, `update` or `remove`, the body becomes a `Notice` with the source's message and **Close**; closing reloads the list. On a `409` from a unit reserved behind the panel, the message shows and the edits are kept (P12, P16, spec edge cases) — `src/features/inventory/UnitFormPanel.tsx`

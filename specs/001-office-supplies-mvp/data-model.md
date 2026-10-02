@@ -65,7 +65,7 @@ One physical item of an asset, held at one office. Added 2026-09-26 (ADR-0008).
 |-------|------|--------|
 | id | id | |
 | assetId | id | → Asset |
-| pr | string? | Purchase Request number, `PR` on the table; the drawn `CODEV-LAPTOP-1232` is sample data (constitution 9.0.0). Not in the contract yet |
+| pr | string? | Purchase Request number, the `PURCHASE REQUEST` column on the table; the drawn `CODEV-LAPTOP-1232` is sample data (constitution 9.0.0). Not in the contract yet |
 | serialNumber | string? | |
 | office | enum | Office |
 | status | enum | The contract's set: `Available` \| `Reserved` \| `Assigned` \| `Inactive` |
