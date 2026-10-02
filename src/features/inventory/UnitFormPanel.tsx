@@ -324,7 +324,7 @@ function UnitHeader({ title, unit }: { title: string; unit?: UnitDetail }) {
   );
 }
 
-export function UnitFormPanel(props: Props) {
+function useUnitFormPanel(props: Props) {
   const formId = useId();
   const { state: assetsState } = useAssets();
   const assets = assetsState.kind === 'loaded' ? assetsState.assets : null;
@@ -409,86 +409,153 @@ export function UnitFormPanel(props: Props) {
 
   const title = editing ? (unit?.itemName ?? 'Review unit') : 'Add Single Unit';
 
+  return {
+    formId,
+    assets,
+    assetsState,
+    users,
+    form,
+    errors,
+    removing,
+    confirming,
+    reason,
+    editing,
+    loaded,
+    retry,
+    saving,
+    unit,
+    category,
+    options,
+    set,
+    setForm,
+    clear,
+    close,
+    confirmRemove,
+    submit,
+    leaveRemoving,
+    title,
+    setReason,
+    setRemoving,
+    setConfirming,
+  };
+}
+
+function UnitFormBody({ editor }: { editor: ReturnType<typeof useUnitFormPanel> }) {
+  const {
+    formId,
+    assets,
+    assetsState,
+    users,
+    form,
+    errors,
+    removing,
+    confirming,
+    reason,
+    editing,
+    saving,
+    unit,
+    category,
+    options,
+    set,
+    setForm,
+    clear,
+    confirmRemove,
+    submit,
+    setReason,
+    setRemoving,
+    setConfirming,
+  } = editor;
+
+  return (
+    <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-32">
+      <FormAlert message={errors['']} />
+
+      {editing ? null : (
+        <CatalogItemPicker
+          assets={assets}
+          value={form.asset}
+          failed={assetsState.kind === 'failed'}
+          error={errors.assetId}
+          onChange={(asset) => {
+            setForm((f) => ({
+              ...f,
+              asset,
+              // A hidden field's value is dropped, never kept for later.
+              ...(deviceFieldsFor(asset?.category).bitlocker ? {} : { bitlockerIdentifier: '', recoveryPin: '' }),
+            }));
+            clear('assetId', 'serialNumber', 'bitlockerIdentifier', 'recoveryPin');
+          }}
+        />
+      )}
+
+      <PurchaseFields value={form} onChange={set} errors={errors} today={today()} />
+      <DeviceFields category={category} value={form} onChange={set} errors={errors} />
+      <AssignmentFields
+        form={form}
+        users={users}
+        options={options}
+        errors={errors}
+        onAssignee={(userId) => {
+          setForm((f) => withAssignee(f, userId));
+          clear('assignedToId', 'status');
+        }}
+        onLocation={(office) => set('location', office)}
+        onStatus={(status) => {
+          setForm((f) => withStatus(f, status));
+          clear('status', 'assignedToId');
+        }}
+      />
+      <NotesFields form={form} errors={errors} onChange={set} />
+
+      {unit ? (
+        <RemoveUnitSection
+          status={unit.status}
+          removing={removing}
+          reason={reason}
+          error={errors.reason}
+          onReason={(v) => {
+            setReason(v);
+            clear('reason');
+          }}
+          onStart={() => setRemoving(true)}
+        />
+      ) : null}
+
+      {confirming && editing ? (
+        <ConfirmDialog
+          title="Remove this unit?"
+          confirmLabel="Remove unit"
+          busy={saving}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => confirmRemove(editing)}
+        >
+          <p>This permanently deletes the unit. You cannot undo it.</p>
+        </ConfirmDialog>
+      ) : null}
+    </form>
+  );
+}
+
+export function UnitFormPanel(props: Props) {
+  const editor = useUnitFormPanel(props);
   return (
     <SidePanel
-      title={title}
-      onClose={close}
-      dismissible={!saving}
-      header={<UnitHeader title={title} unit={unit} />}
+      title={editor.title}
+      onClose={editor.close}
+      dismissible={!editor.saving}
+      header={<UnitHeader title={editor.title} unit={editor.unit} />}
       bodyClassName="px-14 pt-10 pb-24"
       footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
-      footer={panelFooter({ loaded, formId, saving, removing, onCancelRemoval: leaveRemoving, onRetry: retry })}
+      footer={panelFooter({
+        loaded: editor.loaded,
+        formId: editor.formId,
+        saving: editor.saving,
+        removing: editor.removing,
+        onCancelRemoval: editor.leaveRemoving,
+        onRetry: editor.retry,
+      })}
     >
-      {loaded.kind !== 'ready' ? (
-        <UnitLoadNotice loaded={loaded} />
-      ) : (
-        <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-32">
-          <FormAlert message={errors['']} />
-
-          {editing ? null : (
-            <CatalogItemPicker
-              assets={assets}
-              value={form.asset}
-              failed={assetsState.kind === 'failed'}
-              error={errors.assetId}
-              onChange={(asset) => {
-                setForm((f) => ({
-                  ...f,
-                  asset,
-                  // A hidden field's value is dropped, never kept for later.
-                  ...(deviceFieldsFor(asset?.category).bitlocker ? {} : { bitlockerIdentifier: '', recoveryPin: '' }),
-                }));
-                clear('assetId', 'serialNumber', 'bitlockerIdentifier', 'recoveryPin');
-              }}
-            />
-          )}
-
-          <PurchaseFields value={form} onChange={set} errors={errors} today={today()} />
-          <DeviceFields category={category} value={form} onChange={set} errors={errors} />
-          <AssignmentFields
-            form={form}
-            users={users}
-            options={options}
-            errors={errors}
-            onAssignee={(userId) => {
-              setForm((f) => withAssignee(f, userId));
-              clear('assignedToId', 'status');
-            }}
-            onLocation={(office) => set('location', office)}
-            onStatus={(status) => {
-              setForm((f) => withStatus(f, status));
-              clear('status', 'assignedToId');
-            }}
-          />
-          <NotesFields form={form} errors={errors} onChange={set} />
-
-          {unit ? (
-            <RemoveUnitSection
-              status={unit.status}
-              removing={removing}
-              reason={reason}
-              error={errors.reason}
-              onReason={(v) => {
-                setReason(v);
-                clear('reason');
-              }}
-              onStart={() => setRemoving(true)}
-            />
-          ) : null}
-
-          {confirming && editing ? (
-            <ConfirmDialog
-              title="Remove this unit?"
-              confirmLabel="Remove unit"
-              busy={saving}
-              onCancel={() => setConfirming(false)}
-              onConfirm={() => confirmRemove(editing)}
-            >
-              <p>This permanently deletes the unit. You cannot undo it.</p>
-            </ConfirmDialog>
-          ) : null}
-        </form>
-      )}
+      {editor.loaded.kind !== 'ready' ? <UnitLoadNotice loaded={editor.loaded} /> : <UnitFormBody editor={editor} />}
     </SidePanel>
   );
 }
