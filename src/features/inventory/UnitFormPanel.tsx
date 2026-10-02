@@ -8,12 +8,11 @@ import { deviceFieldsFor, stripHidden } from './device-fields';
 import { formatAmount, parseAmount } from './format';
 import { isUnitProblem } from './inventory-source';
 import { refusal, useAttempt } from './inventory-store';
-import { seededUserDirectory } from './seeded-user-directory';
 import type { AddStatus, EditStatus, UnitDetail, UnitDraft } from './types';
-import { CatalogItemPicker, DeviceFields, FormAlert, PurchaseFields, RemoveUnitSection, UserPicker, type Device, type Purchase } from './unit-fields';
+import { CatalogItemPicker, DeviceFields, FormAlert, FormFooter, PurchaseFields, RemoveUnitSection, UserPicker, type Device, type Purchase } from './unit-fields';
 import { statusOptions, withAssignee, withStatus } from './unit-rules';
 import { today, validateUnit } from './unit-validation';
-import type { DirectoryUser } from './user-directory';
+import { userDirectory, type DirectoryUser } from './user-directory';
 
 /** Add Single Unit, Review/Edit and Remove Unit — `03.1 - Inventory - Add
  *  Inventory`, `03 - Inventory - Review/Edit`, `Delete Unit` and `Delete Unit
@@ -103,18 +102,21 @@ const SHOWN = new Set([
   'reason',
 ]);
 
+/** Every assignable user: `null` while loading, `'failed'` if the read failed. */
 function useUsers() {
-  const [users, setUsers] = useState<DirectoryUser[] | null>(null);
+  const [users, setUsers] = useState<DirectoryUser[] | null | 'failed'>(null);
   useEffect(() => {
     let active = true;
-    seededUserDirectory.list().then(
-      (list) => {
-        if (active) setUsers(list);
-      },
-      () => {
-        if (active) setUsers([]);
-      },
-    );
+    userDirectory()
+      .list()
+      .then(
+        (list) => {
+          if (active) setUsers(list);
+        },
+        () => {
+          if (active) setUsers('failed');
+        },
+      );
     return () => {
       active = false;
     };
@@ -187,20 +189,6 @@ function UnitLoadNotice({ loaded }: { loaded: Exclude<Loaded, { kind: 'ready' }>
   return <Notice eyebrow="Could not load" tone="stopped" title="The unit could not be loaded" body="Nothing was changed. Try again in a moment" />;
 }
 
-function FormFooter({ formId, saving, removing, onCancel }: { formId: string; saving: boolean; removing: boolean; onCancel: () => void }) {
-  const idle = removing ? 'Confirm Removal' : 'Save Changes';
-  return (
-    <div className="flex items-center justify-center gap-12">
-      <Button variant="ghost" disabled={saving} onClick={onCancel}>
-        Cancel
-      </Button>
-      <Button type="submit" form={formId} disabled={saving}>
-        {saving ? (removing ? 'Removing…' : 'Saving…') : idle}
-      </Button>
-    </div>
-  );
-}
-
 function NoticeFooter({ onRetry, onClose }: { onRetry?: () => void; onClose: () => void }) {
   return (
     <div className="flex items-center justify-center gap-12">
@@ -226,7 +214,7 @@ function AssignmentFields({
   onStatus,
 }: {
   form: FormState;
-  users: DirectoryUser[] | null;
+  users: DirectoryUser[] | null | 'failed';
   options: readonly (AddStatus | EditStatus)[] | null;
   errors: Errors;
   onAssignee: (userId: string | undefined) => void;
@@ -316,7 +304,15 @@ function panelFooter({ loaded, formId, saving, removing, onCancelRemoval, onRetr
   if (loaded.kind !== 'ready') {
     return (leave: () => void) => <NoticeFooter onRetry={loaded.kind === 'failed' ? onRetry : undefined} onClose={leave} />;
   }
-  return (leave: () => void) => <FormFooter formId={formId} saving={saving} removing={removing} onCancel={removing ? onCancelRemoval : leave} />;
+  return (leave: () => void) => (
+    <FormFooter
+      formId={formId}
+      saving={saving}
+      submitLabel={removing ? 'Confirm Removal' : 'Save Changes'}
+      savingLabel={removing ? 'Removing…' : 'Saving…'}
+      onCancel={removing ? onCancelRemoval : leave}
+    />
+  );
 }
 
 function UnitHeader({ title, unit }: { title: string; unit?: UnitDetail }) {
@@ -423,6 +419,7 @@ export function UnitFormPanel(props: Props) {
             <CatalogItemPicker
               assets={assets}
               value={form.asset}
+              failed={assetsState.kind === 'failed'}
               error={errors.assetId}
               onChange={(asset) => {
                 setForm((f) => ({

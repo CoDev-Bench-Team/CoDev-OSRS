@@ -198,7 +198,7 @@ Per line, at the requesting office. The API chooses which units.
 | Accountability Form signed | none | — | — | — |
 | → completed | none | — | — | — |
 
-Outside a request (Admin unit edits): `Available` → `Inactive` or removed: total −n, available −n; `Inactive` → `Available`: +n, +n; existing assignment recorded (`Available` → `Assigned`): −n, −n; assignment cleared (`Assigned` → `Available`): +n, +n. Removing an `Inactive` unit, adding one directly as `Assigned`, clearing an assignment to `Inactive` (`Assigned` → `Inactive`), or recording one on an `Inactive` unit (`Inactive` → `Assigned`), changes no count.
+Outside a request (Admin unit edits): `Available` → `Inactive` or removed: total −n, available −n; `Inactive` → `Available`: +n, +n; existing assignment recorded (`Available` → `Assigned`): −n, −n; assignment cleared (`Assigned` → `Available`): +n, +n. Removing an `Inactive` unit, adding one directly as `Assigned` or `Inactive` (spec 015 D3), clearing an assignment to `Inactive` (`Assigned` → `Inactive`), or recording one on an `Inactive` unit (`Inactive` → `Assigned`), changes no count.
 
 `available` at the requesting office is authoritative for new submits.
 

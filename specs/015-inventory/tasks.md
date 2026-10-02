@@ -63,7 +63,7 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
 - [x] T025 [US1] [BEN-107] `InventoryPage`:
   - `PageHeader` from `DESTINATIONS.inventory`; the menu; the toolbar.
   - The load states: `LoadingState`, a `Notice` with **Try again**, and the empty state.
-  - `TableCard` with columns MODEL (item name) · CATEGORY · PR · SERIAL NUMBER · OFFICE · ASSIGNED (name over department, or muted `Unassigned`) · STATUS (`StatusPill unit`) · ACTION (**Review**, labelled with item name and serial or PR), widths from the `03 - Inventory` frame via `tableColumnStyle` / `tableMinWidth`. A missing PR or serial shows `NO_VALUE` (`src/features/requests/format.ts`).
+  - `TableCard` with columns MODEL (item name) · CATEGORY · PURCHASE REQUEST · SERIAL NUMBER · OFFICE · ASSIGNED (name over department, or muted `Unassigned`) · STATUS (`StatusPill unit`) · ACTION (**Review**, labelled with item name and serial or PR), widths from the `03 - Inventory` frame via `tableColumnStyle` / `tableMinWidth`. A missing PR or serial shows `NO_VALUE` (`src/features/requests/format.ts`).
   - `TablePager` at 50 per page, offering 10 · 25 · 50 · 100. Open-panel state is held in the component, never in the URL (P10, FR-001 to FR-005, FR-015).
 
   File: `src/features/inventory/InventoryPage.tsx`
@@ -123,7 +123,7 @@ Unblocked: PR #41 merged into `dev` on 2026-10-01.
 
 - [x] T036 [P] [US5] [BEN-152] `SidePanel` gains `batch: 'max-w-[650px]'` (P12) — `src/shared/ui/overlay/SidePanel.tsx`
 - [x] T037 [US5] [BEN-152] `BulkAddPanel` (650px):
-  - Catalog Item; a **No. of Units** stepper beside Office (Cebu); shared PURCHASE DETAILS.
+  - Catalog Item; a **No. of Units** stepper on its own row above Office (Cebu), as the frame stacks them; shared PURCHASE DETAILS.
   - Opens with one row. Each row has Serial (plus the BitLocker pair for a Laptop) and a ✕; **+ Add another unit** sits below. The count always equals the rows: `−` drops the last row, `+` and **+ Add another unit** are disabled at 100, and Save is disabled at 0. No ✓, User, Status or RAM.
   - A category switch keeps serials and drops BitLocker values.
   - `validateBatch` on Save (missing and duplicate serials under each row); per-row pointers through `fieldErrors`; a `409` shows the source's message above the rows; `createBatch` all or nothing (Story 5, FR-010, FR-011, FR-011a).

@@ -311,6 +311,15 @@ try {
       b.click();
       return true;
     }, label);
+  /** As a keyboard user would: focus the button, then activate it. */
+  const pressFocused = (label) =>
+    cdp.evaluate((label) => {
+      const b = [...document.querySelectorAll('dialog[open] button')].find((b) => b.textContent.trim() === label || b.getAttribute('aria-label') === label);
+      if (!b) return false;
+      b.focus();
+      b.click();
+      return true;
+    }, label);
   const hasButton = (label) =>
     cdp.evaluate((label) => [...document.querySelectorAll('dialog[open] button')].some((b) => b.textContent.trim() === label || b.getAttribute('aria-label') === label), label);
   const panelText = () => cdp.evaluate(() => document.querySelector('dialog[open]')?.textContent ?? '');
@@ -565,7 +574,8 @@ try {
   check(await cdp.evaluate(() => document.querySelectorAll('dialog[open] [data-secret]').length === 2), 'a Laptop shows the BitLocker pair');
   await fill('BitLocker Identifier', 'CHECK-BL-1');
   await fill('Recovery Key/PIN', 'CHECK-RK-1');
-  await pressInPanel(`Clear catalog item ${laptopName}`);
+  await pressFocused(`Clear catalog item ${laptopName}`);
+  check(await until(() => document.activeElement?.type === 'search'), 'clearing the catalog item moves focus to its search');
   await pick('Catalog Item', monitorName, monitorName);
   check(await cdp.evaluate(() => !document.querySelector('dialog[open] [data-secret]')), 'a Monitor has no BitLocker fields');
   await pressInPanel(`Clear catalog item ${monitorName}`);
@@ -604,6 +614,10 @@ try {
   await clickAt(priceAt);
   await cdp.evaluate(() => document.activeElement.blur());
   check((await control('Price')).value === '1,250.00', 'leaving the field pads it to two decimals');
+  await fill('Price', '1250.');
+  await clickAt(priceAt);
+  await cdp.evaluate(() => document.activeElement.blur());
+  check((await control('Price')).value === '1,250.00', 'a trailing point is read as a whole price and padded');
   await fill('Price', '1250.5');
   await fill('Serial Number', 'DEMO-CHECK-0001');
 
@@ -800,10 +814,18 @@ try {
   check((await rows()) === 3 && (await counter()) === 3, '+ adds a row');
   await pressInPanel('Remove the last unit');
   check((await rows()) === 2 && (await counter()) === 2, '− drops the last row');
-  await pressInPanel('Remove unit 1');
+  await pressFocused('Remove unit 1');
   check((await rows()) === 1 && (await counter()) === 1, "a row's ✕ drops that row");
-  await pressInPanel('Remove the last unit');
+  check(await until(() => document.activeElement?.getAttribute('aria-label') === 'Remove unit 1'), "focus moves to the next row's ✕");
+  await pressInPanel('Add a unit');
+  await pressFocused('Remove unit 2');
+  check(await until(() => document.activeElement?.getAttribute('aria-label') === 'Remove unit 1'), "removing the last row moves focus to the row above's ✕");
+  await pressFocused('Remove unit 1');
+  check(await until(() => document.activeElement?.textContent.trim() === '+ Add another unit'), 'removing the only row moves focus to + Add another unit');
+  await pressInPanel('Add a unit');
+  await pressFocused('Remove the last unit');
   check((await rows()) === 0 && (await saveDisabled()), 'Save is disabled at 0');
+  check(await until(() => document.activeElement?.getAttribute('aria-label') === 'Add a unit'), '− disabling itself at 0 moves focus to +');
   await cdp.evaluate(() => {
     const plus = document.querySelector('dialog[open] button[aria-label="Add a unit"]');
     for (let i = 0; i < 105; i++) plus.click();
@@ -817,6 +839,9 @@ try {
     }),
     '+ and + Add another unit are disabled at 100',
   );
+  await pressInPanel('Remove the last unit');
+  await pressFocused('Add a unit');
+  check(await until(() => document.activeElement?.getAttribute('aria-label') === 'Remove the last unit'), '+ disabling itself at 100 moves focus to −');
   await pressInPanel('Cancel');
   await panelClosed();
 
@@ -851,11 +876,22 @@ try {
   );
   check((await register()).units.length === before, 'and nothing is created');
 
+  await fill('Serial Number', laptop.serialNumber, 1);
+  await pressInPanel('Save Changes');
+  check(
+    await until((s) => document.querySelector('dialog[open]').textContent.includes(`Serial numbers already in use: ${s}.`), laptop.serialNumber),
+    'a 409 after a row message shows the conflict',
+  );
+  check((await rowError(1)) === '', 'and a valid resubmit clears the earlier row message');
+
   await fill('Serial Number', '', 1);
   await pressInPanel('Save Changes');
   await wait(200);
   check((await rowError(2)) === 'Enter the serial number', 'one invalid row is flagged under that row');
   check((await register()).units.length === before, 'and nothing is created');
+  await pressInPanel(`Clear catalog item ${monitorName}`);
+  await pick('Catalog Item', monitorName, monitorName);
+  check((await rowError(2)) === '', 'changing the catalog item clears the row messages');
 
   await fill('Serial Number', laptop.serialNumber, 1);
   await pressInPanel('Save Changes');

@@ -1,3 +1,5 @@
+import { seededUserDirectory } from './seeded-user-directory';
+
 /** Who a unit can be assigned to: every user, Employee or Admin, at any office
  *  (spec 015 FR-008, plan P16).
  *
@@ -13,4 +15,10 @@ export type DirectoryUser = {
 
 export interface UserDirectory {
   list(): Promise<DirectoryUser[]>;
+}
+
+/** Which directory the panels read: the seeded one until `GET /users` is
+ *  wired, which replaces this one line (plan P2, P16). */
+export function userDirectory(): UserDirectory {
+  return seededUserDirectory;
 }

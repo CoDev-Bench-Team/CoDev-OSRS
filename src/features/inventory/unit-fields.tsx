@@ -1,5 +1,5 @@
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { Field, FieldGroup, Search, TextField, TextInput, type FieldControl } from '../../shared/ui';
+import { Button, Field, FieldGroup, Search, TextField, TextInput, type FieldControl } from '../../shared/ui';
 import type { Asset, Category } from '../assets/types';
 import { deviceFieldsFor } from './device-fields';
 import { caretAt, settleAmount, typeAmount } from './format';
@@ -27,6 +27,39 @@ export function FormAlert({ message }: { message?: string }) {
     <p role="alert" className="rounded-6 bg-status-rejected-bg px-12 py-10 type-meta leading-body text-status-rejected-fg">
       {message}
     </p>
+  );
+}
+
+/** Under Catalog Item or User when its list fails to load. Closing the
+ *  panel and opening it again loads the list again. */
+const CATALOG_UNLOADED = 'Catalog items could not be loaded. Close the panel and try again';
+const USERS_UNLOADED = 'Users could not be loaded. Close the panel and try again';
+
+/** **Cancel** and the submit button, centred under the panel. */
+export function FormFooter({
+  formId,
+  saving,
+  disabled,
+  submitLabel,
+  savingLabel,
+  onCancel,
+}: {
+  formId: string;
+  saving: boolean;
+  disabled?: boolean;
+  submitLabel: string;
+  savingLabel: string;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-center gap-12">
+      <Button variant="ghost" disabled={saving} onClick={onCancel}>
+        Cancel
+      </Button>
+      <Button type="submit" form={formId} disabled={saving || disabled}>
+        {saving ? savingLabel : submitLabel}
+      </Button>
+    </div>
   );
 }
 
@@ -131,14 +164,18 @@ export function CatalogItemPicker({
   value,
   onChange,
   error,
+  failed,
 }: {
   /** `null` while the Assets source loads. */
   assets: readonly Asset[] | null;
+  /** The Assets source could not be read. */
+  failed?: boolean;
   value: Asset | undefined;
   onChange: (asset: Asset | undefined) => void;
   error?: string;
 }) {
   const [query, setQuery] = useState('');
+  const wrapper = useRef<HTMLDivElement>(null);
   const found = (assets ?? []).filter((a) => matches(query, a.name, a.model));
   const box = useCombobox(found, (asset) => {
     onChange(asset);
@@ -146,8 +183,8 @@ export function CatalogItemPicker({
   });
 
   return (
-    <div className="flex flex-col gap-14">
-      <Field label="Catalog Item" required error={error}>
+    <div ref={wrapper} className="flex flex-col gap-14">
+      <Field label="Catalog Item" required error={error ?? (failed ? CATALOG_UNLOADED : undefined)}>
         {({ id, required, invalid, describedBy }) => (
           <div className="flex flex-col gap-6">
             <Search
@@ -190,7 +227,11 @@ export function CatalogItemPicker({
           <button
             type="button"
             aria-label={`Clear catalog item ${value.name}`}
-            onClick={() => onChange(undefined)}
+            onClick={() => {
+              onChange(undefined);
+              // The ✕ goes with the chosen item; focus moves to the search.
+              wrapper.current?.querySelector('input')?.focus();
+            }}
             className="inline-flex size-touch-target shrink-0 cursor-pointer items-center justify-center rounded-8 border-none bg-transparent text-ink-primary transition-osrs hover:text-ink-secondary"
           >
             <CloseGlyph />
@@ -210,23 +251,26 @@ export function UserPicker({
   error,
   disabled,
 }: {
-  users: readonly DirectoryUser[] | null;
+  /** `null` while loading, `'failed'` if the directory could not be read. */
+  users: readonly DirectoryUser[] | null | 'failed';
   value: string | undefined;
   onChange: (userId: string | undefined) => void;
   error?: string;
   disabled?: boolean;
 }) {
-  const chosen = users?.find((u) => u.id === value);
+  const failed = users === 'failed';
+  const list = failed ? [] : (users ?? []);
+  const chosen = list.find((u) => u.id === value);
   const [query, setQuery] = useState<string | null>(null);
   const typed = query ?? chosen?.name ?? '';
-  const found = query === null ? (users ?? []) : (users ?? []).filter((u) => matches(query, u.name, u.email));
+  const found = query === null ? list : list.filter((u) => matches(query, u.name, u.email));
   const box = useCombobox(found, (user) => {
     onChange(user.id);
     setQuery(null);
   });
 
   return (
-    <Field label="User" error={error}>
+    <Field label="User" error={error ?? (failed ? USERS_UNLOADED : undefined)}>
       {({ id, invalid, describedBy }) => (
         <div className="flex flex-col gap-6">
           <TextInput

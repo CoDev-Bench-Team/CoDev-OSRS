@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Button, Field, FieldGroup, Select, SidePanel, TextInput } from '../../shared/ui';
 import { useAssets } from '../assets/asset-store';
 import type { Asset } from '../assets/types';
@@ -7,7 +7,7 @@ import { deviceFieldsFor, stripHidden } from './device-fields';
 import { parseAmount } from './format';
 import { refusal, useAttempt } from './inventory-store';
 import type { UnitBatchDraft } from './types';
-import { CatalogItemPicker, FormAlert, PurchaseFields, SecretInput, type Device, type Purchase } from './unit-fields';
+import { CatalogItemPicker, FormAlert, FormFooter, PurchaseFields, SecretInput, type Device, type Purchase } from './unit-fields';
 import { MAX_BATCH, today, validateBatch } from './unit-validation';
 
 /** Add Multiple Units — `03 - Inventory - Bulk Add Units`, 650px (spec 015
@@ -48,6 +48,21 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
   /** A refusal that names no field (a 409), shown above the rows. */
   const [conflict, setConflict] = useState<string>();
   const rule = deviceFieldsFor(asset?.category);
+  const minus = useRef<HTMLButtonElement>(null);
+  const plus = useRef<HTMLButtonElement>(null);
+  const addAnother = useRef<HTMLButtonElement>(null);
+  const removeButtons = useRef(new Map<number, HTMLButtonElement>());
+
+  /** A control that removes or disables itself hands focus on, rather than
+   *  dropping it to the page (FR-016). Read once the rows have rendered. */
+  const focusNext = useRef<(() => HTMLElement | null | undefined) | null>(null);
+  useEffect(() => {
+    const target = focusNext.current;
+    if (!target) return;
+    focusNext.current = null;
+    target()?.focus();
+  });
+
   const { saving, attempt } = useAttempt(onClose, (error, what) => {
     const result = refusal(error, what, shown);
     if ('problem' in result) setConflict(result.problem.detail);
@@ -56,13 +71,35 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
 
   /** Row errors are keyed by position, so any change to the row list clears
    *  them rather than leaving a message under the wrong row. */
-  const changeRows = (next: (rows: Row[]) => Row[]) => {
-    setRows(next);
+  const clearRowErrors = () => {
     setErrors((e) => Object.fromEntries(Object.entries(e).filter(([k]) => !k.startsWith('units'))));
     setConflict(undefined);
   };
 
-  const addRow = () => changeRows((rs) => (rs.length >= MAX_BATCH ? rs : [...rs, emptyRow()]));
+  const changeRows = (next: (rows: Row[]) => Row[]) => {
+    setRows(next);
+    clearRowErrors();
+  };
+
+  /** Adds a row; the control that added it disables at 100, so focus moves to
+   *  `atLimit` then. */
+  const addRow = (atLimit: (added: Row) => HTMLElement | null | undefined) => {
+    const added = emptyRow();
+    if (rows.length + 1 >= MAX_BATCH) focusNext.current = () => atLimit(added);
+    changeRows((rs) => (rs.length >= MAX_BATCH ? rs : [...rs, added]));
+  };
+
+  const dropLastRow = () => {
+    if (rows.length === 1) focusNext.current = () => plus.current;
+    changeRows((rs) => rs.slice(0, -1));
+  };
+
+  const dropRow = (row: Row) => {
+    const i = rows.indexOf(row);
+    const neighbour = rows[i + 1] ?? rows[i - 1];
+    focusNext.current = () => (neighbour ? removeButtons.current.get(neighbour.key) : addAnother.current);
+    changeRows((rs) => rs.filter((r) => r.key !== row.key));
+  };
 
   const clear = (key: string) => {
     setErrors((e) => {
@@ -95,10 +132,9 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
       ),
     };
     const found = validateBatch(draft, asset?.category, today());
-    if (Object.keys(found).length) {
-      setErrors(found);
-      return;
-    }
+    setErrors(found);
+    setConflict(undefined);
+    if (Object.keys(found).length) return;
     void attempt(() => onCreate(draft), 'The units could not be saved');
   }
 
@@ -114,14 +150,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
       bodyClassName="px-14 pt-10 pb-24"
       footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
       footer={(leave) => (
-        <div className="flex items-center justify-center gap-12">
-          <Button variant="ghost" onClick={leave} disabled={saving}>
-            Cancel
-          </Button>
-          <Button type="submit" form={formId} disabled={saving || rows.length === 0}>
-            {saving ? 'Saving…' : 'Save Changes'}
-          </Button>
-        </div>
+        <FormFooter formId={formId} saving={saving} disabled={rows.length === 0} submitLabel="Save Changes" savingLabel="Saving…" onCancel={leave} />
       )}
     >
       <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-32">
@@ -130,6 +159,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
         <CatalogItemPicker
           assets={assets}
           value={asset}
+          failed={assetsState.kind === 'failed'}
           error={errors.assetId}
           onChange={(next) => {
             setAsset(next);
@@ -137,6 +167,8 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
             if (!deviceFieldsFor(next?.category).bitlocker) {
               setRows((rs) => rs.map((r) => ({ ...r, bitlockerIdentifier: '', recoveryPin: '' })));
             }
+            // Which row fields are required follows the category.
+            clearRowErrors();
             clear('assetId');
           }}
         />
@@ -148,10 +180,11 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
             </span>
             <div className="flex items-center gap-8 select-none" role="group" aria-labelledby={`${formId}-count`}>
               <Button
+                ref={minus}
                 variant="ghost"
                 aria-label="Remove the last unit"
                 disabled={rows.length === 0}
-                onClick={() => changeRows((rs) => rs.slice(0, -1))}
+                onClick={dropLastRow}
                 className="h-control-height-lg! w-[46px] px-0 text-20"
               >
                 −
@@ -164,10 +197,11 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
                 {rows.length}
               </output>
               <Button
+                ref={plus}
                 variant="ghost"
                 aria-label="Add a unit"
                 disabled={full}
-                onClick={addRow}
+                onClick={() => addRow(() => minus.current)}
                 className="h-control-height-lg! w-[50px] px-0 text-20"
               >
                 +
@@ -247,9 +281,16 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
                 </>
               ) : null}
               <button
+                ref={(el) => {
+                  if (!el) return;
+                  removeButtons.current.set(row.key, el);
+                  return () => {
+                    removeButtons.current.delete(row.key);
+                  };
+                }}
                 type="button"
                 aria-label={`Remove unit ${i + 1}`}
-                onClick={() => changeRows((rs) => rs.filter((r) => r.key !== row.key))}
+                onClick={() => dropRow(row)}
                 className="mt-14 inline-flex size-[42px] shrink-0 cursor-pointer items-center justify-center rounded-10 border-none bg-status-rejected-bg text-brand-primary-alt transition-osrs hover:bg-osrs-red-50"
               >
                 <CloseLarge />
@@ -257,9 +298,10 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
             </div>
           ))}
           <button
+            ref={addAnother}
             type="button"
             disabled={full}
-            onClick={addRow}
+            onClick={() => addRow((added) => removeButtons.current.get(added.key))}
             className="w-fit cursor-pointer border-none bg-transparent p-0 font-sans text-11-5 font-bold leading-tight text-brand-primary-alt hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline"
           >
             + Add another unit

@@ -66,12 +66,12 @@ set is the **contract's**: `Available`, `Reserved`, `Assigned`, `Inactive`.
 | Unit reactivated | `Inactive` → `Available` | +n | — | +n |
 | Existing assignment recorded by an Admin (outside a request) | `Available` → `Assigned` | −n | — | −n |
 | Assignment cleared by an Admin (outside a request) | `Assigned` → `Available` | +n | — | +n |
-
-Removing an `Inactive` unit, adding a unit directly as `Assigned`, clearing an assignment to `Inactive` (`Assigned` → `Inactive`), or recording one on an `Inactive` unit (`Inactive` → `Assigned`), changes no count.
 | Request submitted | *qty* units `Available` → `Reserved` | −qty | +qty | — |
 | Request rejected / cancelled | those units `Reserved` → `Available` | +qty | −qty | — |
 | Approved, For Delivery, Ready for Pickup | none | — | — | — |
 | Request completed | those units `Reserved` → `Assigned`, assignee = requester | — | −qty | −qty |
+
+Removing an `Inactive` unit, adding a unit directly as `Assigned` or `Inactive` (spec 015 D3, 2026-10-02), clearing an assignment to `Inactive` (`Assigned` → `Inactive`), or recording one on an `Inactive` unit (`Inactive` → `Assigned`), changes no count.
 
 The API chooses which units are reserved, and does so in the same transaction as
 the status change. **Only the request transitions move a unit into or out of

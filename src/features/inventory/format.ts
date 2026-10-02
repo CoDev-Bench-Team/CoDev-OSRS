@@ -6,12 +6,13 @@ export function formatAmount(amount: number): string {
 }
 
 /** What the Admin typed in Price, as a number: blank is no price, and the
- *  thousands separators `formatAmount` writes are allowed. Anything else that
- *  is not a plain decimal is `NaN`, which validation refuses. */
+ *  thousands separators `formatAmount` writes are allowed, as is a trailing
+ *  point (`1,250.` is 1250). Anything else that is not a plain decimal is
+ *  `NaN`, which validation refuses. */
 export function parseAmount(typed: string): number | undefined {
   const plain = typed.trim().replaceAll(',', '');
   if (!plain) return undefined;
-  return /^\d+(\.\d+)?$/.test(plain) ? Number(plain) : NaN;
+  return /^\d+(\.\d*)?$/.test(plain) ? Number(plain) : NaN;
 }
 
 /** The Price field as the Admin types: digits grouped by thousands, one

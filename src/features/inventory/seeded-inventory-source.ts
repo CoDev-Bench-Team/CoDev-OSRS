@@ -211,6 +211,9 @@ export function createSeededInventorySource(
       const reserved = stored.status === 'Reserved';
       const draft = stripHidden(tidy({ ...input, assetId: stored.assetId }), asset.category);
       const errors = validateUnit(draft, asset.category, today(), stored);
+      if (!reserved && draft.status && !statusOptions('edit', stored)?.some((s) => s === draft.status)) {
+        errors.status = 'Choose Available, Assigned or Inactive';
+      }
       if (!reserved && draft.status === 'Assigned' && draft.assignedToId && !users.has(draft.assignedToId)) {
         errors.assignedToId = 'Choose a user from the list';
       }

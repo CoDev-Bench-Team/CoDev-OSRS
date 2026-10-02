@@ -14,6 +14,7 @@ import { DESTINATIONS } from '../../app/destinations';
 import { TablePager, TableState } from '../assets/TableToolbar';
 import { useTableQuery } from '../assets/useTableQuery';
 import { NO_VALUE } from '../requests/format';
+import { PAGE_SIZES } from '../requests/queue/queue-types';
 import { AddInventoryMenu, type AddKind } from './AddInventoryMenu';
 import { BulkAddPanel } from './BulkAddPanel';
 import { inventorySource } from './inventory-source';
@@ -47,9 +48,6 @@ const TABLE_MIN_WIDTH = tableMinWidth(
   COLUMNS.map(([, width]) => width),
   100,
 );
-
-/** The Queue's and History's options and default (FR-005). */
-const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 type PanelState = { kind: AddKind } | { kind: 'edit'; id: string } | null;
 
