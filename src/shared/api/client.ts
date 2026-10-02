@@ -1,4 +1,4 @@
-import { readProblem, type ApiProblem } from './problem';
+import { problemMessage, readProblem, type ApiProblem } from './problem';
 import { notifiesSessionEnded, sessionFailure } from './session-failure';
 
 /** The configured API could not be reached. Callers must not substitute the
@@ -10,14 +10,14 @@ export class SessionUnreachable extends Error {
   }
 }
 
-/** A non-OK response. The caller shows `problem` or turns it into a sign-in
- *  refusal. This client does not retry. */
+/** A non-OK response. The message is the same sentence sign-in shows. This
+ *  client does not retry. */
 export class ApiProblemError extends Error {
   readonly status: number;
   readonly problem: ApiProblem;
 
   constructor(status: number, problem: ApiProblem) {
-    super(problem.detail ?? problem.title ?? `API request failed (${status})`);
+    super(problemMessage(problem, `API request failed (${status})`));
     this.name = 'ApiProblemError';
     this.status = status;
     this.problem = problem;

@@ -7,6 +7,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { connect } from './cdp.mjs';
+import { problemMessage } from '../src/shared/api/problem.ts';
 import { notifiesSessionEnded, sessionFailure, SESSION_ENDING_WRITES } from '../src/shared/api/session-failure.ts';
 
 const ORIGIN = process.env.OSRS_DEV_ORIGIN ?? 'http://localhost:5173';
@@ -21,6 +22,22 @@ const pass = (m) => console.log(`  ✓ ${m}`);
 const check = (ok, m, detail = '') => (ok ? pass(m) : fail(`${m}${detail ? ` — ${detail}` : ''}`));
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+
+/** The brace-matched body of `signature` in `source`. */
+function methodBody(source, signature) {
+  const start = source.indexOf(signature);
+  const open = start < 0 ? -1 : source.indexOf('{', start);
+  if (open < 0) return '';
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === '{') depth++;
+    else if (source[i] === '}') {
+      depth--;
+      if (depth === 0) return source.slice(open, i + 1);
+    }
+  }
+  return '';
+}
 
 const GOOGLE_CLIENT_ID = /\d-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com/;
 
@@ -115,6 +132,49 @@ check(notifiesSessionEnded('GET', '/auth/me') === false, 'the current-user read 
 check(
   /onSessionEnded\(\(\) => \{[\s\S]*signOut\(\)/.test(apiSource),
   'a session-ending response signs out before the shell re-reads the current user',
+);
+const signOutBody = methodBody(apiSource, 'async signOut()');
+const logoutAt = signOutBody.indexOf("await apiRequest('/auth/logout'");
+const latchAt = signOutBody.indexOf('signedOutLocally = true');
+const wakeAt = signOutBody.indexOf('wake()');
+check(
+  logoutAt >= 0 && latchAt > logoutAt && wakeAt > latchAt,
+  'signOut latches and wakes only after logout resolves',
+);
+check(
+  /signOut\(\)\.catch\([\s\S]*console\.warn\(/.test(apiSource),
+  'a failed forced logout is logged in development',
+);
+const refusalFallback = 'Sign-in did not succeed. Please try again.';
+check(
+  problemMessage(
+    {
+      title: 'The Google account is unverified, outside the configured Workspace, or disabled.',
+      detail: 'Forbidden',
+    },
+    refusalFallback,
+  ) === 'The Google account is unverified, outside the configured Workspace, or disabled.',
+  'a Forbidden detail shows the published title',
+);
+check(
+  problemMessage(
+    {
+      title: 'The Google ID token is invalid or is missing identity information.',
+      detail: 'Unauthorized',
+    },
+    refusalFallback,
+  ) === 'The Google ID token is invalid or is missing identity information.',
+  'an Unauthorized detail shows the published title',
+);
+check(
+  problemMessage({ detail: 'This account is outside the company domain.' }, refusalFallback) ===
+    'This account is outside the company domain.',
+  'a specific detail is shown as written',
+);
+check(problemMessage({}, refusalFallback) === refusalFallback, 'a problem with neither detail nor title keeps the shell sentence');
+check(
+  client.includes('problemMessage(problem,'),
+  'a sign-out failure uses the same sentence as sign-in',
 );
 
 console.log('\nDeferred routes stay out of the client, and maps follow the contract note');

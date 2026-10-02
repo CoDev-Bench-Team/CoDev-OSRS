@@ -164,8 +164,9 @@ export const apiSessionSource: SessionSource & Partial<GoogleButtonSource> = {
       // signOut() wakes other tabs only after logout succeeds. If logout fails,
       // the flag above still holds, so this tab does not come back.
       signedOutLocally = true;
-      void apiSessionSource.signOut().catch(() => {
-        /* The cookie may still be valid. This document stays signed out. */
+      void apiSessionSource.signOut().catch((error: unknown) => {
+        // The cookie may still be valid. This document stays signed out.
+        if (import.meta.env.DEV) console.warn('[osrs-auth] logout did not clear the session:', error);
       }).finally(() => {
         ending = false;
         listener();
