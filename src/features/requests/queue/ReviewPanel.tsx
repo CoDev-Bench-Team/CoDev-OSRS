@@ -80,6 +80,7 @@ export function ReviewPanel({
   onReject,
   onUpdateStatus,
   onCancel,
+  onComplete,
 }: {
   request: ReviewRequest;
   pickupOffices: readonly Office[];
@@ -93,6 +94,8 @@ export function ReviewPanel({
   onUpdateStatus: (id: string, to: UpdateStatusTarget, pickup?: PickupLocation) => Promise<TransitionResult>;
   /** `reason` is trimmed and non-empty (spec 008 FR-021). */
   onCancel: (id: string, reason: string) => Promise<TransitionResult>;
+  /** Completes a signed `Received` request. */
+  onComplete: (id: string) => Promise<TransitionResult>;
 }) {
   const [mode, setMode] = useState<Mode>('idle');
   const [submitting, setSubmitting] = useState(false);
@@ -160,7 +163,7 @@ export function ReviewPanel({
     return result.refusal;
   };
 
-  const actions = reviewActions(request.status);
+  const actions = reviewActions(request.status, Boolean(request.signedAt));
   // The notes box sits above the decision, so it is shown exactly where a
   // decision is offered.
   const deciding = actions.includes('approve') || actions.includes('reject');
@@ -217,8 +220,8 @@ export function ReviewPanel({
       );
     }
 
-    // `Received` offers nothing until Complete is built: no footer at all,
-    // rather than an empty button row.
+    // Unsigned `Received` offers nothing: no footer at all, rather than an
+    // empty button row. Complete is in `actions` only after the signature.
     if (actions.length === 0) return null;
 
     return (
@@ -255,6 +258,12 @@ export function ReviewPanel({
                 return (
                   <Button key={action} className="flex-1" disabled={submitting} onClick={() => setMode('updating')}>
                     Update Status
+                  </Button>
+                );
+              case 'complete':
+                return (
+                  <Button key={action} disabled={submitting} onClick={() => void run(() => onComplete(request.id))}>
+                    Complete
                   </Button>
                 );
               case 'close':

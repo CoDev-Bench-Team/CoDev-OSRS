@@ -1,7 +1,9 @@
 import { parseValidationProblem } from '../../../shared/validation';
-import type { User } from '../../auth/types';
+import type { Office, User } from '../../auth/types';
 import { seededAsset, seededStock } from '../../catalog/seeded-source';
 import { OFFICES } from '../../catalog/types';
+import { unitRegister } from '../../inventory/seeded-unit-register';
+import { appendDemoRequest, type DemoLine } from '../demo-request-register';
 import type { EmployeeRequest } from '../detail/request-detail-types';
 import { appendSeededRequest, nextSeededRequestId } from '../detail/seeded-employee-request-source';
 import type { RequestListDraftInput } from './request-list-types';
@@ -92,6 +94,10 @@ export const seededRequestSubmitSource: RequestSubmitSource = {
     }
     if (draft.lines.length === 0) return { ok: false, reason: 'refused', message: 'A request needs at least one item.' };
 
+    if (draft.lines.every((line) => !seededStock.knows(line.assetId))) {
+      return submitSession(user, office, draft);
+    }
+
     const failed = seededStock.reserve(draft.lines, office);
     if (failed?.reason === 'invalid-quantity') {
       return {
@@ -125,3 +131,57 @@ export const seededRequestSubmitSource: RequestSubmitSource = {
     return { ok: true, request };
   },
 };
+
+/** A request for assets created in this session. Units move Available →
+ *  Reserved in the register, and the request is appended to the shared demo
+ *  register rather than the seeded employee list. */
+function submitSession(user: User, office: Office, draft: RequestListDraftInput): SubmitResult {
+  const wanted = new Map<string, number>();
+  for (const { assetId, quantity } of draft.lines) {
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return {
+        ok: false,
+        reason: 'refused',
+        message: 'Each quantity must be a whole number of at least 1. Nothing was reserved.',
+      };
+    }
+    wanted.set(assetId, (wanted.get(assetId) ?? 0) + quantity);
+  }
+
+  const held = new Map<string, string[]>();
+  for (const [assetId, quantity] of wanted) {
+    const ids = unitRegister.reserveSession(assetId, office, quantity);
+    if (!ids) {
+      for (const reserved of held.values()) unitRegister.releaseSession(reserved);
+      const name = seededAsset(assetId)?.name ?? 'an item';
+      const left = seededStock.available(assetId, office);
+      return {
+        ok: false,
+        reason: 'refused',
+        message: `Not enough stock: ${left} of ${name} available at ${office}. Nothing was reserved.`,
+      };
+    }
+    held.set(assetId, ids);
+  }
+
+  const lines: DemoLine[] = draft.lines.map(({ assetId, quantity }) => {
+    const asset = seededAsset(assetId);
+    const name = asset?.name ?? assetId;
+    return {
+      assetId,
+      name,
+      model: asset?.model ?? name,
+      qty: quantity,
+      unitIds: held.get(assetId) ?? [],
+    };
+  });
+  // One asset's units belong to the whole request. A second line for the same
+  // asset must not be told it holds the same ids again.
+  const seen = new Set<string>();
+  for (const line of lines) {
+    if (seen.has(line.assetId)) line.unitIds = [];
+    else seen.add(line.assetId);
+  }
+
+  return { ok: true, request: appendDemoRequest(user, office, lines, draft.note) };
+}

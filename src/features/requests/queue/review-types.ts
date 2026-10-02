@@ -56,6 +56,8 @@ export interface ReviewRequest extends QueueRequest {
   /** Set when it moves to `Received`: by the Admin's Update Status, or by the
    *  owning Employee's Mark as Received (constitution 7.0.0 IV). */
   receivedAt?: string;
+  /** Set when the owning Employee signs. Complete is offered only then. */
+  signedAt?: string;
   completedAt?: string;
   rejection?: { reason: string; at: string };
   cancellation?: { reason: string; at: string };
@@ -95,7 +97,8 @@ export interface AdminRequestSource extends QueueSource {
    *  fulfilled (spec 008 FR-020). Any other status, `For Delivery` included,
    *  is refused `status-changed`. `reason` is as for `reject`. */
   cancel(id: string, reason: string): Promise<TransitionResult>;
-  // complete(id) lands with BEN-134 (constitution 4.0.0), plan D9.
+  /** From a signed `Received` request only. Does not move units. */
+  complete(id: string): Promise<TransitionResult>;
 }
 
 /** "Cebu Office", as the design labels an office everywhere it names one. */

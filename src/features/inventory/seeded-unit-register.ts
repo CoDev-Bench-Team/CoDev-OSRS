@@ -14,8 +14,11 @@ import type { UnitDetail } from './types';
  *  Non-production placeholders under constitution IX: every serial, purchase request,
  *  BitLocker Identifier and Recovery Key/PIN is visibly fake (`DEMO-…`).
  *
- *  Module state, so a reload starts over. The catalog, the request submit and
- *  Profile keep their own seeded data (plan P13). */
+ *  Module state, so a reload starts over. Assets that already exist keep the
+ *  catalog's seeded Available map. Units inserted after the seed — the ones a
+ *  session creates — can be reserved, released and assigned here, and the
+ *  catalog reads Available for those assets from this register. Existing seeded
+ *  rows are never moved by those three operations. */
 
 /** A unit as the register holds it: the asset is referenced, not copied, so
  *  an asset renamed on Assets is renamed here; the assignee likewise. */
@@ -147,7 +150,10 @@ export function createUnitRegister() {
   let units: StoredUnit[] = seedUnits();
   const removals: Removal[] = [];
   let seq = units.length;
+  /** Ids from the seed. Anything inserted later belongs to this session. */
+  const seedIds = new Set(units.map((u) => u.id));
   const clone = (u: StoredUnit): StoredUnit => structuredClone(u);
+  const isSession = (id: string) => !seedIds.has(id);
 
   return {
     list: () => units.map(clone),
@@ -171,6 +177,36 @@ export function createUnitRegister() {
     serialsInUse(serials: readonly string[], except?: string): string[] {
       const held = new Set(units.filter((u) => u.id !== except && u.serialNumber).map((u) => u.serialNumber));
       return serials.filter((s) => held.has(s));
+    },
+    /** Move `qty` Available session units of this asset at this office to
+     *  Reserved. All or nothing: too few, or a quantity below 1, moves nothing
+     *  and returns null. Seeded rows are never candidates. */
+    reserveSession(assetId: string, office: Office, qty: number): string[] | null {
+      if (!Number.isInteger(qty) || qty < 1) return null;
+      const matches = units.filter(
+        (u) => isSession(u.id) && u.assetId === assetId && u.location === office && u.status === 'Available',
+      );
+      if (matches.length < qty) return null;
+      const chosen = matches.slice(0, qty);
+      for (const unit of chosen) unit.status = 'Reserved';
+      return chosen.map((u) => u.id);
+    },
+    /** Reserved session units in `ids` return to Available. Anything else is left. */
+    releaseSession(ids: readonly string[]) {
+      const want = new Set(ids);
+      for (const unit of units) {
+        if (!want.has(unit.id) || !isSession(unit.id) || unit.status !== 'Reserved') continue;
+        unit.status = 'Available';
+      }
+    },
+    /** Reserved session units in `ids` become Assigned to `userId`. */
+    assignSession(ids: readonly string[], userId: string) {
+      const want = new Set(ids);
+      for (const unit of units) {
+        if (!want.has(unit.id) || !isSession(unit.id) || unit.status !== 'Reserved') continue;
+        unit.status = 'Assigned';
+        unit.assignedToId = userId;
+      }
     },
     /** Available and Reserved at each office: counts of units by status. */
     stockFor(assetId: string): Record<Office, StockLevels> {

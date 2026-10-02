@@ -82,29 +82,31 @@ Open the Vite URL. The application opens at `/login`; everything else requires
 a session. The design system's component gallery is **not** part of the
 application — it stays at `/__gallery` in development only.
 
-## QA regression (target)
+## QA regression
 
 ```bash
 npm run lint
 npm run build
-npx playwright test   # when e2e/ exists; API must be up
+npm run e2e
 ```
 
-Playwright MUST cover:
+`npm run e2e` runs the Playwright suite in `e2e/` against the Vite dev server. It does not need the backend API: the walk uses the seeded screens. The documented path is Davao, Maya Santos’s home office.
 
-1. Happy path to `Completed`, with the reservation released and `Total` reduced once
+Playwright covers:
+
+1. Happy path through Ready for Pickup, `Received`, the Employee’s signature, and Admin Complete. Stock moves on submit and on `Received` only.
 2. Reject path with the reservation released and a new request
 3. Cancel paths from both sides, each requiring a reason
-4. Notifications as the backend contract exposes them
-5. Role cannot perform the other role's transition
+4. Notifications where the product exposes a record; a missing record is reported, not invented
+5. Role cannot perform the other role’s transition
 
 ## Demo script (human)
 
-1. Admin adds a Laptop asset, then sets Cebu stock to 10 — Total 10 / Available 10 / Reserved 0
-2. Employee (Cebu) adds 3 to the Request List and submits — Available 7 / Reserved 3, status Pending Approval, `Request received` email
-3. Admin rejects with reason “Duplicate of last week” — Available 10 / Reserved 0, `Request declined` email
-4. Employee submits 3 again — Available 7 / Reserved 3
-5. Admin approves — `Request approved` email; quantities unchanged
-6. Admin sets **Ready for Pickup** at “GS Counter” — `Status changed` email carrying the location
-7. Admin presses **Complete** — Total 7 / Available 7 / Reserved 0, `Status changed` email
-8. Employee cancels a second pending request with a reason — reservation released, `Status changed` email
+1. Admin encodes a Mice asset and adds 10 Available units at Davao — Total 10 / Available 10 / Reserved 0
+2. Maya (Davao) adds 3 to the Request List and submits — Total 10 / Available 7 / Reserved 3, status Pending Approval. `Request received` is asserted only where the product shows that record
+3. Admin approves — quantities unchanged. `Request approved` likewise
+4. Admin sets **Ready for Pickup** at the Davao office — quantities unchanged
+5. Complete is not offered yet. Admin or Maya sets **Received** — Total 7 / Available 7 / Reserved 0
+6. Maya signs the Accountability Form — status stays `Received`, quantities unchanged
+7. Admin presses **Complete** — quantities unchanged, status `Completed`
+8. A rejection or a cancellation with a reason releases the reservation. An empty reason does not. For Delivery cannot be cancelled
