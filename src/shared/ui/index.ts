@@ -73,11 +73,13 @@ export {
   STOCK_STATUSES,
   AVAILABILITIES,
   INVENTORY_STATUSES,
+  UNIT_STATUSES,
   REQUEST_TONE,
   STOCK_TONE,
   type RequestStatus,
   type StockStatus,
   type Availability,
   type InventoryStatus,
+  type UnitStatus,
   type StatusTone,
 } from './status';

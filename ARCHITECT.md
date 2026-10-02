@@ -1,7 +1,7 @@
 # Architecture — Office Supplies Request System
 
 **Status**: Accepted for MVP  
-**Date**: 2026-09-11 · **Last amended**: 2026-10-01 (an Admin cannot cancel a `For Delivery` request; constitution 8.0.0, ADR-0012). 2026-09-29: the Admin or the Employee sets `Received`, the Employee signs on it; constitution 7.0.0  
+**Date**: 2026-09-11 · **Last amended**: 2026-10-02 (a unit may be added as `Inactive`, spec 015 D3). 2026-10-01: an Admin may clear an assignment and the unit's tag is its Purchase Request number; constitution 9.0.0, ADR-0008 amended. 2026-10-01: an Admin cannot cancel a `For Delivery` request; constitution 8.0.0, ADR-0012. 2026-09-29: the Admin or the Employee sets `Received`, the Employee signs on it; constitution 7.0.0  
 **Companion docs**: [product](docs/product.md), [process flow](docs/process-flow.md), [ADRs](docs/adr/), [feature plan](specs/001-office-supplies-mvp/plan.md)
 
 This file is the cross-cutting HOW. Feature WHAT lives in specs. Do not duplicate user stories here.
@@ -86,7 +86,7 @@ Do not add an API implementation directory until an ADR names the stack. Configu
 | Auth | Login, logout, current user | Role-specific business rules in the UI |
 | Users | Identity, role, home office | Request workflow |
 | Assets | Asset record: name, category, model, description, image, category-dependent specs, low-stock threshold | Units and quantities |
-| Inventory | Units (tag, serial, office, status, assignee, purchase and device details); Total / Available / Reserved per (asset, office) derived from unit statuses | Request status; the low-stock threshold (on the Asset) |
+| Inventory | Units (purchase request number (PR), serial, office, status, assignee, purchase and device details); Total / Available / Reserved per (asset, office) derived from unit statuses | Request status; the low-stock threshold (on the Asset) |
 | Requests | Request aggregate, line items, legal transitions, reasons, pickup location | Email transport internals |
 | Notifications | Templates, recipients, send, send log | Whether a transition is allowed |
 
@@ -139,9 +139,12 @@ Stock is a register of **units** ([ADR-0008](docs/adr/0008-per-unit-inventory-re
 | Event | Status after | Unit status change | Total | Available | Reserved |
 |-------|--------------|--------------------|-------|-----------|----------|
 | Units added (single or bulk) | — | → `Available` | +n | +n | — |
+| A unit added directly as `Assigned` or `Inactive` (Admin) | — | → `Assigned` / `Inactive` | — | — | — |
 | Unit made `Inactive`, or an `Available` unit removed | — | `Available` → `Inactive` / removed | −n | −n | — |
 | Unit reactivated | — | `Inactive` → `Available` | +n | +n | — |
 | Existing assignment recorded (Admin, outside a request) | — | `Available` → `Assigned` | −n | −n | — |
+| Assignment cleared (Admin, outside a request) | — | `Assigned` → `Available` | +n | +n | — |
+| Assignment cleared to inactive, or recorded on an inactive unit (Admin) | — | `Assigned` → `Inactive` / `Inactive` → `Assigned` | — | — | — |
 | Request submitted | Pending Approval | *qty* units `Available` → `Reserved` | — | −qty | +qty |
 | Request rejected | Rejected | those units → `Available` | — | +qty | −qty |
 | Request cancelled | Cancelled | those units → `Available` | — | +qty | −qty |
@@ -153,7 +156,7 @@ Stock is a register of **units** ([ADR-0008](docs/adr/0008-per-unit-inventory-re
 
 `Received` is the only request transition that reduces `Total`; those units are what the Assets screen counts as *Assigned units*. Concurrent submits for the last units MUST serialize so `Available` never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract's choice.
 
-A unit that is `Assigned` or `Reserved` cannot be removed. Only request transitions move a unit into or out of `Reserved`; a manual edit may set `Available` ↔ `Inactive` or record an existing assignment.
+A unit that is `Assigned` or `Reserved` cannot be removed. Only request transitions move a unit into or out of `Reserved`; a manual edit may set `Available` ↔ `Inactive`, record an existing assignment (on an `Available` or `Inactive` unit), or clear one (to `Available` or `Inactive`).
 
 Each asset carries one **low-stock threshold** (per asset, compared against Available in the scope on screen), which drives the `In Stock` / `Low Stock` / `Out of Stock` pill and the chip counts on Assets and Inventory.
 

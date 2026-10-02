@@ -1,35 +1,30 @@
 import itemLaptop from '../../assets/items/item-laptop.jpg';
 import itemMonitor from '../../assets/items/item-monitor.jpg';
 import type { ValidationProblem } from '../../shared/validation';
-import { OFFICES, type Office } from '../auth/types';
+import { unitRegister } from '../inventory/seeded-unit-register';
 import type { AssetSource } from './asset-source';
-import { CATEGORIES, type Asset, type AssetDraft, type StockLevels } from './types';
+import { CATEGORIES, type Asset, type AssetDraft } from './types';
 import { draftForCategory, missingFields } from './category-fields';
 
 /** Seeded Assets — non-production placeholders under constitution IX, and the
  *  only `AssetSource` until the contract publishes per-asset unit counts
  *  (spec 014 D1).
  *
- *  Stock is held as counts of units by status per office, as a register of
- *  units would report it (ADR-0008): Available and Reserved at each office,
- *  Assigned per asset. The first rows keep the design's own totals — Dell
+ *  Stock is not held here. It is counted from the seeded unit register on
+ *  every read (spec 015 plan P3; ADR-0008): Available and Reserved at each
+ *  office, Assigned per asset, so a unit added, edited or removed on Inventory
+ *  moves these figures. The first rows keep the design's own totals — Dell
  *  Latitude 7440 at 18 available / 14 reserved, LG UltraFine 27-inch at 8 / 16,
  *  Logitech MX Master 3S at 4 / 24, a 2m USB-C cable at 0 / 60, and two more at
  *  24 / 16 and 5 / 15, given names here. How each splits across the five
- *  offices is ours. The rest make every state reachable: all three stock
- *  statuses, an asset with no units anywhere, every category, and enough rows
- *  for a second page.
+ *  offices is ours, and lives in the register's seed. The rest make every
+ *  state reachable: all three stock statuses, an asset with no units
+ *  anywhere, every category, and enough rows for a second page.
  *
  *  Module state, so a reload starts over. */
 
-type Split = [cebu: number, bacolod: number, makati: number, ortigas: number, davao: number];
-
-function stock(available: Split, reserved: Split = [0, 0, 0, 0, 0]): Record<Office, StockLevels> {
-  return Object.fromEntries(OFFICES.map((o, i) => [o, { available: available[i], reserved: reserved[i] }])) as Record<
-    Office,
-    StockLevels
-  >;
-}
+/** An asset as held here: its counts are the register's. */
+type StoredAsset = Omit<Asset, 'stock' | 'assigned'>;
 
 const LAPTOP_SPECS = {
   ram: '16GB',
@@ -42,7 +37,7 @@ const LAPTOP_SPECS = {
 let seq = 100;
 const nextId = () => `asset-${++seq}`;
 
-let assets: Asset[] = [
+let assets: StoredAsset[] = [
   {
     id: 'asset-1',
     name: 'Dell Latitude 7440',
@@ -52,8 +47,6 @@ let assets: Asset[] = [
     image: itemLaptop,
     specs: { ...LAPTOP_SPECS, processor: 'Intel Core i7-1365U', graphics: 'Intel Iris Xe Graphics' },
     lowStockThreshold: 5,
-    assigned: 3,
-    stock: stock([6, 3, 4, 2, 3], [6, 2, 4, 2, 0]),
   },
   {
     id: 'asset-2',
@@ -63,8 +56,6 @@ let assets: Asset[] = [
     image: itemMonitor,
     specs: {},
     lowStockThreshold: 6,
-    assigned: 11,
-    stock: stock([2, 2, 1, 1, 2], [6, 2, 5, 2, 1]),
   },
   {
     id: 'asset-3',
@@ -73,8 +64,6 @@ let assets: Asset[] = [
     model: 'Evolve2 55 Stereo',
     specs: {},
     lowStockThreshold: 8,
-    assigned: 21,
-    stock: stock([7, 4, 6, 3, 4], [5, 2, 4, 3, 2]),
   },
   {
     id: 'asset-4',
@@ -83,8 +72,6 @@ let assets: Asset[] = [
     description: 'Wireless mouse, USB-C receiver.',
     specs: {},
     lowStockThreshold: 5,
-    assigned: 17,
-    stock: stock([1, 1, 1, 1, 0], [9, 3, 6, 3, 3]),
   },
   {
     id: 'asset-5',
@@ -93,8 +80,6 @@ let assets: Asset[] = [
     model: 'SM-A155F',
     specs: { ram: '4GB', storage: '128GB' },
     lowStockThreshold: 5,
-    assigned: 8,
-    stock: stock([1, 1, 1, 1, 1], [5, 2, 4, 2, 2]),
   },
   {
     id: 'asset-6',
@@ -102,8 +87,6 @@ let assets: Asset[] = [
     category: 'Other Devices',
     specs: {},
     lowStockThreshold: 10,
-    assigned: 44,
-    stock: stock([0, 0, 0, 0, 0], [20, 10, 15, 8, 7]),
   },
   {
     id: 'asset-7',
@@ -114,8 +97,6 @@ let assets: Asset[] = [
     image: itemLaptop,
     specs: LAPTOP_SPECS,
     lowStockThreshold: 4,
-    assigned: 9,
-    stock: stock([5, 2, 3, 0, 3], [1, 0, 1, 0, 0]),
   },
   {
     id: 'asset-8',
@@ -124,8 +105,6 @@ let assets: Asset[] = [
     model: 'Zone Vibe 100',
     specs: {},
     lowStockThreshold: 3,
-    assigned: 6,
-    stock: stock([0, 0, 0, 0, 0]),
   },
   {
     id: 'asset-9',
@@ -134,8 +113,6 @@ let assets: Asset[] = [
     description: 'Battery backup for a single workstation.',
     specs: {},
     lowStockThreshold: 2,
-    assigned: 4,
-    stock: stock([4, 2, 2, 1, 1]),
   },
   {
     id: 'asset-10',
@@ -144,8 +121,6 @@ let assets: Asset[] = [
     model: 'Archer AX55',
     specs: {},
     lowStockThreshold: 2,
-    assigned: 2,
-    stock: stock([2, 1, 2, 1, 1], [1, 0, 0, 0, 0]),
   },
   {
     id: 'asset-11',
@@ -153,8 +128,6 @@ let assets: Asset[] = [
     category: 'Type C Hub',
     specs: {},
     lowStockThreshold: 6,
-    assigned: 12,
-    stock: stock([8, 4, 5, 4, 4], [2, 0, 1, 0, 0]),
   },
   {
     id: 'asset-12',
@@ -163,8 +136,6 @@ let assets: Asset[] = [
     model: 'ThinkPad T14 Gen 4',
     specs: { ram: '32GB', storage: '1TB SSD', processor: 'AMD Ryzen 7 PRO 7840U', graphics: 'AMD Radeon 780M', operatingSystem: 'Windows 11 Pro' },
     lowStockThreshold: 4,
-    assigned: 5,
-    stock: stock([2, 0, 1, 1, 0], [3, 0, 2, 1, 0]),
   },
   {
     id: 'asset-13',
@@ -173,8 +144,6 @@ let assets: Asset[] = [
     model: 'A3090',
     specs: { ram: '6GB', storage: '128GB' },
     lowStockThreshold: 2,
-    assigned: 3,
-    stock: stock([0, 0, 1, 0, 0], [2, 0, 1, 0, 0]),
   },
   {
     id: 'asset-14',
@@ -183,8 +152,6 @@ let assets: Asset[] = [
     model: 'P2723DE',
     specs: {},
     lowStockThreshold: 4,
-    assigned: 7,
-    stock: stock([6, 2, 4, 2, 2]),
   },
   {
     id: 'asset-15',
@@ -192,8 +159,6 @@ let assets: Asset[] = [
     category: 'Mice',
     specs: {},
     lowStockThreshold: 10,
-    assigned: 30,
-    stock: stock([13, 4, 9, 5, 5], [2, 1, 1, 0, 0]),
   },
   {
     id: 'asset-16',
@@ -201,12 +166,14 @@ let assets: Asset[] = [
     category: 'Other Devices',
     specs: {},
     lowStockThreshold: 3,
-    assigned: 5,
-    stock: stock([0, 0, 0, 0, 0]),
   },
 ];
 
-const clone = (a: Asset): Asset => structuredClone(a);
+const withCounts = (a: StoredAsset): Asset => ({
+  ...structuredClone(a),
+  stock: unitRegister.stockFor(a.id),
+  assigned: unitRegister.assignedFor(a.id),
+});
 
 /** Resolves after a beat, so loading and saving states are real rather than
  *  skipped. */
@@ -233,19 +200,15 @@ function check(draft: AssetDraft): Record<string, string> {
 }
 
 export const seededAssetSource: AssetSource = {
-  list: () => settle(assets.map(clone)),
+  list: () => settle(assets.map(withCounts)),
 
   create(input) {
     const errors = check(input);
     if (Object.keys(errors).length) return refuse(errors);
-    const asset: Asset = {
-      ...draftForCategory(input),
-      id: nextId(),
-      assigned: 0,
-      stock: stock([0, 0, 0, 0, 0]),
-    };
+    // A new asset has no units until Inventory adds them.
+    const asset: StoredAsset = { ...draftForCategory(input), id: nextId() };
     assets = [asset, ...assets];
-    return settle(clone(asset));
+    return settle(withCounts(asset));
   },
 
   update(id, input) {
@@ -253,8 +216,8 @@ export const seededAssetSource: AssetSource = {
     if (Object.keys(errors).length) return refuse(errors);
     const current = assets.find((a) => a.id === id);
     if (!current) return Promise.reject(new Error(`asset ${id} not found`));
-    const saved: Asset = { ...current, ...draftForCategory(input) };
+    const saved: StoredAsset = { ...current, ...draftForCategory(input) };
     assets = assets.map((a) => (a.id === id ? saved : a));
-    return settle(clone(saved));
+    return settle(withCounts(saved));
   },
 };

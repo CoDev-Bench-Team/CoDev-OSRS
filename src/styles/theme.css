@@ -115,6 +115,10 @@
   --color-red-error: rgb(198,40,40);
   --color-status-available-bg: var(--color-osrs-green-tint);
   --color-status-available-fg: var(--color-osrs-green-600);
+  --color-status-assigned-bg: var(--color-osrs-blue-tint);
+  --color-status-assigned-fg: var(--color-osrs-blue-700);
+  --color-status-inactive-bg: var(--color-osrs-ink-tint);
+  --color-status-inactive-fg: var(--color-osrs-ink-700);
   --color-status-low-bg: var(--color-osrs-amber-tint);
   --color-status-low-fg: var(--color-osrs-amber-600);
   --color-status-cancelled-bg: var(--color-osrs-ink-tint);

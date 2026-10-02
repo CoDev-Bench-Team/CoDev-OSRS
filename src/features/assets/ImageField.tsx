@@ -35,11 +35,13 @@ function ImageAction({
   glyph,
   onClick,
   href,
+  filename,
 }: {
   label: string;
   glyph: keyof typeof GLYPH;
   onClick?: () => void;
   href?: string;
+  filename?: string;
 }) {
   const danger = glyph === 'remove';
   const body: ReactNode = (
@@ -56,7 +58,7 @@ function ImageAction({
   const cls =
     'flex size-[40px] cursor-pointer items-center justify-center rounded-8 border border-line-default bg-surface-card p-0 transition-osrs hover:border-osrs-border-strong';
   return href ? (
-    <a href={href} download="asset-image" aria-label={label} title={label} className={cls}>
+    <a href={href} download={filename} aria-label={label} title={label} className={cls}>
       {body}
     </a>
   ) : (
@@ -70,12 +72,20 @@ export function ImageField({
   value,
   onChange,
   error,
+  label = 'Image',
+  filename = 'asset-image',
 }: {
   value?: string;
   onChange: (dataUri: string | undefined) => void;
   /** A refusal from the source, e.g. `#/image`. */
   error?: string;
+  /** The field's name; the three actions are named after it, so Inventory's
+   *  read *Replace attachment* (spec 015 Story 3 7b). */
+  label?: string;
+  /** The download's file name. */
+  filename?: string;
 }) {
+  const noun = label.toLowerCase();
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [refusal, setRefusal] = useState<string>();
@@ -110,15 +120,15 @@ export function ImageField({
   return (
     <div className="flex w-full flex-col gap-6">
       <span id={`${id}-label`} className="font-sans text-11 font-bold text-osrs-ink-800">
-        Image
+        {label}
       </span>
       {value ? (
         <div className="relative h-[158px] overflow-hidden rounded-8 border border-osrs-border-strong">
           <img src={value} alt="" className="size-full object-cover" />
           <div className="absolute top-[11px] right-10 flex flex-col gap-8">
-            <ImageAction label="Replace image" glyph="replace" onClick={() => input.current?.click()} />
-            <ImageAction label="Download image" glyph="download" href={value} />
-            <ImageAction label="Remove image" glyph="remove" onClick={() => onChange(undefined)} />
+            <ImageAction label={`Replace ${noun}`} glyph="replace" onClick={() => input.current?.click()} />
+            <ImageAction label={`Download ${noun}`} glyph="download" href={value} filename={filename} />
+            <ImageAction label={`Remove ${noun}`} glyph="remove" onClick={() => onChange(undefined)} />
           </div>
         </div>
       ) : (

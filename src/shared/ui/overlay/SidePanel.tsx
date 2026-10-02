@@ -19,10 +19,11 @@ import { useScrollLock } from './scroll-lock';
  *  motion token ever outgrows it. */
 const EXIT_BACKSTOP_MS = 400;
 
-/** The two sheet widths the file draws: 400px for every request panel, 564px
- *  for `04.1`'s Accountability Form (spec 012 D3). Each is capped at the
- *  viewport, so the sheet never overflows a narrow screen. */
-const WIDTH = { default: 'max-w-[400px]', wide: 'max-w-[564px]' } as const;
+/** The three sheet widths the file draws: 400px for every request panel, 564px
+ *  for `04.1`'s Accountability Form (spec 012 D3), 650px for Inventory's Add
+ *  Multiple Units (spec 015). Each is capped at the viewport, so the sheet
+ *  never overflows a narrow screen. */
+const WIDTH = { default: 'max-w-[400px]', wide: 'max-w-[564px]', batch: 'max-w-[650px]' } as const;
 
 export function SidePanel({
   title,
@@ -53,7 +54,8 @@ export function SidePanel({
    *  ignored until it is `true` again, so the panel cannot unmount mid-submit.
    *  The ✕ stays in place, disabled, so the header does not reflow. */
   dismissible?: boolean;
-  /** `wide` is the Accountability Form's 564px sheet (spec 012 D3). */
+  /** `wide` is the Accountability Form's 564px sheet (spec 012 D3); `batch`
+   *  is Add Multiple Units' 650px one (spec 015). */
   width?: keyof typeof WIDTH;
   /** Spacing of the scrolling body, for a panel drawn with a different inset
    *  (the Assets panels: 14–16px sides, a 371px body). */

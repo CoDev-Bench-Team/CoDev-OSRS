@@ -6,7 +6,7 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 8.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-10-01
+**Version**: 9.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-10-01
 
 ### I. Spec-Driven Development
 
@@ -30,7 +30,7 @@ An Asset MUST exist and MUST hold stock before it can be requested. Stock is a r
 
 `Total = Available + Reserved` MUST hold at all times, and no quantity MUST EVER be negative.
 
-Submitting a request MUST move the requested number of units from `Available` to `Reserved` in the same transaction as the status change to `Pending Approval`. Rejecting or cancelling MUST move them back in the same transaction as the status change. Approving, moving to `For Delivery` or `Ready for Pickup`, signing the Accountability Form, and completing MUST NOT change any unit's status. Moving to `Received` MUST move the reserved units to `Assigned`, with the requester as assignee, in the same transaction as the status change, because that is when the items have left the store. Which specific units are reserved is the API's decision. Only these request transitions move a unit into or out of `Reserved`. Outside them, an Admin MAY move a unit between `Available` and `Inactive`, and MAY record an existing assignment (`Assigned`, with a user) for equipment handed out outside a request; that unit leaves the store without a request.
+Submitting a request MUST move the requested number of units from `Available` to `Reserved` in the same transaction as the status change to `Pending Approval`. Rejecting or cancelling MUST move them back in the same transaction as the status change. Approving, moving to `For Delivery` or `Ready for Pickup`, signing the Accountability Form, and completing MUST NOT change any unit's status. Moving to `Received` MUST move the reserved units to `Assigned`, with the requester as assignee, in the same transaction as the status change, because that is when the items have left the store. Which specific units are reserved is the API's decision. Only these request transitions move a unit into or out of `Reserved`. Outside them, an Admin MAY move a unit between `Available` and `Inactive`, and MAY record an existing assignment (`Assigned`, with a user) for equipment handed out outside a request; that unit leaves the store without a request. An Admin MAY also clear an assignment, moving an `Assigned` unit to `Available` or `Inactive`, and MAY record an assignment on an `Inactive` unit.
 
 A request quantity MUST NOT exceed Available at the requesting office at submit time. A unit that is `Assigned` or `Reserved` MUST NOT be removed. The low-stock threshold is held per asset.
 
@@ -64,7 +64,7 @@ The SPA MUST be TypeScript. REST request/response shapes MUST match the **backen
 
 This is a 4-week internal MVP. Agents MUST NOT add features, frameworks, or infrastructure that are not in the active spec or `ARCHITECT.md`. New architectural choices MUST be recorded as ADRs under `docs/adr/`. The goal is a working demo of Dev + QA collaboration, not an asset-management platform.
 
-The **per-unit register** is in scope: tag, serial number, office, status, assignee, purchase details, and device details. It is how Inventory holds stock (III; [ADR-0008](docs/adr/0008-per-unit-inventory-register.md)). A unit's **BitLocker identifier** and **recovery key/PIN** are secrets under IX. Only an Admin MAY view or edit them. They MUST NEVER be shown to an Employee or written to a log.
+The **per-unit register** is in scope: purchase request number (PR), serial number, office, status, assignee, purchase details, and device details. It is how Inventory holds stock (III; [ADR-0008](docs/adr/0008-per-unit-inventory-register.md)). A unit's **BitLocker identifier** and **recovery key/PIN** are secrets under IX. Only an Admin MAY view or edit them. They MUST NEVER be shown to an Employee or written to a log.
 
 ### IX. Secrets and Internal Data
 

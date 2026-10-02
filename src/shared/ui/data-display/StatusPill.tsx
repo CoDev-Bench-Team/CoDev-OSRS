@@ -6,6 +6,7 @@ import {
   type RequestStatus,
   type StatusTone,
   type StockStatus,
+  type UnitStatus,
 } from '../status';
 
 const TONE: Record<StatusTone, string> = {
@@ -33,28 +34,40 @@ const INVENTORY: Record<InventoryStatus, string> = {
   'Out of Stock': 'bg-status-unavailable-bg text-status-unavailable-fg',
 };
 
+/** The same component's per-unit variants (2026-10-01 export): Available
+ *  green, Reserved amber, Assigned blue and Inactive slate (spec 015 P14). */
+const UNIT: Record<UnitStatus, string> = {
+  Available: 'bg-status-available-bg text-status-available-fg',
+  Reserved: 'bg-status-low-bg text-status-low-fg',
+  Assigned: 'bg-status-assigned-bg text-status-assigned-fg',
+  Inactive: 'bg-status-inactive-bg text-status-inactive-fg',
+};
+
 /** Every pill is 32px high with 10px sides, so pills read at one size across
  *  the app. The shape and type follow the kind of status it is given (spec 002
  *  FR-009):
  *
  *  - request and stock  — 999px radius, 12px bold
- *  - catalog availability and inventory status — 8px radius, 11.5px bold, on
- *    10% tints
+ *  - catalog availability, inventory status and unit status — 8px radius,
+ *    11.5px bold, on 10% tints
  *
  *  A request status always reads as its own name, in its own tone. */
 type Props =
-  | { status: RequestStatus; stock?: never; availability?: never; inventory?: never; className?: string }
-  | { stock: StockStatus; status?: never; availability?: never; inventory?: never; className?: string }
-  | { availability: Availability; status?: never; stock?: never; inventory?: never; className?: string }
-  | { inventory: InventoryStatus; status?: never; stock?: never; availability?: never; className?: string };
+  | { status: RequestStatus; stock?: never; availability?: never; inventory?: never; unit?: never; className?: string }
+  | { stock: StockStatus; status?: never; availability?: never; inventory?: never; unit?: never; className?: string }
+  | { availability: Availability; status?: never; stock?: never; inventory?: never; unit?: never; className?: string }
+  | { inventory: InventoryStatus; status?: never; stock?: never; availability?: never; unit?: never; className?: string }
+  | { unit: UnitStatus; status?: never; stock?: never; availability?: never; inventory?: never; className?: string };
 
 export function StatusPill(props: Props) {
   const { className } = props;
 
-  if (props.availability || props.inventory) {
-    const { cls, label } = props.inventory
-      ? { cls: INVENTORY[props.inventory], label: props.inventory }
-      : AVAILABILITY[props.availability!];
+  if (props.availability || props.inventory || props.unit) {
+    const { cls, label } = props.unit
+      ? { cls: UNIT[props.unit], label: props.unit }
+      : props.inventory
+        ? { cls: INVENTORY[props.inventory], label: props.inventory }
+        : AVAILABILITY[props.availability!];
     return (
       <span
         className={`inline-flex h-32 items-center justify-center rounded-8 px-10 font-sans text-11-5 font-bold leading-display whitespace-nowrap ${cls} ${className ?? ''}`}

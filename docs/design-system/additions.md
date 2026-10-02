@@ -518,6 +518,31 @@ draw no such row ([drift-2026-10-01](drift-2026-10-01.md) A2).
 | **Panel inset as props** | `SidePanel` takes `bodyClassName` / `footerClassName` so the Assets panels get their drawn 14–16px inset and full-width footer band; the request panels keep the defaults. The header stays shared: the Assets frames draw it 78px with the close control 16px from the edge, against the shared 81px / 20px. | One header for every panel; a 3–4px difference does not justify a fork. |
 | **Uploader hint colour** | The format hint uses `ink-secondary`. | The file paints `#6c606c`, not a token; `ink-secondary` is the nearest. |
 
+## 3l. Inventory (BEN-150, spec 015)
+
+`03 - Inventory`, `03.1 - Inventory - Add Single Unit`, its Review/Edit and
+Remove states, and `03 - Inventory - Bulk Add Units` are drawn, as of the
+2026-10-01 export. The following are ours.
+
+| Addition | What was decided | Basis |
+|----------|------------------|-------|
+| **Masked secrets with Show/Hide** | BitLocker Identifier and Recovery Key/PIN are text inputs masked by `-webkit-text-security: disc`, with a red **Show** / **Hide** toggle (`aria-pressed`). Never `type="password"`, so no password manager offers to keep them. Checked in Chrome, Safari's WebKit and Firefox. | The frames draw both as plain fields; constitution VIII makes them Admin-only secrets (spec 015 D6). |
+| **Category-driven device fields** | DEVICE DETAILS follows the catalog item: Laptop shows Serial (required) and the BitLocker pair; Mice and Other Devices show an optional Serial; every other category shows a required Serial. Switching away from a Laptop drops the BitLocker values. | The frames draw the Laptop case only (spec 015 D13). |
+| **Purchase Request field and column** | **Purchase Request** heads PURCHASE DETAILS, optional, shared by a batch; the table column reads `PURCHASE REQUEST`. Never abbreviated. | The table draws the column as `PR` and no panel draws the field; the project owner asked for the full words on 2026-10-02 (spec 015 D14). |
+| **Reserved refusal copy** | *This unit can’t be removed because it is reserved for a request.*, in the drawn assigned refusal's box. | The file draws only the assigned refusal (spec 015 D9). |
+| **Removal refusals as warnings** | Both refusals use the amber warning colours: `#B4740E` text and 1px border over its 10% tint (`status-low-fg` / `status-low-bg`). | The file draws the assigned refusal in the rejection red; the project owner asked for a warning on 2026-10-02. |
+| **Inactive on add** | Add Single Unit's Status offers Available, Assigned and Inactive. | The project owner, 2026-10-02 (spec 015 D3); contract gap G10. |
+| **Reason for removal at 13 / 12px** | `TextField size="sm"`: a 13px label over 12px text in a 56px box, as drawn; the request panels keep the 15 / 14px default. | The `Delete Unit Confirmation` frame. |
+| **No ✓ on bulk rows** | Every row stays editable; Save checks them all. | The frame draws a green ✓ per row with no rule for it (spec 015 Q6). |
+| **Bulk opens at one row** | Add Multiple Units opens with one empty row and a count of 1; the count always equals the rows. | The frame draws a filled batch, not the empty state (spec 015 Story 5 1a). |
+| **Filled attachment on Review/Edit** | A stored attachment fills the uploader with Replace / Download / Remove, the Assets image actions with *attachment* in their names. | The edit frame draws the empty uploader only (spec 015 Story 3 7b). |
+| **Catalog-item and user result lists** | Typing in Catalog Item, or focusing User, lists up to eight matches under the field, in the flow (ARIA 1.2 combobox): category eyebrow, name and model for items; name, email and department for users. Typing narrows the users. | The file draws the fields and the chosen state, not the list. |
+| **A list that fails to load** | *Catalog items could not be loaded. Close the panel and try again* under Catalog Item, and *Users could not be loaded. Close the panel and try again* under User. Opening the panel again loads the list again. | The file draws no failure for either list; spec 015's source-failure rule. |
+| **Focus when a control goes** | A bulk row's ✕ hands focus to the next row's ✕, else the one above, else **+ Add another unit**. `−` at 0 hands it to `+`; `+` at 100 to `−`; **+ Add another unit** at 100 to the new row's ✕. Clearing the catalog item focuses its search. | FR-016: focus never drops to the page. |
+| **Concurrent-reservation message** | *This unit was reserved by a request. Reload to see its current status.*, above the fields; the edits are kept. | Seeded; the contract publishes no such refusal (spec 015 P16, contracts conflict 11 G4). |
+| **Menu item height** | The Add Inventory menu's items are 40px tall rather than the drawn 28px, keeping their 44px touch targets below the design width from overlapping. | Spec 002 FR-012's touch-target rule. |
+| **Remove confirmation** | A reason and **Confirm Removal** open the shared `ConfirmDialog`: *Remove this unit?* · *This permanently deletes the unit. You cannot undo it.* · Cancel / **Remove unit**. Cancel, Esc and the scrim close it and keep the reason. An empty reason never opens it. | Asked by the project owner, 2026-10-02. The Delete Unit Confirmation frame ends on **Confirm Removal**, with no second dialog. **Flagged to the designer.** |
+
 ---
 
 ## 4. Defects found in the source — flagged, not fixed

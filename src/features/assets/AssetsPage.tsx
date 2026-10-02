@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   Button,
   PageHeader,
+  STOCK_STATUSES,
   TABLE_ROW_PADDING_CLASS,
   TableCard,
   tableColumnStyle,
@@ -34,6 +35,8 @@ const COLUMNS: [label: string, width?: ColumnWidth][] = [
   ['ASSIGNED UNITS'],
 ];
 
+const PAGE_SIZES = [10, 25, 50] as const;
+
 /** Derived from the columns and the shared gutter; the fluid column keeps 120px. */
 const TABLE_MIN_WIDTH = tableMinWidth(
   COLUMNS.map(([, width]) => width),
@@ -45,11 +48,15 @@ type PanelState = { kind: 'add' } | { kind: 'view'; id: string } | { kind: 'upda
 export function AssetsPage() {
   const { state, reload, create, update } = useAssets();
   const assets = useMemo(() => (state.kind === 'loaded' ? state.assets : []), [state]);
-  const query = useTableQuery(assets, (a) => ({
-    text: `${a.name} ${a.model ?? ''} ${a.category}`,
-    category: a.category,
-    status: assetStockStatus(a),
-  }));
+  const query = useTableQuery(
+    assets,
+    (a) => ({
+      text: `${a.name} ${a.model ?? ''} ${a.category}`,
+      category: a.category,
+      status: assetStockStatus(a),
+    }),
+    { statuses: STOCK_STATUSES, pageSizes: PAGE_SIZES, pageSize: PAGE_SIZES[0] },
+  );
   const [panel, setPanel] = useState<PanelState>(null);
   const selected: Asset | undefined = panel && panel.kind !== 'add' ? assets.find((a) => a.id === panel.id) : undefined;
 
@@ -82,7 +89,14 @@ export function AssetsPage() {
               ))}
             </div>
 
-            <TableState state={state} rowCount={query.rows.length} empty="No asset matches that search" onRetry={() => void reload()} />
+            <TableState
+              state={state}
+              rowCount={query.rows.length}
+              empty="No asset matches that search"
+              loadingLabel="Loading stock"
+              failedTitle="Stock could not be loaded"
+              onRetry={() => void reload()}
+            />
 
             {query.rows.map((asset) => {
               const { available, reserved } = stockTotals(asset);

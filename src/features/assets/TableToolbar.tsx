@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 import { FilterChip, LoadingState, Notice, Pagination, Search, Select, type StockStatus } from '../../shared/ui';
-import type { AssetsState } from './asset-store';
 import { CATEGORIES } from './types';
-import { ALL_CATEGORIES, PAGE_SIZES, type TableQuery } from './useTableQuery';
+import { ALL_CATEGORIES, type TableQuery } from './useTableQuery';
 
 /** The Assets toolbar: search beside the category select, then the four stock
  *  chips. Inventory's unit table filters by unit status instead (BEN-107), so
@@ -13,7 +12,7 @@ const CHIPS: [label: string, status: StockStatus][] = [
   ['Out of stock', 'Out of Stock'],
 ];
 
-export function TableToolbar({ query, allLabel }: { query: TableQuery; allLabel: string }) {
+export function TableToolbar({ query, allLabel }: { query: TableQuery<StockStatus>; allLabel: string }) {
   return (
     <>
       <div className="mt-18 flex flex-wrap items-center gap-16">
@@ -46,7 +45,7 @@ export function TableToolbar({ query, allLabel }: { query: TableQuery; allLabel:
           <FilterChip
             key={label}
             label={label}
-            count={query.counts[status]}
+            count={query.counts.of(status)}
             selected={query.status === status}
             onSelect={() => query.setStatus(status)}
           />
@@ -56,6 +55,10 @@ export function TableToolbar({ query, allLabel }: { query: TableQuery; allLabel:
   );
 }
 
+/** A list's load state as `TableState` reads it. `stale`: a save went through
+ *  but the reload after it failed. */
+export type TableLoadState = { kind: 'loading' } | { kind: 'failed' } | { kind: 'loaded'; stale?: boolean };
+
 /** The table card's body for the states that are not rows: loading, a failed
  *  load, a list left stale by a failed refresh after a save, and nothing
  *  matching. The last two can show together, above any rows. */
@@ -64,18 +67,22 @@ export function TableState({
   empty,
   rowCount,
   onRetry,
+  loadingLabel,
+  failedTitle,
 }: {
-  state: AssetsState;
+  state: TableLoadState;
   empty: string;
   rowCount: number;
   onRetry: () => void;
+  loadingLabel: string;
+  failedTitle: string;
 }): ReactNode {
   if (state.kind === 'loading') {
     // The shell's LoadingState fills the screen; inside a table it gets the
     // height of a few rows instead.
     return (
       <div className="[&>div]:min-h-[204px]">
-        <LoadingState label="Loading stock" />
+        <LoadingState label={loadingLabel} />
       </div>
     );
   }
@@ -84,7 +91,7 @@ export function TableState({
       <Notice
         eyebrow="Could not load"
         tone="stopped"
-        title="Stock could not be loaded"
+        title={failedTitle}
         body="Nothing was changed. Try again in a moment"
         actions={
           <button
@@ -127,14 +134,18 @@ export function TableState({
   );
 }
 
-export function TablePager({ query }: { query: TableQuery }) {
+export function TablePager({
+  query,
+}: {
+  query: Pick<TableQuery, 'page' | 'pageSize' | 'pageSizes' | 'total' | 'setPage' | 'setPageSize'>;
+}) {
   return (
     <div className="mt-auto pt-32">
       <Pagination
         page={query.page}
         pageSize={query.pageSize}
         total={query.total}
-        pageSizeOptions={PAGE_SIZES}
+        pageSizeOptions={query.pageSizes}
         onPageChange={query.setPage}
         onPageSizeChange={query.setPageSize}
       />
