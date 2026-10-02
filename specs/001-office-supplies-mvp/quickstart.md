@@ -33,7 +33,7 @@ of its own (spec 001 Clarifications, Session 2026-09-12): the sign-in screen
 renders the designed Google control and delegates to the **session boundary**,
 `src/features/auth/session-source.ts`.
 
-Until the backend contract publishes, that boundary is satisfied by
+When `VITE_API_BASE_URL` is unset, that boundary is satisfied by
 `src/features/auth/seeded-source.ts`, which resolves one of these two seeded
 identities — one per role, so every role's landing screen and every refusal can
 be exercised:
@@ -45,9 +45,8 @@ be exercised:
 
 Choose one on the sign-in screen before pressing the Google control — the
 chooser is the seeded source's stand-in for Google's account picker, and it
-disappears on its own once a source backed by the published contract replaces
-it. A third entry, **Refused account**, makes sign-in fail, so the refusal path
-can be demonstrated.
+is shown only while that source is selected. A third entry, **Refused account**,
+makes sign-in fail, so the refusal path can be demonstrated.
 
 Inventory (spec 015) assigns units to users from a seeded directory,
 `src/features/inventory/seeded-user-directory.ts`. These are non-production
@@ -71,13 +70,13 @@ Key/PINs are visibly fake (`DEMO-…`) and reset on reload.
 means signing out and signing back in, which is deliberate: it keeps one role
 per user absolute and makes the demo exercise the real sign-in path.
 
-A session is held as an opaque reference plus a timestamp, never a user or a
-role, and it is re-resolved on every load — so a reload keeps you signed in
+A seeded session is held as an opaque reference plus a timestamp, never a user
+or a role, and it is re-resolved on every load — so a reload keeps you signed in
 while a stale reference left on a shared machine is discarded rather than
-trusted.
-
-When the backend publishes its contract, write a second implementation of
-`SessionSource` against it. No shell code changes.
+trusted. The API session does not use that storage. `App.tsx` passes
+`selectSessionSource()`: a set `VITE_API_BASE_URL` uses
+`src/features/auth/api-session-source.ts`, which signs in, restores, and signs
+out through the published API and the session cookie.
 
 ## Run the SPA
 

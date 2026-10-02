@@ -34,9 +34,9 @@ npm run lint
 npm run verify   # every gate: typecheck, lint, design-system fidelity, shell routing, build
 ```
 
-The application opens at `/login`. Sign-in resolves a **seeded demo account**
-until the backend contract publishes — pick one on the sign-in screen; the three
-roles are listed in
+The application opens at `/login`. With `VITE_API_BASE_URL` unset, sign-in
+resolves a **seeded demo account** — pick one on the sign-in screen; the
+accounts are listed in
 [quickstart.md](specs/001-office-supplies-mvp/quickstart.md).
 
 The design system's component gallery is not part of the application. It stays
