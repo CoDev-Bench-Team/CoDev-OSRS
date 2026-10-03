@@ -173,7 +173,7 @@ export function LoginScreen() {
 
               The icon plate's fill is switched off in the file too, so the
               control is a plain white box: mark, label, nothing else. */}
-          <div className="relative" style={{ width: 242, height: 64 }}>
+          <div className="group relative" style={{ width: 242, height: 64 }}>
             {/* The drawn pill is what the visitor sees. It paints over
                 Google's frame and does not take the click, so the press
                 reaches the frame underneath. */}

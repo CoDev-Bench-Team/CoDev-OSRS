@@ -113,6 +113,10 @@ check(googleIdentity.includes('renderButton') && !googleIdentity.includes('.prom
 const overlay = read('../src/features/auth/GoogleSignInOverlay.tsx');
 check(!/opacity:\s*0(?:\s|;|$)/.test(overlay), 'an ancestor of the Google button is not fully transparent');
 check(overlay.includes('zoom'), 'the Google frame is zoomed to the pill instead of stretched with a transform');
+check(
+  overlay.includes('[role="button"]') && overlay.includes('PILL_HEIGHT'),
+  "Google's own button is stretched to the pill, so the padding under the label takes the click",
+);
 check(!overlay.includes('scaleY'), 'the Google button is not scaled, or a public origin stops accepting clicks after a few seconds');
 check(!overlay.includes('onPress'), 'the overlay does not start sign-in before Google opens the account chooser');
 check(
