@@ -21,9 +21,9 @@ An Admin opens their landing page and sees current workload totals before review
 
 **Acceptance Criteria**:
 
-1. **Given** an Admin with pending requests, **When** they open `/queue`, **Then** they see summary cards for Pending approval, In Processing, and Low stock alerts.
+1. **Given** an Admin with pending requests, **When** they open `/queue`, **Then** they see summary cards for Pending approval and In Processing. *(Amended 2026-10-03: Low stock alerts removed; [drift-2026-10-03](../../docs/design-system/drift-2026-10-03.md).)*
 2. **Given** the summary and queue are based on the same current state, **When** the page renders, **Then** the Pending approval total equals the number of requests eligible for review.
-3. **Given** inventory items have been classified as low stock by the system's data source, **When** the page renders, **Then** Low stock alerts shows that count without defining a new low-stock threshold in the SPA.
+3. ~~**Given** inventory items have been classified as low stock by the system's data source, **When** the page renders, **Then** Low stock alerts shows that count without defining a new low-stock threshold in the SPA.~~ *(Withdrawn 2026-10-03 with the card; [drift-2026-10-03](../../docs/design-system/drift-2026-10-03.md).)*
 
 ### Story 2 — Find and open a request (Priority: P1)
 
@@ -87,10 +87,10 @@ An Admin can review the queue with keyboard controls and at every width supporte
 - **FR-001**: The page MUST be the Admin landing destination at `/queue`, titled **Requests Queue** and subtitled *"Review, approve, and fulfill supply requests"*. ~~Approver landing destination at `/approvals`~~ — realigned by the second 2026-09-24 amendment.
 - **FR-002**: ~~The page MUST remain accessible only to users whose single role is Approver.~~ **SUPERSEDED** by constitution 3.0.0. **Now:** the page MUST remain accessible only to users whose single role is **Admin**; see the 2026-09-24 amendments.
 - **FR-003**: ~~The page MUST NOT merge Approver and Supply Admin capabilities or identity.~~ **SUPERSEDED** by constitution 3.0.0 — the two roles *are* merged ([ADR-0005](../../docs/adr/0005-two-role-model.md)). **Now:** withdrawn; the one Admin both decides and fulfils, and this page links to both halves through Review.
-- **FR-004**: The page MUST show three read-only summary cards labelled Pending approval, In Processing, and Low stock alerts.
+- **FR-004**: The page MUST show two read-only summary cards labelled Pending approval and In Processing, as `02 - Requests Queue` draws them. *(Amended 2026-10-03: the third card, Low stock alerts, is removed; [drift-2026-10-03](../../docs/design-system/drift-2026-10-03.md).)*
 - **FR-005**: Pending approval MUST count requests whose current status is `Pending Approval`.
 - **FR-006**: In Processing MUST count non-terminal requests that have passed approval: `Approved`, ~~`For Release`, and `Released`~~ — those two statuses are **SUPERSEDED** by constitution 3.0.0 ([ADR-0007](../../docs/adr/0007-fulfilment-status-vocabulary.md)). **Now:** `Approved`, `For Delivery`, `Ready for Pickup` and `Received` (amendment 5).
-- **FR-007**: Low stock alerts MUST count inventory items classified as low stock by the system's data source; the SPA MUST NOT invent a threshold.
+- ~~**FR-007**: Low stock alerts MUST count inventory items classified as low stock by the system's data source; the SPA MUST NOT invent a threshold.~~ *(Withdrawn 2026-10-03 with the card; [drift-2026-10-03](../../docs/design-system/drift-2026-10-03.md).)*
 - **FR-008**: ~~The pending table MUST contain only requests currently in `Pending Approval`.~~ **SUPERSEDED** by the third 2026-09-24 amendment. **Now:** the table MUST contain every live request — `Pending Approval`, `Approved`, `For Delivery`, `Ready for Pickup`, and `Received` (amendment 5) — narrowed by the selected chip and the search term.
 - **FR-009**: Each row MUST show request id, requestor name, requestor organizational context when available, an item summary, the row's own status pill, submitted date, and Review.
 - **FR-010**: ~~Review MUST navigate to the stable request-detail destination for that request.~~ **Superseded by spec 008 FR-001 (2026-09-26):** Review opens the review panel over `/queue` without navigating.
@@ -105,7 +105,7 @@ An Admin can review the queue with keyboard controls and at every width supporte
 - **FR-019**: The page MUST offer filter chips `All requests`, `Pending Approval`, `Approved`, `For Delivery`, `Ready for Pickup` (the file's chip says `For Pickup`; see amendment 4), each with its count; `All requests` MUST be selected by default and the selected chip MUST expose its pressed state.
 - **FR-020**: Search MUST match request id, employee name, employee email and item names, case-insensitively and ignoring surrounding whitespace; chip counts MUST be computed over the search matches, not over the current page.
 - **FR-021**: Sort MUST offer Newest First (default), Oldest First and Employee (A-Z). A request whose submitted timestamp is unusable sorts after every dated request under both date orders; Employee (A-Z) breaks ties newest first.
-- **FR-022**: The table MUST be paginated with a `first-last of total` range label, Back / numbered pages / Next, and a Result per page select defaulting to 50. Back and Next MUST be disabled at the ends. Changing the chip, search, sort or page size MUST return to page 1. Re-selecting the value already in effect — pressing the chip that is already selected — is not a change and MUST keep the page.
+- **FR-022**: The table MUST be paginated with a `first-last of total` range label, Back / numbered pages / Next, and a Result per page select defaulting to 10. *(Amended 2026-10-03: the default is 10 on every paged table — Queue, History, Assets, Inventory — and each table remembers the visitor's last choice in this browser's local storage, falling back to 10 when storage is unavailable or holds a size the table does not offer.)* Back and Next MUST be disabled at the ends. Changing the chip, search, sort or page size MUST return to page 1. Re-selecting the value already in effect — pressing the chip that is already selected — is not a change and MUST keep the page.
 - **FR-023**: Chip, search, sort and page MUST be one query state projected in one pure step, so the counts, range label and rows cannot disagree.
 
 ## Key Entities
@@ -150,7 +150,7 @@ Raised by constitution 5.0.0 and [drift-2026-09-26 §3](../../docs/design-system
 ### Session 2026-09-22
 
 - Q: Is this the merged Admin queue drawn in Figma? → A: No. It is Approver-only; Supply Admin fulfillment remains separate.
-- Q: Which summary cards remain after the role split? → A: The vendored re-export retains Pending approval, In Processing, and Low stock alerts as read-only context.
+- Q: Which summary cards remain after the role split? → A: The vendored re-export retains Pending approval, In Processing, and Low stock alerts as read-only context. *(Two since 2026-10-03: Low stock alerts removed, FR-004; [drift-2026-10-03](../../docs/design-system/drift-2026-10-03.md).)*
 - Q: Where do decisions occur? → A: Review links to `/requests/:id`; approve and reject belong to BEN-45.
 - Q: May this feature define the missing HTTP contract or a low-stock threshold? → A: No. Both remain owned outside this SPA feature.
 - Q: Was the linked live Figma node verified? → A: No. Cursor's Figma integration continued to report `needsAuth` after reauthentication and session refresh, so the repository's 2026-09-15 re-export and drift report were used.
@@ -253,8 +253,8 @@ longer what blocks these frames.
 
 - Q: Does the table stay pending-only? → A: **No.** The queue frame lists mixed statuses with Review on every row, and its chips filter by the four live statuses. FR-008 is superseded; terminal requests belong to History (spec 001 FR-016a).
 - Q: Do chip counts follow the search term? → A: **Yes.** A count is the number of rows that chip would show, so it counts the search matches. Otherwise selecting a chip labelled `(7)` could list two rows.
-- Q: Which page sizes does Result per page offer? → A: 10, 25, 50 (default) and 100. The file draws only the 50 state. The other values are ours, and none of them changes what the default shows.
-- Q: The review frames add a third card, *Low stock alerts*; the queue frame draws two. → A: Keep three (FR-004 unchanged); BEN-46 names it.
+- Q: Which page sizes does Result per page offer? → A: 10, 25, 50 and 100, defaulting to 10 since 2026-10-03 (FR-022). The file draws only the 50 state. The other values are ours, and none of them changes what the default shows.
+- Q: The review frames add a third card, *Low stock alerts*; the queue frame draws two. → A: Keep three (FR-004 unchanged); BEN-46 names it. *Reversed 2026-10-03: the queue frame wins; two cards ([drift-2026-10-03](../../docs/design-system/drift-2026-10-03.md)).*
 - Q: The file's search placeholder has a double space after "ID,". → A: Transcribed with one. It is a typo, not copy.
 - Q: Does Review open the design's side panel? → A: Not yet. The panel is BEN-47's. Until it lands, Review keeps navigating to `/requests/:id` (FR-010). The row hands BEN-47 a single seam to replace.
 - Q: Review navigates away, so the chip, search, sort and page reset when the Admin comes back from request detail (Story 1 scenario 4). Hold the query above the route? → A: **No — acceptable until BEN-47.** Its side panel opens over the queue, so the page no longer unmounts and the query survives a review. URL persistence stays out of scope.

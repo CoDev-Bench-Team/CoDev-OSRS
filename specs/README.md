@@ -15,6 +15,7 @@ AI-SDD feature folders. Do not put application code here.
 | [010-design-ratification](010-design-ratification/spec.md) | Ratify the 2026-09-22 export's open questions; unit-register amendment (BEN-116) | Draft |
 | [014-assets-inventory](014-assets-inventory/spec.md) | Assets (Admin) — SPA mock (BEN-48); Inventory is BEN-107 / BEN-108 | Draft |
 | [015-inventory](015-inventory/spec.md) | Inventory — unit register, Add Single Unit, Bulk (BEN-150) | Draft |
+| [017-api-integration](017-api-integration/spec.md) | API integration — screen sources, Phase 2 (BEN-154: BEN-155, BEN-156, BEN-158 to BEN-162) | Draft |
 | [constitution.md](constitution.md) | Governing principles (also in AGENTS.md) | 9.0.0 |
 
 When starting a new feature: copy the lifecycle in `docs/ai-sdd.md`, create `specs/00N-slug/` with `spec.md` first, then plan and tasks. Do not invent a REST `contracts/api.md` — the backend team owns HTTP.

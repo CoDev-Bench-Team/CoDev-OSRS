@@ -7,7 +7,7 @@
 **Labels**: Frontend + Feature  
 **Integration branch**: `dev` — every page PR targets `dev`, not `main` (confirmed 2026-09-23)  
 **Source**: Figma `Office Supplies Request System (OSRS).fig` (**2026-09-22 export**) → `docs/design-system/drift-2026-09-22.md` → `specs/001-office-supplies-mvp/`  
-**Contract**: [Swagger](https://codev-osrs-backend.vercel.app/) — see `specs/001-office-supplies-mvp/contracts/README.md`
+**Contract**: [Swagger](https://codev-osrs-be.vercel.app/) — see `specs/001-office-supplies-mvp/contracts/README.md`
 
 > **Rewritten 2026-09-22.** The design re-export collapsed the role model to
 > **Employee + Admin**, merged the approvals and fulfilment queues into one

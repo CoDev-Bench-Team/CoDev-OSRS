@@ -13,11 +13,11 @@ This file is the always-loaded entry point. Keep it short. Load the pointed file
 | @ARCHITECT.md | Any feature, API, schema, or folder change |
 | @docs/product.md | Scope, roles, success criteria |
 | @docs/process-flow.md | Status machine, stock rules, notifications |
-| @docs/design-system/drift-2026-09-22.md | Current design baseline and its open questions |
-| @specs/001-office-supplies-mvp/spec.md | WHAT to build |
+| `docs/design-system/drift-2026-09-22.md` | Current design baseline and its open questions |
+| `specs/001-office-supplies-mvp/spec.md` | WHAT to build |
 | @specs/001-office-supplies-mvp/plan.md | HOW to build |
 | @specs/001-office-supplies-mvp/tasks.md | Ordered implementation work |
-| @specs/constitution.md | Versioned governing principles |
+| `specs/constitution.md` | Versioned governing principles |
 
 Do not implement from chat alone. Spec → plan → tasks → code.
 

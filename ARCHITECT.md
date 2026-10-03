@@ -194,6 +194,7 @@ Any Admin may review any request and fulfil any approved one.
 | `/catalog` | Employee (Admin may view) | `02 - Catalog` + Request List drawer |
 | `/requests` | Employee | `04 - My Requests` + detail panel |
 | `/queue` | Admin | `02 - Requests Queue` + review / update-status / reject panels |
+| `/queue/:id` | Admin | `/queue` with that request's review panel open; where `/requests/:id` sends an Admin (spec 008 FR-001b) |
 | `/assets` | Admin | `03- Assets` + add / view / update panels |
 | `/inventory` | Admin | `03 - Inventory` (unit table) + Add Single Unit / Add Multiple Units / Review-Edit / Remove Unit panels |
 | `/history` | Admin | `04 - History` + read-only detail panel |

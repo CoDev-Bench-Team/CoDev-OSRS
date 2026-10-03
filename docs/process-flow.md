@@ -50,7 +50,7 @@ Two human roles, not three. See [ADR-0005](adr/0005-two-role-model.md).
 ### 2. Review (Admin)
 
 The `Requests Queue` is one screen for the whole admin half: summary cards for
-*Pending approval*, *In Processing* and *Low stock alerts*; filter chips
+*Pending approval* and *In Processing* ([drift-2026-10-03](design-system/drift-2026-10-03.md)); filter chips
 `All requests · Pending Approval · Approved · For Delivery · Ready for Pickup`;
 search by request ID, employee name, email or item; sort by
 *Newest First / Oldest First / Employee (A-Z)*. **Review** opens the request

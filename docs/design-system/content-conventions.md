@@ -52,7 +52,7 @@ identifier, not prose.
 - Timestamps append " at 9:42 AM".
 - A requester line joins them with a bullet: "Maya Santos • Submitted Sep 11, 2026 at 9:42 AM".
 - Counts are stated plainly and never rounded: "Showing 6 of 108 inventory items".
-- Summary-card labels are sentence case and unpunctuated: "Pending approval", "Low stock alerts".
+- Summary-card labels are sentence case and unpunctuated: "Pending approval", "In Processing".
 
 ## No emoji. Anywhere.
 

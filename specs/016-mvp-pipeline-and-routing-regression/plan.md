@@ -48,7 +48,7 @@ Assigned and Inactive units stay out of Total. The catalog's separate Available 
 
 ## API Contracts
 
-Published contract: [CoDev OSRS API (Swagger UI)](https://codev-osrs-backend.vercel.app/), recorded in `specs/001-office-supplies-mvp/contracts/README.md`.
+Published contract: [CoDev OSRS API (Swagger UI)](https://codev-osrs-be.vercel.app/), recorded in `specs/001-office-supplies-mvp/contracts/README.md`.
 
 The suite does not call it. The SPA still has no HTTP client (`src/shared/api.ts` is not present). Building a stub server would mean inventing the routes the contract has not finished publishing, which this repo must not do.
 

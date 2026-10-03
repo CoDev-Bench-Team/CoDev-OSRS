@@ -6,9 +6,29 @@ This folder MUST NOT contain an invented `api.md`. Agents MUST NOT design endpoi
 
 When the backend team publishes a contract, record the link below and type the client against that document.
 
-**Published contract:** [CoDev OSRS API (Swagger UI)](https://codev-osrs-backend.vercel.app/)
+**Published contract:** [CoDev OSRS API (Swagger UI)](https://codev-osrs-be.vercel.app/)
 
-OpenAPI is served from that deployment (embedded in Swagger UI). Prefer the live docs over guessing shapes. Example: [Assets create](https://codev-osrs-backend.vercel.app/#/Assets/AssetsController_create).
+OpenAPI is served from that deployment (embedded in Swagger UI). Prefer the live docs over guessing shapes. Example: [Assets create](https://codev-osrs-be.vercel.app/#/Assets/AssetsController_create).
+
+**Backend source:** [CoDev-Bench-Team/CoDev-OSRS-BE](https://github.com/CoDev-Bench-Team/CoDev-OSRS-BE) (`main`), the code behind that deployment. [codev-osrs-backend](https://github.com/CoDev-Bench-Team/codev-osrs-backend) is an earlier copy, last pushed 2026-09-30, and lacks BEN-115; do not read shapes from it.
+
+### Endpoint shapes, checked against the backend source (2026-10-03, CoDev-OSRS-BE `6308588`)
+
+Every operation the SPA calls (`src/shared/api/`) was read against its controller, DTO, entity and service return. Bodies, query parameters and enums match. What the source showed that the Swagger examples did not:
+
+| Endpoint | Finding | SPA |
+|---|---|---|
+| `GET/POST/PATCH /assets` | Each asset carries `quantity` (Available), `reservedQuantity`, `assignedQuantity` and `totalQuantity` (Available + Reserved), scoped to `location` when given, plus `createdAt`, `updatedAt`, `deletedAt` | Mapped (spec 017 FR-041) |
+| `GET /assets` (BEN-115, `b6dd6cd`) | The page also carries `counts: { total, byStockLevel: { in_stock, low_stock, out_of_stock } }`: assets matching search, category and office, ignoring `stockLevel` | The Assets chips read it; one call per page instead of three or four |
+| `/requests` reads and writes | The submitter is **`requestor`** (a full user: `firstName`, `lastName`, `email`, `location`), not `requester`. The request carries **`requestingOffice`**, where its units are reserved and what `items[].availableStock` counts against. Timeline entries are `{ status, at, byUserId?, note? }`. No `approvedAt` or `signedAt`: those times come from `timeline` | Reader fixed; it read `requester` and so failed every Admin row against the live API |
+| `POST /requests` | Returns the saved request without `availableStock` or `units`; insufficient stock is a `400`, not a `409` | Already handled |
+| `GET /requests/:id` | Adds `units[] { id, assetId, serialNumber, status }`; list rows do not carry `units` | Not read |
+| `POST /requests/:id/sign` | Stores `receivedSignature` / `receivedNotes` and sets `completed` in the same write (conflict 12 unchanged) | Not called; a `receivedSignature` dates the signature to the `completed` timeline entry |
+| `POST /requests/:id/cancel` | An Admin may still cancel `for_delivery` (conflict 8 unchanged) | Not offered |
+| `/inventory-items` reads | Only the `asset` relation is loaded: neither `assignedTo` nor `assignedToId` is serialised (G6 wider than recorded: the id is missing too). Secrets are returned to any role (G3 unchanged) | Comment corrected; Assigned shows not-published. Editing an Assigned unit does not ask for the assignee again and does not re-send it: re-sending resets `assignedAt` (`inventory-items.service.ts:106-110`) |
+| `DELETE /inventory-items/:id` | Soft delete; returns the unit with `deletedAt` and `removalReason` | Matches |
+| `GET /users` | A plain array, not a page | Already handled |
+| Every `400` validation problem (`common/problem-details.filter.ts:22-25`) | **Backend defect, raise with the backend team.** A nested field's pointer is mis-escaped: the path's dots become `/`, and then every `/` is escaped as `~1`, so `items[0].quantity` arrives as `#/items~10~1quantity` instead of RFC 6901's `#/items/0/quantity`. Top-level fields are unaffected | The SPA reads it as one unknown key, so the message is not placed under a nested field (Request List lines, Add Multiple Units rows); it still shows in the form's top alert. Not worked around (constitution VII). The e2e fake answers with the documented RFC 6901 form |
 
 ## Validation error response (all body-validated endpoints)
 
@@ -118,7 +138,7 @@ Total / Available / Reserved are **counts of unit statuses**
 moves them to `Assigned` to the requester (constitution 5.0.0, ADR-0009). **Still needed from the API:**
 
 - the unit moves atomic with the request status change, with the API choosing the units
-- a published read of per-asset counts (available / reserved / assigned) for the Assets table
+- ~~a published read of per-asset counts (available / reserved / assigned) for the Assets table~~ **Closed 2026-10-03:** every asset read (list, single, create, update) carries `quantity` (Available), `reservedQuantity`, `assignedQuantity` and `totalQuantity` (Available + Reserved), scoped to `location` when given. The Assets table shows them (spec 017 FR-041).
 - whether the contract's unit-removal operation (planned as backend BEN-130) accepts the `Reason for removal` the design draws
 - unit fields the design and spec 001 FR-003 need that the contract field list above lacks: ~~the unit **tag** (`PR`, e.g. `CODEV-LAPTOP-1232`)~~ (withdrawn 2026-10-01: `PR` is the Purchase Request number, not a tag; see conflict 11 G5, and G7 for the attachment), an **assigned-on** date (Profile's "Assigned Jan 14, 2026"), and the notes **description / attachment**
 - the design's `In Storage` unit status, which the contract lacks
@@ -389,7 +409,7 @@ Product behavior (roles, statuses, inventory rules) still lives in `spec.md` and
 
 ### 2026-10-02 — BEN-157 live comparison
 
-Compared the integration guide with the live Swagger document embedded in `https://codev-osrs-backend.vercel.app/swagger-ui-init.js` on 2026-10-02.
+Compared the integration guide with the live Swagger document embedded in `https://codev-osrs-be.vercel.app/swagger-ui-init.js` on 2026-10-02.
 
 The current user (`GET /auth/me`, and the body of `POST /auth/google`) publishes `id`, `googleSubject`, `email`, `firstName`, `lastName`, `avatarUrl`, `role` (`admin` | `employee`), `location` (`Cebu`, `Bacolod`, `Makati`, `Ortigas`, `Davao`), and timestamps. It does not publish a field named `name`. The shell's `User.name` is composed from `firstName` and `lastName`. `avatarUrl` is not shown; the avatar stays initials on a flat colour. An unrecognised role is not a session. An unrecognised office is left unset. `Role` stays `employee` | `admin`, and the office list stays `OFFICES`.
 
@@ -398,3 +418,52 @@ Status and category maps are final. Statuses: `pending_approval`, `approved`, `r
 The live Swagger document does not name a frontend Google client id. BEN-96 configures it as `VITE_GOOGLE_CLIENT_ID`, the Web client in the same Google Cloud project the API verifies. API-mode sign-in loads Google Identity Services and renders Google's button only when that variable is set. The id is not written into source. `VITE_COMPANY_DOMAIN` is an account-picker hint and is not an authorization control. An unset client id refuses API-mode sign-in. An unset `VITE_API_BASE_URL` keeps the seeded session, and that path does not load the Google script.
 
 Wiring gaps recorded while connecting the client: the current user has no `name` field, so the shell name is `firstName` plus `lastName`; `avatarUrl` is ignored. The Google client id is the environment variable above, not a Swagger field. `POST /auth/google` refusals put the explanation in `title` and the HTTP reason phrase in `detail` (`Unauthorized` for 401, `Forbidden` for 403). The sign-in screen shows `title` in that case. `GET /auth/me` 401 uses `Unauthorized` for both fields.
+
+### 2026-10-03 — Spec 017 (BEN-154 Phase 2): new conflicts
+
+Read against the live Swagger (`/swagger-ui-init.js`) on 2026-10-03. Spec 017 switches each screen to the API and withholds what the contract cannot carry ([spec 017](../../017-api-integration/spec.md)).
+
+#### 12. Sign completes the request; no Admin complete (raised 2026-10-03)
+
+Published: `POST /requests/{id}/sign` (`SignRequestDto { agreed, fullName, notes? }`) *"moves the request to completed and emails the requester"*, and its `200` is *"The request, now `completed`"*. `PATCH /requests/{id}` accepts only `approved`, `rejected`, `ready_for_pickup` and `for_delivery`, and says `completed` is set through `/sign`. The request schema documents only `items` and `units`, so no signed flag or signed time is published.
+
+Constitution 9.0.0 IV ([ADR-0011](../../../docs/adr/0011-admin-sets-received-employee-signs.md)) requires the opposite: signing records the acknowledgement and changes no status, and only an Admin sets `Completed`, from a signed `Received` request. BEN-154 adds that the backend emails Admins when the form is signed.
+
+**Until this is answered the SPA, in API mode, offers neither the sign action nor the Admin's Complete** (spec 017 Story 4, FR-022 to FR-026). Requests stop at `Received`. Seeded mode keeps the full flow.
+
+**Draft issue for `codev-osrs-backend`** (to be posted by the frontend owner; link it here once open):
+
+> **Title:** Sign should not complete a request; add an Admin complete
+>
+> Parent: BEN-154 / #138. Constitution 9.0.0 IV, ADR-0011.
+>
+> The live `POST /requests/:id/sign` moves a `received` request to `completed` and emails the requester. The agreed flow is:
+>
+> 1. An Admin or the owning Employee marks the handover `received` (`POST /requests/:id/receive`, already published).
+> 2. The owning Employee signs the Accountability Form. **The status stays `received`.** The form is signed once.
+> 3. The API emails **Admins** that the form is signed.
+> 4. An Admin marks the request `completed`, **only from a signed `received` request**. Any other case returns `409`. No units move.
+>
+> Needed:
+> - `/sign` records `agreed`, `fullName` and the signed time and leaves the status `received`. `notes` is no longer collected by the form; please make sure it stays optional.
+> - The request read (`GET /requests/:id`, and the list rows) carries whether the form is signed and when (for example a signed time that is `null` until signed). The field names are yours to choose.
+> - An Admin-only operation to set `completed` (for example `completed` as a `PATCH` target), refused unless the request is `received` and signed.
+> - The *Status changed* email to the requester on `completed`, and an email to Admins on sign.
+>
+> Until then the SPA does not call `/sign` and offers no Complete in API mode, so requests stop at `received`.
+
+#### 13. No single search across id, requester and item (raised 2026-10-03)
+
+The Requests Queue and History draw one search box over request id, requester name, email and item (spec 004 FR-020). `GET /requests`, `/requests/history` and `/requests/counts` take `displayId`, `requester` and `itemName` as separate filters, which the API combines. Spec 017 maps the box to one parameter: `displayId` for text starting with `REQ-`, `requester` otherwise. Item search is unavailable in API mode. **Needed:** one free-text parameter matching any of the four fields.
+
+#### 14. No filter for the queue's live statuses (raised 2026-10-03)
+
+The queue's *All requests* lists live requests only (`pending_approval`, `approved`, `for_delivery`, `ready_for_pickup`, `received`). `GET /requests` takes one `status` or none, and none also returns resolved requests. Spec 017 merges one list call per live status into full pages (plan D5). **Needed:** a filter that takes several statuses, or a live-only option.
+
+#### 15. ~~No low-stock count for the queue (raised 2026-10-03)~~ — withdrawn 2026-10-03
+
+~~The queue's *Low stock alerts* card is not on `GET /requests/counts`. Spec 017 shows a not-published dash (FR-028). **Needed:** a published count, and what it counts (low only, or low and out, and across which offices).~~ **Withdrawn 2026-10-03:** the card is removed, because `02 - Requests Queue` draws only *Pending approval* and *In Processing* ([drift-2026-10-03](../../../docs/design-system/drift-2026-10-03.md)). Nothing is needed from the API.
+
+#### API host moved; G2 closed (2026-10-03)
+
+The published API moved to `https://codev-osrs-be.vercel.app` (every reference in this repo is updated). Its Swagger matches the previous host route for route, with one change: `DELETE /inventory-items/{id}` now **requires** `RemoveInventoryItemDto { reason }` (*"Stored with the removed unit"*) and is a soft delete (`deletedAt`, `deletedBy`). **Conflict 11 G2 is closed**, and spec 017 sends the reason. G1 is still open: the operation documents no `409`, so removing an `Assigned` or `Reserved` unit is not shown to be refused. Conflict 12 is unchanged on the new host: `/sign` still moves the request to `completed`, and `PATCH` still takes only `approved`, `rejected`, `ready_for_pickup` and `for_delivery`.
