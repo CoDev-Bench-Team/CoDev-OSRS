@@ -1,5 +1,5 @@
 import type { RequestStatus } from '../../shared/ui';
-import type { Office, User } from '../auth/types';
+import { ROLE_LABEL, type Office, type User } from '../auth/types';
 import { unitRegister } from '../inventory/seeded-unit-register';
 import type {
   CancelResult,
@@ -135,8 +135,11 @@ export function appendDemoRequest(
   const request: DemoRequest = {
     id: `REQ-2026-${++seq}`,
     ownerId: user.id,
-    ownerName: user.name,
-    ownerEmail: user.email,
+    // A published user may omit both. The queue still needs a name, and it
+    // uses the same role label the account cluster does. An absent email stays
+    // blank rather than becoming an invented address.
+    ownerName: user.name?.trim() || ROLE_LABEL[user.role],
+    ownerEmail: user.email ?? '',
     office,
     lines: lines.map((line) => ({ ...line, unitIds: [...line.unitIds] })),
     ...(note ? { note } : {}),
