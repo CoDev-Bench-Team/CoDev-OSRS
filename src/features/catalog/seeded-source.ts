@@ -1,3 +1,4 @@
+import { sessionAssetName, sessionAssets } from '../assets/seeded-asset-source';
 import itemHeadset from '../../assets/items/item-headset.jpg';
 import itemHub from '../../assets/items/item-hub.jpg';
 import itemKeyboard from '../../assets/items/item-keyboard.jpg';
@@ -123,7 +124,8 @@ const ASSETS: SeededAsset[] = [
  *  seeded request submit can read back what was created (spec 011 T018). */
 export function seededAsset(id: string): { name: string; model: string } | undefined {
   const asset = ASSETS.find((a) => a.id === id);
-  return asset ? { name: asset.name, model: asset.model } : undefined;
+  if (asset) return { name: asset.name, model: asset.model };
+  return sessionAssetName(id);
 }
 
 /** The live seeded stock. The request submit's seeded source reserves out of
@@ -161,11 +163,23 @@ export function seededCatalogSource(): CatalogSource {
       /* An asset with no stock line at this office is still listed, at zero:
          it exists, it just cannot be requested from here (spec 001 Edge
          Cases). */
-      return ASSETS.map(({ stock: _stock, ...asset }) => ({
+      const seeded = ASSETS.map(({ stock: _stock, ...asset }) => ({
         ...asset,
         specs: { ...asset.specs },
         available: seededStock.available(asset.id, office),
       }));
+      const created = sessionAssets().map((asset) => ({
+        id: asset.id,
+        name: asset.name,
+        category: asset.category,
+        model: asset.model ?? asset.name,
+        description: asset.description,
+        image: asset.image,
+        specs: { ...asset.specs },
+        available: seededStock.available(asset.id, office),
+        lowQtyAlert: asset.lowStockThreshold,
+      }));
+      return [...created, ...seeded];
     },
   };
 }

@@ -27,6 +27,20 @@ const CHANNEL_TOLERANCE = 12; // per-channel, for subpixel rendering
 /** Named, justified exceptions. Each one is a difference we understand and have
  *  decided to keep, so it is recorded here rather than hidden behind a looser
  *  global threshold. An unexplained difference still fails. */
+/** Height-only differences the port keeps on purpose. Width must still match,
+ *  and the height delta must be exactly this many pixels (port − source). */
+const PILL_HEIGHT =
+  'Every StatusPill is 32px high with 10px sides. The file draws a 24px request pill and a 35px inventory pill; one height reads as one component (additions.md §1, 2026-10-01).';
+const ALLOWED_HEIGHT = {
+  'StatusPill / pending': { delta: 8, why: PILL_HEIGHT },
+  'StatusPill / rejected': { delta: 8, why: PILL_HEIGHT },
+  'StatusPill / availability': { delta: -3, why: PILL_HEIGHT },
+  SupplyCard: {
+    delta: -3,
+    why: 'The availability pill is the 32px StatusPill rather than the file’s 35px chip, so the card is 3px shorter (additions.md §1).',
+  },
+};
+
 const ALLOWED = {
   Search: {
     max: 12,
@@ -97,8 +111,17 @@ mkdirSync('/tmp/osrs-pixels', { recursive: true });
 
 for (const box of boxes) {
   if (Math.round(box.source.w) !== Math.round(box.port.w) || Math.round(box.source.h) !== Math.round(box.port.h)) {
-    console.log(`  ✗ ${box.name}: size differs — source ${Math.round(box.source.w)}x${Math.round(box.source.h)}, port ${Math.round(box.port.w)}x${Math.round(box.port.h)}`);
-    failures++;
+    const delta = Math.round(box.port.h) - Math.round(box.source.h);
+    const height = ALLOWED_HEIGHT[box.name];
+    const known = height && Math.round(box.source.w) === Math.round(box.port.w) && delta === height.delta;
+    const size = `source ${Math.round(box.source.w)}x${Math.round(box.source.h)}, port ${Math.round(box.port.w)}x${Math.round(box.port.h)}`;
+    if (known) {
+      console.log(`  ✓ ${box.name}: size differs — ${size}`);
+      console.log(`      known: ${height.why}`);
+    } else {
+      console.log(`  ✗ ${box.name}: size differs — ${size}`);
+      failures++;
+    }
     continue;
   }
   const [a, b] = [await shoot(box.source), await shoot(box.port)];

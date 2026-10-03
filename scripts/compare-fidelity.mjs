@@ -19,6 +19,21 @@ const BOX = ['backgroundColor', 'borderRadius', 'boxShadow', 'padding', 'height'
 
 /** Text present in the source that the port deliberately does not reproduce.
  *  Named per component with a reason, so a genuine missing element still fails. */
+/** Box differences the port keeps on purpose. The value is what the port must
+ *  measure; any other value still fails. Each one is already logged. */
+const PILL =
+  'Every StatusPill is 32px high with 10px sides. The file draws a 24px request pill (6px 10px) and a 35px inventory pill (10px); one height reads as one component (additions.md §1, 2026-10-01).';
+const ALLOWED_BOX = {
+  'StatusPill / pending': { padding: { port: '0px 10px', why: PILL }, height: { port: '32px', why: PILL } },
+  'StatusPill / rejected': { padding: { port: '0px 10px', why: PILL }, height: { port: '32px', why: PILL } },
+  'StatusPill / availability': { padding: { port: '0px 10px', why: PILL }, height: { port: '32px', why: PILL } },
+  SupplyCard: {
+    height: {
+      port: '409.938px',
+      why: 'The availability pill is the 32px StatusPill rather than the file’s 35px chip, so the card is 3px shorter (additions.md §1).',
+    },
+  },
+};
 const ALLOWED_MISSING_TEXT = {
   SupplyCard: {
     '⌄': "the source draws the dropdown affordance as the text character U+2304, whose ink (15px) overflows its 12px line box, making its size and vertical position depend on line-box rounding. Replaced with MDI chevron-down at 20px, optically centred — the register the design system's readme prescribes for an icon the file does not define. Logged in additions.md.",
@@ -96,6 +111,11 @@ for (const p of pairs) {
   for (const k of BOX) {
     checked++;
     if (p.sourceBox[k] !== p.portBox[k]) {
+      const allow = ALLOWED_BOX[p.name]?.[k];
+      if (allow && p.portBox[k] === allow.port) {
+        lines.push(`    note: ${k} is ${p.portBox[k]} rather than ${p.sourceBox[k]} — ${allow.why}`);
+        continue;
+      }
       diffs++;
       lines.push(`    ${k.padEnd(16)} source: ${p.sourceBox[k]}\n    ${''.padEnd(16)} port:   ${p.portBox[k]}`);
     }

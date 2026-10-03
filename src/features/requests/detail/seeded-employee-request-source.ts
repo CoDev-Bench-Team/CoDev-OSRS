@@ -1,4 +1,11 @@
 import type { User } from '../../auth/types';
+import {
+  cancelDemoAsEmployee,
+  demoRequestsFor,
+  isDemoRequest,
+  receiveDemoAsEmployee,
+  signDemoRequest,
+} from '../demo-request-register';
 import type {
   CancelResult,
   EmployeeRequest,
@@ -169,10 +176,11 @@ export function appendSeededRequest(user: User, request: EmployeeRequest): void 
 
 export const seededEmployeeRequestSource: EmployeeRequestSource = {
   async list(user: User) {
-    return [...(store.get(user.id) ?? [])];
+    return [...demoRequestsFor(user.id), ...(store.get(user.id) ?? [])];
   },
 
   async cancel(user: User, id: string, reason: string): Promise<CancelResult> {
+    if (isDemoRequest(id)) return cancelDemoAsEmployee(user, id, reason);
     const own = store.get(user.id) ?? [];
     const index = own.findIndex((r) => r.id === id);
     if (user.role !== 'employee' || index === -1) return { ok: false, refusal: 'unavailable' };
@@ -194,6 +202,7 @@ export const seededEmployeeRequestSource: EmployeeRequestSource = {
    *  while the request is handed over. Sets `Received` with its time; the
    *  units the backend would assign are not modelled (constitution III). */
   async markReceived(user: User, id: string): Promise<ReceiveResult> {
+    if (isDemoRequest(id)) return receiveDemoAsEmployee(user, id);
     const own = store.get(user.id) ?? [];
     const index = own.findIndex((r) => r.id === id);
     if (user.role !== 'employee' || index === -1) return { ok: false, refusal: 'unavailable' };
@@ -213,6 +222,7 @@ export const seededEmployeeRequestSource: EmployeeRequestSource = {
    *  no place for one. Stock is the backend's (constitution III); this source
    *  models none. */
   async sign(user: User, id: string, signature: Signature): Promise<SignResult> {
+    if (isDemoRequest(id)) return signDemoRequest(user, id, signature);
     const own = store.get(user.id) ?? [];
     const index = own.findIndex((r) => r.id === id);
     if (user.role !== 'employee' || index === -1) return { ok: false, refusal: 'unavailable' };

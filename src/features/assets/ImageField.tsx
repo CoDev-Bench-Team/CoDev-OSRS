@@ -143,7 +143,7 @@ export function ImageField({
           }}
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
-          className={`group flex h-[158px] w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-8 border px-12 text-center transition-osrs ${
+          className={`flex h-[158px] w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-8 border px-12 text-center transition-osrs hover:[&_[data-browse]]:underline ${
             dragging
               ? 'border-brand-primary bg-status-rejected-bg'
               : message
@@ -155,7 +155,7 @@ export function ImageField({
             <path transform="translate(0 5)" d={CLOUD_UPLOAD} />
           </svg>
           <span id={`${id}-prompt`} className="font-sans text-14 font-bold leading-tight text-osrs-ink-800">
-            Drop file or <span className="group-hover:underline">browse</span>
+            Drop file or <span data-browse>browse</span>
           </span>
           <span id={`${id}-hint`} className="font-sans text-[13.5px] leading-tight text-ink-secondary">
             Format: .jpeg, .png &amp; Max file size: 25 MB

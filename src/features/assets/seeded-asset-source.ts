@@ -199,6 +199,29 @@ function check(draft: AssetDraft): Record<string, string> {
   return missingFields(draftForCategory(draft));
 }
 
+const SESSION_ASSET_FROM = 101;
+
+/** An asset id issued by Add Asset in this session. The original seed stops
+ *  below `asset-101` (`seq` starts at 100). */
+function isSessionAsset(id: string): boolean {
+  const n = Number(/^asset-(\d+)$/.exec(id)?.[1]);
+  return n >= SESSION_ASSET_FROM;
+}
+
+/** Assets created in this session. The catalog lists these beside its own
+ *  seed. The original seeded assets stay on the catalog's own list, so the
+ *  two are not doubled. */
+export function sessionAssets(): readonly StoredAsset[] {
+  return assets.filter((asset) => isSessionAsset(asset.id)).map((asset) => ({ ...asset, specs: { ...asset.specs } }));
+}
+
+/** Name and model for a session asset, so a submit can name the line. */
+export function sessionAssetName(id: string): { name: string; model: string } | undefined {
+  const asset = assets.find((a) => a.id === id);
+  if (!asset || !isSessionAsset(asset.id)) return undefined;
+  return { name: asset.name, model: asset.model ?? asset.name };
+}
+
 export const seededAssetSource: AssetSource = {
   list: () => settle(assets.map(withCounts)),
 

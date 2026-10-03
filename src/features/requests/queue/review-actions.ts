@@ -8,9 +8,9 @@ import type { RequestStatus } from '../../../shared/ui';
  *  not on screen at all.
  *
  *  The table is exhaustive over `RequestStatus` (`satisfies Record<…>`), so a
- *  new status stops the build until it is given its row (plan D2). No status
- *  offers Complete yet (spec 008 FR-010, FR-012). */
-export type ReviewAction = 'approve' | 'reject' | 'updateStatus' | 'cancel' | 'close';
+ *  new status stops the build until it is given its row (plan D2). Complete is
+ *  not in the table: it is offered only for a signed `Received` request. */
+export type ReviewAction = 'approve' | 'reject' | 'updateStatus' | 'cancel' | 'complete' | 'close';
 
 const ACTIONS = {
   'Pending Approval': ['reject', 'approve'],
@@ -20,15 +20,15 @@ const ACTIONS = {
   // delivery goes back to Ready for Pickup first (constitution 8.0.0 IV).
   'For Delivery': ['updateStatus'],
   'Ready for Pickup': ['cancel', 'updateStatus'],
-  // Constitution 5.0.0 adopted `Received` (ADR-0009). Complete is its action,
-  // and it is not built yet (spec 008 Story 4). Until it is, the panel offers
-  // nothing here; ✕ still closes it.
+  // Unsigned `Received` offers nothing. Complete appears only once the
+  // Accountability Form is signed (`reviewActions` second argument).
   Received: [],
   Rejected: ['close'],
   Cancelled: ['close'],
   Completed: ['close'],
 } as const satisfies Record<RequestStatus, readonly ReviewAction[]>;
 
-export function reviewActions(status: RequestStatus): readonly ReviewAction[] {
+export function reviewActions(status: RequestStatus, signed = false): readonly ReviewAction[] {
+  if (status === 'Received' && signed) return ['complete'];
   return ACTIONS[status];
 }

@@ -1,4 +1,13 @@
 import { OFFICES, type Office } from '../../auth/types';
+import {
+  approveDemoRequest,
+  cancelDemoAsAdmin,
+  completeDemoRequest,
+  demoReviewRequests,
+  isDemoRequest,
+  rejectDemoRequest,
+  updateDemoRequest,
+} from '../demo-request-register';
 import type { RequestStatus } from '../../../shared/ui';
 import type {
   AdminRequestSource,
@@ -389,11 +398,13 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
 
     async load(): Promise<ReviewSnapshot> {
       // A new array of new objects on every load, so a reload after a
-      // transition is a new snapshot, never a mutated old one.
-      return { lowStockAlertCount: 2, requests: store.map((request) => ({ ...request })) };
+      // transition is a new snapshot, never a mutated old one. Session
+      // requests sit in front; seeded rows are unchanged.
+      return { lowStockAlertCount: 2, requests: [...demoReviewRequests(), ...store.map((request) => ({ ...request }))] };
     },
 
     async approve(id, notes) {
+      if (isDemoRequest(id)) return approveDemoRequest(id, notes);
       const request = find(id);
       if (!request) return refused('unavailable');
       if (request.status !== 'Pending Approval') return refused('status-changed');
@@ -404,6 +415,7 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
     },
 
     async reject(id, reason, notes) {
+      if (isDemoRequest(id)) return rejectDemoRequest(id, reason, notes);
       const request = find(id);
       if (!request) return refused('unavailable');
       if (request.status !== 'Pending Approval') return refused('status-changed');
@@ -417,6 +429,7 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
     },
 
     async updateStatus(id, to: UpdateStatusTarget, pickup?: PickupLocation) {
+      if (isDemoRequest(id)) return updateDemoRequest(id, to, pickup, OFFICES);
       const request = find(id);
       if (!request) return refused('unavailable');
       if (to === 'Received') {
@@ -449,6 +462,7 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
     },
 
     async cancel(id, reason) {
+      if (isDemoRequest(id)) return cancelDemoAsAdmin(id, reason);
       const request = find(id);
       if (!request) return refused('unavailable');
       if (!ADMIN_CANCEL_FROM.has(request.status)) return refused('status-changed');
@@ -458,6 +472,17 @@ export function createSeededAdminRequestSource(): AdminRequestSource {
       // handover, location and times stay, so the timeline keeps its nodes.
       request.status = 'Cancelled';
       request.cancellation = { reason: trimmed, at: now() };
+      return { ok: true };
+    },
+
+    async complete(id) {
+      if (isDemoRequest(id)) return completeDemoRequest(id);
+      const request = find(id);
+      if (!request) return refused('unavailable');
+      // Unsigned Received still has no Complete. Seeded rows carry no signature.
+      if (request.status !== 'Received' || !request.signedAt) return refused('status-changed');
+      request.status = 'Completed';
+      request.completedAt = now();
       return { ok: true };
     },
   };
