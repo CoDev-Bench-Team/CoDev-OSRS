@@ -1,14 +1,13 @@
-/** Every gate in one place — spec 002's design-system checks, spec 003's
- *  application-shell checks, spec 004's Requests Queue checks, spec 005's
- *  Catalog checks, spec 006's Profile checks, spec 007's request panel
- *  (BEN-45), spec 009's My Requests (BEN-44), spec 011's Request List (BEN-43),
- *  spec 012's Accountability Form (BEN-136), spec 013's History (BEN-144),
- *  spec 014's Assets (BEN-48), spec 015's Inventory (BEN-150), and the
- *  BEN-157 session switch.
- *  Order matters:
- *  `check-profile-build` scans `dist/`, so it runs after `build`. Needs
- *  `npm run dev`; headless Chrome is started for you. Set OSRS_DEV_ORIGIN when the dev server took a port other than
- *  5173 (a worktree usually does). */
+/** Every gate in one place — spec 002's design-system checks, the BEN-157
+ *  session, spec 017's API screen sources, and the build.
+ *
+ *  The browser checks that drove the seeded data were retired with it (spec
+ *  017, Session 2026-10-03 second). An end-to-end run against the live API is
+ *  spec 001 T026 (Playwright).
+ *
+ *  Order matters: `check-build` scans `dist/`, so it runs after `build`. The
+ *  fidelity and pixel gates need `npm run dev` (headless Chrome is started for
+ *  you); set OSRS_DEV_ORIGIN when the dev server is not on 5173. */
 import { spawnSync } from 'node:child_process';
 const steps = [
   ['typecheck', 'npx', ['tsc', '-b', '--force']],
@@ -16,22 +15,10 @@ const steps = [
   ['utilities + adherence', 'node', ['scripts/check-utilities.mjs']],
   ['fidelity (FR-005a)', 'node', ['scripts/compare-fidelity.mjs']],
   ['pixels (FR-005a)', 'node', ['scripts/compare-pixels.mjs']],
-  ['a11y + responsive', 'node', ['scripts/check-a11y-responsive.mjs']],
-  ['shell routing + guards', 'node', ['scripts/check-shell.mjs']],
-  ['requests queue (spec 004)', 'node', ['scripts/check-queue.mjs']],
-  ['catalog (spec 005)', 'node', ['scripts/check-catalog.mjs']],
-  ['profile (spec 006)', 'node', ['scripts/check-profile.mjs']],
-  ['request panel (BEN-45)', 'node', ['scripts/check-request-detail.mjs']],
-  ['review panel (spec 008)', 'node', ['scripts/check-review-panel.mjs']],
-  ['request list + submit (spec 011)', 'node', ['scripts/check-request-list.mjs']],
-  ['my requests (spec 009)', 'node', ['scripts/check-my-requests.mjs']],
-  ['accountability form (spec 012)', 'node', ['scripts/check-accountability-form.mjs']],
-  ['history (spec 013)', 'node', ['scripts/check-history.mjs']],
-  ['assets (spec 014)', 'node', ['scripts/check-assets.mjs']],
-  ['inventory (spec 015)', 'node', ['scripts/check-inventory.mjs']],
   ['api session (BEN-157)', 'node', ['scripts/check-api-session.mjs']],
+  ['api screens (spec 017)', 'node', ['scripts/check-api-screens.mjs']],
   ['build', 'npm', ['run', 'build']],
-  ['profile build: lazy stub + SPA fallback (FR-010)', 'node', ['scripts/check-profile-build.mjs']],
+  ['build: no seeded data + SPA fallback (spec 017 SC-001)', 'node', ['scripts/check-build.mjs']],
 ];
 let failed = 0;
 for (const [name, cmd, args] of steps) {

@@ -1,36 +1,26 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/test';
+import { PEOPLE } from './fixtures/fake-api';
 import { dismissDialog, signIn } from './fixtures/session';
 
-test('a signed-out visitor sees sign-in, then the destination their role may use', async ({ page }) => {
+test('a signed-out visitor sees sign-in; a restored session reaches what its role may use', async ({ page, api }) => {
   await page.goto('/inventory');
   await expect(page.getByText('Great to have you with us!')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Inventory' })).toHaveCount(0);
+  // No demo chooser: the only way in is the API's session.
+  await expect(page.getByRole('radio')).toHaveCount(0);
 
-  await page.getByRole('radio', { name: /Ethan Cruz/ }).check();
-  await page.getByRole('button', { name: 'Sign in with Google' }).click();
-  await expect(page).toHaveURL(/\/inventory$/);
+  // The API now has a session (as after Google sign-in); a load restores it.
+  api.current = PEOPLE['Ethan Cruz'];
+  await page.goto('/inventory');
   await expect(page.getByRole('heading', { name: 'Inventory', level: 1 })).toBeVisible();
 
   await page.getByRole('button', { name: 'Sign Out' }).click();
+  await expect(page).toHaveURL(/\/login/);
+  api.current = PEOPLE['Maya Santos'];
   await page.goto('/inventory');
-  await expect(page.getByText('Great to have you with us!')).toBeVisible();
-  await page.getByRole('radio', { name: /Maya Santos/ }).check();
-  await page.getByRole('button', { name: 'Sign in with Google' }).click();
-  await expect(page).not.toHaveURL(/\/login/);
-
-  const refused = page.getByText('This screen belongs to another role');
-  if (await refused.isVisible()) {
-    await expect(page.getByRole('button', { name: 'Go to Catalog' })).toBeVisible();
-    await page.getByRole('button', { name: 'Go to Catalog' }).click();
-    await expect(page).toHaveURL(/\/catalog$/);
-  } else {
-    await expect(page).toHaveURL(/\/catalog$/);
-    test.info().annotations.push({
-      type: 'routing-gap',
-      description:
-        'After sign-in, a role that may not use the requested destination is sent to its landing screen. The refusal screen, with an explanation and a way back, is not shown for that return.',
-    });
-  }
+  await expect(page.getByText('This screen belongs to another role')).toBeVisible();
+  await page.getByRole('button', { name: 'Go to Catalog' }).click();
+  await expect(page).toHaveURL(/\/catalog$/);
 });
 
 test('an Employee is refused the Admin destinations, and an unknown address is not that refusal', async ({ page }) => {
@@ -91,4 +81,12 @@ test('an Admin is refused My Requests, can open the catalog without requesting, 
   await page.goto('/not-a-real-screen');
   await expect(page.getByText('There is no screen at this address')).toBeVisible();
   await expect(page.getByText('This screen belongs to another role')).toHaveCount(0);
+});
+
+test('`/` lands an Admin on the Requests Queue tab', async ({ page, api }) => {
+  api.current = PEOPLE['Ethan Cruz'];
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/queue$/);
+  await expect(page.getByRole('link', { name: 'Requests Queue' })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('heading', { name: 'Requests Queue', level: 1 })).toBeVisible();
 });

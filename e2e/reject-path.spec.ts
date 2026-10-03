@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/test';
 import { signIn, switchAccount } from './fixtures/session';
 import { expectDavaoStock } from './fixtures/stock';
-import { addDavaoUnits, encodeAsset, openMine, openReview, submitRequest } from './fixtures/supply';
+import { addDavaoUnits, encodeAsset, openMine, openReview, reopenReview, submitRequest } from './fixtures/supply';
 
 const ASSET = 'E2E Reject Mouse';
 const UNITS = 10;
@@ -29,6 +29,7 @@ test('an empty rejection changes nothing, and a reason releases the reservation'
   await page.getByRole('dialog').getByRole('button', { name: 'Reject Request' }).click();
   await page.getByRole('textbox', { name: /Reason for rejection/ }).fill(REASON);
   await page.getByRole('button', { name: 'Confirm Rejection' }).click();
+  await reopenReview(page, rejectedId);
   await expect(page.getByRole('dialog').getByText('Rejected', { exact: true }).first()).toBeVisible();
   await expectDavaoStock(page, ASSET, { available: UNITS, reserved: 0, units: UNITS });
 

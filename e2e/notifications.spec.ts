@@ -1,7 +1,17 @@
-import { test } from '@playwright/test';
+import { test } from './fixtures/test';
 import { recordNotification } from './fixtures/gaps';
 import { signIn, switchAccount } from './fixtures/session';
-import { addDavaoUnits, encodeAsset, openMine, openReview, setHandover, signAccountability, submitRequest } from './fixtures/supply';
+import {
+  addDavaoUnits,
+  encodeAsset,
+  expectSignWithheld,
+  openMine,
+  openReview,
+  reopenReview,
+  setHandover,
+  settle,
+  submitRequest,
+} from './fixtures/supply';
 
 const ASSET = 'E2E Notice Mouse';
 
@@ -20,12 +30,14 @@ test('each transition records the template the product exposes, including Mayaâ€
   await switchAccount(page, 'Ethan Cruz');
   await openReview(page, id);
   await page.getByRole('button', { name: 'Approve Request' }).click();
+  await settle(page);
   await recordNotification(page, {
     template: 'Request approved',
     detail: 'Pending Approval to Approved.',
     includes: ['Pending Approval', 'Approved'],
   });
 
+  await reopenReview(page, id);
   await setHandover(page, 'For Delivery');
   await recordNotification(page, {
     template: 'Status changed',
@@ -33,6 +45,7 @@ test('each transition records the template the product exposes, including Mayaâ€
     includes: ['Approved', 'For Delivery'],
   });
 
+  await reopenReview(page, id);
   await setHandover(page, 'Ready for Pickup', 'Davao Office');
   await recordNotification(page, {
     template: 'Status changed',
@@ -40,6 +53,7 @@ test('each transition records the template the product exposes, including Mayaâ€
     includes: ['For Delivery', 'Ready for Pickup', 'Davao Office'],
   });
 
+  await reopenReview(page, id);
   await setHandover(page, 'Received');
   await recordNotification(page, {
     template: 'Status changed',
@@ -49,15 +63,11 @@ test('each transition records the template the product exposes, including Mayaâ€
 
   await switchAccount(page, 'Maya Santos');
   await openMine(page, id);
-  await signAccountability(page, 'Maya Santos');
-
-  await switchAccount(page, 'Ethan Cruz');
-  await openReview(page, id);
-  await page.getByRole('dialog').getByRole('button', { name: 'Complete' }).click();
-  await recordNotification(page, {
-    template: 'Status changed',
-    detail: 'Received to Completed.',
-    includes: ['Received', 'Completed'],
+  await expectSignWithheld(page);
+  test.info().annotations.push({
+    type: 'contract-gap',
+    description:
+      'Sign and Complete are withheld while the published /sign completes the request and no Admin complete exists (spec 017 Story 4, contracts conflict 12). The demo path stops at Received.',
   });
 
   await switchAccount(page, 'Maya Santos');
@@ -67,6 +77,7 @@ test('each transition records the template the product exposes, including Mayaâ€
   await page.getByRole('dialog').getByRole('button', { name: 'Reject Request' }).click();
   await page.getByRole('textbox', { name: /Reason for rejection/ }).fill('Not required');
   await page.getByRole('button', { name: 'Confirm Rejection' }).click();
+  await settle(page);
   await recordNotification(page, {
     template: 'Request declined',
     detail: 'Pending Approval to Rejected.',
