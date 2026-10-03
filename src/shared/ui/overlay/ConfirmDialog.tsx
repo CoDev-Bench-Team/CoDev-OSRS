@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { Button } from '../actions/Button';
 import { listenForScrimClick, wrapTab } from './modal-dialog';
+import { TOP_LAYER_CLOSED, TOP_LAYER_OPENED } from './popover-layer';
 
 /** A small modal that asks before an action is sent. Undrawn: logged in
  *  `docs/design-system/additions.md` §3h.
@@ -39,7 +40,11 @@ export function ConfirmDialog({
   useEffect(() => {
     const el = dialog.current;
     const opener = document.activeElement as HTMLElement | null;
-    if (el && !el.open) el.showModal();
+    if (el && !el.open) {
+      el.showModal();
+      // Toasts move into the topmost modal, or they would be inert under it.
+      window.dispatchEvent(new Event(TOP_LAYER_OPENED));
+    }
     // Cancel is the first button: the safe choice has focus.
     el?.querySelector<HTMLButtonElement>('button')?.focus();
     const cancel = () => {
@@ -57,6 +62,7 @@ export function ConfirmDialog({
       el?.removeEventListener('cancel', onNativeCancel);
       stopScrim();
       if (el?.open) el.close();
+      window.dispatchEvent(new Event(TOP_LAYER_CLOSED));
       if (opener?.isConnected) opener.focus();
     };
   }, []);

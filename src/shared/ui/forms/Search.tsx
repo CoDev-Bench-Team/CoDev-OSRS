@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes } from 'react';
+import { useRef, type InputHTMLAttributes } from 'react';
 
 /** The 46px catalog / inventory search field. Ringed rather than shadowed,
  *  following the source's rule that interactive inputs get the ring.
@@ -15,12 +15,25 @@ import type { InputHTMLAttributes } from 'react';
  *  wrapper's `gap-10`, written as the sum of those same tokens so the text
  *  cannot sit on the glyph; change one of the three and change the sum. An
  *  absolute input gives the field no intrinsic width, so the source's 226px
- *  default is restated as a minimum. */
+ *  default is restated as a minimum.
+ *
+ *  With `onClear`, a field holding text shows a clear button (×) at its far
+ *  right. Pressing it calls `onClear`, which empties the caller's value, and
+ *  puts focus back in the field. The browser's own cancel button stays
+ *  hidden, so there is only ever one. Not drawn in the design file; recorded in
+ *  docs/design-system/additions.md. */
 export function Search({
   placeholder = 'Search supplies by name or category',
   className,
+  onClear,
   ...rest
-}: InputHTMLAttributes<HTMLInputElement>) {
+}: InputHTMLAttributes<HTMLInputElement> & {
+  /** Empties the field. The clear button shows only when this is given and
+   *  the field has text. */
+  onClear?: () => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const clearable = Boolean(onClear) && !rest.disabled && typeof rest.value === 'string' && rest.value !== '';
   return (
     <div
       className={`relative flex h-control-height-lg min-w-[226px] items-center gap-10 rounded-10 bg-surface-card px-16 ring-default text-ink-secondary transition-osrs ${className ?? ''}`}
@@ -44,9 +57,28 @@ export function Search({
       <input
         type="search"
         placeholder={placeholder}
-        className="absolute inset-0 min-w-0 appearance-none rounded-10 border-none bg-transparent pr-16 pl-[calc(var(--spacing-16)+var(--spacing-18)+var(--spacing-10))] font-sans text-14 leading-tight text-ink-primary placeholder:text-ink-secondary [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+        ref={input}
+        className={`absolute inset-0 min-w-0 appearance-none rounded-10 border-none bg-transparent ${clearable ? 'pr-[48px]' : 'pr-16'} pl-[calc(var(--spacing-16)+var(--spacing-18)+var(--spacing-10))] font-sans text-14 leading-tight text-ink-primary placeholder:text-ink-secondary [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none`}
         {...rest}
       />
+      {clearable ? (
+        // 32px square inside the 46px field, 8px from its right edge; the
+        // glyph is 16px. Positioned above the stretched input so it is the
+        // click target, not the field.
+        <button
+          type="button"
+          aria-label="Clear search"
+          onClick={() => {
+            onClear?.();
+            input.current?.focus();
+          }}
+          className="absolute top-1/2 right-8 flex size-32 -translate-y-1/2 cursor-pointer items-center justify-center rounded-pill border-none bg-transparent p-0 text-ink-secondary transition-osrs hover:bg-osrs-neutral-100 hover:text-ink-primary"
+        >
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" aria-hidden="true" className="size-16">
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }

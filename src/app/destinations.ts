@@ -23,6 +23,7 @@ export type DestinationId =
   | 'requests'
   | 'requestDetail'
   | 'queue'
+  | 'queueRequest'
   | 'assets'
   | 'inventory'
   | 'history'
@@ -38,6 +39,8 @@ export type Destination = {
   title: string;
   /** One sentence, no period. */
   purpose: string;
+  /** The subtitle the screen's frame draws, where it differs from `purpose`. */
+  subtitle?: string;
   /** Roles permitted to reach the address at all. */
   roles: readonly Role[];
 };
@@ -49,6 +52,8 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     navLabel: 'Catalog',
     title: 'Supply Catalog',
     purpose: 'Browse available equipment and office essentials',
+    /** `02 - Catalog` draws two sentences (spec 005 D9). */
+    subtitle: 'Browse available equipment and office essentials. Inventory updates in real time.',
     roles: ROLES,
   },
   requests: {
@@ -80,12 +85,25 @@ export const DESTINATIONS: Record<DestinationId, Destination> = {
     purpose: 'Review, approve, and fulfill supply requests',
     roles: ['admin'],
   },
+  /** One request's review panel over the queue: the address an email's
+   *  *View request* reaches for an Admin, `/requests/:id` redirecting here
+   *  (spec 008 FR-001b). The Requests Queue renders it; it is not in the
+   *  navigation. */
+  queueRequest: {
+    id: 'queueRequest',
+    path: '/queue/:id',
+    navLabel: 'Request',
+    title: 'Requests Queue',
+    purpose: 'Review, approve, and fulfill supply requests',
+    roles: ['admin'],
+  },
   assets: {
     id: 'assets',
     path: '/assets',
     navLabel: 'Assets',
     title: 'Assets',
     purpose: 'Deployed and available units',
+    subtitle: 'Assigned and available units',
     roles: ['admin'],
   },
   inventory: {
@@ -142,4 +160,14 @@ export function canRoleReach(role: Role, pathname: string): boolean {
 
 export function destinationFor(pathname: string): Destination | undefined {
   return Object.values(DESTINATIONS).find((d) => matchPath({ path: d.path, end: true }, pathname));
+}
+
+/** The subtitle a screen's header shows: the drawn one, else its purpose. */
+export function pageSubtitle(destination: Destination): string {
+  return destination.subtitle ?? destination.purpose;
+}
+
+/** `/queue/:id` for a request id. */
+export function queueRequestPath(id: string): string {
+  return `${DESTINATIONS.queue.path}/${encodeURIComponent(id)}`;
 }

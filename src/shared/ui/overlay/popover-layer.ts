@@ -16,3 +16,10 @@ export function onDismissPopovers(fn: () => void) {
 export function dismissPopovers() {
   for (const fn of [...subscribers]) fn();
 }
+
+/** Sent on `window` when a modal opens in the top layer (a side panel's
+ *  `showModal`), so layers that must stay above it — the toasts — re-raise. */
+export const TOP_LAYER_OPENED = 'osrs:top-layer-opened';
+
+/** Sent on `window` when such a modal closes, so those layers move back. */
+export const TOP_LAYER_CLOSED = 'osrs:top-layer-closed';

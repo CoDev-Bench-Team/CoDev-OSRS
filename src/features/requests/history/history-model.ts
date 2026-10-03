@@ -80,6 +80,7 @@ export function buildHistoryViewModel(snapshot: ReviewSnapshot, query: HistoryQu
     page,
     rows: filtered.slice(start, start + query.pageSize).map((request) => ({
       id: request.id,
+      displayId: request.displayId,
       requestorName: request.requestorName,
       requestorContext: request.requestorContext,
       itemSummary: summarizeItems(request.items, 3),

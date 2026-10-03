@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type MouseEvent, type ReactNode } from 'react';
 import { Avatar } from './Avatar';
+import { Skeleton } from '../feedback/Skeleton';
 import { REQUEST_LIST_MARKER_PROPS } from './request-list-marker';
 import { MdiChevronDown } from '../icons/MdiChevronDown';
 import { MdiLightBell } from '../icons/MdiLightBell';
@@ -75,8 +76,12 @@ export function TopBar({
   onOpenAccount,
   actions,
 }: {
+  /** Empty while the role, and so the navigation, is not known yet: no links
+   *  are drawn until it is. */
   nav?: NavItem[];
-  user?: { name: string; role: string; initials: string; color?: string };
+  /** `'pending'`: someone is signing in but who is not known yet, so the
+   *  account cluster draws its avatar, name and role as skeletons. */
+  user?: { name: string; role: string; initials: string; color?: string } | 'pending';
   requestListCount?: number;
   onOpenRequestList?: () => void;
   /** The notification marker the 2026-09-15 export added to both variants. */
@@ -163,7 +168,21 @@ export function TopBar({
             </span>
           )}
 
-          {user && (
+          {user === 'pending' ? (
+            <>
+              <span className="hidden h-[31px] w-1 shrink-0 bg-osrs-gray-400 sm:block" aria-hidden="true" />
+              <span className="flex min-h-touch-target items-center gap-8" aria-hidden="true">
+                <Skeleton className="size-[34px] rounded-circle" />
+                <span className="flex flex-col gap-4">
+                  <Skeleton className="h-[13px] w-[96px]" />
+                  <Skeleton className="h-[11px] w-[56px]" />
+                </span>
+              </span>
+              {/* Sign Out: the ghost button's 42px, r10, at its label's
+                  width, so the cluster does not move when it arrives. */}
+              <Skeleton className="h-control-height-md w-[92px] rounded-10" />
+            </>
+          ) : user && (
             <>
               <span className="hidden h-[31px] w-1 shrink-0 bg-osrs-gray-400 sm:block" aria-hidden="true" />
               {onOpenAccount ? (

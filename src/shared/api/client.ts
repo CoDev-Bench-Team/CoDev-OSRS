@@ -38,10 +38,12 @@ function notifySessionEnded(): void {
 }
 
 /** Same-origin where a proxy keeps the session cookie on this host: the Vite
- *  dev server, and a Netlify build. Any other production build calls the
- *  configured base directly, so that host must be the same site as the API. */
+ *  dev server, and a Netlify build. There, `/auth` is proxied as itself and
+ *  every other route under `/api`, because `/requests` and `/profile` are SPA
+ *  addresses. Any other production build calls the configured base directly,
+ *  so that host must be the same site as the API. */
 export function apiUrl(path: string): string {
-  if (import.meta.env.DEV || __OSRS_NETLIFY__) return path;
+  if (import.meta.env.DEV || __OSRS_NETLIFY__) return path.startsWith('/auth') ? path : `/api${path}`;
   const configured = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
   return `${configured.replace(/\/$/, '')}${path}`;
 }
@@ -50,9 +52,30 @@ export function apiConfigured(): boolean {
   return Boolean(import.meta.env.VITE_API_BASE_URL?.trim());
 }
 
+/** GETs in flight, by path. Two identical reads at once — a panel and its
+ *  StrictMode double in development, or two panels opening together — share
+ *  one request. Nothing is kept once it settles: this is not a cache. A write
+ *  clears it as it starts and as it settles, so a read asked for after a
+ *  write never joins one sent before it and gets the old data. */
+const reading = new Map<string, Promise<unknown>>();
+
 /** One request. Sends the session cookie. Does not read or write browser
  *  storage. A `401` or `403` is sent once. */
-export async function apiRequest<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export function apiRequest<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  if ((init.method ?? 'GET') !== 'GET') {
+    reading.clear();
+    return send<T>(path, init).finally(() => reading.clear());
+  }
+  const pending = reading.get(path);
+  if (pending) return pending as Promise<T>;
+  const request: Promise<T> = send<T>(path, init).finally(() => {
+    if (reading.get(path) === request) reading.delete(path);
+  });
+  reading.set(path, request);
+  return request;
+}
+
+async function send<T>(path: string, init: { method?: string; body?: unknown }): Promise<T> {
   const method = init.method ?? 'GET';
   const headers = new Headers();
   if (init.body !== undefined) headers.set('Content-Type', 'application/json');

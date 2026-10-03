@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { GoogleButtonSource } from './google-button-source';
 
 /** Google's real sign-in button, under the drawn 242×64 pill.
@@ -55,13 +55,26 @@ function fitGoogleFrame(container: HTMLElement): void {
 export function GoogleSignInOverlay({
   source,
   onUnavailable,
+  onLoadingChange,
 }: {
   source: GoogleButtonSource;
   onUnavailable: () => void;
+  /** `true` while Google's button is being mounted, when a press cannot open
+   *  the chooser; the drawn pill shows itself disabled meanwhile. */
+  onLoadingChange?: (loading: boolean) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const alive = useRef(true);
-  const [phase, setPhase] = useState<'loading' | 'ready' | 'failed'>('loading');
+  // Read only by the press handler, so a ref: nothing renders from it. The
+  // parent is told as it changes, for the drawn pill's disabled state.
+  const phase = useRef<'loading' | 'ready' | 'failed'>('loading');
+  const setPhase = useCallback(
+    (next: 'loading' | 'ready' | 'failed') => {
+      phase.current = next;
+      onLoadingChange?.(next === 'loading');
+    },
+    [onLoadingChange],
+  );
 
   useEffect(() => {
     alive.current = true;
@@ -97,7 +110,7 @@ export function GoogleSignInOverlay({
       cancelled = true;
       observer.disconnect();
     };
-  }, [source, onUnavailable]);
+  }, [source, onUnavailable, setPhase]);
 
   return (
     <div
@@ -105,7 +118,7 @@ export function GoogleSignInOverlay({
       onPointerDownCapture={() => {
         // A failed script load has no button yet. Retry the mount. The press
         // cannot open the chooser until a later press on the live button.
-        if (phase !== 'failed') return;
+        if (phase.current !== 'failed') return;
         const container = host.current;
         if (!container) return;
         setPhase('loading');

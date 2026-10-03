@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { SessionUnreachable } from '../../shared/api';
-import { seededSessionSource } from './seeded-source';
+import { apiSessionSource } from './api-session-source';
 import type { SessionSource } from './session-source';
 import { SessionContext, type SessionNotice } from './session-context';
 import { SessionRefusal } from './session-errors';
@@ -23,7 +23,7 @@ function refusalNotice(error: unknown): SessionNotice | null {
  *  re-renders decides where to go. Two independent navigators is how redirect
  *  loops start. */
 export function SessionProvider({
-  source = seededSessionSource,
+  source = apiSessionSource,
   children,
 }: {
   source?: SessionSource;
@@ -48,8 +48,7 @@ export function SessionProvider({
       next = await source.current();
     } catch (error) {
       if (ticket !== resolution.current) return;
-      // A refusal or an unreachable API stays on sign-in. The seeded source is
-      // never substituted for a configured API that failed.
+      // A refusal or an unreachable API stays on sign-in.
       const refused = refusalNotice(error);
       if (refused) setNotice(refused);
       signedIn.current = false;

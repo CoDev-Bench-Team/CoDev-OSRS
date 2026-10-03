@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { listenForScrimClick, wrapTab } from './modal-dialog';
-import { dismissPopovers } from './popover-layer';
+import { dismissPopovers, TOP_LAYER_CLOSED, TOP_LAYER_OPENED } from './popover-layer';
 import { useScrollLock } from './scroll-lock';
 
 /** The right-hand sheet the design draws over My Requests (`04.1`, `04.2`):
@@ -31,10 +31,11 @@ export function SidePanel({
   onClose,
   children,
   footer,
-  dismissible = true,
   width = 'default',
   bodyClassName = 'gap-24 px-20 py-20',
   footerClassName = 'flex flex-col gap-12 px-20 pb-20',
+  busy = false,
+  onLeave,
 }: {
   /** The dialog's accessible name, applied as `aria-label`. */
   title: string;
@@ -49,11 +50,6 @@ export function SidePanel({
    *  receives `close`, which leaves the way ✕ does (animated, then `onClose`),
    *  for a footer that carries its own Close button (spec 008, `02.2.2.1`). */
   footer?: ReactNode | ((close: () => void) => ReactNode);
-  /** `false` while the caller has work in flight that the panel must outlive —
-   *  the Request List's submit (spec 011 FR-010). ✕, Esc and the scrim are
-   *  ignored until it is `true` again, so the panel cannot unmount mid-submit.
-   *  The ✕ stays in place, disabled, so the header does not reflow. */
-  dismissible?: boolean;
   /** `wide` is the Accountability Form's 564px sheet (spec 012 D3); `batch`
    *  is Add Multiple Units' 650px one (spec 015). */
   width?: keyof typeof WIDTH;
@@ -62,6 +58,18 @@ export function SidePanel({
   bodyClassName?: string;
   /** Spacing of the footer band, replacing the default. */
   footerClassName?: string;
+  /** The panel's action is in flight (`usePanelTask`): the dialog is marked
+   *  `aria-busy` and its body is frozen where it is — no wheel, touch or
+   *  keyboard scrolling. The panel can still be closed; the caller hands the
+   *  work to a toast when it is. The scrollbar's gutter is always reserved,
+   *  so freezing does not shift the content sideways where scrollbars take
+   *  space. */
+  busy?: boolean;
+  /** Called the moment the panel starts to close (✕, Esc, the scrim, a
+   *  footer's close), before its exit animation and `onClose`. Work still in
+   *  flight is handed off here (`usePanelTask`), so an action that ends during
+   *  the slide-out is reported by its toast, not by a panel on its way out. */
+  onLeave?: () => void;
 }) {
   const panel = useRef<HTMLDialogElement>(null);
   // The page behind the scrim stays put while the panel is open.
@@ -77,19 +85,33 @@ export function SidePanel({
   // `onClose` runs when it ends. The timer is a backstop in case no
   // `animationend` arrives, so the panel can never get stuck open.
   const [leaving, setLeaving] = useState(false);
-  const leave = useRef(() => {});
-  // Read by the native-close listener, which is installed once.
-  const canDismiss = useRef(dismissible);
+  // The latest `onLeave`, for the listeners installed once below.
+  const onLeaveRef = useRef(onLeave);
+  useLayoutEffect(() => {
+    onLeaveRef.current = onLeave;
+  });
+  const startLeaving = () => {
+    onLeaveRef.current?.();
+    setLeaving(true);
+  };
+  // Going busy disables the control that was pressed, and the browser drops
+  // focus to <body>, outside the dialog. Keep it in the panel.
+  // The browser moves focus off a newly disabled control at its next
+  // rendering update, after this effect, so look again on the next frame.
+  useEffect(() => {
+    if (!busy) return;
+    const frame = requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body) panel.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [busy]);
   const done = useRef(false);
   const finish = () => {
     if (done.current) return;
     done.current = true;
     close.current();
   };
-  useLayoutEffect(() => {
-    leave.current = dismissible ? () => setLeaving(true) : () => {};
-    canDismiss.current = dismissible;
-  });
   useEffect(() => {
     if (!leaving) return;
     const backstop = window.setTimeout(finish, EXIT_BACKSTOP_MS);
@@ -100,20 +122,22 @@ export function SidePanel({
     dismissPopovers();
     const opener = document.activeElement as HTMLElement | null;
     const dialog = panel.current;
-    if (dialog && !dialog.open) dialog.showModal();
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+      window.dispatchEvent(new Event(TOP_LAYER_OPENED));
+    }
     dialog?.focus();
 
     // Esc is handled on keydown, and the keydown is cancelled, so the browser
     // never starts its own close. Leaving it to the dialog's `cancel` event is
     // not enough: Chrome makes `cancel` un-cancellable when Esc repeats with no
-    // user activation in between, and would close a panel that must stay open
-    // (`dismissible={false}`) or skip the exit animation. A control inside
+    // user activation in between, and would skip the exit animation. A control inside
     // that handled Esc itself (an open Select closing its list) has already
     // prevented the keydown: that Esc was the control's, not the panel's.
     // `cancel` stays as the fallback for close requests that are not a key.
     const onCancel = (e: Event) => {
       e.preventDefault();
-      leave.current();
+      startLeaving();
     };
     // The page behind is inert, but Tab can still leave the document for the
     // browser's own chrome. Wrap it inside the panel, as before (FR-002).
@@ -123,7 +147,7 @@ export function SidePanel({
         // Korean typing) belongs to the text field, not the panel.
         if (e.defaultPrevented || e.isComposing) return;
         e.preventDefault();
-        leave.current();
+        startLeaving();
         return;
       }
       if (e.key !== 'Tab' || !dialog) return;
@@ -135,7 +159,7 @@ export function SidePanel({
     };
     // A click on the scrim closes the panel. Its keyboard equivalent is Esc,
     // above.
-    const stopScrim = dialog ? listenForScrimClick(dialog, () => leave.current()) : () => {};
+    const stopScrim = dialog ? listenForScrimClick(dialog, startLeaving) : () => {};
     // The browser may close the dialog itself: Chrome makes `cancel`
     // un-cancellable when Esc repeats without user activation in between.
     // Then there is no exit animation to wait for, and the panel must still
@@ -146,12 +170,6 @@ export function SidePanel({
     // been reopened, and is ignored because the dialog is open again.
     const onNativeClose = () => {
       if (!dialog || dialog.open) return;
-      // Work in flight must outlive the panel (`dismissible={false}`): a
-      // close the browser forced is undone rather than honoured.
-      if (!canDismiss.current) {
-        dialog.showModal();
-        return;
-      }
       finish();
     };
     dialog?.addEventListener('cancel', onCancel);
@@ -163,6 +181,7 @@ export function SidePanel({
       dialog?.removeEventListener('close', onNativeClose);
       document.removeEventListener('keydown', onKey);
       if (dialog?.open) dialog.close();
+      window.dispatchEvent(new Event(TOP_LAYER_CLOSED));
       opener?.focus?.();
     };
   }, []);
@@ -170,15 +189,14 @@ export function SidePanel({
   // A footer function may return nothing, and then there is no footer band.
   const footerContent =
     typeof footer === 'function'
-      ? footer(() => {
-          if (dismissible) setLeaving(true);
-        })
+      ? footer(startLeaving)
       : footer;
 
   return (
     <dialog
       ref={panel}
       aria-label={title}
+      aria-busy={busy || undefined}
       tabIndex={-1}
       // `will-change-transform` makes the dialog the containing block for
       // `position: fixed` descendants ALWAYS, not only while the slide
@@ -196,9 +214,8 @@ export function SidePanel({
         <button
           type="button"
           aria-label="Close"
-          onClick={() => leave.current()}
-          disabled={!dismissible}
-          className="inline-flex h-touch-target w-touch-target shrink-0 cursor-pointer items-center justify-center rounded-8 border-none bg-transparent text-ink-primary transition-osrs hover:text-ink-secondary disabled:cursor-not-allowed disabled:opacity-40"
+          onClick={startLeaving}
+          className="inline-flex h-touch-target w-touch-target shrink-0 cursor-pointer items-center justify-center rounded-8 border-none bg-transparent text-ink-primary transition-osrs hover:text-ink-secondary"
         >
           {/* `bytesize:close`, as every panel in the file draws it: a 16px
               frame, a 14px cross at (1,1), 1px black round-capped stroke. */}
@@ -207,7 +224,7 @@ export function SidePanel({
           </svg>
         </button>
       </div>
-      <div className={`flex min-h-0 flex-1 flex-col overflow-y-auto ${bodyClassName}`}>{children}</div>
+      <div className={`flex min-h-0 flex-1 flex-col ${busy ? 'overflow-hidden' : 'overflow-y-auto'} [scrollbar-gutter:stable] ${bodyClassName}`}>{children}</div>
       {footerContent ? <div className={footerClassName}>{footerContent}</div> : null}
     </dialog>
   );

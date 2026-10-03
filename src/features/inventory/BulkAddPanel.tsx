@@ -63,7 +63,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     target()?.focus();
   });
 
-  const { saving, attempt } = useAttempt(onClose, (error, what) => {
+  const { saving, attempt, handOff } = useAttempt(onClose, (error, what) => {
     const result = refusal(error, what, shown);
     if ('problem' in result) setConflict(result.problem.detail);
     else setErrors(result.errors);
@@ -135,7 +135,13 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     setErrors(found);
     setConflict(undefined);
     if (Object.keys(found).length) return;
-    void attempt(() => onCreate(draft), 'The units could not be saved');
+    const n = draft.units.length;
+    const units = `${n} ${asset?.name ?? 'unit'}${n === 1 ? '' : ' units'}`;
+    void attempt(() => onCreate(draft), {
+      loading: `Adding ${units}…`,
+      done: `${units} added`,
+      failed: 'The units could not be saved',
+    });
   }
 
   const full = rows.length >= MAX_BATCH;
@@ -145,15 +151,18 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
       title="Add Multiple Units"
       width="batch"
       onClose={onClose}
-      dismissible={!saving}
+      busy={saving}
+      onLeave={handOff}
       header={<h2 className="font-display text-[22px] font-medium leading-display text-ink-primary">Add Multiple Units</h2>}
       bodyClassName="px-14 pt-10 pb-24"
       footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
       footer={(leave) => (
-        <FormFooter formId={formId} saving={saving} disabled={rows.length === 0} submitLabel="Save Changes" savingLabel="Saving…" onCancel={leave} />
+        <FormFooter formId={formId} saving={saving} disabled={rows.length === 0} submitLabel="Save Changes" savingLabel="Adding…" onCancel={leave} />
       )}
     >
-      <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-32">
+      <form id={formId} onSubmit={submit} noValidate>
+        {/* Locked while saving: the fieldset disables every control in it. */}
+        <fieldset disabled={saving} className="m-0 flex min-w-0 flex-col gap-32 border-0 p-0">
         <FormAlert message={errors['']} />
 
         <CatalogItemPicker
@@ -307,6 +316,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
             + Add another unit
           </button>
         </FieldGroup>
+        </fieldset>
       </form>
     </SidePanel>
   );

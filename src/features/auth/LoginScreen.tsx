@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router';
-import { SessionUnreachable } from '../../shared/api';
-import { CoDevSupplyRequestsLogo, LoadingState, SignInButton } from '../../shared/ui';
+import { SessionUnreachable, apiConfigured } from '../../shared/api';
+import { CoDevSupplyRequestsLogo, SignInButton } from '../../shared/ui';
 import { canRoleReach, landingPath } from '../../app/destinations';
 import { GoogleSignInOverlay } from './GoogleSignInOverlay';
 import { hasGoogleButton } from './google-button-source';
 import { onGoogleCredential } from './google-identity';
-import { hasDemoAccounts, type DemoAccountSource, type SessionSource } from './session-source';
+import type { SessionSource } from './session-source';
 import { useSession } from './session-context';
-import { SIGN_IN_REFUSAL, SessionRefusal } from './session-errors';
+import { API_NOT_CONFIGURED, SIGN_IN_REFUSAL, SessionRefusal } from './session-errors';
 import type { Role } from './types';
 import loginBackground from '../../assets/login/login-background.png';
 
@@ -20,7 +20,8 @@ function pathAfterSignIn(role: Role, state: unknown): string {
 }
 
 async function submitSignIn(source: SessionSource, signIn: (credential?: string) => Promise<unknown>): Promise<void> {
-  if (hasDemoAccounts(source) || hasGoogleButton(source)) {
+  if (!apiConfigured()) throw new SessionRefusal(API_NOT_CONFIGURED);
+  if (hasGoogleButton(source)) {
     await signIn();
     return;
   }
@@ -101,7 +102,14 @@ export function LoginScreen() {
   const location = useLocation();
   const [refused, setRefused] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(true);
   const googleButton = status === 'signed-out' && hasGoogleButton(source);
+  const checking = status === 'unknown';
+  // Not ready: the session is still resolving (FR-018: a signed-in visitor
+  // must not be offered sign-in), Google's button is still loading, or a
+  // sign-in is under way. The card is drawn as it will be, with the control
+  // disabled, rather than a skeleton in its place.
+  const disabled = checking || busy || (googleButton && googleLoading);
 
   const onGoogleUnavailable = useCallback(() => {
     setBusy(false);
@@ -120,10 +128,6 @@ export function LoginScreen() {
       },
     );
   }, [googleButton, signIn]);
-
-  // FR-018 again: a signed-in visitor must never see this card flash past
-  // while the session resolves.
-  if (status === 'unknown') return <LoadingState label="Checking your session" />;
 
   // One redirect authority, covering both "already signed in" and "just signed
   // in". FR-013: a visitor who asked for a specific destination before signing
@@ -173,7 +177,7 @@ export function LoginScreen() {
 
               The icon plate's fill is switched off in the file too, so the
               control is a plain white box: mark, label, nothing else. */}
-          <div className="group relative" style={{ width: 242, height: 64 }}>
+          <div className="group relative" style={{ width: 242, height: 64 }} aria-busy={checking || undefined}>
             {/* The drawn pill is what the visitor sees. It paints over
                 Google's frame and does not take the click, so the press
                 reaches the frame underneath. */}
@@ -183,6 +187,7 @@ export function LoginScreen() {
               style={{ width: 242, height: 64 }}
             >
               <SignInButton
+                disabled={disabled}
                 darkmode={false}
                 iconPlate={false}
                 iconPadding="16px 0 16px 18px"
@@ -192,8 +197,8 @@ export function LoginScreen() {
                 className="rounded-32"
               />
             </div>
-            {hasGoogleButton(source) ? (
-              <GoogleSignInOverlay source={source} onUnavailable={onGoogleUnavailable} />
+            {googleButton ? (
+              <GoogleSignInOverlay source={source} onUnavailable={onGoogleUnavailable} onLoadingChange={setGoogleLoading} />
             ) : null}
           </div>
         </div>
@@ -202,61 +207,15 @@ export function LoginScreen() {
             They sit between the control and the copyright line, which is the
             only place the card has room the drawing does not already spend. */}
         <SignInNotices refusalText={refusalText} expired={notice === 'expired'} busy={busy} />
+        {checking ? (
+          <p role="status" className="sr-only">
+            Checking your session
+          </p>
+        ) : null}
 
         <span className="mt-[112px] type-body text-ink-primary">© 2026 CoDev. All rights reserved.</span>
       </div>
 
-      {/* The chooser is not part of the design. It is pinned to the corner so
-          the card keeps the position it is drawn at — centred in the frame —
-          instead of being pushed up by an affordance the file does not have. */}
-      {hasDemoAccounts(source) ? <DemoAccountChooser source={source} /> : null}
-    </div>
-  );
-}
-
-/** The seeded source's stand-in for Google's account chooser.
- *
- *  A source that authenticates nobody has to be told whom to sign in as, and a
- *  tester has to reach both roles to exercise SC-001 and SC-003. This is
- *  NOT part of the session boundary: it renders only while the active source
- *  exposes demo accounts, so it disappears by itself the day an implementation
- *  backed by the published contract replaces the seeded one.
- *
- *  It is also not a role switcher (D5). It chooses who signs IN; changing role
- *  still means signing out and signing in again. */
-function DemoAccountChooser({ source }: { source: DemoAccountSource }) {
-  const [selected, setSelected] = useState(() => source.selected());
-
-  return (
-    <div className="mt-24 flex w-[421px] max-w-full flex-col gap-12 rounded-10 bg-surface-card p-20 shadow-card lg:absolute lg:top-32 lg:left-layout-gutter lg:mt-0 lg:w-[280px]">
-      <div className="flex flex-col gap-4">
-        <span className="type-eyebrow uppercase text-ink-secondary">Demo sign-in</span>
-        <p className="type-body text-ink-body">
-          The backend contract has not published yet, so sign-in resolves a seeded account. Choose who signs in.
-        </p>
-      </div>
-      <fieldset className="flex flex-col gap-8 border-none p-0">
-        <legend className="sr-only">Seeded demo account</legend>
-        {/* The label is the 44px touch target; the radio inside it keeps its
-            drawn 16px. */}
-        {source.accounts().map((account) => (
-          <label key={account.id} className="flex min-h-touch-target cursor-pointer items-center gap-8">
-            <input
-              type="radio"
-              name="demo-account"
-              value={account.id}
-              checked={selected === account.id}
-              onChange={() => {
-                setSelected(account.id);
-                source.select(account.id);
-              }}
-              className="size-16 shrink-0 accent-brand-primary"
-            />
-            <span className="type-ui-bold text-ink-primary">{account.label}</span>
-            <span className="type-ui text-ink-secondary">{account.detail}</span>
-          </label>
-        ))}
-      </fieldset>
     </div>
   );
 }

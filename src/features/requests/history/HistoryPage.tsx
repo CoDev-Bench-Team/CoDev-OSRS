@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useLocation } from 'react-router';
 import {
   Button,
+  EmptyState,
   FilterChip,
-  LoadingState,
   Notice,
   PageHeader,
   Pagination,
   Search,
+  SkeletonRegion,
+  SkeletonRows,
   Select,
   StatusPill,
   TableCard,
@@ -18,13 +20,16 @@ import {
   type ColumnWidth,
 } from '../../../shared/ui';
 import { DESTINATIONS } from '../../../app/destinations';
+import { useSessionReady } from '../../auth/session-context';
 import { RefusalAlert } from '../detail/RefusalAlert';
-import { REQUEST_NOT_FOUND, useDeepLinkedRequest } from '../deep-link';
+import { REQUEST_NOT_FOUND, useDeepLinkedRequest, type DeepLinkState } from '../deep-link';
+import { requestLabel } from '../detail/request-detail-types';
+import { useLinkedRequest, useOpenRequest, useSettledQuery } from '../paged-source';
 import { NO_VALUE } from '../format';
 import { updateQuery } from '../list-query';
 import { PAGE_SIZES } from '../queue/queue-types';
-import type { ReviewSnapshot } from '../queue/review-types';
-import { buildHistoryViewModel, isResolved } from './history-model';
+import type { ReviewRequest } from '../queue/review-types';
+import { isResolved } from './history-model';
 import { historySource, type HistorySource } from './history-source';
 import {
   HISTORY_CHIPS,
@@ -35,13 +40,24 @@ import {
   type HistoryViewModel,
 } from './history-types';
 import { HistoryPanel } from './HistoryPanel';
+import { readPageSize, savePageSize } from '../../../shared/page-size-preference';
 
 /** The Admin's History (BEN-144, spec 013; frame `04 - History`): every
  *  resolved request across all requestors, in the Requests Queue's table
  *  geometry, with a read-only panel. Nothing here changes a request: the
  *  source it holds can only load (plan D1). */
 
-type LoadState = { kind: 'loading' } | { kind: 'failed' } | { kind: 'loaded'; snapshot: ReviewSnapshot };
+/** `history` is the API's answer to the current query; `requests` are the
+ *  rows behind it, for the panel (spec 017 plan D1). */
+type LoadState =
+  | { kind: 'loading' }
+  | { kind: 'failed' }
+  | { kind: 'loaded'; history: HistoryViewModel; requests: readonly ReviewRequest[] };
+
+async function loadHistory(source: HistorySource, query: HistoryQuery): Promise<Extract<LoadState, { kind: 'loaded' }>> {
+  const { history, requests } = await source.page(query);
+  return { kind: 'loaded', history, requests };
+}
 
 /** The queue's widths, RESOLVED in place of SUBMITTED, so the two tables read
  *  as one system (plan D5). */
@@ -59,8 +75,9 @@ const TABLE_MIN_WIDTH = tableMinWidth(Object.values(COLUMNS), MIN_ITEMS_WIDTH);
 
 const isHistorySort = (value: string): value is HistorySort => (HISTORY_SORTS as readonly string[]).includes(value);
 
-/** What a screen reader is told as History settles. `LoadingState` announces
- *  itself; the failure `Notice` does not, so it is said here, as on the queue. */
+/** What a screen reader is told as History settles. The skeleton table
+ *  announces itself; the failure `Notice` does not, so it is said here, as on
+ *  the queue. */
 function announce(state: LoadState, history: HistoryViewModel | null): string {
   if (state.kind === 'failed') return 'History could not be loaded.';
   if (!history) return '';
@@ -76,11 +93,16 @@ export function HistoryPage({
 }: {
   source?: HistorySource;
 }) {
-  const { search } = useLocation();
-  const source = useMemo(() => given ?? historySource(search), [given, search]);
+  const { state: navigation } = useLocation();
+  const source = useMemo(() => given ?? historySource(), [given]);
+  const ready = useSessionReady();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
-  const [query, setQuery] = useState<HistoryQuery>(INITIAL_HISTORY_QUERY);
+  const [query, setQuery] = useState<HistoryQuery>(() => ({ ...INITIAL_HISTORY_QUERY, pageSize: readPageSize('history', PAGE_SIZES) }));
+  const asked = useSettledQuery(query, true);
+  /** The query the table on screen answers. While it differs from the one
+   *  asked, the next page is in flight and the table says so (spec 017). */
+  const [answered, setAnswered] = useState<HistoryQuery | null>(null);
   /** The request open in the panel. Component state, not an address (spec 013
    *  Clarifications). */
   const [openId, setOpenId] = useState<string | null>(null);
@@ -89,11 +111,14 @@ export function HistoryPage({
   const recoveredFocus = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!ready) return;
     let active = true;
     void Promise.resolve()
-      .then(() => source.load())
-      .then((snapshot) => {
-        if (active) setState({ kind: 'loaded', snapshot });
+      .then(() => loadHistory(source, asked))
+      .then((loaded) => {
+        if (!active) return;
+        setState(loaded);
+        setAnswered(asked);
       })
       .catch(() => {
         if (active) setState({ kind: 'failed' });
@@ -101,7 +126,7 @@ export function HistoryPage({
     return () => {
       active = false;
     };
-  }, [attempt, source]);
+  }, [attempt, source, asked, ready]);
 
   /** A successful retry unmounts the button the keyboard user was on. Focus
    *  goes to the chips, as on the queue. */
@@ -112,16 +137,33 @@ export function HistoryPage({
   }, [state]);
 
   const history = useMemo(
-    () => (state.kind === 'loaded' ? buildHistoryViewModel(state.snapshot, query) : null),
-    [state, query],
+    () => (state.kind === 'loaded' ? state.history : null),
+    [state],
   );
-  const change = (next: Partial<HistoryQuery>) => setQuery((current) => updateQuery(current, next));
+  const change = (next: Partial<HistoryQuery>) => {
+    if (next.pageSize !== undefined) savePageSize('history', next.pageSize);
+    setQuery((current) => updateQuery(current, next));
+  };
 
   /** `/requests/:id` for a resolved request lands here, forwarded by the queue
    *  (spec 013 FR-016, plan D14). Only resolved requests can open. */
+  // Read once the session is known, as the list is.
+  const fetched = useLinkedRequest(source, ready ? (navigation as DeepLinkState | null)?.openRequest : undefined);
+  const known = useMemo(
+    (): readonly ReviewRequest[] | null =>
+      state.kind !== 'loaded' || fetched === 'pending'
+        ? null
+        : fetched
+          ? [...state.requests, fetched]
+          : state.requests,
+    [state, fetched],
+  );
   const resolvedIds = useMemo(
-    () => (state.kind === 'loaded' ? state.snapshot.requests.filter(isResolved).map((request) => request.id) : null),
-    [state],
+    () =>
+      known
+        ? known.filter(isResolved).flatMap((request) => (request.displayId ? [request.id, request.displayId] : [request.id]))
+        : null,
+    [known],
   );
   const { linked, unavailable, dismiss } = useDeepLinkedRequest(resolvedIds, REQUEST_NOT_FOUND);
   const review = (id: string) => {
@@ -130,7 +172,8 @@ export function HistoryPage({
   };
 
   const shownId = openId ?? linked;
-  const found = shownId && state.kind === 'loaded' ? state.snapshot.requests.find((r) => r.id === shownId) : undefined;
+  const listed = shownId ? known?.find((r) => r.id === shownId || r.displayId === shownId) : undefined;
+  const found = useOpenRequest(source, shownId, listed);
   const openRequest = found && isResolved(found) ? found : undefined;
 
   const closePanel = () => {
@@ -149,8 +192,6 @@ export function HistoryPage({
       <div role="status" aria-live="polite" className="sr-only">
         {announce(state, history)}
       </div>
-
-      {state.kind === 'loading' ? <LoadingState label="Loading history" /> : null}
 
       {state.kind === 'failed' ? (
         <Notice
@@ -174,8 +215,17 @@ export function HistoryPage({
 
       {unavailable ? <RefusalAlert messages={[unavailable]} /> : null}
 
-      {history ? (
-        <LoadedHistory history={history} query={query} onChange={change} focusRef={recoveredFocus} onReview={review} />
+      {/* The page keeps its layout while the first page loads: chips, table
+          and pager stand in place, drawn as skeletons until it arrives. */}
+      {state.kind !== 'failed' ? (
+        <LoadedHistory
+          history={history}
+          busy={state.kind === 'loaded' && answered !== asked}
+          query={query}
+          onChange={change}
+          focusRef={recoveredFocus}
+          onReview={review}
+        />
       ) : null}
 
       {openRequest ? <HistoryPanel key={openRequest.id} request={openRequest} onClose={closePanel} /> : null}
@@ -183,14 +233,28 @@ export function HistoryPage({
   );
 }
 
+/** The table's rows while the first page loads, cell for cell. */
+const ROW_SKELETON = [
+  [COLUMNS.id, 'id'],
+  [COLUMNS.requester, 'stack'],
+  [COLUMNS.items, 'text'],
+  [COLUMNS.status, 'request-pill'],
+  [COLUMNS.resolved, 'date'],
+  [COLUMNS.action, 'button'],
+] as const;
+
 function LoadedHistory({
   history,
+  busy,
   query,
   onChange,
   focusRef,
   onReview,
 }: {
-  history: HistoryViewModel;
+  /** The next page is in flight. */
+  busy: boolean;
+  /** `null` until the first answer arrives: the data is drawn as skeletons. */
+  history: HistoryViewModel | null;
   query: HistoryQuery;
   onChange: (change: Partial<HistoryQuery>) => void;
   focusRef: RefObject<HTMLDivElement | null>;
@@ -198,7 +262,7 @@ function LoadedHistory({
 }) {
   return (
     /* The queue's vertical rhythm: 14px under the header, 16px under the
-       toolbar, 30px under the chips, 14px above the pagination. */
+       toolbar, 30px under the chips, 34px above the pagination. */
     <div className="flex min-w-0 flex-col">
       <PageHeader title={DESTINATIONS.history.title} subtitle={DESTINATIONS.history.purpose} />
 
@@ -211,6 +275,7 @@ function LoadedHistory({
           placeholder="Search by request ID, employee name, email, or item..."
           value={query.search}
           onChange={(e) => onChange({ search: e.target.value })}
+          onClear={() => onChange({ search: '' })}
         />
         <Select
           className="md:w-[210px]"
@@ -228,7 +293,8 @@ function LoadedHistory({
           <FilterChip
             key={chip}
             label={chip}
-            count={history.chipCounts[chip]}
+            count={history?.chipCounts[chip] ?? 0}
+            loading={!history}
             selected={query.chip === chip}
             onSelect={() => onChange({ chip })}
           />
@@ -244,7 +310,7 @@ function LoadedHistory({
         className="-mx-9 mt-[30px] -mb-14 min-w-0 overflow-x-auto px-9 pt-4 pb-14"
       >
         <div style={{ minWidth: TABLE_MIN_WIDTH }}>
-          <TableCard>
+          <TableCard busy={busy}>
             <TableHead
               cols={[
                 ['REQUEST ID', COLUMNS.id],
@@ -256,13 +322,21 @@ function LoadedHistory({
               ]}
             />
 
-            {history.rows.length === 0 ? (
-              <div className={`flex min-h-row-height-request items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
-                <p className="type-body text-ink-secondary">
-                  {history.resolvedCount === 0
-                    ? 'No requests have been resolved yet.'
-                    : 'No resolved requests match the current search and status filter.'}
-                </p>
+            {/* An empty page while the next is in flight answers the previous
+                query, so its empty message would describe the wrong filter. */}
+            {!history || (busy && history.rows.length === 0) ? (
+              <SkeletonRegion label="Loading history">
+                <SkeletonRows columns={ROW_SKELETON} rowClassName="min-h-row-height-request border-t border-line-default py-18" />
+              </SkeletonRegion>
+            ) : history.rows.length === 0 ? (
+              <div className="border-t border-line-default">
+                <EmptyState
+                  label={
+                    history.resolvedCount === 0
+                      ? 'No requests have been resolved yet.'
+                      : 'No resolved requests match the current search and status filter.'
+                  }
+                />
               </div>
             ) : (
               history.rows.map((request) => (
@@ -271,7 +345,7 @@ function LoadedHistory({
                   className={`flex min-h-row-height-request items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}
                 >
                   <span style={tableColumnStyle(COLUMNS.id)} className="type-ui-bold text-ink-primary">
-                    {request.id}
+                    {requestLabel(request)}
                   </span>
                   <span style={tableColumnStyle(COLUMNS.requester)} className="flex flex-col gap-4 pr-12">
                     <span className="truncate type-ui text-ink-primary">{request.requestorName}</span>
@@ -294,7 +368,7 @@ function LoadedHistory({
                   </span>
                   <span style={tableColumnStyle(COLUMNS.action)} className="flex items-center">
                     {/* Opens the read-only panel; the drawn label (spec 013 H1). */}
-                    <Button aria-label={`Review request ${request.id}`} onClick={() => onReview(request.id)}>
+                    <Button aria-label={`Review request ${requestLabel(request)}`} onClick={() => onReview(request.id)}>
                       Review
                     </Button>
                   </span>
@@ -305,12 +379,13 @@ function LoadedHistory({
         </div>
       </div>
 
-      <div className="mt-14">
+      <div className="mt-[34px]">
         <Pagination
           label="History pages"
-          page={history.page}
+          hidden={!history || busy}
+          page={history?.page ?? 1}
           pageSize={query.pageSize}
-          total={history.matchCount}
+          total={history?.matchCount ?? 0}
           pageSizeOptions={PAGE_SIZES}
           onPageChange={(page) => onChange({ page })}
           onPageSizeChange={(pageSize) => onChange({ pageSize })}

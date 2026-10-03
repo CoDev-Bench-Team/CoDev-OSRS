@@ -55,7 +55,12 @@ export function validateUnit(
   if (stored?.status !== 'Reserved') {
     if (!draft.location) errors.location = 'Choose an office';
     if (!draft.status) errors.status = 'Choose a status';
-    else if (draft.status === 'Assigned' && blank(draft.assignedToId)) errors.assignedToId = 'Choose who this unit is assigned to';
+    // An assignee is chosen when a unit becomes Assigned. One already Assigned
+    // keeps its assignment when the field is left blank: the API does not
+    // publish who it is (contracts G6), and sending it again would reset the
+    // assigned date.
+    else if (draft.status === 'Assigned' && blank(draft.assignedToId) && stored?.status !== 'Assigned')
+      errors.assignedToId = 'Choose who this unit is assigned to';
   }
   if (tooLong(draft.description, MAX_DESCRIPTION)) errors.description = 'Use 2,048 characters or fewer';
   return errors;

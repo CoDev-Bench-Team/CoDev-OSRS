@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router';
 import {
   Button,
-  LoadingState,
+  EmptyState,
   Notice,
   PageHeader,
+  SkeletonRegion,
+  SkeletonRows,
   StatusPill,
   TABLE_ROW_PADDING_CLASS,
   TableCard,
@@ -15,6 +16,8 @@ import {
 import { DESTINATIONS } from '../../../app/destinations';
 import { useSession } from '../../auth/session-context';
 import { RequestDetailPanel } from '../detail/RequestDetailPanel';
+import type { User } from '../../auth/types';
+import { requestLabel } from '../detail/request-detail-types';
 import type { CancelResult, EmployeeRequest, EmployeeRequestSource, ReceiveResult, SignResult, Signature } from '../detail/request-detail-types';
 import { employeeRequestSource } from '../detail/employee-request-source';
 import { RefusalAlert } from '../detail/RefusalAlert';
@@ -67,12 +70,16 @@ const UNAVAILABLE: Unavailable = { ok: false, refusal: 'unavailable' };
 type Load = { state: 'loading' } | { state: 'failed' } | { state: 'ready'; requests: readonly EmployeeRequest[] };
 
 export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSource }) {
-  const { search } = useLocation();
-  const source = useMemo(() => given ?? employeeRequestSource(search), [given, search]);
+  const source = useMemo(() => given ?? employeeRequestSource(), [given]);
   const { session } = useSession();
   const user = session?.user;
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   const [openId, setOpenId] = useState<string | null>(null);
+  /** Requests with an action still running, from a panel open now or one
+   *  since closed (its toast reports it). A reopened panel offers nothing
+   *  until it lands, so nothing is sent twice (spec 008 FR-015's rule, kept
+   *  for the Employee's panel). */
+  const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(() => new Set());
 
   const fetchRequests = useCallback(
     async (): Promise<Load> => {
@@ -89,6 +96,8 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   const refresh = useCallback(async () => setLoad(await fetchRequests()), [fetchRequests]);
 
   useEffect(() => {
+    // Until the session names the user, the table stays in its skeleton.
+    if (!user) return;
     let live = true;
     void fetchRequests().then((next) => {
       if (live) setLoad(next);
@@ -96,7 +105,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
     return () => {
       live = false;
     };
-  }, [fetchRequests]);
+  }, [fetchRequests, user]);
 
   /** One rule for every action the panel takes on a request — cancel, sign,
    *  mark received — so a fix to it reaches all three.
@@ -115,6 +124,23 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
    *
    *  `skipReload` is for refusals that changed nothing on the system. */
   const runThenReload = async <R extends ActionResult>(
+    id: string,
+    run: () => Promise<R>,
+    skipReload?: (result: R | Unavailable) => boolean,
+  ): Promise<R | Unavailable> => {
+    setBusyIds((all) => new Set(all).add(id));
+    try {
+      return await runAndReload(id, run, skipReload);
+    } finally {
+      setBusyIds((all) => {
+        const rest = new Set(all);
+        rest.delete(id);
+        return rest;
+      });
+    }
+  };
+
+  const runAndReload = async <R extends ActionResult>(
     id: string,
     run: () => Promise<R>,
     skipReload?: (result: R | Unavailable) => boolean,
@@ -156,7 +182,11 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   // `/requests/:id` lands here for an Employee and opens their own request.
   // Only their own ids are in the list, so another Employee's request and a
   // missing one get the same notice (spec 003 FR-012a).
-  const ownIds = useMemo(() => (load.state === 'ready' ? load.requests.map((r) => r.id) : null), [load]);
+  // A link may carry the display id (an email) or the source's id.
+  const ownIds = useMemo(
+    () => (load.state === 'ready' ? load.requests.flatMap((r) => (r.displayId ? [r.id, r.displayId] : [r.id])) : null),
+    [load],
+  );
   const { linked, unavailable, dismiss } = useDeepLinkedRequest(ownIds, REQUEST_UNAVAILABLE);
   const closePanel = () => {
     setOpenId(null);
@@ -166,7 +196,8 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   const { title, purpose } = DESTINATIONS.requests;
   const requests = useMemo(() => (load.state === 'ready' ? newestFirst(load.requests) : []), [load]);
   const shownId = openId ?? linked;
-  const open = requests.find((r) => r.id === shownId);
+  const row = requests.find((r) => r.id === shownId || r.displayId === shownId);
+  const open = useFullRequest(source, user, row);
 
   return (
     // The frame sets the title 34px under the bar and the table 40px under the
@@ -176,7 +207,23 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
 
       {unavailable ? <RefusalAlert messages={[unavailable]} /> : null}
 
-      {load.state === 'loading' ? <LoadingState label="Loading your requests" /> : null}
+      {load.state === 'loading' ? (
+        <TableCard className="w-full">
+          <TableHead cols={COLS} />
+          <SkeletonRegion label="Loading your requests">
+            <SkeletonRows
+              columns={[
+                [WIDTH.id, 'id'],
+                [WIDTH.date, 'date'],
+                [undefined, 'text'],
+                [WIDTH.status, 'request-pill'],
+                [WIDTH.action, 'link'],
+              ]}
+              rowClassName="border-b border-line-default py-18"
+            />
+          </SkeletonRegion>
+        </TableCard>
+      ) : null}
 
       {load.state === 'failed' ? (
         <Notice
@@ -192,9 +239,8 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
         <TableCard className="w-full">
           <TableHead cols={COLS} />
           {requests.length === 0 ? (
-            <p className={`${TABLE_ROW_PADDING_CLASS} py-18 type-body text-ink-secondary`}>
-              You have not submitted any requests yet
-            </p>
+            // Five of this table's 68px rows: the skeleton's height.
+            <EmptyState label="You have not submitted any requests yet" className="min-h-[340px]" />
           ) : (
             <ul>
               {requests.map((request) => (
@@ -203,7 +249,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
                   className={`flex items-center border-b border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}
                 >
                   <span style={tableColumnStyle(WIDTH.id)} className="type-ui-bold text-ink-primary">
-                    {request.id}
+                    {requestLabel(request)}
                   </span>
                   <span style={tableColumnStyle(WIDTH.date)} className="type-ui text-ink-secondary">
                     {formatDate(request.submittedAt)}
@@ -224,7 +270,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
                         dismiss();
                         setOpenId(request.id);
                       }}
-                      aria-label={`View details of ${request.id}`}
+                      aria-label={`View details of ${requestLabel(request)}`}
                       className="inline-flex cursor-pointer items-center gap-7 border-none bg-transparent p-0 font-sans text-12 leading-tight font-bold whitespace-nowrap text-brand-primary-alt transition-osrs hover:text-brand-primary"
                     >
                       View details
@@ -238,7 +284,42 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
         </TableCard>
       ) : null}
 
-      {open ? <RequestDetailPanel request={open} onClose={closePanel} onCancel={cancel} onSign={sign} onMarkReceived={markReceived} /> : null}
+      {open ? <RequestDetailPanel
+          request={open}
+          canSign={source.canSign !== false}
+          pending={busyIds.has(open.id)}
+          onClose={closePanel}
+          onCancel={cancel}
+          onSign={sign}
+          onMarkReceived={markReceived}
+        /> : null}
     </div>
   );
+}
+
+/** The open request in full. The API's list rows are partial, so the panel
+ *  reads the one request; until it arrives, and when the read fails, it shows
+ *  the row. A list reload hands in a new row, which re-reads, so the panel
+ *  follows an action's result (spec 017 FR-006). */
+function useFullRequest(
+  source: EmployeeRequestSource,
+  user: User | undefined,
+  row: EmployeeRequest | undefined,
+): EmployeeRequest | undefined {
+  /** The full read, with the row it was read for. */
+  const [full, setFull] = useState<{ request: EmployeeRequest; row: EmployeeRequest } | null>(null);
+  useEffect(() => {
+    if (!row || !user) return;
+    let live = true;
+    source.get(user, row.id).then(
+      (request) => live && setFull({ request, row }),
+      () => live && setFull(null),
+    );
+    return () => {
+      live = false;
+    };
+  }, [source, user, row]);
+  // A full read counts only for the row it was read for: after a reload the
+  // newer row shows until its own read arrives, never an older full copy.
+  return full && full.row === row ? full.request : row;
 }

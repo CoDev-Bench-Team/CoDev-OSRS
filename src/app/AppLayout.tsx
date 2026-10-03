@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { Button, ErrorBoundary, TopBar, type NavItem } from '../shared/ui';
 import { navigationFor } from '../features/auth/navigation';
 import { useSession } from '../features/auth/session-context';
 import { ROLE_LABEL } from '../features/auth/types';
-import { canRoleReach, DESTINATIONS, landingPath, SIGN_IN_PATH } from './destinations';
+import { canRoleReach, destinationFor, DESTINATIONS, landingPath, SIGN_IN_PATH } from './destinations';
 import { NavButton } from './NavButton';
 import { useRequestList } from '../features/requests/create/request-draft';
 import { useRequestListCount } from './request-list-count';
@@ -20,7 +20,7 @@ import { useRequestListCount } from './request-list-count';
  *  Changing role means signing out and signing in, which is also what makes the
  *  demo exercise the real sign-in path. */
 export function AppLayout() {
-  const { session, signOut } = useSession();
+  const { status, session, signOut } = useSession();
   const { count, notificationCount } = useRequestListCount();
   const { openList, closeList } = useRequestList();
   const location = useLocation();
@@ -46,7 +46,12 @@ export function AppLayout() {
   useEffect(() => {
     const role = session?.role;
     if (!role || lastRole.current === role) return;
+    // The first role the session resolves to is not a change: the shell
+    // mounts while the session is still unknown, and an address that role may
+    // not use gets the guard's refusal, not a silent redirect (FR-011).
+    const first = lastRole.current === undefined;
     lastRole.current = role;
+    if (first) return;
     if (!canRoleReach(role, location.pathname)) void navigate(landingPath(role), { replace: true });
   }, [session?.role, location.pathname, navigate]);
 
@@ -67,18 +72,45 @@ export function AppLayout() {
     wasOnCatalog.current = onCatalog;
   }, [onCatalog, closeList]);
 
-  if (!session) return null; // RequireAccess resolves this; belt and braces.
+  const pending = status === 'unknown';
+  /** The screen the address shows: `/queue` and `/queue/:id` are one screen,
+   *  so moving between them neither remounts it nor clears a failure. */
+  const screenKey = destinationFor(location.pathname)?.id === 'queueRequest' ? DESTINATIONS.queue.path : location.pathname;
+  if (!session && !pending) return null; // RequireAccess resolves this; belt and braces.
 
-  const { user, role } = session;
-
-  const nav: NavItem[] = navigationFor(role).map((destination) => ({
-    label: destination.navLabel,
-    href: destination.path,
-    current: isCurrent(destination.path),
-  }));
-
-  return (
-    <div className="flex min-h-screen flex-col bg-surface-page">
+  // The session is still resolving: the chrome stands where it will, with who
+  // is signed in drawn as skeletons. The navigation is drawn only when the
+  // address names the role; otherwise (`/`) it is left out until the session
+  // lands and `/` resolves to the role's home, the Requests Queue for an
+  // Admin. The screen renders beneath it and holds its reads
+  // until the session is known (FR-018). Only the bar differs between the two
+  // states; `main` and the screen inside it stay mounted when the session
+  // arrives, so nothing is drawn twice.
+  let bar: ReactNode;
+  if (!session) {
+    const destination = destinationFor(location.pathname);
+    const owner = destination?.roles.length === 1 ? destination.roles[0] : undefined;
+    bar = (
+      <div inert>
+        <TopBar
+          nav={
+            owner
+              ? navigationFor(owner).map((d) => ({ label: d.navLabel, href: d.path, current: isCurrent(d.path) }))
+              : []
+          }
+          user="pending"
+          notifications
+        />
+      </div>
+    );
+  } else {
+    const { user, role } = session;
+    const nav: NavItem[] = navigationFor(role).map((destination) => ({
+      label: destination.navLabel,
+      href: destination.path,
+      current: isCurrent(destination.path),
+    }));
+    bar = (
       <TopBar
         nav={nav}
         onNavigate={(href, event) => {
@@ -139,13 +171,23 @@ export function AppLayout() {
           </div>
         }
       />
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col bg-surface-page">
+      {bar}
 
       <main className="mx-auto flex w-full max-w-layout-page-width flex-1 flex-col px-layout-gutter">
         {/* FR-019: a screen that throws loses itself, not the shell. Keyed by
             address, so navigating away clears the failure. */}
         <ErrorBoundary
-          key={location.pathname}
-          action={<NavButton to={landingPath(role)} variant="ghost">{`Go to ${navigationFor(role)[0].navLabel}`}</NavButton>}
+          key={screenKey}
+          action={
+            session ? (
+              <NavButton to={landingPath(session.role)} variant="ghost">{`Go to ${navigationFor(session.role)[0].navLabel}`}</NavButton>
+            ) : undefined
+          }
         >
           <Outlet />
         </ErrorBoundary>

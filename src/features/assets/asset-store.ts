@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AssetSource } from './asset-source';
-import { seededAssetSource } from './seeded-asset-source';
+import { apiAssetSource } from './api-asset-source';
 import type { Asset, AssetDraft } from './types';
 
-/** The active source. Seeded until the contract publishes the unit counts
- *  (spec 014 D1); a contract-backed source replaces this one line. */
-const source: AssetSource = seededAssetSource;
+/** The published API (spec 017 Story 7). There is no seeded source. */
+export const assetSource: AssetSource = apiAssetSource;
+const source = assetSource;
 
 export type AssetsState =
   | { kind: 'loading' }
@@ -21,7 +21,7 @@ export type AssetsState =
  *  list already on screen stays, with the saved asset written into it so View
  *  and Update read what was saved, and is marked stale, as the Requests Queue
  *  keeps its snapshot. */
-export function useAssets() {
+export function useAssets({ enabled = true }: { enabled?: boolean } = {}) {
   const [state, setState] = useState<AssetsState>({ kind: 'loading' });
 
   // A response that lands after unmount is dropped.
@@ -58,9 +58,11 @@ export function useAssets() {
 
   const reload = useCallback(() => load(), [load]);
 
+  // A panel that draws no asset picker (Review/Edit) never pays for the list:
+  // every row carries its image.
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    if (enabled) void reload();
+  }, [reload, enabled]);
 
   const after = useCallback(
     async (saving: Promise<Asset>) => {

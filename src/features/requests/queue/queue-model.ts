@@ -69,13 +69,13 @@ export function buildQueueViewModel(snapshot: QueueSnapshot, query: QueueQuery):
   return {
     pendingApprovalCount: live.filter((request) => request.status === 'Pending Approval').length,
     inProcessingCount: live.filter((request) => IN_PROCESSING.has(request.status)).length,
-    lowStockAlertCount: snapshot.lowStockAlertCount,
     liveCount: live.length,
     chipCounts,
     matchCount: filtered.length,
     page,
     rows: filtered.slice(start, start + query.pageSize).map((request) => ({
       id: request.id,
+      displayId: request.displayId,
       requestorName: request.requestorName,
       requestorContext: request.requestorContext,
       itemSummary: summarizeItems(request.items, 3),

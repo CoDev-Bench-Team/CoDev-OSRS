@@ -12,9 +12,7 @@ export type SessionContextValue = {
   status: SessionStatus;
   /** The active implementation of the boundary. The shell never calls it
    *  directly — that is what `signIn` and `signOut` below are for — but the
-   *  sign-in screen asks whether it offers demo accounts, which is how the
-   *  seeded account chooser disappears on its own once a source backed by the
-   *  published contract replaces it. */
+   *  sign-in screen asks whether it can mount Google's button. */
   source: SessionSource;
   session: Session | null;
   notice: SessionNotice;
@@ -32,4 +30,11 @@ export function useSession(): SessionContextValue {
   const value = use(SessionContext);
   if (!value) throw new Error('useSession must be used inside <SessionProvider>');
   return value;
+}
+
+/** Whether a screen may read its data: the session is signed in. While it is
+ *  still resolving, a screen draws its static parts and holds its reads, so
+ *  it loads in one stage rather than after a placeholder page (FR-018). */
+export function useSessionReady(): boolean {
+  return useSession().status === 'signed-in';
 }

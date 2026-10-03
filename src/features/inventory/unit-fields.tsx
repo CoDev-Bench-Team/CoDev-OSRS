@@ -1,5 +1,7 @@
-import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Button, Field, FieldGroup, Search, TextField, TextInput, type FieldControl } from '../../shared/ui';
+import { onDismissPopovers } from '../../shared/ui/overlay/popover-layer';
 import type { Asset, Category } from '../assets/types';
 import { deviceFieldsFor } from './device-fields';
 import { caretAt, settleAmount, typeAmount } from './format';
@@ -65,16 +67,68 @@ export function FormFooter({
 
 const RESULT_LIMIT = 8;
 
+/** The list's tallest, as its `max-h` says. */
+const LIST_MAX_HEIGHT = 260;
+
+type ListPlace = { left: number; width: number } & ({ top: number } | { bottom: number });
+
 /** An ARIA 1.2 combobox's keyboard and list state over `items`: Arrow keys
  *  move the active option, Enter picks it, Esc closes the list. The list is
- *  undrawn (logged in additions.md) and sits in the flow under the field, so
- *  the panel's scrolling body can never clip it. */
+ *  undrawn (logged in additions.md).
+ *
+ *  The list overlays what is under the field rather than pushing it down. As
+ *  the shared `Select` does, it is portalled out of the panel's scrolling body,
+ *  which would otherwise clip it: into the open `<dialog>` when there is one
+ *  (everything outside a modal dialog is inert), else `<body>`, and placed
+ *  fixed under the field (`anchor`), or above it when there is no room below.
+ *  It follows the field when the panel scrolls. */
 function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const shown = items.slice(0, RESULT_LIMIT);
   const expanded = open && shown.length > 0;
+  const anchor = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [layer, setLayer] = useState<HTMLElement | null>(null);
+  const [place, setPlace] = useState<ListPlace | null>(null);
+
+  // A modal appearing dismisses any list already open (popover-layer.ts).
+  useEffect(() => onDismissPopovers(() => setOpen(false)), []);
+
+  // Placed before paint, so the list never appears and then jumps.
+  useLayoutEffect(() => {
+    if (!expanded) return;
+    const host = anchor.current?.closest<HTMLElement>('dialog[open]') ?? null;
+    setLayer(host ?? document.body);
+    const measure = () => {
+      const r = anchor.current?.getBoundingClientRect();
+      if (!r) return;
+      // A modal <dialog> is the containing block for `position: fixed`
+      // (SidePanel says why), so coordinates there are from its box.
+      const box = host?.getBoundingClientRect() ?? { top: 0, left: 0, bottom: window.innerHeight };
+      const below = window.innerHeight - r.bottom;
+      const flip = below < LIST_MAX_HEIGHT + 8 && r.top > below;
+      setPlace(
+        flip
+          ? { bottom: box.bottom - r.top + 4, left: r.left - box.left, width: r.width }
+          : { top: r.bottom + 4 - box.top, left: r.left - box.left, width: r.width },
+      );
+    };
+    measure();
+    // The panel body scrolls under the list: follow the field, but not when
+    // the list scrolls itself.
+    const onScroll = (e: Event) => {
+      if (listRef.current?.contains(e.target as Node)) return;
+      measure();
+    };
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }, [expanded]);
 
   const pick = (item: T) => {
     onPick(item);
@@ -114,12 +168,14 @@ function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
   };
 
   const list = (label: string, render: (item: T) => ReactNode, key: (item: T) => string) =>
-    expanded ? (
+    expanded && layer && place ? createPortal(
       <ul
+        ref={listRef}
         id={`${id}-list`}
         role="listbox"
         aria-label={label}
-        className="max-h-[260px] overflow-y-auto rounded-10 bg-surface-card p-4 shadow-card ring-default"
+        style={{ position: 'fixed', ...place }}
+        className="z-popover max-h-[260px] overflow-y-auto rounded-10 bg-surface-card p-4 shadow-card ring-default"
       >
         {shown.map((item, i) => (
           <li
@@ -138,10 +194,13 @@ function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
             {render(item)}
           </li>
         ))}
-      </ul>
+      </ul>,
+      layer,
     ) : null;
 
   return {
+    /** The field the list hangs from. */
+    anchor,
     inputProps,
     list,
     reveal: () => {
@@ -186,7 +245,7 @@ export function CatalogItemPicker({
     <div ref={wrapper} className="flex flex-col gap-14">
       <Field label="Catalog Item" required error={error ?? (failed ? CATALOG_UNLOADED : undefined)}>
         {({ id, required, invalid, describedBy }) => (
-          <div className="flex flex-col gap-6">
+          <div ref={box.anchor}>
             <Search
               id={id}
               placeholder="Search catalog item name or code"
@@ -199,10 +258,11 @@ export function CatalogItemPicker({
                 setQuery(e.target.value);
                 box.reveal();
               }}
-              onFocus={() => {
-                if (query) box.reveal();
-              }}
+              onClear={() => setQuery('')}
               {...box.inputProps}
+              // Focus or a click lists the catalog; typing narrows it.
+              onFocus={box.reveal}
+              onClick={box.reveal}
             />
             {box.list(
               'Catalog items',
@@ -272,7 +332,7 @@ export function UserPicker({
   return (
     <Field label="User" error={error ?? (failed ? USERS_UNLOADED : undefined)}>
       {({ id, invalid, describedBy }) => (
-        <div className="flex flex-col gap-6">
+        <div ref={box.anchor}>
           <TextInput
             id={id}
             placeholder="Insert here..."
@@ -555,6 +615,7 @@ export function RemoveUnitSection({
       ) : removing ? (
         <TextField
           label="Reason for removal"
+          hint="This unit will be deleted and cannot be restored. Are you sure you want to continue?"
           tone="danger"
           size="sm"
           required

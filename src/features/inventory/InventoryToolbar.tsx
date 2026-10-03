@@ -1,6 +1,6 @@
 import { FilterChip, Search, Select } from '../../shared/ui';
 import { CATEGORIES } from '../assets/types';
-import { ALL_CATEGORIES, type TableQuery } from '../assets/useTableQuery';
+import { ALL_CATEGORIES, type TableQuery } from '../assets/table-query';
 import { UNIT_CHIPS, type UnitChip } from './types';
 
 /** Search beside the category select, then the status chips — the Assets
@@ -14,6 +14,7 @@ export function InventoryToolbar({ query }: { query: TableQuery<UnitChip> }) {
           aria-label="Search by item name, model, purchase request or serial number"
           value={query.search}
           onChange={(e) => query.setSearch(e.target.value)}
+          onClear={() => query.setSearch('')}
           className="min-w-[260px] flex-1"
         />
         {/* `Select` fills its parent, so the drawn 210px lives on a wrapper. */}
@@ -28,12 +29,13 @@ export function InventoryToolbar({ query }: { query: TableQuery<UnitChip> }) {
       </div>
 
       <div className="mt-16 flex flex-wrap items-center gap-10" role="group" aria-label="Filter by unit status">
-        <FilterChip label="All items" count={query.counts.all} selected={query.status === null} onSelect={() => query.setStatus(null)} />
+        <FilterChip label="All items" count={query.counts.all} loading={query.countsLoading} selected={query.status === null} onSelect={() => query.setStatus(null)} />
         {UNIT_CHIPS.map((status) => (
           <FilterChip
             key={status}
             label={status}
             count={query.counts.of(status)}
+            loading={query.countsLoading}
             selected={query.status === status}
             onSelect={() => query.setStatus(status)}
           />

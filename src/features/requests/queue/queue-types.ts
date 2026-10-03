@@ -1,8 +1,13 @@
 import type { RequestStatus } from '../../../shared/ui';
+import { DEFAULT_PAGE_SIZE } from '../../../shared/page-size-preference';
 
 /** A feature-local read model, not a backend response shape. */
 export interface QueueRequest {
+  /** The key the source acts on: the API's numeric id, as a string (spec 017
+   *  FR-005). */
   id: string;
+  /** `REQ-…`, when it differs from `id`. Read it through `requestLabel`. */
+  displayId?: string;
   requestorName: string;
   requestorContext?: string;
   /** Searched (FR-020) but not displayed: the table's REQUESTER column is name
@@ -15,12 +20,6 @@ export interface QueueRequest {
 
 export interface QueueSnapshot {
   requests: readonly QueueRequest[];
-  /** Classified by the source; the SPA deliberately owns no threshold. */
-  lowStockAlertCount: number;
-}
-
-export interface QueueSource {
-  load(): Promise<QueueSnapshot>;
 }
 
 /** The statuses the queue lists. Terminal ones — `Rejected`, `Cancelled`,
@@ -50,7 +49,8 @@ export const QUEUE_CHIPS: readonly QueueChip[] = ['All requests', ...CHIP_STATUS
 export const QUEUE_SORTS = ['Newest First', 'Oldest First', 'Employee (A-Z)'] as const;
 export type QueueSort = (typeof QUEUE_SORTS)[number];
 
-/** 50 is the value the file draws; the rest are ours (spec 004, amendment 3). */
+/** The sizes offered. The default is 10, and the visitor's choice is
+ *  remembered (`shared/page-size-preference.ts`). */
 export const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 /** Chip, search, sort and page as one value (FR-023). */
@@ -68,14 +68,14 @@ export const INITIAL_QUERY: QueueQuery = {
   search: '',
   sort: 'Newest First',
   page: 1,
-  pageSize: 50,
+  pageSize: DEFAULT_PAGE_SIZE,
 };
 
 /** A row is a projection of a request: the identity fields are carried over
  *  as-is (typed off the source so they cannot drift), and the display-only
  *  `items`/`submittedAt` are replaced by their rendered forms. */
 export interface QueueRow
-  extends Pick<QueueRequest, 'id' | 'requestorName' | 'requestorContext'> {
+  extends Pick<QueueRequest, 'id' | 'displayId' | 'requestorName' | 'requestorContext'> {
   itemSummary: string;
   submittedLabel: string;
   status: LiveStatus;
@@ -84,7 +84,6 @@ export interface QueueRow
 export interface QueueViewModel {
   pendingApprovalCount: number;
   inProcessingCount: number;
-  lowStockAlertCount: number;
   /** Live requests before any search: tells "nothing to do" apart from
    *  "nothing matches" when `rows` is empty. */
   liveCount: number;

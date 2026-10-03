@@ -1,21 +1,25 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Button,
   PageHeader,
-  STOCK_STATUSES,
+  SkeletonRegion,
+  SkeletonRows,
   TABLE_ROW_PADDING_CLASS,
   TableCard,
   tableColumnStyle,
   tableMinWidth,
   type ColumnWidth,
+  type StockStatus,
 } from '../../shared/ui';
+import { DESTINATIONS, pageSubtitle } from '../../app/destinations';
+import { useSessionReady } from '../auth/session-context';
 import { AssetFormPanel } from './AssetFormPanel';
-import { useAssets } from './asset-store';
-import { assetStockStatus, stockTotals } from './stock';
-import { TablePager, TableState, TableToolbar } from './TableToolbar';
-import { useTableQuery } from './useTableQuery';
+import { assetSource } from './asset-store';
+import { TablePager, TableState, TableToolbar, type TableLoadState } from './TableToolbar';
+import type { TableQuery } from './table-query';
+import { useRemoteTableQuery, type RemoteTableQuery } from './useRemoteTableQuery';
 import { ViewAssetPanel } from './ViewAssetPanel';
-import type { Asset } from './types';
+import type { Asset, AssetDraft } from './types';
 
 /** `/assets` — `03- Assets` (spec 014 Story 1).
  *
@@ -45,25 +49,55 @@ const TABLE_MIN_WIDTH = tableMinWidth(
 
 type PanelState = { kind: 'add' } | { kind: 'view'; id: string } | { kind: 'update'; id: string } | null;
 
+/** Every query is asked of the API (spec 017 Story 7). */
 export function AssetsPage() {
-  const { state, reload, create, update } = useAssets();
-  const assets = useMemo(() => (state.kind === 'loaded' ? state.assets : []), [state]);
-  const query = useTableQuery(
-    assets,
-    (a) => ({
-      text: `${a.name} ${a.model ?? ''} ${a.category}`,
-      category: a.category,
-      status: assetStockStatus(a),
-    }),
-    { statuses: STOCK_STATUSES, pageSizes: PAGE_SIZES, pageSize: PAGE_SIZES[0] },
+  const ready = useSessionReady();
+  const fetchPage = useCallback((q: RemoteTableQuery<StockStatus>, withCounts: boolean) => assetSource.page(q, withCounts), []);
+  const { state, query, reload, fetching } = useRemoteTableQuery(fetchPage, { pageSizes: PAGE_SIZES, table: 'assets', enabled: ready });
+  const saved = useCallback(
+    async (saving: Promise<Asset>) => {
+      const asset = await saving;
+      reload();
+      return asset;
+    },
+    [reload],
   );
+  return (
+    <AssetsView
+      state={state}
+      busy={fetching}
+      query={query}
+      reload={reload}
+      create={(draft) => saved(assetSource.create(draft))}
+      update={(id, draft) => saved(assetSource.update(id, draft))}
+    />
+  );
+}
+
+function AssetsView({
+  busy,
+  state,
+  query,
+  reload,
+  create,
+  update,
+}: {
+  /** The next page is in flight. */
+  busy: boolean;
+  state: TableLoadState;
+  query: TableQuery<StockStatus, Asset>;
+  reload: () => unknown;
+  create: (draft: AssetDraft) => Promise<Asset>;
+  update: (id: string, draft: AssetDraft) => Promise<Asset>;
+}) {
   const [panel, setPanel] = useState<PanelState>(null);
-  const selected: Asset | undefined = panel && panel.kind !== 'add' ? assets.find((a) => a.id === panel.id) : undefined;
+  const selected: Asset | undefined =
+    panel && panel.kind !== 'add' ? query.rows.find((a) => a.id === panel.id) : undefined;
 
   return (
     <div className="flex flex-1 flex-col pt-[34px] pb-32">
       <div className="flex flex-wrap items-center justify-between gap-16">
-        <PageHeader title="Assets" subtitle="Assigned and available units" />
+        <PageHeader title={DESTINATIONS.assets.title} subtitle={pageSubtitle(DESTINATIONS.assets)} />
         <Button variant="accent" onClick={() => setPanel({ kind: 'add' })}>
           + Add Asset
         </Button>
@@ -71,7 +105,7 @@ export function AssetsPage() {
 
       <TableToolbar query={query} allLabel="All items" />
 
-      <TableCard className="mt-[34px] min-w-0">
+      <TableCard className="mt-[34px] min-w-0" busy={busy}>
         {/* Focusable, as the Requests Queue's is, so a keyboard can scroll the
             count columns into view when the table is wider than the window. */}
         <div
@@ -91,57 +125,69 @@ export function AssetsPage() {
 
             <TableState
               state={state}
+              fetching={busy}
               rowCount={query.rows.length}
               empty="No asset matches that search"
-              loadingLabel="Loading stock"
+              loading={
+                <SkeletonRegion label="Loading stock">
+                  <SkeletonRows
+                    columns={[
+                      ['320px', 'bold'],
+                      ['180px', 'text'],
+                      ['264px', 'text'],
+                      ['180px', 'number'],
+                      ['180px', 'number'],
+                      [undefined, 'number'],
+                    ]}
+                    rowClassName="h-row-height-inventory border-b border-line-default bg-surface-card"
+                  />
+                </SkeletonRegion>
+              }
               failedTitle="Stock could not be loaded"
               onRetry={() => void reload()}
             />
 
-            {query.rows.map((asset) => {
-              const { available, reserved } = stockTotals(asset);
-              return (
-                <div
-                  key={asset.id}
-                  className={`relative flex h-row-height-inventory w-full items-center border-b border-line-default bg-surface-card ${TABLE_ROW_PADDING_CLASS} transition-osrs hover:bg-osrs-surface-subtle`}
-                >
-                  {/* The name is the row's one control, so the other cells stay
-                      readable text. `static` lets its ::after reach the row,
-                      making the whole row clickable as drawn and carrying the
-                      focus ring around it; the touch-target rule would
-                      otherwise position the button (index.css). */}
-                  <span className="min-w-0 pr-16" style={tableColumnStyle('320px')}>
-                    <button
-                      type="button"
-                      onClick={() => setPanel({ kind: 'view', id: asset.id })}
-                      className="static block w-full cursor-pointer truncate border-none bg-transparent p-0 text-left type-ui-bold text-ink-strong after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-brand-primary"
-                    >
-                      {asset.name}
-                    </button>
-                  </span>
-                  <span className="type-ui text-ink-strong" style={tableColumnStyle('180px')}>
-                    {asset.category}
-                  </span>
-                  <span className="truncate pr-16 type-ui text-ink-strong" style={tableColumnStyle('264px')}>
-                    {asset.model ?? '—'}
-                  </span>
-                  <span className="type-ui text-ink-strong" style={tableColumnStyle('180px')}>
-                    {available}
-                  </span>
-                  <span className="type-ui text-ink-strong" style={tableColumnStyle('180px')}>
-                    {reserved}
-                  </span>
-                  <span className="type-ui text-ink-strong" style={tableColumnStyle()}>
-                    {asset.assigned}
-                  </span>
-                </div>
-              );
-            })}
+            {query.rows.map((asset) => (
+              <div
+                key={asset.id}
+                className={`relative flex h-row-height-inventory w-full items-center border-b border-line-default bg-surface-card ${TABLE_ROW_PADDING_CLASS} transition-osrs hover:bg-osrs-surface-subtle`}
+              >
+                {/* The name is the row's one control, so the other cells stay
+                    readable text. `static` lets its ::after reach the row,
+                    making the whole row clickable as drawn and carrying the
+                    focus ring around it; the touch-target rule would
+                    otherwise position the button (index.css). */}
+                <span className="min-w-0 pr-16" style={tableColumnStyle('320px')}>
+                  <button
+                    type="button"
+                    onClick={() => setPanel({ kind: 'view', id: asset.id })}
+                    className="static block w-full cursor-pointer truncate border-none bg-transparent p-0 text-left type-ui-bold text-ink-strong after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-brand-primary"
+                  >
+                    {asset.name}
+                  </button>
+                </span>
+                <span className="type-ui text-ink-strong" style={tableColumnStyle('180px')}>
+                  {asset.category}
+                </span>
+                <span className="truncate pr-16 type-ui text-ink-strong" style={tableColumnStyle('264px')}>
+                  {asset.model ?? '—'}
+                </span>
+                <span className="type-ui text-ink-strong" style={tableColumnStyle('180px')}>
+                  {asset.available}
+                </span>
+                <span className="type-ui text-ink-strong" style={tableColumnStyle('180px')}>
+                  {asset.reserved}
+                </span>
+                <span className="type-ui text-ink-strong" style={tableColumnStyle()}>
+                  {asset.assigned}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </TableCard>
 
-      <TablePager query={query} />
+      <TablePager query={query} hidden={state.kind === 'loading' || busy} />
 
       {/* New assets lead the list, so with no filter set page 1 shows the one
           just added. Filters are the Admin's and are left as they are. */}

@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Button, ConfirmDialog, Field, FieldGroup, LoadingState, Notice, Select, SidePanel, StatusPill, TextArea } from '../../shared/ui';
+import { Button, Field, FieldGroup, FieldSkeleton, Notice, Skeleton, SkeletonRegion, Select, SidePanel, StatusPill, TextArea } from '../../shared/ui';
 import { useAssets } from '../assets/asset-store';
 import { ImageField } from '../assets/ImageField';
 import type { Asset, Category } from '../assets/types';
@@ -125,7 +125,14 @@ function useUsers() {
 }
 
 type Props =
-  | { mode: 'add'; onClose: () => void; onCreate: (draft: UnitDraft) => Promise<unknown> }
+  | {
+      mode: 'add';
+      /** What Status offers on create. Defaults to every add status; the API
+       *  source offers no Inactive (spec 017 plan D13, contracts G10). */
+      addStatuses?: readonly AddStatus[];
+      onClose: () => void;
+      onCreate: (draft: UnitDraft) => Promise<unknown>;
+    }
   | {
       mode: 'edit';
       unitId: string;
@@ -177,10 +184,18 @@ function useUnitLoad(unitId: string | null, load: ((id: string) => Promise<UnitD
 /** The body while the unit is not ready: loading, gone (a 404) or failed. */
 function UnitLoadNotice({ loaded }: { loaded: Exclude<Loaded, { kind: 'ready' }> }) {
   if (loaded.kind === 'loading') {
+    // The form's sections: a heading over its fields.
     return (
-      <div className="[&>div]:min-h-[204px]">
-        <LoadingState label="Loading unit" />
-      </div>
+      <SkeletonRegion label="Loading unit" className="flex flex-col gap-24">
+        {[3, 3, 2].map((fields, section) => (
+          <div key={section} aria-hidden="true" className="flex flex-col gap-16">
+            <Skeleton className="h-12 w-[120px]" />
+            {Array.from({ length: fields }, (_, i) => (
+              <FieldSkeleton key={i} />
+            ))}
+          </div>
+        ))}
+      </SkeletonRegion>
     );
   }
   if (loaded.kind === 'gone') {
@@ -295,11 +310,21 @@ function NotesFields({
   );
 }
 
-type FooterProps = { loaded: Loaded; formId: string; saving: boolean; removing: boolean; onCancelRemoval: () => void; onRetry: () => void };
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+type FooterProps = {
+  loaded: Loaded;
+  formId: string;
+  saving: boolean;
+  adding: boolean;
+  removing: boolean;
+  onCancelRemoval: () => void;
+  onRetry: () => void;
+};
 
 /** The footer for each load state: none while loading, Close (and Try again
  *  after a failure) while not ready, Cancel and the submit button once ready. */
-function panelFooter({ loaded, formId, saving, removing, onCancelRemoval, onRetry }: FooterProps) {
+function panelFooter({ loaded, formId, saving, adding, removing, onCancelRemoval, onRetry }: FooterProps) {
   if (loaded.kind === 'loading') return undefined;
   if (loaded.kind !== 'ready') {
     return (leave: () => void) => <NoticeFooter onRetry={loaded.kind === 'failed' ? onRetry : undefined} onClose={leave} />;
@@ -309,7 +334,7 @@ function panelFooter({ loaded, formId, saving, removing, onCancelRemoval, onRetr
       formId={formId}
       saving={saving}
       submitLabel={removing ? 'Confirm Removal' : 'Save Changes'}
-      savingLabel={removing ? 'Removing…' : 'Saving…'}
+      savingLabel={removing ? 'Removing…' : adding ? 'Adding…' : 'Saving…'}
       onCancel={removing ? onCancelRemoval : leave}
     />
   );
@@ -326,19 +351,18 @@ function UnitHeader({ title, unit }: { title: string; unit?: UnitDetail }) {
 
 function useUnitFormPanel(props: Props) {
   const formId = useId();
-  const { state: assetsState } = useAssets();
+  // Only Add draws the Catalog Item picker; Review/Edit's asset is fixed.
+  const { state: assetsState } = useAssets({ enabled: props.mode === 'add' });
   const assets = assetsState.kind === 'loaded' ? assetsState.assets : null;
   const users = useUsers();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [removing, setRemoving] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [reason, setReason] = useState('');
   const editing = props.mode === 'edit' ? props : null;
   const { loaded, retry, gone } = useUnitLoad(editing?.unitId ?? null, editing?.load ?? null, (unit) => setForm(fromUnit(unit)));
 
-  const { saving, attempt } = useAttempt(props.onClose, (error, what) => {
-    setConfirming(false);
+  const { saving, attempt, handOff } = useAttempt(props.onClose, (error, what) => {
     const result = refusal(error, what, (key) => SHOWN.has(key));
     if (!('problem' in result)) setErrors(result.errors);
     else if (result.problem.status === 404) gone(result.problem.detail);
@@ -346,9 +370,15 @@ function useUnitFormPanel(props: Props) {
   });
 
   const unit = loaded.kind === 'ready' ? loaded.unit : undefined;
+  /** How the toast names this unit if the panel is closed mid-save. */
+  const unitName = unit?.serialNumber ? `unit ${unit.serialNumber}` : 'unit';
   const reserved = unit?.status === 'Reserved';
   const category: Category | undefined = unit?.category ?? form.asset?.category;
-  const options = useMemo(() => (unit ? statusOptions('edit', unit) : statusOptions('add')), [unit]);
+  const addStatuses = props.mode === 'add' ? props.addStatuses : undefined;
+  const options = useMemo(
+    () => (unit ? statusOptions('edit', unit) : (addStatuses ?? statusOptions('add'))),
+    [unit, addStatuses],
+  );
 
   const clear = (...keys: string[]) =>
     setErrors((e) => {
@@ -368,19 +398,24 @@ function useUnitFormPanel(props: Props) {
     props.onClose();
   };
 
-  /** A blank reason stays on the field. A reason asks first: removal deletes
-   *  the unit permanently (spec 015 Story 4). */
+  /** A blank reason stays on the field. A reason removes the unit at once:
+   *  the warning under the reason's label is the confirmation (spec 015
+   *  Story 4 as amended 2026-10-03; no dialog). */
   function askRemove() {
     if (!reason.trim()) {
       setErrors({ reason: 'Enter a reason for removal' });
       return;
     }
-    setConfirming(true);
+    if (editing) confirmRemove(editing);
   }
 
   function confirmRemove(target: NonNullable<typeof editing>) {
     if (saving) return;
-    void attempt(() => target.onRemove(target.unitId, reason.trim()), 'The unit could not be removed');
+    void attempt(() => target.onRemove(target.unitId, reason.trim()), {
+      loading: `Removing ${unitName}…`,
+      done: `${capitalize(unitName)} removed`,
+      failed: 'The unit could not be removed',
+    });
   }
 
   function save() {
@@ -390,7 +425,13 @@ function useUnitFormPanel(props: Props) {
       setErrors(found);
       return;
     }
-    void attempt(() => (props.mode === 'edit' ? props.onUpdate(props.unitId, draft) : props.onCreate(draft)), 'The unit could not be saved');
+    const adding = props.mode === 'add';
+    const name = adding ? (draft.serialNumber?.trim() ? `unit ${draft.serialNumber.trim()}` : 'unit') : unitName;
+    void attempt(() => (props.mode === 'edit' ? props.onUpdate(props.unitId, draft) : props.onCreate(draft)), {
+      loading: adding ? `Adding ${name}…` : `Saving ${name}…`,
+      done: `${capitalize(name)} ${adding ? 'added' : 'saved'}`,
+      failed: 'The unit could not be saved',
+    });
   }
 
   function submit(event: FormEvent) {
@@ -402,7 +443,6 @@ function useUnitFormPanel(props: Props) {
 
   const leaveRemoving = () => {
     setRemoving(false);
-    setConfirming(false);
     setReason('');
     clear('reason');
   };
@@ -417,12 +457,12 @@ function useUnitFormPanel(props: Props) {
     form,
     errors,
     removing,
-    confirming,
     reason,
     editing,
     loaded,
     retry,
     saving,
+    handOff,
     unit,
     category,
     options,
@@ -436,38 +476,36 @@ function useUnitFormPanel(props: Props) {
     title,
     setReason,
     setRemoving,
-    setConfirming,
   };
 }
 
 function UnitFormBody({ editor }: { editor: ReturnType<typeof useUnitFormPanel> }) {
   const {
     formId,
+    saving,
     assets,
     assetsState,
     users,
     form,
     errors,
     removing,
-    confirming,
     reason,
     editing,
-    saving,
     unit,
     category,
     options,
     set,
     setForm,
     clear,
-    confirmRemove,
     submit,
     setReason,
     setRemoving,
-    setConfirming,
   } = editor;
 
   return (
-    <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-32">
+    <form id={formId} onSubmit={submit} noValidate>
+      {/* Locked while saving or removing: the fieldset disables every control in it. */}
+      <fieldset disabled={saving} className="m-0 flex min-w-0 flex-col gap-32 border-0 p-0">
       <FormAlert message={errors['']} />
 
       {editing ? null : (
@@ -520,18 +558,7 @@ function UnitFormBody({ editor }: { editor: ReturnType<typeof useUnitFormPanel> 
           onStart={() => setRemoving(true)}
         />
       ) : null}
-
-      {confirming && editing ? (
-        <ConfirmDialog
-          title="Remove this unit?"
-          confirmLabel="Remove unit"
-          busy={saving}
-          onCancel={() => setConfirming(false)}
-          onConfirm={() => confirmRemove(editing)}
-        >
-          <p>This permanently deletes the unit. You cannot undo it.</p>
-        </ConfirmDialog>
-      ) : null}
+      </fieldset>
     </form>
   );
 }
@@ -542,7 +569,8 @@ export function UnitFormPanel(props: Props) {
     <SidePanel
       title={editor.title}
       onClose={editor.close}
-      dismissible={!editor.saving}
+      busy={editor.saving}
+      onLeave={editor.handOff}
       header={<UnitHeader title={editor.title} unit={editor.unit} />}
       bodyClassName="px-14 pt-10 pb-24"
       footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
@@ -550,6 +578,7 @@ export function UnitFormPanel(props: Props) {
         loaded: editor.loaded,
         formId: editor.formId,
         saving: editor.saving,
+        adding: !editor.editing,
         removing: editor.removing,
         onCancelRemoval: editor.leaveRemoving,
         onRetry: editor.retry,

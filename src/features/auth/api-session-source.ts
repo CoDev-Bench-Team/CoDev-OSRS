@@ -1,4 +1,4 @@
-import { ApiProblemError, SessionUnreachable, apiRequest, onSessionEnded, problemMessage } from '../../shared/api';
+import { ApiProblemError, SessionUnreachable, apiConfigured, apiRequest, onSessionEnded, problemMessage } from '../../shared/api';
 import type { GoogleButtonSource } from './google-button-source';
 import { awaitGoogleCredential, mountGoogleButton } from './google-identity';
 import type { SessionSource } from './session-source';
@@ -111,8 +111,7 @@ async function performSignIn(credential?: string): Promise<Session> {
   }
 }
 
-/** The published session. It does not read the seeded storage keys, and it
- *  does not write browser storage. Google's button is mounted only when a
+/** The published session. It does not write browser storage. Google's button is mounted only when a
  *  client id is configured. */
 export const apiSessionSource: SessionSource & Partial<GoogleButtonSource> = {
   ...(publishedGoogleClientId()
@@ -123,7 +122,8 @@ export const apiSessionSource: SessionSource & Partial<GoogleButtonSource> = {
       }
     : {}),
   async current() {
-    if (signedOutLocally) return null;
+    // No API, no session: sign-in says so (spec 017 FR-001a).
+    if (signedOutLocally || !apiConfigured()) return null;
     try {
       const body = await apiRequest<unknown>('/auth/me');
       return sessionFromCurrentUser(body);

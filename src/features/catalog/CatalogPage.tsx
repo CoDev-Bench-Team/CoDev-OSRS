@@ -1,24 +1,19 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Button, FilterChip, LoadingState, Notice, PageHeader, Search } from '../../shared/ui';
-import { DESTINATIONS } from '../../app/destinations';
-import { useSession } from '../auth/session-context';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Button, FilterChip, Notice, PageHeader, Search, SkeletonRegion, SupplyCardSkeleton } from '../../shared/ui';
+import { DESTINATIONS, pageSubtitle } from '../../app/destinations';
+import { useSession, useSessionReady } from '../auth/session-context';
 import { useRequestList } from '../requests/create/request-draft';
 import { RequestListDrawer } from '../requests/create/RequestListDrawer';
-import { seededRequestSubmitSource } from '../requests/create/seeded-request-submit-source';
+import { apiRequestSubmitSource } from '../requests/create/api-request-submit-source';
 import type { CatalogSource } from './catalog-source';
 import { useCatalog } from './catalog-context';
 import { CatalogProvider } from './CatalogProvider';
 import { CatalogGrid } from './CatalogGrid';
 import { OfficeSelect } from './OfficeSelect';
-import { seededCatalogSource } from './seeded-source';
+import { apiCatalogSource } from './api-catalog-source';
 import { OFFICES, type CatalogOffice } from './types';
 import { CATEGORY_CHIPS, useCatalogFilters } from './useCatalogFilters';
 
-/** The design's subtitle, in full. The destination's shorter `purpose` still
- *  names the page elsewhere in the shell; the page header carries the sentence
- *  `02 - Catalog` draws, which is two sentences and so does not fit the
- *  one-sentence subtitle convention (spec 005 D9). */
-const SUBTITLE = 'Browse available equipment and office essentials. Inventory updates in real time.';
 
 /** The signed-in user's home office, if the catalog's office list has it. */
 function useHomeOffice(): CatalogOffice | undefined {
@@ -51,7 +46,14 @@ function CatalogContents({
 
   let body: ReactNode;
   if (state.status === 'loading') {
-    body = <LoadingState label="Loading the catalog" />;
+    // The grid's own columns and gutter, filled with card silhouettes.
+    body = (
+      <SkeletonRegion label="Loading the catalog" className="grid grid-cols-1 gap-[27px] md:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }, (_, i) => (
+          <SupplyCardSkeleton key={i} />
+        ))}
+      </SkeletonRegion>
+    );
   } else if (state.status === 'failed') {
     body = (
       <Notice
@@ -87,13 +89,14 @@ function CatalogContents({
   return (
     <div className="flex w-full min-w-0 flex-col gap-[34px] pt-[34px] pb-32">
       <div className="flex flex-col gap-24">
-        <PageHeader title={DESTINATIONS.catalog.title} subtitle={SUBTITLE} />
+        <PageHeader title={DESTINATIONS.catalog.title} subtitle={pageSubtitle(DESTINATIONS.catalog)} />
         <div className="flex flex-col gap-12">
           <div className="flex flex-col gap-16 md:flex-row">
             <Search
               className="md:flex-1"
               value={term}
               onChange={(e) => setTerm(e.target.value)}
+              onClear={() => setTerm('')}
               placeholder="Search supplies by name or category"
               aria-label="Search supplies by name or category"
             />
@@ -132,22 +135,27 @@ function CatalogRequestList({ source, homeOffice }: { source: CatalogSource; hom
   }, [submissions, reload]);
   if (!isOpen || session?.role !== 'employee') return null;
   return (
-    <RequestListDrawer catalogSource={source} submitSource={seededRequestSubmitSource} homeOffice={homeOffice} />
+    <RequestListDrawer catalogSource={source} submitSource={apiRequestSubmitSource} homeOffice={homeOffice} />
   );
 }
 
 export function CatalogPage() {
-  /* Stable across renders so the provider's effect does not re-fetch on every
-     parent render. Swapped for a contract-backed source when one exists. */
-  const source = useMemo(() => seededCatalogSource(), []);
+  /* The published API (spec 017 Story 1). A module constant, so the
+     provider's effect does not re-fetch on every parent render. */
+  const source = apiCatalogSource;
   const homeOffice = useHomeOffice();
   /* The requesting office is the Employee's own, so the selector opens on it
      (spec 001 Assumptions). Someone with no office in the list starts on the
      first one the contract names. */
-  const [office, setOffice] = useState<CatalogOffice>(homeOffice ?? OFFICES[0]);
+  const ready = useSessionReady();
+  // The office chosen here, else the home office once the session names it:
+  // the page renders before the session resolves, so the home office cannot
+  // be read only at mount.
+  const [chosen, setOffice] = useState<CatalogOffice | null>(null);
+  const office = chosen ?? homeOffice ?? OFFICES[0];
 
   return (
-    <CatalogProvider source={source} office={office}>
+    <CatalogProvider source={source} office={office} enabled={ready}>
       <CatalogContents office={office} onOfficeChange={setOffice} homeOffice={homeOffice} />
       <CatalogRequestList source={source} homeOffice={homeOffice} />
     </CatalogProvider>
