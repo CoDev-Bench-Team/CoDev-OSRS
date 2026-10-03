@@ -1,3 +1,6 @@
+import { apiConfigured } from '../../shared/api';
+import { apiSessionSource } from './api-session-source';
+import { seededSessionSource } from './seeded-source';
 import type { Session } from './types';
 
 /** The session boundary (spec 003 D3, FR-002, FR-003).
@@ -20,7 +23,7 @@ export interface SessionSource {
 
   /** Begin a session. The shell calls this from the designed Google control and
    *  never learns what happens inside. Rejects when sign-in is refused. */
-  signIn(): Promise<Session>;
+  signIn(credential?: string): Promise<Session>;
 
   /** End the session. Must also clear the stored reference. */
   signOut(): Promise<void>;
@@ -57,4 +60,10 @@ export type DemoAccount = {
 
 export function hasDemoAccounts(source: SessionSource): source is SessionSource & DemoAccountSource {
   return typeof (source as Partial<DemoAccountSource>).accounts === 'function';
+}
+
+/** Seeded session when `VITE_API_BASE_URL` is unset or blank. The API source
+ *  when it is set, with no fallback if those calls fail. */
+export function selectSessionSource(): SessionSource {
+  return apiConfigured() ? apiSessionSource : seededSessionSource;
 }

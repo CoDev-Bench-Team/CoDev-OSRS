@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { SessionProvider } from '../features/auth/SessionProvider';
+import { selectSessionSource } from '../features/auth/session-source';
 import { RequestListProvider } from '../features/requests/create/RequestListProvider';
 import { RequestListCountProvider } from './RequestListCountProvider';
 import { AppRoutes } from './routes';
@@ -36,7 +37,7 @@ const CompareHarness = import.meta.env.DEV
 export default function App() {
   return (
     <BrowserRouter>
-      <SessionProvider>
+      <SessionProvider source={selectSessionSource()}>
         <RequestListCountProvider>
           {/* The Employee's Request List lives for the session, above every
               route, and is the only writer of the count (spec 011 D1, D2). */}

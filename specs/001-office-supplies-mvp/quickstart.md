@@ -12,10 +12,18 @@ This repo runs the **SPA**. A REST API **from the backend team** must be reachab
 Create `.env` (never commit secrets):
 
 ```
-VITE_API_ORIGIN=http://localhost:8080
+VITE_API_BASE_URL=https://codev-osrs-backend.vercel.app
+VITE_GOOGLE_CLIENT_ID=
+VITE_COMPANY_DOMAIN=codev.com
 ```
 
-Use the origin the backend team documents. Optionally proxy through Vite (`vite.config.ts`) so the browser stays same-origin.
+`VITE_API_BASE_URL` is the session switch. Leave it unset and the SPA keeps the seeded session below. Set it and login, refresh, and logout use the published API (`credentials: 'include'`).
+
+`VITE_GOOGLE_CLIENT_ID` is the Web client id from the same Google Cloud project the API verifies (BEN-96). It is not a secret. Put it in `.env` only. `.env.example` names the variable and leaves it empty, and the id is not written into source. API-mode sign-in renders Google's button only when it is set. `VITE_COMPANY_DOMAIN` is an account-picker hint; the API still decides which domains may sign in.
+
+The dev server is pinned to port 5173. That origin is the one authorized on the OAuth client. A busy port fails to start.
+
+In development, Vite proxies `/auth` to `VITE_API_BASE_URL` so the session cookie is first-party on the Vite origin. A Netlify build does the same: the browser calls `/auth` on the Netlify host, and Netlify proxies that path to `VITE_API_BASE_URL`. A deploy preview needs that, because the preview and the API are different sites and the browser blocks a direct call. A production build that is not on Netlify calls `VITE_API_BASE_URL` directly, so those hosts must be on the same site, with the cookie `Secure` and `SameSite=Lax`. A refresh on those real hosts must restore the same person. A session that works on localhost or a deploy preview does not satisfy that check.
 
 ## Demo users
 
@@ -25,7 +33,7 @@ of its own (spec 001 Clarifications, Session 2026-09-12): the sign-in screen
 renders the designed Google control and delegates to the **session boundary**,
 `src/features/auth/session-source.ts`.
 
-Until the backend contract publishes, that boundary is satisfied by
+When `VITE_API_BASE_URL` is unset, that boundary is satisfied by
 `src/features/auth/seeded-source.ts`, which resolves one of these two seeded
 identities — one per role, so every role's landing screen and every refusal can
 be exercised:
@@ -37,9 +45,8 @@ be exercised:
 
 Choose one on the sign-in screen before pressing the Google control — the
 chooser is the seeded source's stand-in for Google's account picker, and it
-disappears on its own once a source backed by the published contract replaces
-it. A third entry, **Refused account**, makes sign-in fail, so the refusal path
-can be demonstrated.
+is shown only while that source is selected. A third entry, **Refused account**,
+makes sign-in fail, so the refusal path can be demonstrated.
 
 Inventory (spec 015) assigns units to users from a seeded directory,
 `src/features/inventory/seeded-user-directory.ts`. These are non-production
@@ -63,13 +70,13 @@ Key/PINs are visibly fake (`DEMO-…`) and reset on reload.
 means signing out and signing back in, which is deliberate: it keeps one role
 per user absolute and makes the demo exercise the real sign-in path.
 
-A session is held as an opaque reference plus a timestamp, never a user or a
-role, and it is re-resolved on every load — so a reload keeps you signed in
+A seeded session is held as an opaque reference plus a timestamp, never a user
+or a role, and it is re-resolved on every load — so a reload keeps you signed in
 while a stale reference left on a shared machine is discarded rather than
-trusted.
-
-When the backend publishes its contract, write a second implementation of
-`SessionSource` against it. No shell code changes.
+trusted. The API session does not use that storage. `App.tsx` passes
+`selectSessionSource()`: a set `VITE_API_BASE_URL` uses
+`src/features/auth/api-session-source.ts`, which signs in, restores, and signs
+out through the published API and the session cookie.
 
 ## Run the SPA
 

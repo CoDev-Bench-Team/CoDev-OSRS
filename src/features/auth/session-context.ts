@@ -4,8 +4,9 @@ import type { Session, SessionStatus } from './types';
 
 /** Why the session's ended it. `expired` is the case FR-017 names: a session
  *  that was valid stopped being valid without the user asking, so sign-in owes
- *  them an explanation rather than a bare form. */
-export type SessionNotice = null | 'expired';
+ *  them an explanation rather than a bare form. A refusal carries the published
+ *  problem text. */
+export type SessionNotice = null | 'expired' | { kind: 'refused'; message: string };
 
 export type SessionContextValue = {
   status: SessionStatus;
@@ -18,7 +19,7 @@ export type SessionContextValue = {
   session: Session | null;
   notice: SessionNotice;
   /** Rejects when sign-in is refused; never resolves to a signed-out state. */
-  signIn: () => Promise<Session>;
+  signIn: (credential?: string) => Promise<Session>;
   signOut: () => Promise<void>;
 };
 

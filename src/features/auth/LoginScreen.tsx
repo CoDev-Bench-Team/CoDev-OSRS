@@ -1,10 +1,77 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router';
+import { SessionUnreachable } from '../../shared/api';
 import { CoDevSupplyRequestsLogo, LoadingState, SignInButton } from '../../shared/ui';
 import { canRoleReach, landingPath } from '../../app/destinations';
-import { hasDemoAccounts, type DemoAccountSource } from './session-source';
+import { GoogleSignInOverlay } from './GoogleSignInOverlay';
+import { hasGoogleButton } from './google-button-source';
+import { onGoogleCredential } from './google-identity';
+import { hasDemoAccounts, type DemoAccountSource, type SessionSource } from './session-source';
 import { useSession } from './session-context';
+import { SIGN_IN_REFUSAL, SessionRefusal } from './session-errors';
+import type { Role } from './types';
 import loginBackground from '../../assets/login/login-background.png';
+
+function pathAfterSignIn(role: Role, state: unknown): string {
+  const requested = (state as { from?: string } | null)?.from;
+  const path = requested?.split('?')[0];
+  const permitted = path ? canRoleReach(role, path) : false;
+  return permitted && requested ? requested : landingPath(role);
+}
+
+async function submitSignIn(source: SessionSource, signIn: (credential?: string) => Promise<unknown>): Promise<void> {
+  if (hasDemoAccounts(source) || hasGoogleButton(source)) {
+    await signIn();
+    return;
+  }
+  throw new SessionRefusal(SIGN_IN_REFUSAL);
+}
+
+function signInFailure(error: unknown): string {
+  if (error instanceof SessionRefusal) return error.sessionNotice;
+  if (error instanceof SessionUnreachable) return error.message;
+  return SIGN_IN_REFUSAL;
+}
+
+function startSignIn(
+  attempt: Promise<unknown>,
+  setRefused: (message: string | null) => void,
+  setBusy: (busy: boolean) => void,
+): void {
+  setRefused(null);
+  setBusy(true);
+  void attempt.catch((error: unknown) => setRefused(signInFailure(error))).finally(() => setBusy(false));
+}
+
+function SignInNotices({
+  refusalText,
+  expired,
+  busy,
+}: {
+  refusalText: string | null;
+  expired: boolean;
+  busy: boolean;
+}) {
+  return (
+    <div className="mt-20 flex flex-col items-center gap-8 empty:mt-0">
+      {refusalText ? (
+        <p role="alert" className="type-body text-center text-red-error">
+          {refusalText}
+        </p>
+      ) : null}
+      {!refusalText && expired ? (
+        <p role="status" className="type-body text-center text-ink-secondary">
+          Your session ended. Sign in again to continue.
+        </p>
+      ) : null}
+      {busy ? (
+        <p role="status" className="type-body text-center text-ink-secondary">
+          Signing in…
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 /** The sign-in screen, as drawn: the 421×500 card on the full-bleed
  *  photograph, carrying the product lockup, the welcome line, the Google
@@ -18,9 +85,9 @@ import loginBackground from '../../assets/login/login-background.png';
  *  settled when the contract publishes.
  *
  *  A refusal leaves the visitor here with a plain message, no session, and the
- *  control back at rest (FR-003b). The message does not say why: the SPA does
- *  not know why, and guessing would invent an error vocabulary the contract has
- *  not published (FR-004).
+ *  control back at rest (FR-003b). The message is the published problem text
+ *  when the body has a detail or a title, and the shell's existing sentence
+ *  otherwise.
  *
  *  The card is composed in flow rather than by absolute coordinate, the same
  *  redesign spec 002 applied to the top bar and page header — but unlike the
@@ -32,8 +99,27 @@ import loginBackground from '../../assets/login/login-background.png';
 export function LoginScreen() {
   const { status, session, signIn, notice, source } = useSession();
   const location = useLocation();
-  const [refused, setRefused] = useState(false);
+  const [refused, setRefused] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const googleButton = status === 'signed-out' && hasGoogleButton(source);
+
+  const onGoogleUnavailable = useCallback(() => {
+    setBusy(false);
+    setRefused(SIGN_IN_REFUSAL);
+  }, []);
+
+  useEffect(() => {
+    if (!googleButton) return;
+    return onGoogleCredential(
+      (credential) => {
+        startSignIn(signIn(credential), setRefused, setBusy);
+      },
+      (error) => {
+        setBusy(false);
+        setRefused(error.sessionNotice);
+      },
+    );
+  }, [googleButton, signIn]);
 
   // FR-018 again: a signed-in visitor must never see this card flash past
   // while the session resolves.
@@ -44,19 +130,15 @@ export function LoginScreen() {
   // in arrives THERE, provided their role permits it; otherwise at the screen
   // their work starts from.
   if (status === 'signed-in' && session) {
-    const requested = (location.state as { from?: string } | null)?.from;
-    const path = requested?.split('?')[0];
-    const permitted = path ? canRoleReach(session.role, path) : false;
-    return <Navigate to={permitted && requested ? requested : landingPath(session.role)} replace />;
+    return <Navigate to={pathAfterSignIn(session.role, location.state)} replace />;
   }
 
   const onSignIn = () => {
-    setRefused(false);
-    setBusy(true);
-    void signIn()
-      .catch(() => setRefused(true))
-      .finally(() => setBusy(false));
+    startSignIn(submitSignIn(source, signIn), setRefused, setBusy);
   };
+
+  const publishedRefusal = notice !== null && typeof notice === 'object' ? notice.message : null;
+  const refusalText = refused ?? publishedRefusal;
 
   return (
     <div
@@ -91,37 +173,35 @@ export function LoginScreen() {
 
               The icon plate's fill is switched off in the file too, so the
               control is a plain white box: mark, label, nothing else. */}
-          <SignInButton
-            darkmode={false}
-            iconPlate={false}
-            iconPadding="16px 0 16px 18px"
-            labelPadding="18px 8px"
-            onClick={onSignIn}
-            style={{ width: 242, height: 64 }}
-            className="rounded-32"
-          />
+          <div className="group relative" style={{ width: 242, height: 64 }}>
+            {/* The drawn pill is what the visitor sees. It paints over
+                Google's frame and does not take the click, so the press
+                reaches the frame underneath. */}
+            <div
+              inert={googleButton || undefined}
+              className={googleButton ? 'pointer-events-none absolute inset-0 z-20' : undefined}
+              style={{ width: 242, height: 64 }}
+            >
+              <SignInButton
+                darkmode={false}
+                iconPlate={false}
+                iconPadding="16px 0 16px 18px"
+                labelPadding="18px 8px"
+                onClick={onSignIn}
+                style={{ width: 242, height: 64 }}
+                className="rounded-32"
+              />
+            </div>
+            {hasGoogleButton(source) ? (
+              <GoogleSignInOverlay source={source} onUnavailable={onGoogleUnavailable} />
+            ) : null}
+          </div>
         </div>
 
         {/* Both notices are live regions so they are announced, not only seen.
             They sit between the control and the copyright line, which is the
             only place the card has room the drawing does not already spend. */}
-        <div className="mt-20 flex flex-col items-center gap-8 empty:mt-0">
-          {refused ? (
-            <p role="alert" className="type-body text-center text-red-error">
-              Sign-in did not succeed. Please try again.
-            </p>
-          ) : null}
-          {!refused && notice === 'expired' ? (
-            <p role="status" className="type-body text-center text-ink-secondary">
-              Your session ended. Sign in again to continue.
-            </p>
-          ) : null}
-          {busy ? (
-            <p role="status" className="type-body text-center text-ink-secondary">
-              Signing in…
-            </p>
-          ) : null}
-        </div>
+        <SignInNotices refusalText={refusalText} expired={notice === 'expired'} busy={busy} />
 
         <span className="mt-[112px] type-body text-ink-primary">© 2026 CoDev. All rights reserved.</span>
       </div>

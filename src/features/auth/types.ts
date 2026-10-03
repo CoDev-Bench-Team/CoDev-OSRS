@@ -26,8 +26,12 @@ export type Office = (typeof OFFICES)[number];
  *  words, and the design system's Avatar never renders a photograph. */
 export type User = {
   id: string;
-  name: string;
-  email: string;
+  /** Absent when the current user publishes no name. The account cluster then
+   *  shows the role label, and the avatar stays empty rather than inventing
+   *  initials. Seeded users still set it. */
+  name?: string;
+  /** Absent when the current user publishes no email. */
+  email?: string;
   initials: string;
   role: Role;
   /** A token colour for the avatar. Optional — Avatar has its own default. */

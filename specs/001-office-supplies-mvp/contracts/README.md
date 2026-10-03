@@ -386,3 +386,15 @@ in `src/shared/ui/status.ts` no longer calls the unit register out of scope;
 `UNIT_STATUSES` models the unit statuses (spec 015 T009).
 
 Product behavior (roles, statuses, inventory rules) still lives in `spec.md` and `docs/process-flow.md`; those are domain requirements, not HTTP design.
+
+### 2026-10-02 — BEN-157 live comparison
+
+Compared the integration guide with the live Swagger document embedded in `https://codev-osrs-backend.vercel.app/swagger-ui-init.js` on 2026-10-02.
+
+The current user (`GET /auth/me`, and the body of `POST /auth/google`) publishes `id`, `googleSubject`, `email`, `firstName`, `lastName`, `avatarUrl`, `role` (`admin` | `employee`), `location` (`Cebu`, `Bacolod`, `Makati`, `Ortigas`, `Davao`), and timestamps. It does not publish a field named `name`. The shell's `User.name` is composed from `firstName` and `lastName`. `avatarUrl` is not shown; the avatar stays initials on a flat colour. An unrecognised role is not a session. An unrecognised office is left unset. `Role` stays `employee` | `admin`, and the office list stays `OFFICES`.
+
+Status and category maps are final. Statuses: `pending_approval`, `approved`, `ready_for_pickup`, `for_delivery`, `received`, `rejected`, `completed`, `cancelled`. The guide's display word for `completed` is `Complete`; the shell's status word is `Completed`. The map keeps the guide's word. Categories include the API spelling `Wifi`. The guide's statement that signing moves a request to completed is not encoded.
+
+The live Swagger document does not name a frontend Google client id. BEN-96 configures it as `VITE_GOOGLE_CLIENT_ID`, the Web client in the same Google Cloud project the API verifies. API-mode sign-in loads Google Identity Services and renders Google's button only when that variable is set. The id is not written into source. `VITE_COMPANY_DOMAIN` is an account-picker hint and is not an authorization control. An unset client id refuses API-mode sign-in. An unset `VITE_API_BASE_URL` keeps the seeded session, and that path does not load the Google script.
+
+Wiring gaps recorded while connecting the client: the current user has no `name` field, so the shell name is `firstName` plus `lastName`; `avatarUrl` is ignored. The Google client id is the environment variable above, not a Swagger field. `POST /auth/google` refusals put the explanation in `title` and the HTTP reason phrase in `detail` (`Unauthorized` for 401, `Forbidden` for 403). The sign-in screen shows `title` in that case. `GET /auth/me` 401 uses `Unauthorized` for both fields.

@@ -1,4 +1,7 @@
 # Client-side routing (ADR-0004): every address is the SPA's to resolve, so a
 # direct visit or reload on /profile, /catalog, /login … serves index.html
 # instead of Netlify's 404. Real files in dist/ still win over this rule.
+#
+# A Netlify build prepends `/auth/*` → VITE_API_BASE_URL above this line so the
+# session cookie stays on the Netlify host. This fallback must stay last.
 /*  /index.html  200

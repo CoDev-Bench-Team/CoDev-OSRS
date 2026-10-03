@@ -3,7 +3,8 @@
  *  Catalog checks, spec 006's Profile checks, spec 007's request panel
  *  (BEN-45), spec 009's My Requests (BEN-44), spec 011's Request List (BEN-43),
  *  spec 012's Accountability Form (BEN-136), spec 013's History (BEN-144),
- *  spec 014's Assets (BEN-48) and spec 015's Inventory (BEN-150).
+ *  spec 014's Assets (BEN-48), spec 015's Inventory (BEN-150), and the
+ *  BEN-157 session switch.
  *  Order matters:
  *  `check-profile-build` scans `dist/`, so it runs after `build`. Needs
  *  `npm run dev`; headless Chrome is started for you. Set OSRS_DEV_ORIGIN when the dev server took a port other than
@@ -28,6 +29,7 @@ const steps = [
   ['history (spec 013)', 'node', ['scripts/check-history.mjs']],
   ['assets (spec 014)', 'node', ['scripts/check-assets.mjs']],
   ['inventory (spec 015)', 'node', ['scripts/check-inventory.mjs']],
+  ['api session (BEN-157)', 'node', ['scripts/check-api-session.mjs']],
   ['build', 'npm', ['run', 'build']],
   ['profile build: lazy stub + SPA fallback (FR-010)', 'node', ['scripts/check-profile-build.mjs']],
 ];
