@@ -76,7 +76,7 @@ function StockBadge({ available }: { available: number | null }) {
 export function ReviewPanel({
   request,
   pickupOffices,
-  canComplete = true,
+  canComplete = false,
   reloadFailed,
   pending,
   notice,

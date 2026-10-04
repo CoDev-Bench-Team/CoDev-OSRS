@@ -114,7 +114,7 @@ export interface AdminRequestSource {
   get(id: string): Promise<ReviewRequest>;
   /** `false` withholds Complete: the Employee's signature completes the
    *  request, so there is no Admin complete (constitution 10.0.0 IV,
-   *  ADR-0013). Absent means `true`. */
+   *  ADR-0013). Absent means `false` (spec 017 FR-023). */
   readonly canComplete?: boolean;
   /** The pickup points offered for `Ready for Pickup`. They come from the
    *  source, never a literal in the panel (plan D7; contracts conflict 2). */

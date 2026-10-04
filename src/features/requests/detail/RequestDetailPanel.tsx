@@ -191,6 +191,7 @@ function DetailFooter({
   cancellable,
   inFlight,
   locked,
+  cannotSign,
   receivePrompt,
   receiveButton,
   on,
@@ -202,6 +203,8 @@ function DetailFooter({
   inFlight: { signing: boolean; receiving: boolean; cancelling: boolean };
   /** An action is still running: the entry points wait for it. */
   locked: boolean;
+  /** The account has no full name to sign with. */
+  cannotSign: boolean;
   receivePrompt: RefObject<HTMLParagraphElement | null>;
   receiveButton: RefObject<HTMLButtonElement | null>;
   on: {
@@ -221,7 +224,7 @@ function DetailFooter({
         <Button variant="ghost" onClick={on.leaveSign} disabled={signing}>
           Cancel
         </Button>
-        <Button type="submit" form={formId} disabled={signing}>
+        <Button type="submit" form={formId} disabled={signing || cannotSign}>
           {signing ? 'Signing…' : 'I acknowledge and sign'}
         </Button>
       </div>
@@ -282,9 +285,108 @@ function DetailFooter({
   return null;
 }
 
+/** The Accountability Form's flow: opening it, leaving it, and what a sent
+ *  signature comes back as (spec 012 D12, D13). */
+function useSignFlow(
+  send: (signature: Signature) => Promise<SignResult | null>,
+  panel: { setMode: (mode: Mode) => void; setRefusal: (message: string | null) => void; focus: (target: FocusTarget) => void },
+) {
+  const [signProblems, setSignProblems] = useState<PlacedSignProblems>(NO_SIGN_PROBLEMS);
+  const [signRefusal, setSignRefusal] = useState<string | null>(null);
+
+  const openSign = () => {
+    panel.setRefusal(null);
+    setSignProblems(NO_SIGN_PROBLEMS);
+    setSignRefusal(null);
+    panel.focus('heading');
+    panel.setMode('sign');
+  };
+
+  const leaveSign = (focus: FocusTarget) => {
+    panel.focus(focus);
+    panel.setMode('read');
+    setSignProblems(NO_SIGN_PROBLEMS);
+    setSignRefusal(null);
+  };
+
+  const sign = async (signature: Signature) => {
+    setSignProblems(NO_SIGN_PROBLEMS);
+    setSignRefusal(null);
+    const result = await send(signature);
+    if (!result) return; // closed: a toast reports it
+    // The page has reloaded; the panel reads `Completed` back.
+    if (result.ok) {
+      leaveSign('heading');
+      return;
+    }
+    // FR-011: the system refused the fields; the form stays, messages placed.
+    if (result.refusal === 'invalid') {
+      setSignProblems(placeSignProblems(result.problems));
+      return;
+    }
+    // FR-012: the system did not answer; allow a retry.
+    if (result.refusal === 'unavailable') {
+      setSignRefusal(SIGN_REFUSAL_COPY.unavailable);
+      return;
+    }
+    // FR-010: the request changed underneath; show it as it is now.
+    leaveSign('alert');
+    panel.setRefusal(result.detail ?? SIGN_REFUSAL_COPY['status-changed']);
+  };
+
+  return { signProblems, signRefusal, openSign, leaveSign, sign };
+}
+
+/** The panel's read view: the read-back, any refusal, and the signature link
+ *  or the line saying it was signed. */
+function ReadView({
+  request,
+  refusal,
+  pending,
+  alert,
+  signLink,
+  onOpenSign,
+}: {
+  request: EmployeeRequest;
+  refusal: string | null;
+  pending: boolean;
+  alert: RefObject<HTMLDivElement | null>;
+  signLink: RefObject<HTMLButtonElement | null>;
+  onOpenSign: () => void;
+}) {
+  const signable = request.status === 'Received' && !request.signedAt;
+  return (
+    <>
+      {refusal ? <RefusalAlert ref={alert} messages={[refusal]} /> : null}
+
+      <RequestReadBack request={request} />
+
+      {signable ? (
+        <button
+          ref={signLink}
+          type="button"
+          disabled={pending}
+          onClick={onOpenSign}
+          className={`hit-area ${ACTION_LINE} cursor-pointer border-none bg-transparent p-0 text-brand-primary-alt transition-osrs hover:text-brand-primary`}
+        >
+          <BoxiconsPenAlt />
+          Sign accountability form
+        </button>
+      ) : null}
+
+      {/* Says when the form was signed; signing completed the request. */}
+      {request.signedAt ? (
+        <p className={`${ACTION_LINE} text-ink-muted`}>
+          <BoxiconsPenAlt />
+          Accountability form signed · {formatDateTime(request.signedAt)}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function RequestDetailPanel({
   request,
-  canSign = true,
   signerName,
   pending = false,
   onClose,
@@ -293,9 +395,6 @@ export function RequestDetailPanel({
   onMarkReceived,
 }: {
   request: EmployeeRequest;
-  /** `false` withholds the Accountability Form and says why (spec 017
-   *  Story 4). */
-  canSign?: boolean;
   /** The signed-in Employee's full name, signed as-is. */
   signerName: string;
   /** An action on this request is still running, from this panel or one
@@ -317,8 +416,6 @@ export function RequestDetailPanel({
   // The panel's action in flight; closing the panel hands it to a toast.
   const actions = useDetailActions(request, { onCancel, onMarkReceived, onSign });
   const { cancelling: submitting, receiving, signing } = actions;
-  const [signProblems, setSignProblems] = useState<PlacedSignProblems>(NO_SIGN_PROBLEMS);
-  const [signRefusal, setSignRefusal] = useState<string | null>(null);
 
   const heading = useRef<HTMLHeadingElement>(null);
   const signLink = useRef<HTMLButtonElement>(null);
@@ -345,8 +442,6 @@ export function RequestDetailPanel({
 
   const cancellable = request.status === 'Pending Approval';
   const receivable = request.status === 'For Delivery' || request.status === 'Ready for Pickup';
-  const signable = request.status === 'Received' && !request.signedAt;
-  const isSigned = Boolean(request.signedAt);
 
   const backOut = () => {
     focusNext.current = 'heading';
@@ -383,46 +478,13 @@ export function RequestDetailPanel({
     setRefusal(receiveRefusal(result));
   };
 
-  const openSign = () => {
-    setRefusal(null);
-    setSignProblems(NO_SIGN_PROBLEMS);
-    setSignRefusal(null);
-    focusNext.current = 'heading';
-    setMode('sign');
-  };
-
-  const leaveSign = (focus: FocusTarget) => {
-    focusNext.current = focus;
-    setMode('read');
-    setSignProblems(NO_SIGN_PROBLEMS);
-    setSignRefusal(null);
-  };
-
-  const sign = async (signature: Signature) => {
-    setSignProblems(NO_SIGN_PROBLEMS);
-    setSignRefusal(null);
-    const result = await actions.sign(signature);
-    if (!result) return; // closed: a toast reports it
-    // The page has reloaded; the panel reads `Completed` back.
-    if (result.ok) {
-      leaveSign('heading');
-      return;
-    }
-    // FR-011: the system refused the fields; the form stays, messages placed.
-    if (result.refusal === 'invalid') {
-      setSignProblems(placeSignProblems(result.problems));
-      return;
-    }
-    // FR-012: the system did not answer; keep what was typed, allow a retry.
-    if (result.refusal === 'unavailable') {
-      setSignRefusal(SIGN_REFUSAL_COPY.unavailable);
-      return;
-    }
-    // FR-010: the request changed underneath; show it as it is now.
-    leaveSign('alert');
-    setRefusal(result.detail ?? SIGN_REFUSAL_COPY['status-changed']);
-  };
-
+  const { signProblems, signRefusal, openSign, leaveSign, sign } = useSignFlow(actions.sign, {
+    setMode,
+    setRefusal,
+    focus: (target) => {
+      focusNext.current = target;
+    },
+  });
 
   return (
     <SidePanel
@@ -455,6 +517,7 @@ export function RequestDetailPanel({
           cancellable={cancellable}
           inFlight={{ signing, receiving, cancelling: submitting }}
           locked={pending}
+          cannotSign={!signerName.trim()}
           receivePrompt={receivePrompt}
           receiveButton={receiveButton}
           on={{
@@ -487,40 +550,7 @@ export function RequestDetailPanel({
           onSign={(signature) => void sign(signature)}
         />
       ) : (
-        <>
-          {refusal ? <RefusalAlert ref={alert} messages={[refusal]} /> : null}
-
-          <RequestReadBack request={request} />
-
-          {/* Spec 017 Story 4: the API's sign would complete the request. */}
-          {signable && !canSign ? (
-            <p className={`${ACTION_LINE} text-ink-muted`}>
-              <BoxiconsPenAlt />
-              Signing is not available yet.
-            </p>
-          ) : null}
-
-          {signable && canSign ? (
-            <button
-              ref={signLink}
-              type="button"
-              disabled={pending}
-              onClick={openSign}
-              className={`hit-area ${ACTION_LINE} cursor-pointer border-none bg-transparent p-0 text-brand-primary-alt transition-osrs hover:text-brand-primary`}
-            >
-              <BoxiconsPenAlt />
-              Sign accountability form
-            </button>
-          ) : null}
-
-          {/* Says when the form was signed; signing completed the request. */}
-          {isSigned ? (
-            <p className={`${ACTION_LINE} text-ink-muted`}>
-              <BoxiconsPenAlt />
-              Accountability form signed · {formatDateTime(request.signedAt)}
-            </p>
-          ) : null}
-        </>
+        <ReadView request={request} refusal={refusal} pending={pending} alert={alert} signLink={signLink} onOpenSign={openSign} />
       )}
     </SidePanel>
   );

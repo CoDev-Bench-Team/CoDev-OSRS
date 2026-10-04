@@ -565,7 +565,7 @@ export function QueuePage({
           key={openRequest.id}
           request={openRequest}
           pickupOffices={source.pickupOffices}
-          canComplete={source.canComplete !== false}
+          canComplete={source.canComplete === true}
           reloadFailed={staleId === openRequest.id}
           pending={inFlight.get(openRequest.id) ?? null}
           notice={notice?.id === openRequest.id ? notice : undefined}

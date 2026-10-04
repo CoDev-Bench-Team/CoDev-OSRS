@@ -91,9 +91,6 @@ export interface EmployeeRequestSource {
   /** One request in full: lines, units and recorded times. The API's list
    *  rows carry no timeline, so the panel reads the request it opens. */
   get(user: User, id: string): Promise<EmployeeRequest>;
-  /** `false` withholds the Accountability Form and says signing is not
-   *  available. Absent means `true`. */
-  readonly canSign?: boolean;
   /** Cancel one of the Employee's own requests (spec 001 FR-009a). The reason
    *  is required whoever cancels (constitution 3.0.0 IV). */
   cancel(user: User, id: string, reason: string): Promise<CancelResult>;

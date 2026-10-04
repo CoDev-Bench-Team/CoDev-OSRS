@@ -58,7 +58,8 @@ export function AccountabilityForm({
 
   const [agreed, setAgreed] = useState(false);
   const [agreedMessage, setAgreedMessage] = useState<string | null>(null);
-  const [nameInvalid, setNameInvalid] = useState(false);
+  // No name on the account: said from the start, and nothing can be sent.
+  const nameMissing = !signerName.trim();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -66,7 +67,6 @@ export function AccountabilityForm({
     const name = signerName.trim();
     const agreeProblem = agreed ? null : read ? SIGN_COPY.agree : SIGN_COPY.readFirst;
     setAgreedMessage(agreeProblem);
-    setNameInvalid(!name);
     if (agreeProblem) {
       checkbox.current?.focus();
       return;
@@ -80,7 +80,7 @@ export function AccountabilityForm({
   // FR-005a: the read-first message goes the moment the gate opens.
   const ownAgreed = read && agreedMessage === SIGN_COPY.readFirst ? null : agreedMessage;
   const agreedShown = ownAgreed ?? (problems.agreed.length ? problems.agreed.join(' ') : undefined);
-  const nameShown = nameInvalid ? SIGN_COPY.name : problems.fullName.length ? problems.fullName.join(' ') : undefined;
+  const nameShown = nameMissing ? SIGN_COPY.name : problems.fullName.length ? problems.fullName.join(' ') : undefined;
   const topMessages = [...(refusal ? [refusal] : []), ...problems.form];
 
   return (

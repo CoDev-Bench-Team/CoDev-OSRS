@@ -63,7 +63,7 @@ for (const [needle, what] of ROUTES) {
 const outside = srcFiles.filter((p) => !p.includes('/shared/api/') && /\bfetch\(/.test(read(p)) && !p.includes('/auth/google'));
 check(outside.length === 0, 'no screen calls fetch itself', outside.map(rel).join(', '));
 
-console.log('\nSigning completes; there is no Admin complete (FR-023, FR-027; ADR-0013)');
+console.log('\nSigning completes; there is no Admin complete (FR-023, FR-051; ADR-0013)');
 const code = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 const apiText = apiFiles.map((p) => code(read(p))).join('\n');
 check((apiText.match(/\/sign`/g) ?? []).length === 1, 'the shared client defines one sign operation');
@@ -71,7 +71,6 @@ const patchTargets = read(join(root, 'src/shared/api/requests.ts')).match(/Updat
 check(patchTargets.length > 0 && !patchTargets.includes('completed') && !patchTargets.includes('received'), 'PATCH targets exclude completed and received');
 for (const p of apiSources) {
   const text = read(p);
-  check(!/canSign: false/.test(text), `${rel(p)} does not withhold signing`);
   if (/canComplete/.test(text)) check(/canComplete: false/.test(text), `${rel(p)} offers no Admin complete`);
 }
 
