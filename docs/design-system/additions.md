@@ -624,6 +624,16 @@ the mark red.
 
 ---
 
+### 4.2b The light Google label at rest is Grey 800 (2026-10-04)
+
+The file draws the light `Sign in with Google` label in `--osrs-google-gray`
+(`rgb(128,134,139)`), which reads as disabled on the login card. At the project
+owner's request the label at rest is `--color-osrs-google-gray-dark`
+(`rgb(60,64,67)`, Google Grey 800, the colour of Google's own light sign-in
+button label). On hover it turns `--color-brand-primary`, the brand red the
+app's other links use (owner's choice, 2026-10-04). It also passes AA on
+white, which the drawn grey (3.9:1) does not.
+
 ## Open questions for the designer
 
 1. Ratify or replace the responsive breakpoints in §3 — they are ours, not yours.

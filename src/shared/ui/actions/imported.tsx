@@ -136,7 +136,7 @@ export function SignInButton({
         style={labelPadding ? { padding: labelPadding } : undefined}
       >
         <span
-          className={`font-google text-18 font-medium leading-tight whitespace-nowrap transition-osrs ${dim} ${darkmode ? 'text-white' : 'text-osrs-google-gray group-hover:text-ink-primary'}`}
+          className={`font-google text-18 font-medium leading-tight whitespace-nowrap transition-osrs ${dim} ${darkmode ? 'text-white' : 'text-osrs-google-gray-dark group-hover:text-brand-primary'}`}
           style={{ letterSpacing: '0.005em' }}
         >
           {cta}

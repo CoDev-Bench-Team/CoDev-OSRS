@@ -146,9 +146,11 @@ export function TopBar({
                 <MdiLightClipboardText size={24} />
                 <span className="font-sans text-11 leading-tight whitespace-nowrap">Request List</span>
               </span>
-              <span className="flex h-22 w-22 items-center justify-center rounded-pill bg-brand-primary font-sans text-11 font-bold leading-tight text-white">
-                {requestListCount}
-              </span>
+              {requestListCount > 0 && (
+                <span className="flex h-22 w-22 items-center justify-center rounded-pill bg-brand-primary font-sans text-11 font-bold leading-tight text-white">
+                  {requestListCount}
+                </span>
+              )}
             </button>
           )}
 
