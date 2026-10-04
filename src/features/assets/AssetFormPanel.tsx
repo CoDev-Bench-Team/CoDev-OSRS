@@ -1,5 +1,6 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useState, type FormEvent } from 'react';
 import { Button, Field, FieldGroup, Select, SidePanel, TextArea, TextInput, usePanelTask, type TaskCopy } from '../../shared/ui';
+import { clearDraft, draftString, readDraft, writeDraft } from '../../shared/form-draft-cache';
 import { fieldErrors, isValidationProblem } from '../../shared/validation';
 import { CATEGORY_FIELDS, SPEC_LABEL, SPEC_PLACEHOLDER, draftForCategory, missingFields } from './category-fields';
 import { ImageField } from './ImageField';
@@ -45,6 +46,24 @@ function initial(asset?: Asset): FormState {
   };
 }
 
+/** The form from a draft kept under five minutes ago, over `base` (the asset
+ *  being updated, or the empty Add form). */
+function fromSaved(saved: Record<string, unknown> | undefined, base: FormState): FormState {
+  if (!saved) return base;
+  const category = draftString(saved, 'category');
+  const specs = saved.specs !== null && typeof saved.specs === 'object' ? (saved.specs as Record<string, unknown>) : {};
+  const image = draftString(saved, 'image');
+  return {
+    name: draftString(saved, 'name', base.name),
+    category: (CATEGORIES as readonly string[]).includes(category) ? (category as Category) : base.category,
+    model: draftString(saved, 'model', base.model),
+    description: draftString(saved, 'description', base.description),
+    image: 'image' in saved ? image || undefined : base.image,
+    specs: Object.fromEntries(SPEC_KEYS.map((k) => [k, typeof specs[k] === 'string' ? specs[k] : base.specs[k]])) as Record<SpecKey, string>,
+    lowStockThreshold: draftString(saved, 'lowStockThreshold', base.lowStockThreshold),
+  };
+}
+
 /** Digits only. Blank is not 0, and `Number` would read `0x10` or `1e2` as
  *  whole numbers the Admin never typed; all of them are refused. */
 function parseThreshold(typed: string): number {
@@ -81,7 +100,20 @@ export function AssetFormPanel({
 }) {
   const updating = !!asset;
   const title = updating ? 'Update Asset' : 'Add Asset';
-  const [form, setForm] = useState<FormState>(() => initial(asset));
+  // Kept for five minutes (shared/form-draft-cache.ts). Read once, before the
+  // first render, so an expired draft is already gone.
+  const draftName = asset ? `asset.${asset.id}` : 'asset.new';
+  const [form, setForm] = useState<FormState>(() => fromSaved(readDraft(draftName), initial(asset)));
+  const [pristine] = useState(() => JSON.stringify(initial(asset)));
+  useEffect(() => {
+    // Nothing changed from the asset (or the empty Add form): nothing to keep.
+    if (JSON.stringify(form) === pristine) {
+      clearDraft(draftName);
+      return;
+    }
+    // An image too large for storage is dropped from the draft, not the rest.
+    if (!writeDraft(draftName, form)) writeDraft(draftName, { ...form, image: undefined });
+  }, [draftName, form, pristine]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const rule = CATEGORY_FIELDS[form.category];
   const formId = useId();
@@ -122,7 +154,13 @@ export function AssetFormPanel({
           : 'Nothing was changed. Try again.',
       }),
     };
-    const result = await task.run('save', copy, () => onSave(draft));
+    const result = await task.run('save', copy, () =>
+      onSave(draft).then((saved) => {
+        // Cleared here too, so a save handed to a toast still clears it.
+        clearDraft(draftName);
+        return saved;
+      }),
+    );
     if (result.detached) return;
     if (result.ok) {
       onClose();
@@ -151,7 +189,14 @@ export function AssetFormPanel({
       onLeave={() => task.handOff()}
       footer={
         <div className="flex items-center justify-center gap-12">
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              clearDraft(draftName);
+              onClose();
+            }}
+            disabled={saving}
+          >
             Cancel
           </Button>
           <Button type="submit" form={formId} disabled={saving}>

@@ -307,6 +307,7 @@ export function CatalogItemPicker({
 export function UserPicker({
   users,
   value,
+  pendingName,
   onChange,
   error,
   disabled,
@@ -314,6 +315,9 @@ export function UserPicker({
   /** `null` while loading, `'failed'` if the directory could not be read. */
   users: readonly DirectoryUser[] | null | 'failed';
   value: string | undefined;
+  /** The chosen user's name from a restored draft, shown while the directory
+   *  loads. */
+  pendingName?: string;
   onChange: (userId: string | undefined) => void;
   error?: string;
   disabled?: boolean;
@@ -322,7 +326,7 @@ export function UserPicker({
   const list = failed ? [] : (users ?? []);
   const chosen = list.find((u) => u.id === value);
   const [query, setQuery] = useState<string | null>(null);
-  const typed = query ?? chosen?.name ?? '';
+  const typed = query ?? chosen?.name ?? (value && users === null ? (pendingName ?? '') : '');
   const found = query === null ? list : list.filter((u) => matches(query, u.name, u.email));
   const box = useCombobox(found, (user) => {
     onChange(user.id);

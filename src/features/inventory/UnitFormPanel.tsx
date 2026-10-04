@@ -11,6 +11,8 @@ import { refusal, useAttempt } from './inventory-store';
 import type { AddStatus, EditStatus, UnitDetail, UnitDraft } from './types';
 import { CatalogItemPicker, DeviceFields, FormAlert, FormFooter, PurchaseFields, RemoveUnitSection, UserPicker, type Device, type Purchase } from './unit-fields';
 import { statusOptions, withAssignee, withStatus } from './unit-rules';
+import { assetFromSnapshot, resolveAsset, snapshotOf } from './catalog-snapshot';
+import { clearDraft, draftString, readDraft, writeDraft } from '../../shared/form-draft-cache';
 import { today, validateUnit } from './unit-validation';
 import { userDirectory, type DirectoryUser } from './user-directory';
 
@@ -30,6 +32,8 @@ type FormState = Purchase &
     assignedToId?: string;
     description: string;
     attachmentUrl?: string;
+    /** A restored draft's assignee, shown until the user directory loads. */
+    assigneeName?: string;
   };
 
 const EMPTY: FormState = {
@@ -59,6 +63,39 @@ function fromUnit(unit: UnitDetail): FormState {
     description: unit.description ?? '',
     attachmentUrl: unit.attachmentUrl,
   };
+}
+
+/** Add Single Unit's form from a draft saved under five minutes ago. Secrets
+ *  were never stored; the catalog item is resolved by id from `assets`. */
+function fromSaved(saved: Record<string, unknown> | undefined, assets: readonly Asset[] | null): FormState {
+  if (!saved) return EMPTY;
+  const location = draftString(saved, 'location');
+  const status = draftString(saved, 'status');
+  const assignedToId = draftString(saved, 'assignedToId');
+  const attachmentUrl = draftString(saved, 'attachmentUrl');
+  return {
+    ...EMPTY,
+    asset: resolveAsset(assets, assetFromSnapshot(saved.asset)),
+    pr: draftString(saved, 'pr'),
+    price: draftString(saved, 'price'),
+    supplier: draftString(saved, 'supplier'),
+    purchasedAt: draftString(saved, 'purchasedAt'),
+    serialNumber: draftString(saved, 'serialNumber'),
+    location: (OFFICES as readonly string[]).includes(location) ? (location as Office) : EMPTY.location,
+    status: (statusOptions('add') as readonly string[]).includes(status) ? (status as AddStatus) : undefined,
+    assignedToId: assignedToId || undefined,
+    assigneeName: draftString(saved, 'assigneeName') || undefined,
+    description: draftString(saved, 'description'),
+    attachmentUrl: attachmentUrl || undefined,
+  };
+}
+
+/** What Add Single Unit keeps: everything but the secrets, and the catalog
+ *  item as a snapshot (the full record carries its image as a data URI). */
+function toSaved(form: FormState, users: DirectoryUser[] | null | 'failed'): Record<string, unknown> {
+  const { asset, bitlockerIdentifier: _id, recoveryPin: _pin, assigneeName, ...rest } = form;
+  const chosen = Array.isArray(users) ? users.find((u) => u.id === form.assignedToId)?.name : undefined;
+  return { ...rest, asset: snapshotOf(asset), assigneeName: form.assignedToId ? (chosen ?? assigneeName) : undefined };
 }
 
 /** The draft the form submits. A Reserved unit's carries no status, user or
@@ -239,7 +276,14 @@ function AssignmentFields({
   const reserved = options === null;
   return (
     <FieldGroup heading="ASSIGNMENT">
-      <UserPicker users={users} value={reserved ? undefined : form.assignedToId} disabled={reserved} error={errors.assignedToId} onChange={onAssignee} />
+      <UserPicker
+        users={users}
+        value={reserved ? undefined : form.assignedToId}
+        pendingName={form.assigneeName}
+        disabled={reserved}
+        error={errors.assignedToId}
+        onChange={onAssignee}
+      />
       <Field label="Office" required error={errors.location}>
         {({ id, required, invalid, describedBy }) => (
           <Select
@@ -320,11 +364,13 @@ type FooterProps = {
   removing: boolean;
   onCancelRemoval: () => void;
   onRetry: () => void;
+  /** Cancel on Add discards the kept draft. */
+  onDiscard: () => void;
 };
 
 /** The footer for each load state: none while loading, Close (and Try again
  *  after a failure) while not ready, Cancel and the submit button once ready. */
-function panelFooter({ loaded, formId, saving, adding, removing, onCancelRemoval, onRetry }: FooterProps) {
+function panelFooter({ loaded, formId, saving, adding, removing, onCancelRemoval, onRetry, onDiscard }: FooterProps) {
   if (loaded.kind === 'loading') return undefined;
   if (loaded.kind !== 'ready') {
     return (leave: () => void) => <NoticeFooter onRetry={loaded.kind === 'failed' ? onRetry : undefined} onClose={leave} />;
@@ -335,7 +381,14 @@ function panelFooter({ loaded, formId, saving, adding, removing, onCancelRemoval
       saving={saving}
       submitLabel={removing ? 'Confirm Removal' : 'Save Changes'}
       savingLabel={removing ? 'Removing…' : adding ? 'Adding…' : 'Saving…'}
-      onCancel={removing ? onCancelRemoval : leave}
+      onCancel={
+        removing
+          ? onCancelRemoval
+          : () => {
+              onDiscard();
+              leave();
+            }
+      }
     />
   );
 }
@@ -355,7 +408,27 @@ function useUnitFormPanel(props: Props) {
   const { state: assetsState } = useAssets({ enabled: props.mode === 'add' });
   const assets = assetsState.kind === 'loaded' ? assetsState.assets : null;
   const users = useUsers();
-  const [form, setForm] = useState<FormState>(EMPTY);
+  // Add mode only: read once, before the first render, so an expired draft
+  // is already gone (shared/form-draft-cache.ts).
+  const [saved] = useState(() => (props.mode === 'add' ? readDraft('unit.single') : undefined));
+  // The draft's catalog item shows at once from its snapshot.
+  const [form, setForm] = useState<FormState>(() => fromSaved(saved, assets));
+  // Once the catalog loads, the full record replaces the snapshot.
+  const [restoring, setRestoring] = useState(assets === null);
+  if (restoring && (assets || assetsState.kind === 'failed')) {
+    setRestoring(false);
+    if (assets) setForm((f) => ({ ...f, asset: resolveAsset(assets, f.asset) }));
+  }
+  useEffect(() => {
+    if (props.mode !== 'add') return;
+    const value = toSaved(form, users);
+    if (JSON.stringify(value) === JSON.stringify(toSaved(EMPTY, null))) {
+      clearDraft('unit.single');
+      return;
+    }
+    // An attachment too large for storage is dropped from the draft, not the rest.
+    if (!writeDraft('unit.single', value)) writeDraft('unit.single', { ...value, attachmentUrl: undefined });
+  }, [props.mode, form, users]);
   const [errors, setErrors] = useState<Errors>({});
   const [removing, setRemoving] = useState(false);
   const [reason, setReason] = useState('');
@@ -427,7 +500,14 @@ function useUnitFormPanel(props: Props) {
     }
     const adding = props.mode === 'add';
     const name = adding ? (draft.serialNumber?.trim() ? `unit ${draft.serialNumber.trim()}` : 'unit') : unitName;
-    void attempt(() => (props.mode === 'edit' ? props.onUpdate(props.unitId, draft) : props.onCreate(draft)), {
+    const send = () =>
+      props.mode === 'edit'
+        ? props.onUpdate(props.unitId, draft)
+        : props.onCreate(draft).then((created) => {
+            clearDraft('unit.single');
+            return created;
+          });
+    void attempt(send, {
       loading: adding ? `Adding ${name}…` : `Saving ${name}…`,
       done: `${capitalize(name)} ${adding ? 'added' : 'saved'}`,
       failed: 'The unit could not be saved',
@@ -582,6 +662,9 @@ export function UnitFormPanel(props: Props) {
         removing: editor.removing,
         onCancelRemoval: editor.leaveRemoving,
         onRetry: editor.retry,
+        onDiscard: () => {
+          if (!editor.editing) clearDraft('unit.single');
+        },
       })}
     >
       {editor.loaded.kind !== 'ready' ? <UnitLoadNotice loaded={editor.loaded} /> : <UnitFormBody editor={editor} />}
