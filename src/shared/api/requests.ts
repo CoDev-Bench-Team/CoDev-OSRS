@@ -77,6 +77,13 @@ export function receiveRequest(id: string): Promise<unknown> {
   return apiRequest(`${one(id)}/receive`, { method: 'POST' });
 }
 
+/** `POST /requests/:id/sign`, the owning Employee only. Records the
+ *  Accountability Form and completes the request in the same write
+ *  (constitution 10.0.0 IV, ADR-0013). A session-ending write (BEN-157). */
+export function signRequest(id: string, body: { agreed: true; fullName: string }): Promise<unknown> {
+  return apiRequest(`${one(id)}/sign`, { method: 'POST', body });
+}
+
 /** `GET /requests/counts`: `total`, `byStatus`, `inProcessing`. Added by
  *  BEN-159; reused by BEN-160. */
 export function requestCounts(params: RequestFilters): Promise<unknown> {

@@ -24,6 +24,7 @@ export {
   getRequest,
   listRequests,
   receiveRequest,
+  signRequest,
   requestCounts,
   requestHistory,
   updateRequestStatus,

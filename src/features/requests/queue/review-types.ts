@@ -112,8 +112,9 @@ export interface AdminRequestSource {
   /** One request in full, for the panel and for a deep link a page does not
    *  hold. */
   get(id: string): Promise<ReviewRequest>;
-  /** `false` withholds Complete: the API publishes no Admin complete (spec 017
-   *  Story 4, contracts conflict 12). Absent means `true`. */
+  /** `false` withholds Complete: the Employee's signature completes the
+   *  request, so there is no Admin complete (constitution 10.0.0 IV,
+   *  ADR-0013). Absent means `true`. */
   readonly canComplete?: boolean;
   /** The pickup points offered for `Ready for Pickup`. They come from the
    *  source, never a literal in the panel (plan D7; contracts conflict 2). */

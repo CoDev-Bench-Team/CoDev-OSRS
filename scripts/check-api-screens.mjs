@@ -2,7 +2,7 @@
  *
  *  Seeded mode is covered by every other check, which runs unedited against a
  *  dev server with `VITE_API_BASE_URL` unset. This one reads the source tree:
- *  one definition per published route, no sign, nothing sent that the
+ *  one definition per published route, nothing sent that the
  *  contract does not take, and no secret or user list where it must not be.
  *  The mapper fixtures (T003) extend it once the live field record exists. */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -63,17 +63,16 @@ for (const [needle, what] of ROUTES) {
 const outside = srcFiles.filter((p) => !p.includes('/shared/api/') && /\bfetch\(/.test(read(p)) && !p.includes('/auth/google'));
 check(outside.length === 0, 'no screen calls fetch itself', outside.map(rel).join(', '));
 
-console.log('\nSign and Complete are withheld (Story 4, FR-022 to FR-025)');
+console.log('\nSigning completes; there is no Admin complete (FR-023, FR-027; ADR-0013)');
 const code = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 const apiText = apiFiles.map((p) => code(read(p))).join('\n');
-check(!apiText.includes('/sign'), 'no sign operation exists in the shared client');
+check((apiText.match(/\/sign`/g) ?? []).length === 1, 'the shared client defines one sign operation');
 const patchTargets = read(join(root, 'src/shared/api/requests.ts')).match(/UpdateRequestStatusBody =([\s\S]*?);\n/)?.[1] ?? '';
 check(patchTargets.length > 0 && !patchTargets.includes('completed') && !patchTargets.includes('received'), 'PATCH targets exclude completed and received');
 for (const p of apiSources) {
   const text = read(p);
-  if (/canSign|canComplete/.test(text)) {
-    check(/canSign: false|canComplete: false/.test(text), `${rel(p)} withholds what it declares`);
-  }
+  check(!/canSign: false/.test(text), `${rel(p)} does not withhold signing`);
+  if (/canComplete/.test(text)) check(/canComplete: false/.test(text), `${rel(p)} offers no Admin complete`);
 }
 
 console.log('\nNothing sent that the contract does not take (plan D12)');

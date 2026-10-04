@@ -20,13 +20,13 @@ import { RequestReadBack } from './RequestReadBack';
  *    the items and cannot be undone; then the request is `Received`;
  *  - **Sign accountability form**, only on a `Received` request not yet signed
  *    (spec 012 FR-001). It turns the panel into the Accountability Form, 564px
- *    wide. A signature the system accepts is recorded on the request; the
- *    status stays `Received`, and the panel says it was signed (FR-009).
+ *    wide. A signature the system accepts completes the request in the same
+ *    write, and the panel reads `Completed` back and says it was signed
+ *    (constitution 10.0.0 IV, ADR-0013).
  *
- *  The Employee or an Admin sets `Received` (constitution 7.0.0 IV). Nothing
- *  here sets `Completed`, and there is no
- *  *Complete Request* control: `04.1` draws one, but only an Admin completes
- *  (spec 012 FR-001a). A cancelled or rejected request reads back its reason.
+ *  The Employee or an Admin sets `Received` (constitution 7.0.0 IV). There is
+ *  no separate *Complete Request* control: signing is the completion. A
+ *  cancelled or rejected request reads back its reason.
  *  Ownership needs no check here: the page only ever holds the signed-in
  *  Employee's own requests. */
 const REFUSAL_COPY: Record<Exclude<CancelResult, { ok: true }>['refusal'], string> = {
@@ -285,6 +285,7 @@ function DetailFooter({
 export function RequestDetailPanel({
   request,
   canSign = true,
+  signerName,
   pending = false,
   onClose,
   onCancel,
@@ -295,6 +296,8 @@ export function RequestDetailPanel({
   /** `false` withholds the Accountability Form and says why (spec 017
    *  Story 4). */
   canSign?: boolean;
+  /** The signed-in Employee's full name, signed as-is. */
+  signerName: string;
   /** An action on this request is still running, from this panel or one
    *  closed since: every action waits for it. */
   pending?: boolean;
@@ -343,7 +346,7 @@ export function RequestDetailPanel({
   const cancellable = request.status === 'Pending Approval';
   const receivable = request.status === 'For Delivery' || request.status === 'Ready for Pickup';
   const signable = request.status === 'Received' && !request.signedAt;
-  const isSigned = request.status === 'Received' && Boolean(request.signedAt);
+  const isSigned = Boolean(request.signedAt);
 
   const backOut = () => {
     focusNext.current = 'heading';
@@ -400,7 +403,7 @@ export function RequestDetailPanel({
     setSignRefusal(null);
     const result = await actions.sign(signature);
     if (!result) return; // closed: a toast reports it
-    // FR-009: the page has reloaded; the panel reads `Received` back.
+    // The page has reloaded; the panel reads `Completed` back.
     if (result.ok) {
       leaveSign('heading');
       return;
@@ -480,6 +483,7 @@ export function RequestDetailPanel({
           submitting={signing}
           problems={signProblems}
           refusal={signRefusal}
+          signerName={signerName}
           onSign={(signature) => void sign(signature)}
         />
       ) : (
@@ -509,7 +513,7 @@ export function RequestDetailPanel({
             </button>
           ) : null}
 
-          {/* D18: signing changes no status, so this says it landed. */}
+          {/* Says when the form was signed; signing completed the request. */}
           {isSigned ? (
             <p className={`${ACTION_LINE} text-ink-muted`}>
               <BoxiconsPenAlt />

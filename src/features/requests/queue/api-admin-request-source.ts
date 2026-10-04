@@ -139,7 +139,7 @@ export const apiAdminRequestSource: AdminRequestSource = {
   },
 
   async complete() {
-    // No Admin complete is published (contracts conflict 12).
+    // The Employee's signature completes the request (ADR-0013).
     return { ok: false, refusal: 'unavailable' };
   },
 };

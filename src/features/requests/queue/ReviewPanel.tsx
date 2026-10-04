@@ -90,7 +90,7 @@ export function ReviewPanel({
 }: {
   request: ReviewRequest;
   pickupOffices: readonly Office[];
-  /** `false` withholds Complete (spec 017 Story 4, contracts conflict 12). */
+  /** `false` withholds Complete: signing completes (ADR-0013). */
   canComplete?: boolean;
   /** The last transition went through but the reload after it failed. The
    *  panel keeps the last snapshot and says so (plan D3). */

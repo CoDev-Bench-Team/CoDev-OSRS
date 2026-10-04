@@ -287,6 +287,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
       {open ? <RequestDetailPanel
           request={open}
           canSign={source.canSign !== false}
+          signerName={user?.name ?? ''}
           pending={busyIds.has(open.id)}
           onClose={closePanel}
           onCancel={cancel}

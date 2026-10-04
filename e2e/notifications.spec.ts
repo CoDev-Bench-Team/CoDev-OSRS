@@ -4,7 +4,7 @@ import { signIn, switchAccount } from './fixtures/session';
 import {
   addDavaoUnits,
   encodeAsset,
-  expectSignWithheld,
+  signAccountabilityForm,
   openMine,
   openReview,
   reopenReview,
@@ -63,11 +63,11 @@ test('each transition records the template the product exposes, including Mayaâ€
 
   await switchAccount(page, 'Maya Santos');
   await openMine(page, id);
-  await expectSignWithheld(page);
-  test.info().annotations.push({
-    type: 'contract-gap',
-    description:
-      'Sign and Complete are withheld while the published /sign completes the request and no Admin complete exists (spec 017 Story 4, contracts conflict 12). The demo path stops at Received.',
+  await signAccountabilityForm(page, 'Maya Santos');
+  await recordNotification(page, {
+    template: 'Status changed',
+    detail: 'Received to Completed, when Maya signs the Accountability Form.',
+    includes: ['Received', 'Completed'],
   });
 
   await switchAccount(page, 'Maya Santos');

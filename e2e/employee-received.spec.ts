@@ -4,7 +4,7 @@ import { expectDavaoStock } from './fixtures/stock';
 import {
   addDavaoUnits,
   encodeAsset,
-  expectSignWithheld,
+  signAccountabilityForm,
   openMine,
   openReview,
   reopenReview,
@@ -24,7 +24,7 @@ test('a request Maya does not own reads the same as one that does not exist', as
   await expect(page.getByText('That request is not available. It may not exist, or it may not be yours to view.')).toBeVisible();
 });
 
-test('Maya marks her own handover received, and signing is withheld', async ({ page }) => {
+test('Maya marks her own handover received, then signs and completes it', async ({ page }) => {
   await signIn(page, 'Ethan Cruz');
   await encodeAsset(page, ASSET);
   await addDavaoUnits(page, ASSET, UNITS);
@@ -52,10 +52,5 @@ test('Maya marks her own handover received, and signing is withheld', async ({ p
   await switchAccount(page, 'Maya Santos');
   await openMine(page, id);
   await expect(page.getByRole('dialog').getByText('Received', { exact: true }).first()).toBeVisible();
-  await expectSignWithheld(page);
-  test.info().annotations.push({
-    type: 'contract-gap',
-    description:
-      'Sign and Complete are withheld while the published /sign completes the request and no Admin complete exists (spec 017 Story 4, contracts conflict 12). The demo path stops at Received.',
-  });
+  await signAccountabilityForm(page, 'Maya Santos');
 });

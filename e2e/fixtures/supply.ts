@@ -138,11 +138,22 @@ export async function setHandover(page: Page, status: string, pickup?: string) {
   await settle(page);
 }
 
-/** Sign is withheld while the published `/sign` completes the request
- *  (spec 017 Story 4, contracts conflict 12): the owner of a `Received`
- *  request sees why, and no sign control. */
-export async function expectSignWithheld(page: Page) {
+/** The owner of a `Received` request signs the Accountability Form: reads the
+ *  acknowledgement to its end, ticks the agreement, and signs with the full
+ *  name the form prefills and does not let them edit. Signing completes the
+ *  request (constitution 10.0.0 IV, ADR-0013). */
+export async function signAccountabilityForm(page: Page, fullName: string) {
   const dialog = page.getByRole('dialog');
-  await expect(dialog.getByText('Signing is not available yet.')).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Sign accountability form' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Sign accountability form' }).click();
+  const name = dialog.getByRole('textbox', { name: /Full name/ });
+  await expect(name).toHaveValue(fullName);
+  await expect(name).not.toBeEditable();
+  await dialog.locator('[role="region"][aria-label="Acknowledgement"]').evaluate((box) => {
+    box.scrollTop = box.scrollHeight;
+    box.dispatchEvent(new Event('scroll'));
+  });
+  await dialog.getByRole('checkbox', { name: 'I have read and agree to the above' }).check();
+  await dialog.getByRole('button', { name: 'I acknowledge and sign' }).click();
+  await expect(dialog.getByText('Completed', { exact: true }).first()).toBeVisible();
+  await expect(dialog.getByText(/Accountability form signed/)).toBeVisible();
 }

@@ -4,7 +4,7 @@ import { expectDavaoStock } from './fixtures/stock';
 import {
   addDavaoUnits,
   encodeAsset,
-  expectSignWithheld,
+  signAccountabilityForm,
   openMine,
   openReview,
   reopenReview,
@@ -16,7 +16,7 @@ const ASSET = 'E2E Pipeline Mouse';
 const UNITS = 10;
 const QTY = 3;
 
-test('pickup path reserves, assigns on receipt, and withholds sign and Complete', async ({ page }) => {
+test('pickup path reserves, assigns on receipt, and completes when Maya signs', async ({ page }) => {
   await signIn(page, 'Ethan Cruz');
   await encodeAsset(page, ASSET);
   await addDavaoUnits(page, ASSET, UNITS);
@@ -52,15 +52,8 @@ test('pickup path reserves, assigns on receipt, and withholds sign and Complete'
   await switchAccount(page, 'Maya Santos');
   await openMine(page, id);
   await expect(page.getByRole('dialog').getByText('Received', { exact: true }).first()).toBeVisible();
-  await expectSignWithheld(page);
+  await signAccountabilityForm(page, 'Maya Santos');
 
   await switchAccount(page, 'Ethan Cruz');
   await expectDavaoStock(page, ASSET, { available: UNITS - QTY, reserved: 0, units: UNITS });
-  await openReview(page, id);
-  await expect(page.getByRole('dialog').getByRole('button', { name: 'Complete' })).toHaveCount(0);
-  test.info().annotations.push({
-    type: 'contract-gap',
-    description:
-      'Sign and Complete are withheld while the published /sign completes the request and no Admin complete exists (spec 017 Story 4, contracts conflict 12). The demo path stops at Received.',
-  });
 });

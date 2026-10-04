@@ -14,10 +14,9 @@ import type { Page, Route } from '@playwright/test';
  *
  *  Response shapes follow the field names the SPA's mappers read. Until the
  *  T0 live field record lands (spec 017 plan D15), those names are
- *  provisional, and this fake is changed with the mappers, never apart. It
- *  deliberately mirrors the API where the API conflicts with the
- *  constitution — `/sign` completes, as published (contracts conflict 12) —
- *  because the SPA must not call it. */
+ *  provisional, and this fake is changed with the mappers, never apart.
+ *  `/sign` completes the request, as published and as constitution 10.0.0
+ *  IV now requires (ADR-0013). */
 
 type Role = 'employee' | 'admin';
 type Office = 'Cebu' | 'Bacolod' | 'Makati' | 'Ortigas' | 'Davao';
@@ -77,6 +76,7 @@ type Request = {
   pickupLocation: string | null;
   rejectionReason: string | null;
   cancellationReason: string | null;
+  receivedSignature: string | null;
   createdAt: string;
   receivedAt: string | null;
   resolvedAt: string | null;
@@ -276,6 +276,7 @@ export class FakeApi {
       pickupLocation: request.pickupLocation,
       rejectionReason: request.rejectionReason,
       cancellationReason: request.cancellationReason,
+      receivedSignature: request.receivedSignature,
       createdAt: request.createdAt,
       receivedAt: request.receivedAt,
       resolvedAt: request.resolvedAt,
@@ -350,6 +351,7 @@ export class FakeApi {
       pickupLocation: null,
       rejectionReason: null,
       cancellationReason: null,
+      receivedSignature: null,
       createdAt: at,
       receivedAt: null,
       resolvedAt: null,
@@ -614,9 +616,16 @@ export class FakeApi {
         return { body: this.requestJson(request) };
       }
       if (action === 'sign' && method === 'POST') {
-        // As published: signing completes (contracts conflict 12). The SPA
-        // never calls this; a test that sees it called has found a defect.
-        throw new Problem(500, 'The SPA must not call /sign while contracts conflict 12 is open.');
+        // As published: the owning Employee signs a `received` request, and
+        // signing completes it (constitution 10.0.0 IV, ADR-0013).
+        if (user.role !== 'employee') throw new Problem(403, 'Insufficient permissions.');
+        if (body.agreed !== true) throw invalid('#/agreed', 'You must agree to the accountability conditions to sign.');
+        const fullName = String(body.fullName ?? '').trim();
+        if (!fullName) throw invalid('#/fullName', 'fullName is required to sign the form.');
+        if (request.status !== 'received') this.conflict(request, 'signed for');
+        request.receivedSignature = fullName;
+        this.move(request, 'completed');
+        return { body: this.requestJson(request) };
       }
     }
 
