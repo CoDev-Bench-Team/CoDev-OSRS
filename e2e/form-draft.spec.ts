@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures/test';
-import { signIn } from './fixtures/session';
+import { signIn, switchAccount } from './fixtures/session';
 import { encodeAsset } from './fixtures/supply';
 
 /** A click outside a side panel keeps what was typed for five minutes; Cancel
@@ -79,4 +79,68 @@ test('Add Multiple Units keeps rows and serials after a click outside, but never
   await expect(dialog).toBeHidden();
   await open();
   await expect(dialog.getByRole('group', { name: 'Unit 2' })).toHaveCount(0);
+});
+
+test('reopening a draft without a change does not renew it, and signing out removes it', async ({ page }) => {
+  await signIn(page, 'Ethan Cruz');
+  await page.getByRole('link', { name: 'Assets' }).click();
+  const dialog = page.getByRole('dialog');
+  const savedAt = () =>
+    page.evaluate(() => (JSON.parse(localStorage.getItem('osrs.draft.asset.new') ?? '{}') as { savedAt?: number }).savedAt);
+
+  await page.getByRole('button', { name: '+ Add Asset' }).click();
+  await dialog.getByRole('textbox', { name: /Item Name/ }).fill('Kept Headset');
+  await page.mouse.click(5, 300);
+  await expect(dialog).toBeHidden();
+  const first = await savedAt();
+  expect(first).toBeDefined();
+
+  await page.getByRole('button', { name: '+ Add Asset' }).click();
+  await expect(dialog.getByRole('textbox', { name: /Item Name/ })).toHaveValue('Kept Headset');
+  await page.mouse.click(5, 300);
+  await expect(dialog).toBeHidden();
+  expect(await savedAt()).toBe(first);
+
+  await switchAccount(page, 'Ethan Cruz');
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('osrs.draft.')))).toEqual([]);
+});
+
+test('a draft changed and then changed back keeps the value shown last', async ({ page }) => {
+  await signIn(page, 'Ethan Cruz');
+  await page.getByRole('link', { name: 'Assets' }).click();
+  const dialog = page.getByRole('dialog');
+  const name = dialog.getByRole('textbox', { name: /Item Name/ });
+  const reopen = async () => {
+    await page.mouse.click(5, 300);
+    await expect(dialog).toBeHidden();
+    await page.getByRole('button', { name: '+ Add Asset' }).click();
+  };
+
+  await page.getByRole('button', { name: '+ Add Asset' }).click();
+  await name.fill('Laptop');
+  await reopen();
+  await name.fill('Laptopx');
+  await name.fill('Laptop');
+  await reopen();
+  await expect(name).toHaveValue('Laptop');
+});
+
+test('a restored draft cleared by hand and typed again is kept', async ({ page }) => {
+  await signIn(page, 'Ethan Cruz');
+  await page.getByRole('link', { name: 'Assets' }).click();
+  const dialog = page.getByRole('dialog');
+  const name = dialog.getByRole('textbox', { name: /Item Name/ });
+  const reopen = async () => {
+    await page.mouse.click(5, 300);
+    await expect(dialog).toBeHidden();
+    await page.getByRole('button', { name: '+ Add Asset' }).click();
+  };
+
+  await page.getByRole('button', { name: '+ Add Asset' }).click();
+  await name.fill('A');
+  await reopen();
+  await name.fill('');
+  await name.fill('A');
+  await reopen();
+  await expect(name).toHaveValue('A');
 });

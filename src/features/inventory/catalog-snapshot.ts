@@ -1,5 +1,4 @@
-import type { Asset } from '../assets/types';
-import { CATEGORIES, type Category } from '../assets/types';
+import { CATEGORIES, type Asset, type Category } from '../assets/types';
 
 /** The few fields of a chosen catalog item a unit draft keeps, so a restored
  *  draft shows its item at once instead of after the asset list loads. The

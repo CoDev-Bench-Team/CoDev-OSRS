@@ -1,6 +1,6 @@
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { Button, Field, FieldGroup, Select, SidePanel, TextArea, TextInput, usePanelTask, type TaskCopy } from '../../shared/ui';
-import { clearDraft, draftString, readDraft, writeDraft } from '../../shared/form-draft-cache';
+import { draftOneOf, draftString, readDraft, savingDraft, useDraftWriter } from '../../shared/form-draft-cache';
 import { fieldErrors, isValidationProblem } from '../../shared/validation';
 import { CATEGORY_FIELDS, SPEC_LABEL, SPEC_PLACEHOLDER, draftForCategory, missingFields } from './category-fields';
 import { ImageField } from './ImageField';
@@ -50,18 +50,48 @@ function initial(asset?: Asset): FormState {
  *  being updated, or the empty Add form). */
 function fromSaved(saved: Record<string, unknown> | undefined, base: FormState): FormState {
   if (!saved) return base;
-  const category = draftString(saved, 'category');
   const specs = saved.specs !== null && typeof saved.specs === 'object' ? (saved.specs as Record<string, unknown>) : {};
-  const image = draftString(saved, 'image');
   return {
     name: draftString(saved, 'name', base.name),
-    category: (CATEGORIES as readonly string[]).includes(category) ? (category as Category) : base.category,
+    category: draftOneOf(saved, 'category', CATEGORIES, base.category),
     model: draftString(saved, 'model', base.model),
     description: draftString(saved, 'description', base.description),
-    image: 'image' in saved ? image || undefined : base.image,
+    image: storedImage(saved, base.image),
     specs: Object.fromEntries(SPEC_KEYS.map((k) => [k, typeof specs[k] === 'string' ? specs[k] : base.specs[k]])) as Record<SpecKey, string>,
     lowStockThreshold: draftString(saved, 'lowStockThreshold', base.lowStockThreshold),
   };
+}
+
+/** The asset a draft was made over, short enough to store: every field, with
+ *  the image (a data URI, up to megabytes) reduced to its length and a hash. */
+function fingerprint(asset?: Asset): string {
+  const { image = '', ...rest } = initial(asset);
+  let hash = 0;
+  for (let i = 0; i < image.length; i += 1) hash = (hash * 31 + image.charCodeAt(i)) | 0;
+  return JSON.stringify({ ...rest, image: image ? `${image.length}:${hash}` : null });
+}
+
+/** A draft's `image`: `UNCHANGED` is the asset's own (never stored, it can run
+ *  to megabytes), `null` an image the Admin removed, a data URI a new one.
+ *  Absent: a new image too large to keep. */
+const UNCHANGED = 'unchanged';
+
+function draftImage(image: string | undefined, own: string | undefined): string | null {
+  if (image === own) return UNCHANGED;
+  return image ?? null;
+}
+
+function storedImage(saved: Record<string, unknown>, own: string | undefined): string | undefined {
+  if (saved.image === null) return undefined;
+  if (typeof saved.image === 'string' && saved.image !== UNCHANGED) return saved.image;
+  return own;
+}
+
+/** Said under the image when a restored draft could not keep a new image. */
+const IMAGE_NOT_KEPT = 'Your new image was too large to keep in the draft. Choose it again.';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Digits only. Blank is not 0, and `Number` would read `0x10` or `1e2` as
@@ -103,18 +133,31 @@ export function AssetFormPanel({
   // Kept for five minutes (shared/form-draft-cache.ts). Read once, before the
   // first render, so an expired draft is already gone.
   const draftName = asset ? `asset.${asset.id}` : 'asset.new';
-  const [form, setForm] = useState<FormState>(() => fromSaved(readDraft(draftName), initial(asset)));
-  const [pristine] = useState(() => JSON.stringify(initial(asset)));
-  useEffect(() => {
-    // Nothing changed from the asset (or the empty Add form): nothing to keep.
-    if (JSON.stringify(form) === pristine) {
-      clearDraft(draftName);
-      return;
-    }
-    // An image too large for storage is dropped from the draft, not the rest.
-    if (!writeDraft(draftName, form)) writeDraft(draftName, { ...form, image: undefined });
-  }, [draftName, form, pristine]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  // The asset as it was when the draft was made. A draft over an asset that
+  // has changed since (another Admin saved it) is dropped, never applied over
+  // the newer values.
+  const [base] = useState(() => fingerprint(asset));
+  const [untouched] = useState(() => JSON.stringify({ base, form: { ...initial(asset), image: UNCHANGED } }));
+  const [saved] = useState(() => {
+    const draft = readDraft(draftName);
+    return draft?.base === base && isRecord(draft.form) ? draft.form : undefined;
+  });
+  const [form, setForm] = useState<FormState>(() => fromSaved(saved, initial(asset)));
+  const discard = useDraftWriter(
+    draftName,
+    { base, form: { ...form, image: draftImage(form.image, asset?.image) } },
+    {
+      // Nothing changed from the asset (or the empty Add form): nothing to keep.
+      untouched,
+      restored: saved,
+      // An image too large for storage is dropped from the draft, not the rest.
+      fallback: (value) => ({ ...value, form: { ...(value.form as object), image: undefined } }),
+    },
+  );
+  // A draft written without its image (too large) says so under the image.
+  const [errors, setErrors] = useState<Record<string, string>>((): Record<string, string> =>
+    saved && !('image' in saved) ? { image: IMAGE_NOT_KEPT } : {},
+  );
   const rule = CATEGORY_FIELDS[form.category];
   const formId = useId();
   // The save. Closing the panel while it runs hands it to a toast, which
@@ -155,11 +198,8 @@ export function AssetFormPanel({
       }),
     };
     const result = await task.run('save', copy, () =>
-      onSave(draft).then((saved) => {
-        // Cleared here too, so a save handed to a toast still clears it.
-        clearDraft(draftName);
-        return saved;
-      }),
+      // Cleared here, so a save handed to a toast still clears it.
+      savingDraft(draftName, () => onSave(draft), discard),
     );
     if (result.detached) return;
     if (result.ok) {
@@ -192,7 +232,7 @@ export function AssetFormPanel({
           <Button
             variant="ghost"
             onClick={() => {
-              clearDraft(draftName);
+              discard();
               onClose();
             }}
             disabled={saving}

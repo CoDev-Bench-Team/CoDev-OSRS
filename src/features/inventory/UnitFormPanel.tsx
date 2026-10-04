@@ -12,7 +12,7 @@ import type { AddStatus, EditStatus, UnitDetail, UnitDraft } from './types';
 import { CatalogItemPicker, DeviceFields, FormAlert, FormFooter, PurchaseFields, RemoveUnitSection, UserPicker, type Device, type Purchase } from './unit-fields';
 import { statusOptions, withAssignee, withStatus } from './unit-rules';
 import { assetFromSnapshot, resolveAsset, snapshotOf } from './catalog-snapshot';
-import { clearDraft, draftString, readDraft, writeDraft } from '../../shared/form-draft-cache';
+import { draftOneOf, draftString, readDraft, savingDraft, useDraftWriter } from '../../shared/form-draft-cache';
 import { today, validateUnit } from './unit-validation';
 import { userDirectory, type DirectoryUser } from './user-directory';
 
@@ -69,8 +69,6 @@ function fromUnit(unit: UnitDetail): FormState {
  *  were never stored; the catalog item is resolved by id from `assets`. */
 function fromSaved(saved: Record<string, unknown> | undefined, assets: readonly Asset[] | null): FormState {
   if (!saved) return EMPTY;
-  const location = draftString(saved, 'location');
-  const status = draftString(saved, 'status');
   const assignedToId = draftString(saved, 'assignedToId');
   const attachmentUrl = draftString(saved, 'attachmentUrl');
   return {
@@ -81,8 +79,8 @@ function fromSaved(saved: Record<string, unknown> | undefined, assets: readonly 
     supplier: draftString(saved, 'supplier'),
     purchasedAt: draftString(saved, 'purchasedAt'),
     serialNumber: draftString(saved, 'serialNumber'),
-    location: (OFFICES as readonly string[]).includes(location) ? (location as Office) : EMPTY.location,
-    status: (statusOptions('add') as readonly string[]).includes(status) ? (status as AddStatus) : undefined,
+    location: draftOneOf(saved, 'location', OFFICES, EMPTY.location),
+    status: draftOneOf(saved, 'status', statusOptions('add'), undefined),
     assignedToId: assignedToId || undefined,
     assigneeName: draftString(saved, 'assigneeName') || undefined,
     description: draftString(saved, 'description'),
@@ -97,6 +95,9 @@ function toSaved(form: FormState, users: DirectoryUser[] | null | 'failed'): Rec
   const chosen = Array.isArray(users) ? users.find((u) => u.id === form.assignedToId)?.name : undefined;
   return { ...rest, asset: snapshotOf(asset), assigneeName: form.assignedToId ? (chosen ?? assigneeName) : undefined };
 }
+
+/** Add Single Unit's draft before anything is typed: not worth keeping. */
+const UNTOUCHED = JSON.stringify(toSaved(EMPTY, null));
 
 /** The draft the form submits. A Reserved unit's carries no status, user or
  *  office, so saving its other details can never release it (plan P5). */
@@ -419,16 +420,13 @@ function useUnitFormPanel(props: Props) {
     setRestoring(false);
     if (assets) setForm((f) => ({ ...f, asset: resolveAsset(assets, f.asset) }));
   }
-  useEffect(() => {
-    if (props.mode !== 'add') return;
-    const value = toSaved(form, users);
-    if (JSON.stringify(value) === JSON.stringify(toSaved(EMPTY, null))) {
-      clearDraft('unit.single');
-      return;
-    }
+  const discard = useDraftWriter('unit.single', toSaved(form, users), {
+    enabled: props.mode === 'add',
+    untouched: UNTOUCHED,
+    restored: saved,
     // An attachment too large for storage is dropped from the draft, not the rest.
-    if (!writeDraft('unit.single', value)) writeDraft('unit.single', { ...value, attachmentUrl: undefined });
-  }, [props.mode, form, users]);
+    fallback: (value) => ({ ...value, attachmentUrl: undefined }),
+  });
   const [errors, setErrors] = useState<Errors>({});
   const [removing, setRemoving] = useState(false);
   const [reason, setReason] = useState('');
@@ -503,10 +501,7 @@ function useUnitFormPanel(props: Props) {
     const send = () =>
       props.mode === 'edit'
         ? props.onUpdate(props.unitId, draft)
-        : props.onCreate(draft).then((created) => {
-            clearDraft('unit.single');
-            return created;
-          });
+        : savingDraft('unit.single', () => props.onCreate(draft), discard);
     void attempt(send, {
       loading: adding ? `Adding ${name}…` : `Saving ${name}…`,
       done: `${capitalize(name)} ${adding ? 'added' : 'saved'}`,
@@ -556,6 +551,7 @@ function useUnitFormPanel(props: Props) {
     title,
     setReason,
     setRemoving,
+    discard,
   };
 }
 
@@ -662,9 +658,7 @@ export function UnitFormPanel(props: Props) {
         removing: editor.removing,
         onCancelRemoval: editor.leaveRemoving,
         onRetry: editor.retry,
-        onDiscard: () => {
-          if (!editor.editing) clearDraft('unit.single');
-        },
+        onDiscard: editor.discard,
       })}
     >
       {editor.loaded.kind !== 'ready' ? <UnitLoadNotice loaded={editor.loaded} /> : <UnitFormBody editor={editor} />}

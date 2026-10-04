@@ -9,7 +9,7 @@ import { refusal, useAttempt } from './inventory-store';
 import type { UnitBatchDraft } from './types';
 import { CatalogItemPicker, FormAlert, FormFooter, PurchaseFields, SecretInput, type Device, type Purchase } from './unit-fields';
 import { assetFromSnapshot, resolveAsset, snapshotOf } from './catalog-snapshot';
-import { clearDraft, draftString, readDraft, writeDraft } from '../../shared/form-draft-cache';
+import { draftOneOf, draftString, readDraft, savingDraft, useDraftWriter } from '../../shared/form-draft-cache';
 import { MAX_BATCH, today, validateBatch } from './unit-validation';
 
 /** Add Multiple Units — `03 - Inventory - Bulk Add Units`, 650px (spec 015
@@ -47,18 +47,15 @@ const UNTOUCHED = JSON.stringify({ location: 'Cebu', pr: '', price: '', supplier
 const SHOWN_TOP = new Set(['assetId', 'location', 'pr', 'price', 'supplier', 'purchasedAt']);
 const shown = (key: string) => SHOWN_TOP.has(key) || /^units\.\d+\.(serialNumber|bitlockerIdentifier|recoveryPin)$/.test(key);
 
-export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCreate: (draft: UnitBatchDraft) => Promise<unknown> }) {
-  const formId = useId();
-  const { state: assetsState } = useAssets();
+/** The panel's form values, restored from a draft kept under five minutes ago
+ *  and kept again on every change (shared/form-draft-cache.ts). */
+function useBulkDraft(assetsState: ReturnType<typeof useAssets>['state']) {
   const assets = assetsState.kind === 'loaded' ? assetsState.assets : null;
   // Read once, before the first render: an expired draft is already gone.
   const [saved] = useState(() => readDraft('unit.bulk'));
   // The draft's catalog item shows at once from its snapshot.
   const [asset, setAsset] = useState<Asset | undefined>(() => resolveAsset(assets, assetFromSnapshot(saved?.asset)));
-  const [location, setLocation] = useState<Office>(() => {
-    const stored = draftString(saved, 'location');
-    return (OFFICES as readonly string[]).includes(stored) ? (stored as Office) : 'Cebu';
-  });
+  const [location, setLocation] = useState<Office>(() => draftOneOf(saved, 'location', OFFICES, 'Cebu'));
   const [purchase, setPurchase] = useState<Purchase>(() => ({
     pr: draftString(saved, 'pr'),
     price: draftString(saved, 'price'),
@@ -66,6 +63,27 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     purchasedAt: draftString(saved, 'purchasedAt'),
   }));
   const [rows, setRows] = useState<Row[]>(() => draftRows(saved));
+
+  // Once the catalog loads, the full record replaces the snapshot.
+  const [restoring, setRestoring] = useState(assets === null);
+  if (restoring && (assets || assetsState.kind === 'failed')) {
+    setRestoring(false);
+    if (assets) setAsset((a) => resolveAsset(assets, a));
+  }
+
+  const discard = useDraftWriter(
+    'unit.bulk',
+    { asset: snapshotOf(asset), location, ...purchase, serials: rows.map((r) => r.serialNumber) },
+    { untouched: UNTOUCHED, restored: saved },
+  );
+
+  return { assets, asset, setAsset, location, setLocation, purchase, setPurchase, rows, setRows, discard };
+}
+
+export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCreate: (draft: UnitBatchDraft) => Promise<unknown> }) {
+  const formId = useId();
+  const { state: assetsState } = useAssets();
+  const { assets, asset, setAsset, location, setLocation, purchase, setPurchase, rows, setRows, discard } = useBulkDraft(assetsState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   /** A refusal that names no field (a 409), shown above the rows. */
   const [conflict, setConflict] = useState<string>();
@@ -84,20 +102,6 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     focusNext.current = null;
     target()?.focus();
   });
-
-  // Once the catalog loads, the full record replaces the snapshot.
-  const [restoring, setRestoring] = useState(assets === null);
-  if (restoring && (assets || assetsState.kind === 'failed')) {
-    setRestoring(false);
-    if (assets) setAsset((a) => resolveAsset(assets, a));
-  }
-
-  // Kept for five minutes after the last change (shared/form-draft-cache.ts).
-  useEffect(() => {
-    const value = { asset: snapshotOf(asset), location, ...purchase, serials: rows.map((r) => r.serialNumber) };
-    if (JSON.stringify(value) === UNTOUCHED) clearDraft('unit.bulk');
-    else writeDraft('unit.bulk', value);
-  }, [asset, location, purchase, rows]);
 
   const { saving, attempt, handOff } = useAttempt(onClose, (error, what) => {
     const result = refusal(error, what, shown);
@@ -173,10 +177,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     if (Object.keys(found).length) return;
     const n = draft.units.length;
     const units = `${n} ${asset?.name ?? 'unit'}${n === 1 ? '' : ' units'}`;
-    void attempt(() => onCreate(draft).then((created) => {
-      clearDraft('unit.bulk');
-      return created;
-    }), {
+    void attempt(() => savingDraft('unit.bulk', () => onCreate(draft), discard), {
       loading: `Adding ${units}…`,
       done: `${units} added`,
       failed: 'The units could not be saved',
@@ -197,7 +198,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
       footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
       footer={(leave) => (
         <FormFooter formId={formId} saving={saving} disabled={rows.length === 0} submitLabel="Save Changes" savingLabel="Adding…" onCancel={() => {
-          clearDraft('unit.bulk');
+          discard();
           leave();
         }} />
       )}

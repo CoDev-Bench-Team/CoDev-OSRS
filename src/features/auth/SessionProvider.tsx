@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { SessionUnreachable } from '../../shared/api';
+import { clearAllDrafts } from '../../shared/form-draft-cache';
 import { apiSessionSource } from './api-session-source';
 import type { SessionSource } from './session-source';
 import { SessionContext, type SessionNotice } from './session-context';
@@ -32,6 +33,12 @@ export function SessionProvider({
   const [status, setStatus] = useState<SessionStatus>('unknown');
   const [session, setSession] = useState<Session | null>(null);
   const [notice, setNotice] = useState<SessionNotice>(null);
+
+  // Signed out, by choice or by expiry: no unsaved form draft outlives the
+  // person who typed it (shared/form-draft-cache.ts).
+  useEffect(() => {
+    if (status === 'signed-out') clearAllDrafts();
+  }, [status]);
 
   /** Resolutions can overlap — a storage event during the first load, say — and
    *  the last one to *start* is the one whose answer is current. */
