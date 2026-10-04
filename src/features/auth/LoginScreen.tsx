@@ -121,13 +121,17 @@ function SignInNotices({
  *  values below are measured from the file: 59 to the lockup, 94 to the
  *  welcome line, 13 to the control, 112 to the copyright, 55 to the bottom
  *  edge. They sum with the elements to exactly 500. */
-export function LoginScreen() {
-  const { status, session, signIn, notice, source } = useSession();
-  const location = useLocation();
+/** The sign-in attempt: whether the control is ready, the refusal to show,
+ *  and the two ways a sign-in starts (Google's credential, or the drawn
+ *  control). */
+function useSignInAttempt() {
+  const { status, signIn, source } = useSession();
   const [refused, setRefused] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(true);
-  const googleButton = status === 'signed-out' && hasGoogleButton(source);
+  // Google's button, when this source mounts one and nobody is signed in.
+  const googleSource = status === 'signed-out' && hasGoogleButton(source) ? source : null;
+  const googleButton = googleSource !== null;
   const checking = status === 'unknown';
   // Not ready: the session is still resolving (FR-018: a signed-in visitor
   // must not be offered sign-in), Google's button is still loading, or a
@@ -153,6 +157,18 @@ export function LoginScreen() {
     );
   }, [googleButton, signIn]);
 
+  const onSignIn = () => {
+    startSignIn(submitSignIn(source, signIn), setRefused, setBusy);
+  };
+
+  return { refused, busy, checking, disabled, googleButton, googleSource, setGoogleLoading, onGoogleUnavailable, onSignIn };
+}
+
+export function LoginScreen() {
+  const { status, session, notice } = useSession();
+  const location = useLocation();
+  const { refused, busy, checking, disabled, googleButton, googleSource, setGoogleLoading, onGoogleUnavailable, onSignIn } = useSignInAttempt();
+
   // One redirect authority, covering both "already signed in" and "just signed
   // in". FR-013: a visitor who asked for a specific destination before signing
   // in arrives THERE, provided their role permits it; otherwise at the screen
@@ -160,10 +176,6 @@ export function LoginScreen() {
   if (status === 'signed-in' && session) {
     return <Navigate to={pathAfterSignIn(session.role, location.state)} replace />;
   }
-
-  const onSignIn = () => {
-    startSignIn(submitSignIn(source, signIn), setRefused, setBusy);
-  };
 
   const publishedRefusal = notice !== null && typeof notice === 'object' ? notice.message : null;
   const refusalText = refused ?? publishedRefusal;
@@ -221,8 +233,8 @@ export function LoginScreen() {
                 className="rounded-32"
               />
             </div>
-            {googleButton ? (
-              <GoogleSignInOverlay source={source} onUnavailable={onGoogleUnavailable} onLoadingChange={setGoogleLoading} />
+            {googleSource ? (
+              <GoogleSignInOverlay source={googleSource} onUnavailable={onGoogleUnavailable} onLoadingChange={setGoogleLoading} />
             ) : null}
           </div>
         </div>
