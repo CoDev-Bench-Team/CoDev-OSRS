@@ -1,14 +1,14 @@
 # Architecture — Office Supplies Request System
 
 **Status**: Accepted for MVP  
-**Date**: 2026-09-11 · **Last amended**: 2026-10-02 (a unit may be added as `Inactive`, spec 015 D3). 2026-10-01: an Admin may clear an assignment and the unit's tag is its Purchase Request number; constitution 9.0.0, ADR-0008 amended. 2026-10-01: an Admin cannot cancel a `For Delivery` request; constitution 8.0.0, ADR-0012. 2026-09-29: the Admin or the Employee sets `Received`, the Employee signs on it; constitution 7.0.0  
+**Date**: 2026-09-11 · **Last amended**: 2026-10-04 (signing the Accountability Form completes the request; no Admin complete; constitution 10.0.0, ADR-0013). 2026-10-02: a unit may be added as `Inactive`, spec 015 D3. 2026-10-01: an Admin may clear an assignment and the unit's tag is its Purchase Request number; constitution 9.0.0, ADR-0008 amended. 2026-10-01: an Admin cannot cancel a `For Delivery` request; constitution 8.0.0, ADR-0012. 2026-09-29: the Admin or the Employee sets `Received`, the Employee signs on it; constitution 7.0.0  
 **Companion docs**: [product](docs/product.md), [process flow](docs/process-flow.md), [ADRs](docs/adr/), [feature plan](specs/001-office-supplies-mvp/plan.md)
 
 This file is the cross-cutting HOW. Feature WHAT lives in specs. Do not duplicate user stories here.
 
 ## 1. System Context
 
-OSRS is an internal web application. Employees browse a catalog of assets and request them; an Admin approves or rejects, hands over by delivery or pickup, and completes; the System keeps stock consistent and emails participants.
+OSRS is an internal web application. Employees browse a catalog of assets and request them; an Admin approves or rejects and hands over by delivery or pickup; the Employee signs for the items, which completes the request; the System keeps stock consistent and emails participants.
 
 Two human roles, not three — see [ADR-0005](docs/adr/0005-two-role-model.md). Stock is a register of units, counted per office as Total / Available / Reserved — see [ADR-0006](docs/adr/0006-assets-and-inventory.md) and [ADR-0008](docs/adr/0008-per-unit-inventory-register.md). The request ends when the Admin completes it — see [ADR-0007](docs/adr/0007-fulfilment-status-vocabulary.md).
 
@@ -113,9 +113,9 @@ Do not add an API implementation directory until an ADR names the stack. Configu
                          │ mark received (Admin, or owning Employee)
                          ▼
                       Received   (units assigned; not cancellable)
-                         │   └── Accountability Form (owning Employee):
-                         │       records the acknowledgement, no status change
-                         │ complete (Admin, once the form is signed)
+                         │
+                         │ sign the Accountability Form (owning Employee):
+                         │ records the acknowledgement and completes
                          ▼
                       Completed
 ```
@@ -126,11 +126,10 @@ Guards (enforced by the API; SPA mirrors them in the UI):
 - **Approve / Reject**: Admin; request is `Pending Approval`; reject body includes a non-empty reason.
 - **Update status**: Admin; request is `Approved`, `For Delivery` or `Ready for Pickup`; target is `For Delivery` or `Ready for Pickup`, or `Received` when the request is already `For Delivery` or `Ready for Pickup` (the Admin's mark received, behind a confirmation; spec 008 FR-008, [ADR-0010](docs/adr/0010-admin-marks-received.md)); `Ready for Pickup` records a pickup location.
 - **Mark received**: the Admin, through Update Status above, or the owning Employee on their own request, with **Mark as Received** (spec 012); request is `For Delivery` or `Ready for Pickup`; target is `Received`. Moves the reserved units to `Assigned` in the same transaction.
-- **Accountability Form**: owning Employee; request is `Received` and not yet signed; the form is agreed and signed with the Employee's full name. Records the acknowledgement; no status or unit changes.
-- **Complete**: Admin; request is `Received` and its Accountability Form is signed.
+- **Accountability Form**: owning Employee; request is `Received` and not yet signed; the form is agreed and signed with the Employee's own full name, prefilled and not editable. Records the acknowledgement and moves the request to `Completed` in the same write; no unit changes. There is no separate Admin complete ([ADR-0013](docs/adr/0013-signing-completes-the-request.md)).
 - **Cancel**: owning Employee while `Pending Approval`, or Admin while `Approved` or `Ready for Pickup`. Never while `For Delivery`: the items are out with the delivery, so a failed delivery goes back to `Ready for Pickup` first ([ADR-0012](docs/adr/0012-no-admin-cancel-on-for-delivery.md)). **A reason is required from whoever cancels.** Never once `Received` or `Completed`. Releases the reservation in the same transaction, exactly as reject does.
 
-The Admin or the Employee records the handover (`Received`); the Employee then confirms receipt with the Accountability Form; `Completed` is an Admin action once the form is signed — see [ADR-0011](docs/adr/0011-admin-sets-received-employee-signs.md), which amends [ADR-0009](docs/adr/0009-received-and-accountability-form.md) and [ADR-0010](docs/adr/0010-admin-marks-received.md).
+The Admin or the Employee records the handover (`Received`); the Employee then confirms receipt with the Accountability Form, which completes the request — see [ADR-0013](docs/adr/0013-signing-completes-the-request.md), which amends [ADR-0011](docs/adr/0011-admin-sets-received-employee-signs.md), which amends [ADR-0009](docs/adr/0009-received-and-accountability-form.md) and [ADR-0010](docs/adr/0010-admin-marks-received.md).
 
 ## 6. Stock Coupling
 
@@ -151,8 +150,7 @@ Stock is a register of **units** ([ADR-0008](docs/adr/0008-per-unit-inventory-re
 | Approved | Approved | none | — | — | — |
 | For Delivery / Ready for Pickup | those statuses | none | — | — | — |
 | Admin or owning Employee marks received | Received | those units → `Assigned` to the requester | −qty | — | −qty |
-| Accountability Form signed | Received (unchanged) | none | — | — | — |
-| Request completed | Completed | none | — | — | — |
+| Accountability Form signed (completes) | Completed | none | — | — | — |
 
 `Received` is the only request transition that reduces `Total`; those units are what the Assets screen counts as *Assigned units*. Concurrent submits for the last units MUST serialize so `Available` never goes negative (one caller succeeds, others get a clear insufficient-stock failure). How the API names that error is the backend contract's choice.
 
@@ -175,8 +173,7 @@ Each asset carries one **low-stock threshold** (per asset, compared against Avai
 | Approve / reject | no | yes |
 | Set For Delivery / Ready for Pickup | no | yes |
 | Mark a handover `Received` | own, while `For Delivery` / `Ready for Pickup` | yes |
-| Sign the Accountability Form | own, while `Received` and unsigned | no |
-| Complete a request | no | yes, once the form is signed |
+| Sign the Accountability Form (completes the request) | own, while `Received` and unsigned | no |
 | Cancel a request | own, while `Pending Approval`, reason required | any `Approved` / `Ready for Pickup`, reason required; not `For Delivery` |
 | View resolved history | own only (My Requests) | yes (History, all requestors) |
 | View own profile | yes | yes\*\* |
@@ -233,7 +230,7 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 ## 12. Testing Architecture
 
 - **Contract**: HTTP against the **backend-published** REST contract (not a file invented in this repo).
-- **E2E (Playwright)**: units added → employee request → admin reject (reservation released) → new request → approve → For Delivery or Ready for Pickup → admin or employee marks Received (units assigned; Total and Reserved fall) → employee signs the Accountability Form → complete; assert notifications as the backend contract exposes them.
+- **E2E (Playwright)**: units added → employee request → admin reject (reservation released) → new request → approve → For Delivery or Ready for Pickup → admin or employee marks Received (units assigned; Total and Reserved fall) → employee signs the Accountability Form (request completes); assert notifications as the backend contract exposes them.
 
 ## 13. Decisions
 
@@ -249,4 +246,6 @@ Canonical **logical** model: `specs/001-office-supplies-mvp/data-model.md` (prod
 | [0008](docs/adr/0008-per-unit-inventory-register.md) | Inventory is a per-unit register; stock counted from unit statuses (partly supersedes 0006); amended by 0009 |
 | [0009](docs/adr/0009-received-and-accountability-form.md) | `Received`, set by the Employee's Accountability Form; units assigned on `Received`; the Admin completes — **amended by 0010 and 0011** |
 | [0010](docs/adr/0010-admin-marks-received.md) | The Admin may also mark a handed-over request `Received` — **amended by 0011** |
-| [0011](docs/adr/0011-admin-sets-received-employee-signs.md) | The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it; the Admin completes once signed |
+| [0011](docs/adr/0011-admin-sets-received-employee-signs.md) | The Admin or the owning Employee sets `Received`; the Employee signs the Accountability Form on it; the Admin completes once signed — **amended by 0013** |
+| [0012](docs/adr/0012-no-admin-cancel-on-for-delivery.md) | An Admin cannot cancel a `For Delivery` request |
+| [0013](docs/adr/0013-signing-completes-the-request.md) | Signing the Accountability Form completes the request; the name is prefilled and not editable; no Admin complete |

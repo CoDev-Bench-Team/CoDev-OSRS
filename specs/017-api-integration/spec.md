@@ -70,6 +70,8 @@ An Admin sees the queue with live counts, filters, searches and sorts it, opens 
 
 ### Story 4 — Sign and Complete are withheld while the contract completes on sign (Priority: P1) — BEN-155, BEN-159
 
+> **Superseded 2026-10-04** (Session 2026-10-04 below; constitution 10.0.0, [ADR-0013](../../docs/adr/0013-signing-completes-the-request.md)). The Employee signs through the published sign operation, and the request becomes `Completed`. The Admin's Complete stays absent, because there is none. The criteria below are kept as history.
+
 The live contract's sign operation moves the request to `completed`, and no operation lets an Admin set `completed`. Constitution IV requires the opposite: signing changes no status, and only an Admin completes, once the form is signed. Until the backend changes the contract, API mode withholds both actions, and requests stop at `Received`. Seeded mode keeps the full flow.
 
 **Why this priority**: Sending sign as published would skip the Admin's Complete step, which BEN-154 forbids and the constitution does not allow.
@@ -193,11 +195,12 @@ An Admin lists, reviews, adds (single or bulk), edits, assigns, unassigns and re
 
 ### Sign and Complete (BEN-155, BEN-159)
 
-- **FR-022**: In API mode, the Accountability Form's sign action MUST NOT be offered and MUST NOT be sent, while the published sign operation moves a request to `completed` (contracts conflict 12). A note MUST say signing is not yet available.
-- **FR-023**: In API mode, the Admin's Complete MUST NOT be offered while the contract publishes no Admin complete operation (conflict 12).
+- **FR-022** *(withdrawn 2026-10-04, see FR-027)*: In API mode, the Accountability Form's sign action MUST NOT be offered and MUST NOT be sent, while the published sign operation moves a request to `completed` (contracts conflict 12). A note MUST say signing is not yet available.
+- **FR-023**: The Admin's Complete MUST NOT be offered: signing completes the request (constitution 10.0.0 IV).
+- **FR-027** *(added 2026-10-04)*: The owning Employee's unsigned `Received` request MUST offer the Accountability Form. Its name field MUST be prefilled with the signed-in Employee's full name and MUST NOT be editable. Signing MUST send the sign operation with `agreed` and that name, once, and the panel MUST then read the request back as `Completed` with the signed time. An account with no full name MUST NOT be able to sign, and the form MUST say so.
 - **FR-024**: In seeded mode, sign and Complete MUST behave as specs 012 and 008 define.
-- **FR-025**: The SPA's state machine MUST NOT be changed to skip the Admin's Complete step.
-- **FR-026**: When the contract publishes a sign that changes no status, a signed flag with its time on the request read, an Admin complete limited to a signed `Received` request, and the email to Admins on sign, the withholding in FR-022 and FR-023 MUST be lifted by a spec amendment, not silently.
+- **FR-025** *(withdrawn 2026-10-04)*: The SPA's state machine MUST NOT be changed to skip the Admin's Complete step.
+- **FR-026** *(withdrawn 2026-10-04)*: When the contract publishes a sign that changes no status, a signed flag with its time on the request read, an Admin complete limited to a signed `Received` request, and the email to Admins on sign, the withholding in FR-022 and FR-023 MUST be lifted by a spec amendment, not silently.
 
 ### Requests Queue (BEN-159)
 
@@ -285,3 +288,12 @@ Asked by the frontend owner while T0 was blocked, because no Employee account co
 - Q: T0 without an Employee account? → A: **Record from an Admin session.** Employee-only behaviour (own rows only, `404` on another's request) is documented in the Swagger and is confirmed when an Employee account is available.
 
 Consequences: FR-001, FR-024 and SC-001 are withdrawn. FR-001a and the new SC-001 are added. Story 4's "seeded mode keeps the full flow" no longer holds: Sign and Complete are unavailable anywhere until contracts conflict 12 is answered. The BEN-157 seeded session and its demo accounts go too (spec `http-client-session-and-seeded-source-sw` FR-001 is superseded).
+
+### Session 2026-10-04 — sign completes
+
+Decided by the project owner.
+
+- Q: Keep withholding Sign until the backend splits `/sign` from completion? → A: **No. Change the constitution to match the API** (10.0.0, ADR-0013). Signing completes the request; there is no Admin complete.
+- Q: How does the Employee sign? → A: **The full-name field is prefilled with the Employee's own name and is not editable**, so they read, tick and press **I acknowledge and sign**.
+
+Consequences: Story 4 is superseded; FR-022, FR-025 and FR-026 are withdrawn; FR-023 is restated; FR-027 is added. Contracts conflict 12 is closed.

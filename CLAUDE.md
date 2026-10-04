@@ -1,6 +1,6 @@
 # CoDev-OSRS — Agent Instructions
 
-Office Supplies Request System (OSRS). Internal Codev MVP that replaces chat/email supply requests with a four-stage pipeline: **Browse Catalog & Create Request → Review & Approve → Hand over (For Delivery / Ready for Pickup) → Complete**.
+Office Supplies Request System (OSRS). Internal Codev MVP that replaces chat/email supply requests with a four-stage pipeline: **Browse Catalog & Create Request → Review & Approve → Hand over (For Delivery / Ready for Pickup) → Received → Employee signs (Completed)**.
 
 This file is the always-loaded entry point. Keep it short. Load the pointed files when the work needs them.
 
@@ -60,7 +60,7 @@ Do not introduce a new frontend framework or UI kit without an ADR in `docs/adr/
 
 - Honor AGENTS.md constitution. MUST violations without a documented exception are errors.
 - Two roles only: **Employee** and **Admin** (ADR-0005). Do not reintroduce `approver` / `supply_admin`.
-- Request status transitions MUST follow `docs/process-flow.md`. No skipped states. `For Delivery` and `Ready for Pickup` are peers; an **Admin**, or the requester on their own request, sets `Received`; the requester then signs the Accountability Form on the `Received` request (no status change); `Completed` is set by an **Admin**, only from `Received` and only once the form is signed (ADR-0011).
+- Request status transitions MUST follow `docs/process-flow.md`. No skipped states. `For Delivery` and `Ready for Pickup` are peers; an **Admin**, or the requester on their own request, sets `Received`; the requester then signs the Accountability Form on the `Received` request with their prefilled, non-editable full name, and signing moves it to `Completed`; there is no separate Admin complete (ADR-0013).
 - Stock is a register of **units**, counted per **(asset, office)** as **Total / Available / Reserved** (ADR-0006, ADR-0008). Submit reserves units; reject and cancel release them; `Received` assigns them to the requester (ADR-0009, ADR-0011). `Total = Available + Reserved`; never negative. BitLocker identifier and recovery key/PIN are Admin-only secrets.
 - A cancellation reason is required from whoever cancels.
 - Email notification on every defined transition, using the four templates in `docs/process-flow.md`. Missing a notification is a bug (API responsibility; SPA surfaces status).

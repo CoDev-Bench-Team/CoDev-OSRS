@@ -16,14 +16,14 @@ A single platform with an automated four-stage pipeline, live stock numbers, and
 
 A **functional** end-to-end demo — not a perfect procurement suite — that shows Dev and QA shipping together:
 
-**Browse Catalog → Create Request → Review & Approve (or Reject, then a new request) → Hand over by Delivery or Pickup → Admin or Employee marks it Received → Employee signs the Accountability Form → Completed**, with stock movements and notifications on each transition.
+**Browse Catalog → Create Request → Review & Approve (or Reject, then a new request) → Hand over by Delivery or Pickup → Admin or Employee marks it Received → Employee signs the Accountability Form, which completes it**, with stock movements and notifications on each transition.
 
 ## Who Uses It
 
 | Actor | Job |
 |-------|-----|
-| **Employee (Requestor)** | Browse the catalog by category and office, build a request list, submit with a note, see rejection and cancellation reasons, track status and history, cancel their own pending request, mark their handed-over request Received, and sign the Accountability Form on it |
-| **Admin** | Review the queue; approve or reject (reason required); set For Delivery or Ready for Pickup; mark the handover Received; complete once the Employee has signed; cancel what cannot be fulfilled; own Assets and Inventory, including the unit register (add, review, remove units) |
+| **Employee (Requestor)** | Browse the catalog by category and office, build a request list, submit with a note, see rejection and cancellation reasons, track status and history, cancel their own pending request, mark their handed-over request Received, and sign the Accountability Form on it, which completes the request |
+| **Admin** | Review the queue; approve or reject (reason required); set For Delivery or Ready for Pickup; mark the handover Received; cancel what cannot be fulfilled; own Assets and Inventory, including the unit register (add, review, remove units) |
 | **System** | Show availability; reserve units on submit; release on reject or cancel; assign the units to the requester when the request is marked `Received`; email at each defined step |
 
 The 2026-09-11 process diagram split the old combined “Admin” into **Approver** and **Supply Admin**. The 2026-09-22 design re-export merges them back into a single **Admin**, and permissions follow that merge — see [ADR-0005](adr/0005-two-role-model.md), which names the control point this gives up.

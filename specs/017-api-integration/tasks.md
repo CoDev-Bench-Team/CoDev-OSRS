@@ -89,9 +89,13 @@ Plan D16 order: T023 → T024 green with unedited checks → then T025 onward.
 
 ## Phase 6: Story 4 — Sign and Complete withheld in API mode (P1)
 
-- [ ] T029 [US4] [BEN-155] When `!source.canSign` on an unsigned `Received` request, replace the Accountability Form with the note "Signing is not available yet." Seeded mode renders the form as before — `src/features/requests/detail/RequestDetailPanel.tsx`, `src/features/requests/detail/AccountabilityForm.tsx`
+> **Superseded 2026-10-04** (FR-027, ADR-0013): T029 and T031 are withdrawn; T030 stands.
+
+- [x] T029a [US4] [BEN-155] Sign through `POST /requests/:id/sign`; prefilled, read-only full name; the panel reads `Completed` back (FR-027) — `src/shared/api/requests.ts`, `src/features/requests/detail/`, `e2e/`
+
+- [ ] ~~T029~~ *(withdrawn)* [US4] [BEN-155] When `!source.canSign` on an unsigned `Received` request, replace the Accountability Form with the note "Signing is not available yet." Seeded mode renders the form as before — `src/features/requests/detail/RequestDetailPanel.tsx`, `src/features/requests/detail/AccountabilityForm.tsx`
 - [ ] T030 [US4] [BEN-159] Assert that no Complete button exists when `canComplete` is false. Seeded `check-review-panel.mjs` still shows Complete on a signed `Received` request — `src/features/requests/queue/ReviewPanel.tsx`, `scripts/check-api-screens.mjs`
-- [ ] T031 [US4] [BEN-154] Assert that no `/sign` route and no `completed` PATCH target exist anywhere in `src/shared/api/` (FR-022, FR-023, FR-025) — `scripts/check-api-screens.mjs`
+- [ ] ~~T031~~ *(withdrawn)* [US4] [BEN-154] Assert that no `/sign` route and no `completed` PATCH target exist anywhere in `src/shared/api/` (FR-022, FR-023, FR-025) — `scripts/check-api-screens.mjs`
 
 ## Phase 7: Story 5 — History (P2)
 

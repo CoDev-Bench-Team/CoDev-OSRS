@@ -55,11 +55,11 @@ npm run build
 npm run e2e
 ```
 
-`npm run e2e` runs the Playwright suite in `e2e/` against the Vite dev server in API mode. It does not need the backend: `e2e/fixtures/fake-api.ts` answers `/auth` and `/api` inside the browser with test-only data, keeping the published rules (reserve on submit, release on reject and cancel, assign on receive, Employee sees only their own). That data lives in `e2e/` and never ships; `scripts/check-build.mjs` fails a build that carries it. The documented path is Davao, the test Employee's office. Until contracts conflict 12 is answered, the path stops at `Received`: Sign and Complete are withheld (spec 017 Story 4).
+`npm run e2e` runs the Playwright suite in `e2e/` against the Vite dev server in API mode. It does not need the backend: `e2e/fixtures/fake-api.ts` answers `/auth` and `/api` inside the browser with test-only data, keeping the published rules (reserve on submit, release on reject and cancel, assign on receive, Employee sees only their own). That data lives in `e2e/` and never ships; `scripts/check-build.mjs` fails a build that carries it. The documented path is Davao, the test Employee's office. The path runs to `Completed`: the Employee's signature completes the request (constitution 10.0.0, ADR-0013).
 
 Playwright covers:
 
-1. Happy path through Ready for Pickup and `Received`, with Sign and Complete withheld (contracts conflict 12). Stock moves on submit and on `Received` only.
+1. Happy path through Ready for Pickup, `Received`, and the Employee's signature to `Completed`. Stock moves on submit and on `Received` only.
 2. Reject path with the reservation released and a new request
 3. Cancel paths from both sides, each requiring a reason
 4. Notifications where the product exposes a record; a missing record is reported, not invented
@@ -71,6 +71,6 @@ Playwright covers:
 2. An Employee at Davao adds 3 to the Request List and submits — Total 10 / Available 7 / Reserved 3, status Pending Approval. `Request received` is asserted only where the product shows that record
 3. Admin approves — quantities unchanged. `Request approved` likewise
 4. Admin sets **Ready for Pickup** at the Davao office — quantities unchanged
-5. Complete is not offered. Admin or the Employee sets **Received** — Total 7 / Available 7 / Reserved 0
-6. The Employee sees *Signing is not available yet*; the Admin sees no **Complete**. Both wait on contracts conflict 12
+5. Admin or the Employee sets **Received** — Total 7 / Available 7 / Reserved 0
+6. The Employee opens the request, follows **Sign accountability form**, reads the acknowledgement, ticks the agreement, and presses **I acknowledge and sign** (their name is prefilled). The request is **Completed**; quantities unchanged. There is no Admin **Complete**
 8. A rejection or a cancellation with a reason releases the reservation. An empty reason does not. For Delivery cannot be cancelled

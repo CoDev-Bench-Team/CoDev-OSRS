@@ -23,7 +23,7 @@ Every operation the SPA calls (`src/shared/api/`) was read against its controlle
 | `/requests` reads and writes | The submitter is **`requestor`** (a full user: `firstName`, `lastName`, `email`, `location`), not `requester`. The request carries **`requestingOffice`**, where its units are reserved and what `items[].availableStock` counts against. Timeline entries are `{ status, at, byUserId?, note? }`. No `approvedAt` or `signedAt`: those times come from `timeline` | Reader fixed; it read `requester` and so failed every Admin row against the live API |
 | `POST /requests` | Returns the saved request without `availableStock` or `units`; insufficient stock is a `400`, not a `409` | Already handled |
 | `GET /requests/:id` | Adds `units[] { id, assetId, serialNumber, status }`; list rows do not carry `units` | Not read |
-| `POST /requests/:id/sign` | Stores `receivedSignature` / `receivedNotes` and sets `completed` in the same write (conflict 12 unchanged) | Not called; a `receivedSignature` dates the signature to the `completed` timeline entry |
+| `POST /requests/:id/sign` | Stores `receivedSignature` / `receivedNotes` and sets `completed` in the same write (conflict 12, closed 2026-10-04 by ADR-0013) | Called with `{ agreed, fullName }`; a `receivedSignature` dates the signature to the `completed` timeline entry |
 | `POST /requests/:id/cancel` | An Admin may still cancel `for_delivery` (conflict 8 unchanged) | Not offered |
 | `/inventory-items` reads | Only the `asset` relation is loaded: neither `assignedTo` nor `assignedToId` is serialised (G6 wider than recorded: the id is missing too). Secrets are returned to any role (G3 unchanged) | Comment corrected; Assigned shows not-published. Editing an Assigned unit does not ask for the assignee again and does not re-send it: re-sending resets `assignedAt` (`inventory-items.service.ts:106-110`) |
 | `DELETE /inventory-items/:id` | Soft delete; returns the unit with `deletedAt` and `removalReason` | Matches |
@@ -423,7 +423,10 @@ Wiring gaps recorded while connecting the client: the current user has no `name`
 
 Read against the live Swagger (`/swagger-ui-init.js`) on 2026-10-03. Spec 017 switches each screen to the API and withholds what the contract cannot carry ([spec 017](../../017-api-integration/spec.md)).
 
-#### 12. Sign completes the request; no Admin complete (raised 2026-10-03)
+#### 12. ~~Sign completes the request; no Admin complete (raised 2026-10-03)~~ — closed 2026-10-04
+
+> **Closed 2026-10-04 by amending the constitution to the published contract** (10.0.0 IV, [ADR-0013](../../../docs/adr/0013-signing-completes-the-request.md)). Signing completes the request, and there is no Admin complete. The SPA now calls `POST /requests/:id/sign` with `{ agreed, fullName }`; `fullName` is the signed-in Employee's own name, prefilled and not editable, and `notes` is not sent. The draft backend issue below is withdrawn. Still unpublished and not needed: a signed time (the SPA dates the signature to the `completed` timeline entry) and an email to Admins on sign.
+
 
 Published: `POST /requests/{id}/sign` (`SignRequestDto { agreed, fullName, notes? }`) *"moves the request to completed and emails the requester"*, and its `200` is *"The request, now `completed`"*. `PATCH /requests/{id}` accepts only `approved`, `rejected`, `ready_for_pickup` and `for_delivery`, and says `completed` is set through `/sign`. The request schema documents only `items` and `units`, so no signed flag or signed time is published.
 
