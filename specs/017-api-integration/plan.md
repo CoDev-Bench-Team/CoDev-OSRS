@@ -29,7 +29,7 @@ Each screen already reads through a source seam in its own vocabulary (`CatalogS
 | D5 | **Queue "All requests" merges the five live statuses.** For page `p` of size `n`, the API source calls `listRequests` once per live status (`pending_approval`, `approved`, `for_delivery`, `ready_for_pickup`, `received`) with `page=1`, `limit=p·n` and the same sort and search. It merges the rows with the API's own order (`createdAt` for newest/oldest, requester name then `createdAt` for Employee A–Z) and returns the slice `[(p−1)·n, p·n)`. The total and the chip count are the live statuses summed from `/requests/counts`. A single-status chip is one call. Recorded as C14, with a filter on several statuses as the ask. | Spec 004 keeps terminal requests off the queue, and the user chose full pages (red-team R3). The cost grows with the page number, which is acceptable at MVP volume. |
 | D6 | **Panels read by id.** `AdminRequestSource.get(id)` and `EmployeeRequestSource.get(id)` are added. Read models gain `displayId`. In API mode `id` is the numeric id as a string. In seeded mode `id === displayId`. The table shows `displayId`. | The spec's FR-005. List rows carry no `units` and no timeline (live schema note on `units`). |
 | D7 | **Deep links resolve through `get(id)`**, not through membership in a loaded list. `useDeepLink` takes a resolver instead of `ids`. A `404` gives the existing unavailable notice. | Under paging the page cannot hold every id. |
-| D8 | *(Amended 2026-10-04, ADR-0013: the API employee source now sets `canSign` true and calls `signRequest`; `canComplete` stays false because signing completes.)* **Sign and Complete are capabilities.** `EmployeeRequestSource.canSign` and `AdminRequestSource.canComplete` are booleans. Seeded sources set them to `true` and API sources to `false`. When false, `AccountabilityForm` is replaced by the note "Signing is not available yet." and Complete is not rendered. API sources still implement `sign`/`complete` as an immediate `{ ok: false, refusal: 'unavailable' }` without a network call. No `signRequest` function exists in `src/shared/api/`. | Spec Story 4 and FR-022 to FR-026. A missing action, not a refusal, is the honest UI. |
+| D8 | *(Rewritten 2026-10-04, ADR-0013.)* **Sign is a call; Complete is withheld.** The API employee source signs through `signRequest` (`POST /requests/:id/sign`, `{ agreed, fullName }`), and the request comes back `Completed`. `AdminRequestSource.canComplete` defaults to `false` and the API source sets `false`: there is no Admin complete. | Spec FR-023, FR-051; constitution 10.0.0 IV. |
 | D9 | **Not-published numbers are `null`.** ~~`QueueSnapshot.lowStockAlertCount` widens to `number \| null`.~~ *(Removed 2026-10-03 with the card.)* *(`Asset.reserved` and `Asset.assigned` are plain numbers since 2026-10-03, when `/assets` published the counts; FR-041.)* `null` renders as `—` with the accessible name "Not published". | Spec FR-028 and FR-041. A `0` would be a false fact. |
 | D10 | **Status mapping** uses the existing `REQUEST_STATUS_LABEL` keys into the shell's `RequestStatus`. `completed` → `Completed` in the shell vocabulary, with the display word left to the pill, as BEN-157 recorded. A status outside the map makes the row unreadable: the source rejects, and the screen shows its error state. | No invented status (constitution VII). |
 | D11 | **Mutation results.** `400` with pointers → `invalid` (BEN-98). A stock `400` on submit with no pointer → `refused` with the API's `detail`/`title`. `404` → `unavailable`. `409` → `status-changed` with the API's `detail`, after which the existing `runThenReload` re-reads. `401`/`403` stay with the BEN-157 client. | Spec FR-006 and FR-007. The panels' refusal types already exist. |
@@ -43,7 +43,7 @@ Each screen already reads through a source seam in its own vocabulary (`CatalogS
 
 ### Execution note (2026-10-03)
 
-D1, D2, D6 and D8 were built with the new seam members **optional** (`page?`, `get?`, `canSign?`, `canComplete?`, `displayId?`). A source without them keeps the pre-017 code path exactly: it loads once and projects in the page. Only API sources implement them. This is stronger than D2's in-memory `page()`, because seeded mode runs the old code, not a re-implementation of it. It also leaves the dev stubs that wrap seeded sources untouched.
+D1, D2, D6 and D8 were built with the new seam members **optional** (`page?`, `get?`, `canSign?`, `canComplete?`, `displayId?`). A source without them keeps the pre-017 code path exactly: it loads once and projects in the page. Only API sources implement them. This is stronger than D2's in-memory `page()`, because seeded mode runs the old code, not a re-implementation of it. It also leaves the dev stubs that wrap seeded sources untouched. *(2026-10-04: `canSign` is removed, and an absent `canComplete` now means `false`, FR-023.)*
 
 ## Data Model
 
@@ -103,7 +103,7 @@ The backend owns the contract: [Swagger](https://codev-osrs-be.vercel.app/), rea
 | | `deleteUnit(id)` | `DELETE /inventory-items/:id` | BEN-162 | — |
 | `users.ts` | `listUsers()` | `GET /users` | BEN-162 | — |
 
-**Not added**: `POST /requests/:id/sign` (withheld, D8), `DELETE /requests/:id` (no control), `DELETE /assets/:id` (Assets draws no delete control; see Analysis A1), any `/users` write. `readAllPages(fetchPage)` is added to `page.ts`.
+**Not added**: `DELETE /requests/:id` (no control), `DELETE /assets/:id` (Assets draws no delete control; see Analysis A1), any `/users` write. `readAllPages(fetchPage)` is added to `page.ts`. *(`POST /requests/:id/sign` was withheld here until 2026-10-04; it is now added, D8.)*
 
 Errors and `401`/`403` handling come from the BEN-157 client unchanged. `POST /requests` and `POST /requests/:id/receive` are already session-ending writes there.
 
@@ -122,9 +122,9 @@ Errors and `401`/`403` handling come from the BEN-157 client unchanged. `POST /r
 - `catalog/CatalogPage.tsx`: `catalogSource()` and `requestSubmitSource()` selectors replace the two literals.
 
 ### My Requests (BEN-155)
-- `requests/detail/api-employee-request-source.ts`: `list(user)` → `readAllPages(listRequests({ requesterId: user.id, sort: 'newest' }))`; `get`, `cancel`, `markReceived`; `canSign = false`; `sign` → `unavailable` without fetch.
-- `request-detail-types.ts`: + `get`, `canSign`. `seeded-employee-request-source.ts`: implements both.
-- `RequestDetailPanel.tsx`: on open, `get(id)` for lines, units and timeline. When `!canSign` on a `Received` unsigned request, render the note (D8).
+- `requests/detail/api-employee-request-source.ts`: `list(user)` → `readAllPages(listRequests({ requesterId: user.id, sort: 'newest' }))`; `get`, `cancel`, `markReceived`; `canSign = false`; `sign` → `unavailable` without fetch. *(2026-10-04: `sign` calls `signRequest`, D8.)*
+- `request-detail-types.ts`: + `get`. *(`canSign` removed 2026-10-04.)*
+- `RequestDetailPanel.tsx`: on open, `get(id)` for lines, units and timeline. A `Received` unsigned request offers the Accountability Form, with the signer's name prefilled (D8, FR-051).
 - `employee-request-source.ts`: `apiConfigured()` → API source. Dev stub precedence unchanged.
 
 ### Requests Queue (BEN-159)
@@ -193,7 +193,7 @@ scripts/fixtures/api/*.json
 | I. Spec-Driven | PASS | Implements spec 017. A1 and A2 below amend it in place. |
 | II. Two roles | PASS | Role from `/auth/me` (BEN-157). The API enforces every action, and a `403` is shown. |
 | III. Inventory integrity | PASS | The SPA moves no stock. It never sends a quantity on assets or a `Reserved` status. Unpublished counts are `null`, not computed. |
-| IV. State machine | PASS | Sign and Complete withheld (D8). No Admin cancel on `For Delivery`. `Received` only via `/receive`. |
+| IV. State machine | PASS | Signing completes; no Admin complete (D8, constitution 10.0.0). No Admin cancel on `For Delivery`. `Received` only via `/receive`. |
 | V. Notifications | PASS | The SPA sends no mail. The missing Admin email on sign is recorded (C12). |
 | VI. Testable increments | PASS | Each screen switches behind its own selector. Seeded checks are unchanged. |
 | VII. Typed contracts | PASS | Wire types are written from T0's live record. Every gap goes to the contract README, and nothing is invented (D4, D5, D9, D12). |

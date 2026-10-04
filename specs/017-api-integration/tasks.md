@@ -32,7 +32,7 @@ The amendment *remove seeded data entirely* (spec Session 2026-10-03, second) ch
 - [x] T004 [BEN-154] `readAllPages(fetchPage)` at `limit=100`, looping until `totalPages` — `src/shared/api/page.ts`
 - [x] T005 [P] [BEN-154] `toRequestStatus` / `toApiStatus` over the frozen keys. An unknown status throws (plan D10) — `src/shared/api/maps.ts`
 - [x] T006 [P] [BEN-154] `ApiProblemError` → `invalid | refused | unavailable | status-changed` with the API's `detail` (plan D11) — `src/shared/api/problem-outcome.ts`
-- [x] T007 [BEN-154] *(Static half done 2026-10-03 and registered in `verify.mjs`, 0 failures. The fixture-driven mapper harness is added with T003, after T002.)* `check-api-screens.mjs`, registered in `verify.mjs`. With no base URL, every selector returns its seeded source. Each route string is defined in one function. `/sign` never appears in `src/shared/api/`. No `localStorage` or `console` calls in API sources. The mapper harness runs on T003's fixtures with `fetch` stubbed and fails on a missing required field — `scripts/check-api-screens.mjs`, `scripts/verify.mjs`
+- [x] T007 [BEN-154] *(Static half done 2026-10-03 and registered in `verify.mjs`, 0 failures. The fixture-driven mapper harness is added with T003, after T002.)* `check-api-screens.mjs`, registered in `verify.mjs`. With no base URL, every selector returns its seeded source. Each route string is defined in one function. `/sign` is defined once in `src/shared/api/` *(was "never appears" until 2026-10-04, FR-051)*. No `localStorage` or `console` calls in API sources. The mapper harness runs on T003's fixtures with `fetch` stubbed and fails on a missing required field — `scripts/check-api-screens.mjs`, `scripts/verify.mjs`
 - [x] T008a [BEN-154] Same-origin `/api/*` proxy for screen routes, prefix stripped, in dev (`server.proxy`) and on Netlify (`_redirects`). `/auth` stays as itself. `apiUrl` prefixes non-auth paths on a proxied host. Needed because `/requests` and `/profile` are SPA addresses, and `/assets` is the dev design-system middleware. The live cookie is `Path=/`. *(Added during execute 2026-10-03; it blocks T002.)* — `vite.config.ts`, `src/shared/api/client.ts`, `public/_redirects`, `scripts/check-api-session.mjs`, `specs/001-office-supplies-mvp/quickstart.md`
 - [x] T008 [BEN-154] Re-export the new modules as they land; one import path — `src/shared/api/index.ts`
 
@@ -56,7 +56,7 @@ The amendment *remove seeded data entirely* (spec Session 2026-10-03, second) ch
   - `list` reads all pages of `listRequests({ requesterId, sort: 'newest' })`.
   - `get` maps the timeline from recorded times only (FR-019).
   - `cancel` and `markReceived` map their results through `problem-outcome`.
-  - `canSign: false`, and `sign` returns `unavailable` without a network call.
+  - ~~`canSign: false`, and `sign` returns `unavailable` without a network call.~~ *(Superseded 2026-10-04 by T029a: `sign` calls `/sign`; `canSign` removed.)*
 
   — `src/features/requests/detail/api-employee-request-source.ts`
 - [ ] T019 [US2] [BEN-155] The panel reads `get(id)` on open. A `409` re-reads it — `src/features/requests/detail/RequestDetailPanel.tsx`
@@ -89,12 +89,12 @@ Plan D16 order: T023 → T024 green with unedited checks → then T025 onward.
 
 ## Phase 6: Story 4 — Sign and Complete withheld in API mode (P1)
 
-> **Superseded 2026-10-04** (FR-027, ADR-0013): T029 and T031 are withdrawn; T030 stands.
+> **Superseded 2026-10-04** (FR-051, ADR-0013): T029 and T031 are withdrawn; T030 stands, restated.
 
-- [x] T029a [US4] [BEN-155] Sign through `POST /requests/:id/sign`; prefilled, read-only full name; the panel reads `Completed` back (FR-027) — `src/shared/api/requests.ts`, `src/features/requests/detail/`, `e2e/`
+- [x] T029a [US4] [BEN-155] Sign through `POST /requests/:id/sign`; prefilled, read-only full name; the panel reads `Completed` back (FR-051) — `src/shared/api/requests.ts`, `src/features/requests/detail/`, `e2e/`
 
 - [ ] ~~T029~~ *(withdrawn)* [US4] [BEN-155] When `!source.canSign` on an unsigned `Received` request, replace the Accountability Form with the note "Signing is not available yet." Seeded mode renders the form as before — `src/features/requests/detail/RequestDetailPanel.tsx`, `src/features/requests/detail/AccountabilityForm.tsx`
-- [ ] T030 [US4] [BEN-159] Assert that no Complete button exists when `canComplete` is false. Seeded `check-review-panel.mjs` still shows Complete on a signed `Received` request — `src/features/requests/queue/ReviewPanel.tsx`, `scripts/check-api-screens.mjs`
+- [x] T030 [US4] [BEN-159] Assert that no Complete button exists: `canComplete` defaults to `false` and the API source sets `false` (FR-023; no seeded source since 2026-10-03) — `src/features/requests/queue/ReviewPanel.tsx`, `scripts/check-api-screens.mjs`
 - [ ] ~~T031~~ *(withdrawn)* [US4] [BEN-154] Assert that no `/sign` route and no `completed` PATCH target exist anywhere in `src/shared/api/` (FR-022, FR-023, FR-025) — `scripts/check-api-screens.mjs`
 
 ## Phase 7: Story 5 — History (P2)
@@ -200,3 +200,8 @@ Plan D16 order: T023 → T024 green with unedited checks → then T025 onward.
 ## MVP slice
 
 Phase 1, Phase 2, then US1 → US2 → US3 → US4. That is the API demo path to `Received`, with Sign and Complete honestly withheld. US5 to US8 follow.
+
+## Phase 12: Session 2026-10-04 additions
+
+- [x] T070 [BEN-154] Form drafts for Add Single Unit, Add Multiple Units, Add Asset and Update Asset (FR-052) — `src/shared/form-draft-cache.ts`, `src/features/inventory/`, `src/features/assets/AssetFormPanel.tsx`, `src/features/auth/SessionProvider.tsx`, `e2e/form-draft.spec.ts`
+- [x] T071 [BEN-154] Dev-only role select on sign-in (FR-053). **Revert before merge to `dev`** — `src/features/auth/dev-role-override.ts`, `src/features/auth/LoginScreen.tsx`, `src/features/auth/api-session-source.ts`

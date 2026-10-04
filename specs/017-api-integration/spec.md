@@ -195,9 +195,9 @@ An Admin lists, reviews, adds (single or bulk), edits, assigns, unassigns and re
 
 ### Sign and Complete (BEN-155, BEN-159)
 
-- **FR-022** *(withdrawn 2026-10-04, see FR-027)*: In API mode, the Accountability Form's sign action MUST NOT be offered and MUST NOT be sent, while the published sign operation moves a request to `completed` (contracts conflict 12). A note MUST say signing is not yet available.
+- **FR-022** *(withdrawn 2026-10-04, see FR-051)*: In API mode, the Accountability Form's sign action MUST NOT be offered and MUST NOT be sent, while the published sign operation moves a request to `completed` (contracts conflict 12). A note MUST say signing is not yet available.
 - **FR-023**: The Admin's Complete MUST NOT be offered: signing completes the request (constitution 10.0.0 IV).
-- **FR-027** *(added 2026-10-04)*: The owning Employee's unsigned `Received` request MUST offer the Accountability Form. Its name field MUST be prefilled with the signed-in Employee's full name and MUST NOT be editable. Signing MUST send the sign operation with `agreed` and that name, once, and the panel MUST then read the request back as `Completed` with the signed time. An account with no full name MUST NOT be able to sign, and the form MUST say so.
+- **FR-051** *(added 2026-10-04)*: The owning Employee's unsigned `Received` request MUST offer the Accountability Form. Its name field MUST be prefilled with the signed-in Employee's full name and MUST NOT be editable. Signing MUST send the sign operation with `agreed` and that name, once, and the panel MUST then read the request back as `Completed` with the signed time. An account with no full name MUST NOT be able to sign, and the form MUST say so.
 - **FR-024**: In seeded mode, sign and Complete MUST behave as specs 012 and 008 define.
 - **FR-025** *(withdrawn 2026-10-04)*: The SPA's state machine MUST NOT be changed to skip the Admin's Complete step.
 - **FR-026** *(withdrawn 2026-10-04)*: When the contract publishes a sign that changes no status, a signed flag with its time on the request read, an Admin complete limited to a signed `Received` request, and the email to Admins on sign, the withholding in FR-022 and FR-023 MUST be lifted by a spec amendment, not silently.
@@ -240,6 +240,8 @@ An Admin lists, reviews, adds (single or bulk), edits, assigns, unassigns and re
 - **FR-048**: The assignee picker MUST be filled from the user list. The list MUST stay in memory for that action and MUST NOT be written to browser storage. No user create, update or delete MUST be sent.
 - **FR-049**: The Purchase Request number and an attachment file MUST NOT be sent while the contract does not accept them (conflict 11 G5, G7). The removal reason MUST be sent: the API requires it since 2026-10-03 (G2 closed).
 - **FR-050**: BitLocker identifier and recovery PIN MUST render only on the Admin's unit panel and MUST NOT be logged.
+- **FR-052** *(added 2026-10-04)*: Add Single Unit, Add Multiple Units, Add Asset and Update Asset MUST keep what was typed in `localStorage` for at most five minutes after the last change, so closing the panel by a click outside or Escape does not lose it. A draft older than five minutes MUST be removed before the panel first renders. Reopening without a change MUST NOT renew it. Cancel and a successful save MUST remove it, and signing out MUST remove every draft. BitLocker identifiers and recovery keys/PINs MUST NOT be stored (FR-050, constitution VIII). An Update Asset draft MUST be dropped when the asset changed since the draft was made.
+- **FR-053** *(added 2026-10-04, temporary)*: In development builds only, the sign-in screen MAY offer a role select that replaces the role the shell routes and renders by after a real Google sign-in. It MUST NOT exist in production builds, MUST NOT change what the API authorizes, and MUST be removed before this branch merges to `dev`.
 
 ## Out of Scope
 
@@ -296,4 +298,11 @@ Decided by the project owner.
 - Q: Keep withholding Sign until the backend splits `/sign` from completion? → A: **No. Change the constitution to match the API** (10.0.0, ADR-0013). Signing completes the request; there is no Admin complete.
 - Q: How does the Employee sign? → A: **The full-name field is prefilled with the Employee's own name and is not editable**, so they read, tick and press **I acknowledge and sign**.
 
-Consequences: Story 4 is superseded; FR-022, FR-025 and FR-026 are withdrawn; FR-023 is restated; FR-027 is added. Contracts conflict 12 is closed.
+Consequences: Story 4 is superseded; FR-022, FR-025 and FR-026 are withdrawn; FR-023 is restated; FR-051 is added. Contracts conflict 12 is closed. The signed time is the `completed` timeline entry: `/sign` sets `receivedSignature` and `completed` in one write and publishes no separate signed time.
+
+### Session 2026-10-04 (second) — form drafts and a dev role override
+
+Asked by the frontend owner.
+
+- Q: An accidental click outside Add Single Unit, Add Multiple Units, Add Asset or Update Asset loses everything typed. Keep it? → A: **Yes, in `localStorage`, for at most five minutes from the last change, with no timer.** An expired draft is removed before the panel renders. Cancel and a successful save clear it. (FR-052)
+- Q: The only company account available for development is an Admin. How does the owner see the Employee screens? → A: **A development-build-only role select on sign-in**, temporary, reverted before merge to `dev`. Google sign-in stays real; the API still authorizes by its own role. (FR-053)
