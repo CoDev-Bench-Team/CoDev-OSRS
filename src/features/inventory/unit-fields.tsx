@@ -260,6 +260,7 @@ export function CatalogItemPicker({
   const [query, setQuery] = useState('');
   const wrapper = useRef<HTMLDivElement>(null);
   const found = (assets ?? []).filter((a) => matches(query, a.name, a.model));
+  const loading = assets === null && !failed;
   const box = useCombobox(
     found,
     (asset) => {
@@ -267,7 +268,7 @@ export function CatalogItemPicker({
       setQuery('');
     },
     // Open while the catalog loads; the list shows skeletons until it lands.
-    assets === null && !failed,
+    loading,
   );
 
   return (
@@ -362,6 +363,7 @@ export function UserPicker({
   const [query, setQuery] = useState<string | null>(null);
   const typed = query ?? chosen?.name ?? (value && users === null ? (pendingName ?? '') : '');
   const found = query === null ? list : list.filter((u) => matches(query, u.name, u.email));
+  const loading = users === null;
   const box = useCombobox(
     found,
     (user) => {
@@ -369,7 +371,7 @@ export function UserPicker({
       setQuery(null);
     },
     // Open while the directory loads; the list shows skeletons until it lands.
-    users === null,
+    loading,
   );
 
   return (

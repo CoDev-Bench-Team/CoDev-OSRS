@@ -53,7 +53,7 @@ function awaiting(request: TimelineFacts, viewer: TimelineViewer): string | unde
     case 'Pending Approval':
       return 'Awaiting review by an Admin';
     case 'Approved':
-      return 'Awaiting an Admin to arrange delivery or pickup';
+      return mine ? 'Awaiting the Workplace team to arrange delivery or pickup' : 'Awaiting an Admin to arrange delivery or pickup';
     case 'For Delivery':
       return mine ? 'Awaiting delivery. Mark it received once it arrives' : 'Awaiting delivery. Mark it received once handed over';
     case 'Ready for Pickup':
@@ -67,7 +67,7 @@ function awaiting(request: TimelineFacts, viewer: TimelineViewer): string | unde
   }
 }
 
-export function requestTimeline(request: TimelineFacts, viewer: TimelineViewer = 'admin'): TimelineNode[] {
+export function requestTimeline(request: TimelineFacts, viewer: TimelineViewer): TimelineNode[] {
   const submitted: TimelineNode = {
     label: 'Submitted',
     state: 'reached',

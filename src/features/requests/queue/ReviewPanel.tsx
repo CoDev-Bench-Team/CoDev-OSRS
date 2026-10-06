@@ -350,7 +350,7 @@ export function ReviewPanel({
         <h3 id={statusHeadingId} className="font-sans text-14 font-bold leading-tight uppercase text-ink-secondary">
           Status
         </h3>
-        <StatusTimeline nodes={requestTimeline(request)} />
+        <StatusTimeline nodes={requestTimeline(request, 'admin')} />
       </section>
 
       <StoppedReason request={request} />

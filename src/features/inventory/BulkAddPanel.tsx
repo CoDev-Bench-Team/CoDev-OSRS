@@ -85,7 +85,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
   const { state: assetsState } = useAssets();
   const { assets, asset, setAsset, location, setLocation, purchase, setPurchase, rows, setRows, discard } = useBulkDraft(assetsState);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  /** A refusal that names no field (a 409), shown above the rows. */
+  /** A refusal that names no field (a 409), shown above the action buttons. */
   const [conflict, setConflict] = useState<string>();
   const rule = deviceFieldsFor(asset?.category);
   const minus = useRef<HTMLButtonElement>(null);

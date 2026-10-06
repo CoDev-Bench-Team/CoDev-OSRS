@@ -74,29 +74,6 @@ function SignInNotices({
   );
 }
 
-/** The sign-in screen, as drawn: the 421×500 card on the full-bleed
- *  photograph, carrying the product lockup, the welcome line, the Google
- *  control and the copyright line. No top bar (Story 5 AC5) — this route sits
- *  outside the layout.
- *
- *  The SPA implements NO authentication (FR-003a, spec 001's 2026-09-12
- *  amendment). The drawn control calls `signIn()` on the session boundary and
- *  that is the whole of the shell's involvement. Whether the backend
- *  authenticates against Google or against seeded users is a backend decision,
- *  settled when the contract publishes.
- *
- *  A refusal leaves the visitor here with a plain message, no session, and the
- *  control back at rest (FR-003b). The message is the published problem text
- *  when the body has a detail or a title, and the shell's existing sentence
- *  otherwise.
- *
- *  The card is composed in flow rather than by absolute coordinate, the same
- *  redesign spec 002 applied to the top bar and page header — but unlike the
- *  bar, this card is a FIXED 421×500 box that never reflows, so its drawn
- *  offsets are reproduced exactly instead of approximated. The four spacing
- *  values below are measured from the file: 59 to the lockup, 94 to the
- *  welcome line, 13 to the control, 112 to the copyright, 55 to the bottom
- *  edge. They sum with the elements to exactly 500. */
 /** The sign-in attempt: whether the control is ready, the refusal to show,
  *  and the two ways a sign-in starts (Google's credential, or the drawn
  *  control). */
@@ -140,6 +117,29 @@ function useSignInAttempt() {
   return { refused, busy, checking, disabled, googleButton, googleSource, setGoogleLoading, onGoogleUnavailable, onSignIn };
 }
 
+/** The sign-in screen, as drawn: the 421×500 card on the full-bleed
+ *  photograph, carrying the product lockup, the welcome line, the Google
+ *  control and the copyright line. No top bar (Story 5 AC5) — this route sits
+ *  outside the layout.
+ *
+ *  The SPA implements NO authentication (FR-003a, spec 001's 2026-09-12
+ *  amendment). The drawn control calls `signIn()` on the session boundary and
+ *  that is the whole of the shell's involvement. Whether the backend
+ *  authenticates against Google or against seeded users is a backend decision,
+ *  settled when the contract publishes.
+ *
+ *  A refusal leaves the visitor here with a plain message, no session, and the
+ *  control back at rest (FR-003b). The message is the published problem text
+ *  when the body has a detail or a title, and the shell's existing sentence
+ *  otherwise.
+ *
+ *  The card is composed in flow rather than by absolute coordinate, the same
+ *  redesign spec 002 applied to the top bar and page header — but unlike the
+ *  bar, this card is a FIXED 421×500 box that never reflows, so its drawn
+ *  offsets are reproduced exactly instead of approximated. The four spacing
+ *  values below are measured from the file: 59 to the lockup, 94 to the
+ *  welcome line, 13 to the control, 112 to the copyright, 55 to the bottom
+ *  edge. They sum with the elements to exactly 500. */
 export function LoginScreen() {
   const { status, session, notice } = useSession();
   const location = useLocation();

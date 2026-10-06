@@ -40,7 +40,7 @@ export function HistoryPanel({ request, onClose }: { request: ResolvedRequest; o
         <h3 id={statusHeadingId} className={SECTION_HEADING}>
           Status
         </h3>
-        <StatusTimeline nodes={requestTimeline(request)} />
+        <StatusTimeline nodes={requestTimeline(request, 'admin')} />
       </section>
 
       <StoppedReason request={request} />

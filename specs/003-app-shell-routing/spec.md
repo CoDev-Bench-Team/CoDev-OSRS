@@ -276,7 +276,7 @@ No constitution version bump is required — no principle changes. `docs/product
 |-----|--------|
 | ~~The UI kit merges Approver and Supply Admin into one "Admin".~~ | **Closed 2026-09-24** — constitution 3.0.0 II adopts the merge (ADR-0005); both navigation sets are drawn. |
 | **No affordance is drawn for reaching Profile** now that it has left the navigation. | The account cluster was made the route in. Ours, not the designer's. |
-| **The notification bell opens nothing** — no panel, list or destination is drawn. | It ships as a marker with a count (FR-014a). What it should open is undesigned. |
+| ~~**The notification bell opens nothing** — no panel, list or destination is drawn.~~ | **Closed 2026-10-06** — the bell is removed (FR-014 amended, FR-014a withdrawn). What it should open is undesigned. |
 | ~~No designed fulfillment queue.~~ | **Closed 2026-09-24** — fulfilment folded into the Requests Queue (drift-2026-09-22 §2). |
 | **No designed Profile screen for the Admin** — only the Employee's. | Profile is reachable by both roles from the account cluster; the Admin reuses the Employee layout (spec 006 D2). |
 | **No loading, error, not-found, or forbidden screens** designed anywhere. | Stories 4 and 7 require all four; each is invented and needs ratification. |

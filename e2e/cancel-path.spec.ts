@@ -40,10 +40,13 @@ test('Maya and Ethan each cancel with a reason, and an empty reason changes noth
   await page.getByRole('button', { name: 'Approve Request' }).click();
   await reopenReview(page, approvedId);
   await expect(page.getByRole('dialog').getByText('Approved', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('dialog').getByText('Awaiting an Admin to arrange delivery or pickup')).toBeVisible();
 
   await switchAccount(page, 'Maya Santos');
   await openMine(page, approvedId);
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Cancel Request' })).toHaveCount(0);
+  // The handover step names who it waits on, worded for the requester (spec 008 FR-018a).
+  await expect(page.getByRole('dialog').getByText('Awaiting the Workplace team to arrange delivery or pickup')).toBeVisible();
 
   await switchAccount(page, 'Ethan Cruz');
   await expectDavaoStock(page, ASSET, { available: UNITS - QTY, reserved: QTY, units: UNITS });
