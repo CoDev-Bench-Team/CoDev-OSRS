@@ -9,6 +9,7 @@ import {
   TableHead,
   tableColumnStyle,
   type ColumnWidth,
+  type RequestStatus,
 } from '../../../shared/ui';
 import type { Office } from '../../auth/types';
 import { keyedLines, NO_VALUE } from '../format';
@@ -55,6 +56,11 @@ export type PanelNotice = { tone: 'success' | 'error'; title: string; body?: str
 
 const QTY_WIDTH: ColumnWidth = '48px';
 const STOCK_WIDTH: ColumnWidth = '132px';
+
+/** Once `Received`, the request's units are Assigned to the requester and
+ *  out of the store, so the store's figure says nothing about this request:
+ *  CURRENT INVENTORY is left out (spec 008 FR-004, amended 2026-10-06). */
+const HIDES_STOCK: ReadonlySet<RequestStatus> = new Set(['Received', 'Completed']);
 
 type Mode = 'idle' | 'rejecting' | 'updating' | 'cancelling';
 
@@ -265,6 +271,8 @@ export function ReviewPanel({
     );
   };
 
+  const showStock = !HIDES_STOCK.has(request.status);
+
   return (
     <SidePanel
       title={`Review request ${requestLabel(request)}`}
@@ -305,7 +313,7 @@ export function ReviewPanel({
 
       <section aria-label="Requested items">
         <TableCard>
-          <TableHead cols={[['Item'], ['Qty', QTY_WIDTH], ['Current inventory', STOCK_WIDTH]]} />
+          <TableHead cols={showStock ? [['Item'], ['Qty', QTY_WIDTH], ['Current inventory', STOCK_WIDTH]] : [['Item'], ['Qty', QTY_WIDTH]]} />
           <ul>
             {keyedLines(request.lines).map(({ key, line }) => (
               <li key={key} className={`flex items-center border-t border-line-default ${TABLE_ROW_PADDING_CLASS} py-18`}>
@@ -315,9 +323,11 @@ export function ReviewPanel({
                 <span style={tableColumnStyle(QTY_WIDTH)} className="type-ui-bold tabular-nums text-ink-primary">
                   {line.qty}
                 </span>
-                <span style={tableColumnStyle(STOCK_WIDTH)}>
-                  <StockBadge available={stockForRequest(line, request.status)} />
-                </span>
+                {showStock ? (
+                  <span style={tableColumnStyle(STOCK_WIDTH)}>
+                    <StockBadge available={stockForRequest(line, request.status)} />
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>

@@ -48,9 +48,17 @@ test('Maya marks her own handover received, then signs and completes it', async 
 
   await switchAccount(page, 'Ethan Cruz');
   await expectDavaoStock(page, ASSET, { available: UNITS - QTY, reserved: 0, units: UNITS });
+  // The units are Assigned now, so the store's figure is left out of the
+  // review (spec 008 FR-004, amended 2026-10-06).
+  await openReview(page, id);
+  await expect(page.getByRole('dialog').getByText('Current inventory', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('dialog').getByText(/in stock$/)).toHaveCount(0);
+  // The next step says what it waits on (spec 008 FR-018a).
+  await expect(page.getByRole('dialog').getByText("Awaiting the employee's signature on the Accountability Form")).toBeVisible();
 
   await switchAccount(page, 'Maya Santos');
   await openMine(page, id);
   await expect(page.getByRole('dialog').getByText('Received', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('dialog').getByText('Awaiting your signature on the Accountability Form')).toBeVisible();
   await signAccountabilityForm(page, 'Maya Santos');
 });

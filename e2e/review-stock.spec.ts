@@ -10,6 +10,7 @@ test('CURRENT INVENTORY counts the units the request itself holds', async ({ pag
 
   // Davao: 6 laptops, 1 reserved by this request, 5 Available → 6.
   await openReview(page, 'REQ-2026-1847');
+  await expect(page.getByRole('dialog').getByText('Current inventory', { exact: true })).toBeVisible();
   await expect(page.getByRole('dialog').getByText('6 in stock')).toBeVisible();
   await page.keyboard.press('Escape');
 
