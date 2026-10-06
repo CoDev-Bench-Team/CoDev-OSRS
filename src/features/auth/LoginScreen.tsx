@@ -3,7 +3,6 @@ import { Navigate, useLocation } from 'react-router';
 import { SessionUnreachable, apiConfigured } from '../../shared/api';
 import { CoDevSupplyRequestsLogo, SignInButton } from '../../shared/ui';
 import { canRoleReach, landingPath } from '../../app/destinations';
-import { DEV_ROLE_OVERRIDE_ENABLED, devRoleOverride, setDevRoleOverride } from './dev-role-override';
 import { GoogleSignInOverlay } from './GoogleSignInOverlay';
 import { hasGoogleButton } from './google-button-source';
 import { onGoogleCredential } from './google-identity';
@@ -43,29 +42,6 @@ function startSignIn(
   setRefused(null);
   setBusy(true);
   void attempt.catch((error: unknown) => setRefused(signInFailure(error))).finally(() => setBusy(false));
-}
-
-/** TEMPORARY, development only: see `dev-role-override.ts`. */
-function DevRoleSelect() {
-  const [role, setRole] = useState<Role | ''>(() => devRoleOverride() ?? '');
-  return (
-    <label className="mt-16 flex items-center gap-8 rounded-10 bg-surface-card px-16 py-8 type-body text-ink-primary shadow-card">
-      <span>Dev: sign in as</span>
-      <select
-        value={role}
-        onChange={(event) => {
-          const next = event.target.value === 'employee' || event.target.value === 'admin' ? event.target.value : '';
-          setRole(next);
-          setDevRoleOverride(next || null);
-        }}
-        className="rounded-8 border border-line-default px-8 py-4"
-      >
-        <option value="">API role</option>
-        <option value="employee">Employee</option>
-        <option value="admin">Admin</option>
-      </select>
-    </label>
-  );
 }
 
 function SignInNotices({
@@ -251,7 +227,6 @@ export function LoginScreen() {
 
         <span className="mt-[112px] type-body text-ink-primary">© 2026 CoDev. All rights reserved.</span>
       </div>
-      {DEV_ROLE_OVERRIDE_ENABLED ? <DevRoleSelect /> : null}
 
     </div>
   );

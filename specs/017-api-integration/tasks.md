@@ -204,4 +204,4 @@ Phase 1, Phase 2, then US1 → US2 → US3 → US4. That is the API demo path to
 ## Phase 12: Session 2026-10-04 additions
 
 - [x] T070 [BEN-154] Form drafts for Add Single Unit, Add Multiple Units, Add Asset and Update Asset (FR-052) — `src/shared/form-draft-cache.ts`, `src/features/inventory/`, `src/features/assets/AssetFormPanel.tsx`, `src/features/auth/SessionProvider.tsx`, `e2e/form-draft.spec.ts`
-- [x] T071 [BEN-154] Dev-only role select on sign-in (FR-053). **Revert before merge to `dev`** — `src/features/auth/dev-role-override.ts`, `src/features/auth/LoginScreen.tsx`, `src/features/auth/api-session-source.ts`
+- [x] T071 [BEN-154] Dev-only role select on sign-in (FR-053). **Reverted 2026-10-06** before merge to `dev` — `src/features/auth/dev-role-override.ts`, `src/features/auth/LoginScreen.tsx`, `src/features/auth/api-session-source.ts`

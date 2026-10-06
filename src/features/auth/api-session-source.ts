@@ -1,6 +1,5 @@
 import { ApiProblemError, SessionUnreachable, apiConfigured, apiRequest, onSessionEnded, problemMessage } from '../../shared/api';
 import type { GoogleButtonSource } from './google-button-source';
-import { withDevRoleOverride } from './dev-role-override';
 import { awaitGoogleCredential, mountGoogleButton } from './google-identity';
 import type { SessionSource } from './session-source';
 import { SIGN_IN_REFUSAL, SessionRefusal } from './session-errors';
@@ -100,7 +99,7 @@ async function performSignIn(credential?: string): Promise<Session> {
   const payload: { credential?: string } = { credential: token };
   try {
     const body = await apiRequest<unknown>('/auth/google', { method: 'POST', body: payload });
-    const session = withDevRoleOverride(sessionFromCurrentUser(body));
+    const session = sessionFromCurrentUser(body);
     if (!session) throw new SessionRefusal(SIGN_IN_REFUSAL);
     signedOutLocally = false;
     wake();
@@ -127,7 +126,7 @@ export const apiSessionSource: SessionSource & Partial<GoogleButtonSource> = {
     if (signedOutLocally || !apiConfigured()) return null;
     try {
       const body = await apiRequest<unknown>('/auth/me');
-      return withDevRoleOverride(sessionFromCurrentUser(body));
+      return sessionFromCurrentUser(body);
     } catch (error) {
       if (error instanceof ApiProblemError && error.status === 401) return null;
       rethrow(error);
