@@ -9,7 +9,7 @@ import { formatAmount, parseAmount } from './format';
 import { isUnitProblem } from './inventory-source';
 import { refusal, useAttempt } from './inventory-store';
 import type { AddStatus, EditStatus, UnitDetail, UnitDraft } from './types';
-import { CatalogItemPicker, DeviceFields, FormAlert, FormFooter, PurchaseFields, RemoveUnitSection, UserPicker, type Device, type Purchase } from './unit-fields';
+import { CatalogItemPicker, DeviceFields, FormFooter, PurchaseFields, RemoveUnitSection, UserPicker, type Device, type Purchase } from './unit-fields';
 import { statusOptions, withAssignee, withStatus } from './unit-rules';
 import { assetFromSnapshot, resolveAsset, snapshotOf } from './catalog-snapshot';
 import { draftOneOf, draftString, readDraft, savingDraft, useDraftWriter } from '../../shared/form-draft-cache';
@@ -363,6 +363,8 @@ type FooterProps = {
   saving: boolean;
   adding: boolean;
   removing: boolean;
+  /** A refusal that names no field, shown above the buttons. */
+  alert?: string;
   onCancelRemoval: () => void;
   onRetry: () => void;
   /** Cancel on Add discards the kept draft. */
@@ -371,7 +373,7 @@ type FooterProps = {
 
 /** The footer for each load state: none while loading, Close (and Try again
  *  after a failure) while not ready, Cancel and the submit button once ready. */
-function panelFooter({ loaded, formId, saving, adding, removing, onCancelRemoval, onRetry, onDiscard }: FooterProps) {
+function panelFooter({ loaded, formId, saving, adding, removing, alert, onCancelRemoval, onRetry, onDiscard }: FooterProps) {
   if (loaded.kind === 'loading') return undefined;
   if (loaded.kind !== 'ready') {
     return (leave: () => void) => <NoticeFooter onRetry={loaded.kind === 'failed' ? onRetry : undefined} onClose={leave} />;
@@ -382,6 +384,7 @@ function panelFooter({ loaded, formId, saving, adding, removing, onCancelRemoval
       saving={saving}
       submitLabel={removing ? 'Confirm Removal' : 'Save Changes'}
       savingLabel={removing ? 'Removing…' : adding ? 'Adding…' : 'Saving…'}
+      alert={alert}
       onCancel={
         removing
           ? onCancelRemoval
@@ -582,8 +585,6 @@ function UnitFormBody({ editor }: { editor: ReturnType<typeof useUnitFormPanel> 
     <form id={formId} onSubmit={submit} noValidate>
       {/* Locked while saving or removing: the fieldset disables every control in it. */}
       <fieldset disabled={saving} className="m-0 flex min-w-0 flex-col gap-32 border-0 p-0">
-      <FormAlert message={errors['']} />
-
       {editing ? null : (
         <CatalogItemPicker
           assets={assets}
@@ -656,6 +657,7 @@ export function UnitFormPanel(props: Props) {
         saving: editor.saving,
         adding: !editor.editing,
         removing: editor.removing,
+        alert: editor.errors[''],
         onCancelRemoval: editor.leaveRemoving,
         onRetry: editor.retry,
         onDiscard: editor.discard,

@@ -1,6 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, Field, FieldGroup, Search, TextField, TextInput, type FieldControl } from '../../shared/ui';
+import { Button, Field, FieldGroup, Search, Skeleton, TextField, TextInput, type FieldControl } from '../../shared/ui';
 import { onDismissPopovers } from '../../shared/ui/overlay/popover-layer';
 import type { Asset, Category } from '../assets/types';
 import { deviceFieldsFor } from './device-fields';
@@ -22,7 +22,7 @@ function CloseGlyph() {
   );
 }
 
-/** A refusal that names no field, above the form or the rows it is about. */
+/** A refusal that names no field, shown above the panel's action buttons. */
 export function FormAlert({ message }: { message?: string }) {
   if (!message) return null;
   return (
@@ -37,13 +37,16 @@ export function FormAlert({ message }: { message?: string }) {
 const CATALOG_UNLOADED = 'Catalog items could not be loaded. Close the panel and try again';
 const USERS_UNLOADED = 'Users could not be loaded. Close the panel and try again';
 
-/** **Cancel** and the submit button, centred under the panel. */
+/** **Cancel** and the submit button, centred under the panel. A refusal
+ *  that names no field sits above them, outside the scrolling form, so it is
+ *  seen wherever the form is scrolled to when Save is pressed. */
 export function FormFooter({
   formId,
   saving,
   disabled,
   submitLabel,
   savingLabel,
+  alert,
   onCancel,
 }: {
   formId: string;
@@ -51,16 +54,20 @@ export function FormFooter({
   disabled?: boolean;
   submitLabel: string;
   savingLabel: string;
+  alert?: string;
   onCancel: () => void;
 }) {
   return (
-    <div className="flex items-center justify-center gap-12">
-      <Button variant="ghost" disabled={saving} onClick={onCancel}>
-        Cancel
-      </Button>
-      <Button type="submit" form={formId} disabled={saving || disabled}>
-        {saving ? savingLabel : submitLabel}
-      </Button>
+    <div className="flex flex-col gap-9">
+      <FormAlert message={alert} />
+      <div className="flex items-center justify-center gap-12">
+        <Button variant="ghost" disabled={saving} onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" form={formId} disabled={saving || disabled}>
+          {saving ? savingLabel : submitLabel}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -82,12 +89,18 @@ type ListPlace = { left: number; width: number } & ({ top: number } | { bottom: 
  *  (everything outside a modal dialog is inert), else `<body>`, and placed
  *  fixed under the field (`anchor`), or above it when there is no room below.
  *  It follows the field when the panel scrolls. */
-function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
+/** Option-shaped skeletons the list shows while its items load. */
+const LOADING_ROWS = 3;
+
+/** `loading`: the items are still on their way. The list still opens, with
+ *  skeleton options (the caller's `skeleton`, shaped like its own option) in
+ *  place of results, and fills in when they arrive. */
+function useCombobox<T>(items: readonly T[], onPick: (item: T) => void, loading = false) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const shown = items.slice(0, RESULT_LIMIT);
-  const expanded = open && shown.length > 0;
+  const expanded = open && (loading || shown.length > 0);
   const anchor = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [layer, setLayer] = useState<HTMLElement | null>(null);
@@ -143,6 +156,7 @@ function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
         setActive(0);
         return;
       }
+      if (shown.length === 0) return;
       const step = e.key === 'ArrowDown' ? 1 : -1;
       setActive((i) => (i + step + shown.length) % shown.length);
     } else if (e.key === 'Enter' && expanded) {
@@ -161,22 +175,32 @@ function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
     'aria-expanded': expanded,
     'aria-controls': `${id}-list`,
     'aria-autocomplete': 'list' as const,
-    'aria-activedescendant': expanded ? `${id}-opt-${active}` : undefined,
+    'aria-activedescendant': expanded && shown.length > 0 ? `${id}-opt-${active}` : undefined,
     autoComplete: 'off',
     onKeyDown,
     onBlur: () => setOpen(false),
   };
 
-  const list = (label: string, render: (item: T) => ReactNode, key: (item: T) => string) =>
+  const list = (label: string, render: (item: T) => ReactNode, key: (item: T) => string, skeleton?: ReactNode) =>
     expanded && layer && place ? createPortal(
       <ul
         ref={listRef}
         id={`${id}-list`}
         role="listbox"
         aria-label={label}
+        aria-busy={loading || undefined}
         style={{ position: 'fixed', ...place }}
         className="z-popover max-h-[260px] overflow-y-auto rounded-10 bg-surface-card p-4 shadow-card ring-default"
       >
+        {loading && shown.length === 0
+          ? Array.from({ length: LOADING_ROWS }, (_, i) => (
+              // Not choosable: the first carries what a screen reader hears.
+              <li key={i} role="option" aria-disabled="true" aria-selected={false} className="flex flex-col gap-4 rounded-6 px-12 py-10">
+                {i === 0 ? <span className="sr-only">Loading {label.toLowerCase()}…</span> : null}
+                {skeleton}
+              </li>
+            ))
+          : null}
         {shown.map((item, i) => (
           <li
             key={key(item)}
@@ -236,10 +260,15 @@ export function CatalogItemPicker({
   const [query, setQuery] = useState('');
   const wrapper = useRef<HTMLDivElement>(null);
   const found = (assets ?? []).filter((a) => matches(query, a.name, a.model));
-  const box = useCombobox(found, (asset) => {
-    onChange(asset);
-    setQuery('');
-  });
+  const box = useCombobox(
+    found,
+    (asset) => {
+      onChange(asset);
+      setQuery('');
+    },
+    // Open while the catalog loads; the list shows skeletons until it lands.
+    assets === null && !failed,
+  );
 
   return (
     <div ref={wrapper} className="flex flex-col gap-14">
@@ -252,7 +281,7 @@ export function CatalogItemPicker({
               aria-required={required}
               aria-invalid={invalid || undefined}
               aria-describedby={describedBy}
-              disabled={assets === null}
+              disabled={failed && assets === null}
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -274,6 +303,11 @@ export function CatalogItemPicker({
                 </>
               ),
               (a) => a.id,
+              <>
+                <Skeleton className="h-10 w-[64px]" />
+                <Skeleton className="h-14 w-[168px]" />
+                <Skeleton className="h-12 w-[104px]" />
+              </>,
             )}
           </div>
         )}
@@ -328,10 +362,15 @@ export function UserPicker({
   const [query, setQuery] = useState<string | null>(null);
   const typed = query ?? chosen?.name ?? (value && users === null ? (pendingName ?? '') : '');
   const found = query === null ? list : list.filter((u) => matches(query, u.name, u.email));
-  const box = useCombobox(found, (user) => {
-    onChange(user.id);
-    setQuery(null);
-  });
+  const box = useCombobox(
+    found,
+    (user) => {
+      onChange(user.id);
+      setQuery(null);
+    },
+    // Open while the directory loads; the list shows skeletons until it lands.
+    users === null,
+  );
 
   return (
     <Field label="User" error={error ?? (failed ? USERS_UNLOADED : undefined)}>
@@ -342,7 +381,7 @@ export function UserPicker({
             placeholder="Insert here..."
             invalid={invalid}
             aria-describedby={describedBy}
-            disabled={disabled || users === null}
+            disabled={disabled || failed}
             value={typed}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -371,6 +410,10 @@ export function UserPicker({
               </>
             ),
             (u) => u.id,
+            <>
+              <Skeleton className="h-14 w-[152px]" />
+              <Skeleton className="h-12 w-[200px]" />
+            </>,
           )}
         </div>
       )}

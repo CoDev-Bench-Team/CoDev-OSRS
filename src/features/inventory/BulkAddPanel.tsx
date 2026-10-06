@@ -7,7 +7,7 @@ import { deviceFieldsFor, stripHidden } from './device-fields';
 import { parseAmount } from './format';
 import { refusal, useAttempt } from './inventory-store';
 import type { UnitBatchDraft } from './types';
-import { CatalogItemPicker, FormAlert, FormFooter, PurchaseFields, SecretInput, type Device, type Purchase } from './unit-fields';
+import { CatalogItemPicker, FormFooter, PurchaseFields, SecretInput, type Device, type Purchase } from './unit-fields';
 import { assetFromSnapshot, resolveAsset, snapshotOf } from './catalog-snapshot';
 import { draftOneOf, draftString, readDraft, savingDraft, useDraftWriter } from '../../shared/form-draft-cache';
 import { MAX_BATCH, today, validateBatch } from './unit-validation';
@@ -197,7 +197,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
       bodyClassName="px-14 pt-10 pb-24"
       footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
       footer={(leave) => (
-        <FormFooter formId={formId} saving={saving} disabled={rows.length === 0} submitLabel="Save Changes" savingLabel="Adding…" onCancel={() => {
+        <FormFooter formId={formId} saving={saving} disabled={rows.length === 0} submitLabel="Save Changes" savingLabel="Adding…" alert={errors[''] ?? conflict} onCancel={() => {
           discard();
           leave();
         }} />
@@ -206,8 +206,6 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
       <form id={formId} onSubmit={submit} noValidate>
         {/* Locked while saving: the fieldset disables every control in it. */}
         <fieldset disabled={saving} className="m-0 flex min-w-0 flex-col gap-32 border-0 p-0">
-        <FormAlert message={errors['']} />
-
         <CatalogItemPicker
           assets={assets}
           value={asset}
@@ -291,7 +289,6 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
         />
 
         <FieldGroup heading="UNITS">
-          <FormAlert message={conflict} />
           {errors.units ? <p className="type-meta leading-body text-status-rejected-fg">{errors.units}</p> : null}
           {rows.map((row, i) => (
             <div key={row.key} role="group" aria-label={`Unit ${i + 1}`} className="flex items-start gap-12">
