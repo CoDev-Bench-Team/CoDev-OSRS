@@ -90,3 +90,13 @@ test('`/` lands an Admin on the Requests Queue tab', async ({ page, api }) => {
   await expect(page.getByRole('link', { name: 'Requests Queue' })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('heading', { name: 'Requests Queue', level: 1 })).toBeVisible();
 });
+
+test('an Admin who signs in from `/` lands on the Requests Queue tab', async ({ page, api }) => {
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/login$/);
+  // The API now has a session, as after Google sign-in; sign-in still holds `/` as where the visitor was going.
+  api.current = PEOPLE['Ethan Cruz'];
+  await page.reload();
+  await expect(page).toHaveURL(/\/queue$/);
+  await expect(page.getByRole('link', { name: 'Requests Queue' })).toHaveAttribute('aria-current', 'page');
+});
