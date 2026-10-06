@@ -21,7 +21,7 @@ import { useRequestListCount } from './request-list-count';
  *  demo exercise the real sign-in path. */
 export function AppLayout() {
   const { status, session, signOut } = useSession();
-  const { count, notificationCount } = useRequestListCount();
+  const { count } = useRequestListCount();
   const { openList, closeList } = useRequestList();
   const location = useLocation();
   const navigate = useNavigate();
@@ -99,7 +99,6 @@ export function AppLayout() {
               : []
           }
           user="pending"
-          notifications
         />
       </div>
     );
@@ -133,12 +132,9 @@ export function AppLayout() {
           if (!onCatalog) void navigate(DESTINATIONS.catalog.path);
           openList();
         }}
-        // The 2026-09-15 export puts a notification marker in both bars, with a
-        // count on the Admin one. It is a marker, not a control: the file draws
-        // no panel for it to open, so it announces a count and does nothing —
-        // better than a button that goes nowhere. See the drift document.
-        notifications
-        notificationCount={role === 'employee' ? undefined : notificationCount}
+        // No notification marker: the 2026-09-15 export draws a bell, but it
+        // had nothing to open, so it was taken out (spec 003 FR-014, amended
+        // 2026-10-06).
         // Profile left the navigation in that same export; the account cluster
         // is how the file's Profile screen is reached (FR-006, amended).
         onOpenAccount={() => void navigate(DESTINATIONS.profile.path)}

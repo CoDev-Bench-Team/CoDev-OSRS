@@ -172,7 +172,6 @@ export function TopBar({
 
           {user === 'pending' ? (
             <>
-              <span className="hidden h-[31px] w-1 shrink-0 bg-osrs-gray-400 sm:block" aria-hidden="true" />
               <span className="flex min-h-touch-target items-center gap-8" aria-hidden="true">
                 <Skeleton className="size-[34px] rounded-circle" />
                 <span className="flex flex-col gap-4">
@@ -186,7 +185,6 @@ export function TopBar({
             </>
           ) : user && (
             <>
-              <span className="hidden h-[31px] w-1 shrink-0 bg-osrs-gray-400 sm:block" aria-hidden="true" />
               {onOpenAccount ? (
                 <button
                   type="button"

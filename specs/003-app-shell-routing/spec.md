@@ -179,8 +179,8 @@ The shell remains usable from a phone up to the 1440px design width, carrying fo
 - **FR-012**: An address matching no destination MUST produce a not-found screen inside the shell, distinguishable from a refusal, so that a mistyped address is diagnosable.
 - **FR-012a**: Addresses that identify a specific record MUST NOT reveal whether that record exists. A request the user may not see and a request that does not exist MUST produce the same response.
 - **FR-013**: A signed-out visitor who requests a specific destination MUST be returned to it after successful sign-in, provided their role permits it.
-- **FR-014**: The shell MUST render persistent chrome on every signed-in destination: product lockup, role navigation with exactly one current item, an account cluster naming the signed-in user and role, and a notification marker.
-- **FR-014a**: The notification marker MUST show a count when there is one. Until a notification feature ships it MUST NOT present itself as a control, because there is nothing for it to open.
+- **FR-014**: The shell MUST render persistent chrome on every signed-in destination: product lockup, role navigation with exactly one current item, an account cluster naming the signed-in user and role. *(Amended 2026-10-06: the notification marker is removed from the bar. The design draws one, but no notification feature or destination exists, so a bell that opens nothing is left out until one does.)*
+- **FR-014a**: ~~The notification marker MUST show a count when there is one. Until a notification feature ships it MUST NOT present itself as a control, because there is nothing for it to open.~~ *Withdrawn 2026-10-06 with the marker (FR-014).*
 - **FR-015**: The request-list marker and its live count MUST appear only for Employees.
 - **FR-016**: The shell MUST provide sign-out; after it, no signed-in screen may be restored by browser history.
 - **FR-017**: An invalidated session MUST return the user to sign-in with an explanation rather than leaving a broken screen.

@@ -267,6 +267,13 @@ ink-lightening. **The affordance is ours; the file draws none.**
 
 ### The notification bell (2026-09-15)
 
+> **Removed 2026-10-06** (spec 003 FR-014, amended). The shell no longer
+> renders the bell in either bar: with no notification feature behind it, a
+> marker that opens nothing was judged noise. `TopBar` keeps the
+> `notifications` prop, unused, for when a notification feature is specified.
+> The 1px divider the file draws before the account cluster went with it, so
+> the cluster follows the bar's other items with no rule between them.
+
 Both bar variants gained an `mdi-light:bell`, with a count badge on the Admin
 one. The glyph is taken from the file itself (the design system ships no bell)
 and rendered at 24×24 in the light weight, which is the register the readme
