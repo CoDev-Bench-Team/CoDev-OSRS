@@ -25,6 +25,7 @@ import { RefusalAlert } from '../detail/RefusalAlert';
 import { REQUEST_NOT_FOUND, useDeepLinkedRequest, type DeepLinkState } from '../deep-link';
 import { requestLabel } from '../detail/request-detail-types';
 import { useLinkedRequest, useOpenRequest, useSettledQuery } from '../paged-source';
+import { CountsUnavailable } from '../CountsUnavailable';
 import { isNothingAtAll, startCounts, usePageCounts, type CountsRead } from '../page-counts';
 import { addressedQuery, useRequestAddress } from '../request-address';
 import { NO_VALUE } from '../format';
@@ -155,7 +156,11 @@ export function HistoryPage({
   );
   /** The chip counts, read beside the rows and drawn when they arrive;
    *  neither waits on the other. */
-  const { counts, search: countedSearch } = usePageCounts(countsRead);
+  const { counts, search: countedSearch, failed: countsFailed } = usePageCounts(countsRead);
+  /** The chip counts for the search being asked; `null` while they load. */
+  const shownChipCounts = countedSearch === asked.search ? (counts?.chipCounts ?? null) : null;
+  /** Reads the counts again on their own, after a failed counts read. */
+  const retryCounts = () => setCountsRead(startCounts(() => source.counts(asked), asked.search));
   // Nothing at all is resolved: "nothing yet", not "nothing matches".
   const nothingResolved = isNothingAtAll(counts?.resolvedCount, history, answered);
   const change = (next: Partial<HistoryQuery>) => {
@@ -240,7 +245,8 @@ export function HistoryPage({
       {state.kind !== 'failed' ? (
         <LoadedHistory
           history={history}
-          chipCounts={countedSearch === asked.search ? (counts?.chipCounts ?? null) : null}
+          chipCounts={shownChipCounts}
+          onRetryCounts={countsFailed && !shownChipCounts ? retryCounts : undefined}
           nothingResolved={nothingResolved}
           busy={state.kind === 'loaded' && answered !== asked}
           query={query}
@@ -268,6 +274,7 @@ const ROW_SKELETON = [
 function LoadedHistory({
   history,
   chipCounts,
+  onRetryCounts,
   nothingResolved,
   busy,
   query,
@@ -281,6 +288,9 @@ function LoadedHistory({
   history: HistoryTable | null;
   /** The chip counts for the search on screen; `null` while they load. */
   chipCounts: HistoryCounts['chipCounts'] | null;
+  /** Set when the counts read failed and none are shown: the page says so
+   *  and offers to read them again. */
+  onRetryCounts?: () => void;
   /** Nothing is resolved at all, so an empty table says so. */
   nothingResolved: boolean;
   query: HistoryQuery;
@@ -328,6 +338,7 @@ function LoadedHistory({
           />
         ))}
       </div>
+      {onRetryCounts ? <CountsUnavailable onRetry={onRetryCounts} /> : null}
 
       {/* Padding and negative margins give the card's shadow room inside the
           scroll region, as on the queue. */}

@@ -53,6 +53,7 @@ import {
 } from './review-types';
 import { requestLabel } from '../detail/request-detail-types';
 import { useLinkedRequest, useOpenRequest, useSettledQuery } from '../paged-source';
+import { CountsUnavailable } from '../CountsUnavailable';
 import { isNothingAtAll, startCounts, usePageCounts, type CountsRead } from '../page-counts';
 import { addressedQuery, useRequestAddress } from '../request-address';
 import { readPageSize, savePageSize } from '../../../shared/page-size-preference';
@@ -323,7 +324,10 @@ function useQueueSnapshot(source: AdminRequestSource, asked: QueueQuery, ready: 
     setStaleId(null);
   };
 
-  return { state, answered, countsRead, staleId, refresh, transition, retry, reread };
+  /** Reads the counts again on their own, after a failed counts read. */
+  const retryCounts = () => readCounts(latestAsked.current, true);
+
+  return { state, answered, countsRead, staleId, refresh, transition, retry, reread, retryCounts };
 }
 
 /** The review actions (spec 008 FR-013, amended 2026-10-03): each runs with
@@ -480,7 +484,11 @@ export function QueuePage({
   /** The query a paged source is asked: `query`, with search settled for
    *  SEARCH_DEBOUNCE_MS. A seeded source is never asked, so it never waits. */
   const asked = useSettledQuery(query, true);
-  const { state, answered, countsRead, staleId, refresh, transition, retry, reread } = useQueueSnapshot(source, asked, ready);
+  const { state, answered, countsRead, staleId, refresh, transition, retry, reread, retryCounts } = useQueueSnapshot(
+    source,
+    asked,
+    ready,
+  );
   // The refusal toast's way back works from anywhere, even after the queue
   // has unmounted: the address opens the panel (spec 008 FR-001b).
   const navigateTo = useNavigate();
@@ -526,7 +534,9 @@ export function QueuePage({
    *  arrive; neither waits on the other. The chips describe the search in
    *  the box, so they show the counts read for it, even while its rows are
    *  still on their way. */
-  const { counts, search: countedSearch } = usePageCounts(countsRead);
+  const { counts, search: countedSearch, failed: countsFailed } = usePageCounts(countsRead);
+  /** The chip counts for the search being asked; `null` while they load. */
+  const shownChipCounts = linking || countedSearch !== asked.search ? null : (counts?.chipCounts ?? null);
   // Nothing at all is live: "nothing to do", not "nothing matches".
   const nothingLive = isNothingAtAll(counts?.liveCount, queue, answered);
   const change = (next: Partial<QueueQuery>) => {
@@ -649,7 +659,8 @@ export function QueuePage({
         <LoadedQueue
           queue={linking ? null : queue}
           counts={linking ? null : counts}
-          chipCounts={linking || countedSearch !== asked.search ? null : (counts?.chipCounts ?? null)}
+          chipCounts={shownChipCounts}
+          onRetryCounts={countsFailed && !shownChipCounts && !linking ? retryCounts : undefined}
           nothingLive={nothingLive}
           busy={(state.kind === 'loaded' && answered !== asked) || refreshing}
           refreshing={refreshing}
@@ -715,6 +726,7 @@ function LoadedQueue({
   queue,
   counts,
   chipCounts,
+  onRetryCounts,
   nothingLive,
   busy,
   refreshing,
@@ -736,6 +748,9 @@ function LoadedQueue({
   counts: QueueCounts | null;
   /** The chip counts for the search on screen; `null` while they load. */
   chipCounts: QueueCounts['chipCounts'] | null;
+  /** Set when the counts read failed and none are shown: the page says so
+   *  and offers to read them again. */
+  onRetryCounts?: () => void;
   /** Nothing is live at all, so an empty table says so. */
   nothingLive: boolean;
   query: QueueQuery;
@@ -811,6 +826,7 @@ function LoadedQueue({
           />
         ))}
       </div>
+      {onRetryCounts ? <CountsUnavailable onRetry={onRetryCounts} /> : null}
 
       {/* The card's `shadow-card` is offset 5px down over an 18px blur, so it
           paints ~4px above, ~14px below and ~9px either side of the card.

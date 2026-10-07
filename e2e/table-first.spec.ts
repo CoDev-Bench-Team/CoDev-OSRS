@@ -1,4 +1,5 @@
 import { expect, hold, test } from './fixtures/test';
+import { PEOPLE } from './fixtures/fake-api';
 import { signIn } from './fixtures/session';
 
 const queueRows = (page: import('@playwright/test').Page) =>
@@ -18,6 +19,60 @@ test('the queue shows its rows before the counts arrive', async ({ page }) => {
 
   release();
   await expect(page.getByRole('region', { name: 'Requests workload summary' })).toBeVisible();
+});
+
+/** Fails every counts read until `heal()`, so any read the page makes
+ *  meanwhile fails too and the note stays until **Try again** is pressed. */
+async function failCounts(page: import('@playwright/test').Page) {
+  let failing = true;
+  await page.route('**/api/requests/counts**', (route) =>
+    failing
+      ? route.fulfill({ status: 500, contentType: 'application/problem+json', body: JSON.stringify({ title: 'Server error', status: 500 }) })
+      : route.fallback(),
+  );
+  return () => {
+    failing = false;
+  };
+}
+
+test('a failed counts read keeps the queue rows, says so, and Try again reads the counts', async ({ page }) => {
+  await signIn(page, 'Ethan Cruz');
+  await expect(queueRows(page).first()).toBeVisible();
+
+  const heal = await failCounts(page);
+  await page.reload();
+  await expect(queueRows(page).first()).toBeVisible();
+  await expect(page.getByText('The counts couldn’t be loaded.')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Requests workload summary' })).toHaveCount(0);
+
+  heal();
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.getByRole('region', { name: 'Requests workload summary' })).toBeVisible();
+  await expect(page.getByText('The counts couldn’t be loaded.')).toHaveCount(0);
+  await expect(queueRows(page).first()).toBeVisible();
+});
+
+test('a failed counts read keeps the History rows, says so, and Try again reads the counts', async ({ page, api }) => {
+  // One resolved request, so History has a row to keep.
+  const resolved = api.submit(PEOPLE['Maya Santos'], { items: [{ assetId: api.assets[0]!.id, quantity: 1 }] });
+  const at = new Date().toISOString();
+  Object.assign(resolved, { status: 'rejected', rejectionReason: 'Duplicate request', resolvedAt: at });
+  resolved.timeline.push({ status: 'rejected', at });
+
+  await signIn(page, 'Ethan Cruz');
+  const heal = await failCounts(page);
+  await page.getByRole('link', { name: 'History' }).click();
+  await expect(page).toHaveURL(/\/history$/);
+  // History's own rows and note, not the queue's on the way out.
+  const rows = page.getByRole('region', { name: 'History table' }).getByRole('button', { name: /^Review request/ });
+  await expect(rows.first()).toBeVisible();
+  await expect(page.getByText('The counts couldn’t be loaded.')).toBeVisible();
+
+  heal();
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.getByText('The counts couldn’t be loaded.')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Rejected (1)' })).toBeVisible();
+  await expect(rows.first()).toBeVisible();
 });
 
 test('signed out, nothing is read before the session answers', async ({ page }) => {

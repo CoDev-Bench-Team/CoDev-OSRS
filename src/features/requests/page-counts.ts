@@ -24,12 +24,16 @@ export function startCounts<C>(read: () => Promise<C>, search: string): CountsRe
  *  the same requests when only the chip, sort or page moved. `search` is the
  *  search the counts on screen were read for: the chip counts follow the
  *  search, so a caller shows them as loading while it differs from the one
- *  that matters to it. A failed read keeps what was there. */
+ *  that matters to it. A failed read keeps what was there, and `failed`
+ *  says so until a newer read is handed in (spec 017 FR-055, amended
+ *  2026-10-07). */
 export function usePageCounts<C>(
   /** The newest counts read, or `null` before the first. */
   read: CountsRead<C> | null,
-): { counts: C | null; search: string | null } {
+): { counts: C | null; search: string | null; failed: boolean } {
   const [settled, setSettled] = useState<{ search: string; counts: C } | null>(null);
+  /** The read that failed; `failed` holds only while it is the newest. */
+  const [failedRead, setFailedRead] = useState<CountsRead<C> | null>(null);
 
   useEffect(() => {
     if (!read) return;
@@ -39,7 +43,8 @@ export function usePageCounts<C>(
         if (live) setSettled({ search: read.search, counts });
       },
       () => {
-        // The counts on screen stay; the next load brings its own.
+        // The counts on screen stay; the page says the newest read failed.
+        if (live) setFailedRead(read);
       },
     );
     return () => {
@@ -47,7 +52,7 @@ export function usePageCounts<C>(
     };
   }, [read]);
 
-  return { counts: settled?.counts ?? null, search: settled?.search ?? null };
+  return { counts: settled?.counts ?? null, search: settled?.search ?? null, failed: read !== null && failedRead === read };
 }
 
 /** Whether a table has no requests at all, which tells "nothing here" apart
