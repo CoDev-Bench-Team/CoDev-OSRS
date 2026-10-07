@@ -45,7 +45,7 @@ export function RequestReadBack({ request }: { request: EmployeeRequest }) {
         <h3 id="request-status" className={SECTION_HEADING}>
           Status
         </h3>
-        <StatusTimeline nodes={requestTimeline(request)} />
+        <StatusTimeline nodes={requestTimeline(request, 'employee')} />
       </section>
     </div>
   );

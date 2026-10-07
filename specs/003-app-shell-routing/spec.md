@@ -179,8 +179,8 @@ The shell remains usable from a phone up to the 1440px design width, carrying fo
 - **FR-012**: An address matching no destination MUST produce a not-found screen inside the shell, distinguishable from a refusal, so that a mistyped address is diagnosable.
 - **FR-012a**: Addresses that identify a specific record MUST NOT reveal whether that record exists. A request the user may not see and a request that does not exist MUST produce the same response.
 - **FR-013**: A signed-out visitor who requests a specific destination MUST be returned to it after successful sign-in, provided their role permits it.
-- **FR-014**: The shell MUST render persistent chrome on every signed-in destination: product lockup, role navigation with exactly one current item, an account cluster naming the signed-in user and role, and a notification marker.
-- **FR-014a**: The notification marker MUST show a count when there is one. Until a notification feature ships it MUST NOT present itself as a control, because there is nothing for it to open.
+- **FR-014**: The shell MUST render persistent chrome on every signed-in destination: product lockup, role navigation with exactly one current item, an account cluster naming the signed-in user and role. *(Amended 2026-10-06: the notification marker is removed from the bar. The design draws one, but no notification feature or destination exists, so a bell that opens nothing is left out until one does.)*
+- **FR-014a**: ~~The notification marker MUST show a count when there is one. Until a notification feature ships it MUST NOT present itself as a control, because there is nothing for it to open.~~ *Withdrawn 2026-10-06 with the marker (FR-014).*
 - **FR-015**: The request-list marker and its live count MUST appear only for Employees.
 - **FR-016**: The shell MUST provide sign-out; after it, no signed-in screen may be restored by browser history.
 - **FR-017**: An invalidated session MUST return the user to sign-in with an explanation rather than leaving a broken screen.
@@ -276,7 +276,7 @@ No constitution version bump is required — no principle changes. `docs/product
 |-----|--------|
 | ~~The UI kit merges Approver and Supply Admin into one "Admin".~~ | **Closed 2026-09-24** — constitution 3.0.0 II adopts the merge (ADR-0005); both navigation sets are drawn. |
 | **No affordance is drawn for reaching Profile** now that it has left the navigation. | The account cluster was made the route in. Ours, not the designer's. |
-| **The notification bell opens nothing** — no panel, list or destination is drawn. | It ships as a marker with a count (FR-014a). What it should open is undesigned. |
+| ~~**The notification bell opens nothing** — no panel, list or destination is drawn.~~ | **Closed 2026-10-06** — the bell is removed (FR-014 amended, FR-014a withdrawn). What it should open is undesigned. |
 | ~~No designed fulfillment queue.~~ | **Closed 2026-09-24** — fulfilment folded into the Requests Queue (drift-2026-09-22 §2). |
 | **No designed Profile screen for the Admin** — only the Employee's. | Profile is reachable by both roles from the account cluster; the Admin reuses the Employee layout (spec 006 D2). |
 | **No loading, error, not-found, or forbidden screens** designed anywhere. | Stories 4 and 7 require all four; each is invented and needs ratification. |
@@ -294,7 +294,7 @@ None dismissed. One consistency defect (CHK007, not-found versus record-existenc
 
 Raised by spec 008 (BEN-47), which replaces the Admin's request-detail placeholder with the review panel over `/queue`. Decided by the project owner.
 
-- Q: Session 2026-09-23 kept `/requests/:id` for the Admin "until BEN-47 replaces it". Now that both roles read a request in a panel, what does the address do? → A: **It is a deep link that opens the panel.** It is not a screen of its own. An Admin lands on `/queue` with that request's review panel open (*amended 2026-09-29, [spec 013](../013-admin-history/spec.md) FR-016: a `Completed`, `Rejected` or `Cancelled` request lands on `/history` with its read-only panel instead*); an Employee lands on `/requests` with their request panel open. The address the page settles on is the list's, because the panel itself has no address (spec 007 FR-001, spec 008 FR-001). The link survives sign-in (FR-013), so a `View request` button in an email works for either role.
+- Q: Session 2026-09-23 kept `/requests/:id` for the Admin "until BEN-47 replaces it". Now that both roles read a request in a panel, what does the address do? → A: **It is a deep link that opens the panel.** It is not a screen of its own. An Admin lands on `/queue` with that request's review panel open (*amended 2026-09-29, [spec 013](../013-admin-history/spec.md) FR-016: a `Completed`, `Rejected` or `Cancelled` request lands on `/history` with its read-only panel instead*); an Employee lands on `/requests` with their request panel open. The address the page settles on is the list's, because the panel itself has no address (spec 007 FR-001, spec 008 FR-001). The link survives sign-in (FR-013), so a `View request` button in an email works for either role. *(Amended 2026-10-03, [spec 008](../008-request-review-panel/spec.md) FR-001b: an Admin is redirected to `/queue/:id`, the review panel's own address, rather than to `/queue` with the id in navigation state; the Employee's path is unchanged.)*
 - Q: FR-012a must not reveal whether a request exists. → A: A request that does not exist, and, for an Employee, a request that is not theirs, open no panel and show the **same** notice, word for word, on the list, without echoing the id. An owned id opens its panel; a foreign and a missing id are indistinguishable to an Employee.
 
 ### Session 2026-09-25 — Amendment

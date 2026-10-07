@@ -6,7 +6,7 @@ Agents MUST follow the constitution below. Product intent lives in `docs/product
 
 ## Constitution
 
-**Version**: 9.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-10-01
+**Version**: 10.0.0 | **Ratified**: 2026-09-11 | **Last Amended**: 2026-10-04
 
 ### I. Spec-Driven Development
 
@@ -16,7 +16,7 @@ A change in the design file is a spec-amendment request of the same kind. It MUS
 
 ### II. Two Distinct Human Roles
 
-The system MUST enforce two human roles — **Employee** (requestor; marks their own handover `Received` and signs for it) and **Admin** (reviews, approves or rejects, fulfils, marks a handover `Received`, completes, and owns Assets and Inventory) — plus a System actor for stock movements and notifications. Each protected action MUST authorize against the role that owns that step in the process flow. A user MUST hold exactly one role.
+The system MUST enforce two human roles — **Employee** (requestor; marks their own handover `Received` and signs for it, which completes it) and **Admin** (reviews, approves or rejects, fulfils, marks a handover `Received`, and owns Assets and Inventory) — plus a System actor for stock movements and notifications. Each protected action MUST authorize against the role that owns that step in the process flow. A user MUST hold exactly one role.
 
 An Admin both decides a request and hands over the stock for it. This removes the separation of duty the 2026-09-11 process diagram drew, and it is deliberate: the 2026-09-22 design file draws a single merged Admin in the navigation, the queue title, the queue subtitle and one review panel. See [ADR-0005](docs/adr/0005-two-role-model.md); the cost is named there.
 
@@ -30,7 +30,7 @@ An Asset MUST exist and MUST hold stock before it can be requested. Stock is a r
 
 `Total = Available + Reserved` MUST hold at all times, and no quantity MUST EVER be negative.
 
-Submitting a request MUST move the requested number of units from `Available` to `Reserved` in the same transaction as the status change to `Pending Approval`. Rejecting or cancelling MUST move them back in the same transaction as the status change. Approving, moving to `For Delivery` or `Ready for Pickup`, signing the Accountability Form, and completing MUST NOT change any unit's status. Moving to `Received` MUST move the reserved units to `Assigned`, with the requester as assignee, in the same transaction as the status change, because that is when the items have left the store. Which specific units are reserved is the API's decision. Only these request transitions move a unit into or out of `Reserved`. Outside them, an Admin MAY move a unit between `Available` and `Inactive`, and MAY record an existing assignment (`Assigned`, with a user) for equipment handed out outside a request; that unit leaves the store without a request. An Admin MAY also clear an assignment, moving an `Assigned` unit to `Available` or `Inactive`, and MAY record an assignment on an `Inactive` unit.
+Submitting a request MUST move the requested number of units from `Available` to `Reserved` in the same transaction as the status change to `Pending Approval`. Rejecting or cancelling MUST move them back in the same transaction as the status change. Approving, moving to `For Delivery` or `Ready for Pickup`, and signing the Accountability Form (which completes the request) MUST NOT change any unit's status. Moving to `Received` MUST move the reserved units to `Assigned`, with the requester as assignee, in the same transaction as the status change, because that is when the items have left the store. Which specific units are reserved is the API's decision. Only these request transitions move a unit into or out of `Reserved`. Outside them, an Admin MAY move a unit between `Available` and `Inactive`, and MAY record an existing assignment (`Assigned`, with a user) for equipment handed out outside a request; that unit leaves the store without a request. An Admin MAY also clear an assignment, moving an `Assigned` unit to `Available` or `Inactive`, and MAY record an assignment on an `Inactive` unit.
 
 A request quantity MUST NOT exceed Available at the requesting office at submit time. A unit that is `Assigned` or `Reserved` MUST NOT be removed. The low-stock threshold is held per asset.
 
@@ -42,19 +42,19 @@ Rejection MUST require a reason, and is the Admin's decision on a request awaiti
 
 Cancellation is a different act and MUST be modelled as one: stopping a request that has not been refused. The owning Employee MAY cancel their own request while it is `Pending Approval`. An Admin MAY cancel an `Approved` or `Ready for Pickup` request that cannot be fulfilled. **A cancellation MUST require a reason, from whoever cancels.** A `For Delivery`, `Received` or `Completed` request MUST NOT be cancelled: a `For Delivery` request's items have left the store with the delivery. If a delivery falls through and the items come back, the Admin first moves the request to `Ready for Pickup`, its peer, and may then cancel it.
 
-An Admin, or the owning Employee on their own request, sets `Received`, from `For Delivery` or `Ready for Pickup`, once the items are handed over. The owning Employee then confirms receipt by signing the **Accountability Form** on their own `Received` request. Signing records the acknowledgement and does not change the status; no other actor may sign, and a request is signed once. `Completed` MUST be set by an Admin, only from `Received`, and only once the Accountability Form has been signed.
+An Admin, or the owning Employee on their own request, sets `Received`, from `For Delivery` or `Ready for Pickup`, once the items are handed over. The owning Employee then confirms receipt by signing the **Accountability Form** on their own `Received` request, with their own full name as their account holds it, prefilled and not editable. Signing records the acknowledgement and moves the request to `Completed` in the same write; no other actor may sign, and a request is signed once. `Completed` MUST be reached only by that signature; there is no separate Admin complete ([ADR-0013](docs/adr/0013-signing-completes-the-request.md)).
 
 `Rejected`, `Cancelled` and `Completed` are terminal. After rejection or cancellation the employee submits a **new** request; neither record is reopened.
 
 ### V. Notification Completeness
 
-Every defined transition MUST send an email. The system MUST provide the templates the design defines: **Request received**, **Request approved**, **Request declined**, and a generic **Status changed** carrying the transition as a previous-status / new-status pair. One template MAY serve more than one transition — `Status changed` is the template for every transition the first three do not cover, receipt, cancellation and completion included. Recipients MUST match `docs/process-flow.md`. A successful status change with a failed notification is a defect and MUST be visible in logs.
+Every defined transition MUST send an email. The system MUST provide the templates the design defines: **Request received**, **Request approved**, **Request declined**, and a generic **Status changed** carrying the transition as a previous-status / new-status pair. One template MAY serve more than one transition — `Status changed` is the template for every transition the first three do not cover, receipt, cancellation and completion (the Employee's signature) included. Recipients MUST match `docs/process-flow.md`. A successful status change with a failed notification is a defect and MUST be visible in logs.
 
 `Welcome` and `Action required` are designed templates that are not transitions. `Welcome` MAY be sent on account creation. `Action required` presupposes a request-for-information flow that no screen draws; it MUST NOT be implemented until that flow is specified.
 
 ### VI. Independently Testable Increments
 
-Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — browse catalog → request → approve/reject → set For Delivery or Ready for Pickup → Admin or Employee sets `Received` → Employee signs the Accountability Form → complete — MUST have an end-to-end test.
+Each user story MUST be demonstrable without unfinished sibling stories once its dependencies are met. QA MUST be able to verify acceptance criteria with Playwright (UI flow) and HTTP tests (API contracts). The MVP demo path — browse catalog → request → approve/reject → set For Delivery or Ready for Pickup → Admin or Employee sets `Received` → Employee signs the Accountability Form, which completes the request — MUST have an end-to-end test.
 
 ### VII. Typed Contracts
 

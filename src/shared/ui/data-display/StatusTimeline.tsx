@@ -22,6 +22,9 @@ export type TimelineNode = {
   tone?: StatusTone;
   /** Shown under the label when reached; pending nodes read "Pending". */
   when?: string;
+  /** On the next step only: what it is waiting on, read in place of
+   *  "Pending" (spec 008 FR-018a, 2026-10-06). */
+  awaiting?: string;
 };
 
 /** A reached dot and its halo, by pill tone. The halo is the `Active`
@@ -83,7 +86,7 @@ export function StatusTimeline({ nodes }: { nodes: readonly TimelineNode[] }) {
                   and `Ink-400` while pending; the date or "Pending" is `Label 2`
                   (Inter Medium 12 / 1.3) in `Ink-400`. */}
               <span className={`font-sans text-12-5 font-bold leading-[1.45] ${reached ? 'text-ink-primary' : 'text-ink-muted'}`}>{node.label}</span>
-              <span className="font-sans text-12 font-medium leading-[1.3] text-ink-muted">{reached ? (node.when ?? '—') : 'Pending'}</span>
+              <span className="font-sans text-12 font-medium leading-[1.3] text-ink-muted">{reached ? (node.when ?? '—') : (node.awaiting ?? 'Pending')}</span>
             </span>
           </li>
         );

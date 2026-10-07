@@ -100,6 +100,7 @@ export function UpdateStatusForm({
   requestorOffice,
   pickupOffices,
   submitting,
+  submittingLabel = 'Updating…',
   onBack,
   onConfirm,
 }: {
@@ -107,6 +108,8 @@ export function UpdateStatusForm({
   requestorOffice: Office;
   pickupOffices: readonly Office[];
   submitting: boolean;
+  /** The submit button's words while the change is in flight. */
+  submittingLabel?: string;
   onBack: () => void;
   /** Resolves `'location-required'` if the source refused the location, which
    *  puts the location back in its invalid state. */
@@ -194,7 +197,7 @@ export function UpdateStatusForm({
           Cancel
         </Button>
         <Button type="submit" disabled={submitting}>
-          Update Status
+          {submitting ? submittingLabel : 'Update Status'}
         </Button>
       </div>
 

@@ -7,7 +7,9 @@ import { deviceFieldsFor, stripHidden } from './device-fields';
 import { parseAmount } from './format';
 import { refusal, useAttempt } from './inventory-store';
 import type { UnitBatchDraft } from './types';
-import { CatalogItemPicker, FormAlert, FormFooter, PurchaseFields, SecretInput, type Device, type Purchase } from './unit-fields';
+import { CatalogItemPicker, FormFooter, PurchaseFields, SecretInput, type Device, type Purchase } from './unit-fields';
+import { assetFromSnapshot, resolveAsset, snapshotOf } from './catalog-snapshot';
+import { draftOneOf, draftString, readDraft, savingDraft, useDraftWriter } from '../../shared/form-draft-cache';
 import { MAX_BATCH, today, validateBatch } from './unit-validation';
 
 /** Add Multiple Units — `03 - Inventory - Bulk Add Units`, 650px (spec 015
@@ -33,19 +35,57 @@ function CloseLarge() {
   );
 }
 
-const SHOWN_TOP = new Set(['assetId', 'location', 'pr', 'price', 'supplier', 'purchasedAt']);
+/** The rows a restored draft carries: serials only, secrets never stored. */
+function draftRows(draft: Record<string, unknown> | undefined): Row[] {
+  const serials = Array.isArray(draft?.serials) ? draft.serials.filter((v): v is string => typeof v === 'string') : [];
+  return serials.length ? serials.slice(0, MAX_BATCH).map((serialNumber) => ({ ...emptyRow(), serialNumber })) : [emptyRow()];
+}
+
+/** The draft of a panel nobody has typed in: not worth keeping. */
+const UNTOUCHED = JSON.stringify({ location: 'Cebu', purchaseRequest: '', price: '', supplier: '', purchasedAt: '', serials: [''] });
+
+const SHOWN_TOP = new Set(['assetId', 'location', 'purchaseRequest', 'price', 'supplier', 'purchasedAt']);
 const shown = (key: string) => SHOWN_TOP.has(key) || /^units\.\d+\.(serialNumber|bitlockerIdentifier|recoveryPin)$/.test(key);
+
+/** The panel's form values, restored from a draft kept under five minutes ago
+ *  and kept again on every change (shared/form-draft-cache.ts). */
+function useBulkDraft(assetsState: ReturnType<typeof useAssets>['state']) {
+  const assets = assetsState.kind === 'loaded' ? assetsState.assets : null;
+  // Read once, before the first render: an expired draft is already gone.
+  const [saved] = useState(() => readDraft('unit.bulk'));
+  // The draft's catalog item shows at once from its snapshot.
+  const [asset, setAsset] = useState<Asset | undefined>(() => resolveAsset(assets, assetFromSnapshot(saved?.asset)));
+  const [location, setLocation] = useState<Office>(() => draftOneOf(saved, 'location', OFFICES, 'Cebu'));
+  const [purchase, setPurchase] = useState<Purchase>(() => ({
+    purchaseRequest: draftString(saved, 'purchaseRequest'),
+    price: draftString(saved, 'price'),
+    supplier: draftString(saved, 'supplier'),
+    purchasedAt: draftString(saved, 'purchasedAt'),
+  }));
+  const [rows, setRows] = useState<Row[]>(() => draftRows(saved));
+
+  // Once the catalog loads, the full record replaces the snapshot.
+  const [restoring, setRestoring] = useState(assets === null);
+  if (restoring && (assets || assetsState.kind === 'failed')) {
+    setRestoring(false);
+    if (assets) setAsset((a) => resolveAsset(assets, a));
+  }
+
+  const discard = useDraftWriter(
+    'unit.bulk',
+    { asset: snapshotOf(asset), location, ...purchase, serials: rows.map((r) => r.serialNumber) },
+    { untouched: UNTOUCHED, restored: saved },
+  );
+
+  return { assets, asset, setAsset, location, setLocation, purchase, setPurchase, rows, setRows, discard };
+}
 
 export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCreate: (draft: UnitBatchDraft) => Promise<unknown> }) {
   const formId = useId();
   const { state: assetsState } = useAssets();
-  const assets = assetsState.kind === 'loaded' ? assetsState.assets : null;
-  const [asset, setAsset] = useState<Asset>();
-  const [location, setLocation] = useState<Office>('Cebu');
-  const [purchase, setPurchase] = useState<Purchase>({ pr: '', price: '', supplier: '', purchasedAt: '' });
-  const [rows, setRows] = useState<Row[]>(() => [emptyRow()]);
+  const { assets, asset, setAsset, location, setLocation, purchase, setPurchase, rows, setRows, discard } = useBulkDraft(assetsState);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  /** A refusal that names no field (a 409), shown above the rows. */
+  /** A refusal that names no field (a 409), shown above the action buttons. */
   const [conflict, setConflict] = useState<string>();
   const rule = deviceFieldsFor(asset?.category);
   const minus = useRef<HTMLButtonElement>(null);
@@ -63,7 +103,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     target()?.focus();
   });
 
-  const { saving, attempt } = useAttempt(onClose, (error, what) => {
+  const { saving, attempt, handOff } = useAttempt(onClose, (error, what) => {
     const result = refusal(error, what, shown);
     if ('problem' in result) setConflict(result.problem.detail);
     else setErrors(result.errors);
@@ -123,7 +163,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     const draft: UnitBatchDraft = {
       assetId: asset?.id ?? '',
       location,
-      pr: purchase.pr,
+      purchaseRequest: purchase.purchaseRequest,
       price: parseAmount(purchase.price),
       supplier: purchase.supplier,
       purchasedAt: purchase.purchasedAt || undefined,
@@ -135,7 +175,13 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     setErrors(found);
     setConflict(undefined);
     if (Object.keys(found).length) return;
-    void attempt(() => onCreate(draft), 'The units could not be saved');
+    const n = draft.units.length;
+    const units = `${n} ${asset?.name ?? 'unit'}${n === 1 ? '' : ' units'}`;
+    void attempt(() => savingDraft('unit.bulk', () => onCreate(draft), discard), {
+      loading: `Adding ${units}…`,
+      done: `${units} added`,
+      failed: 'The units could not be saved',
+    });
   }
 
   const full = rows.length >= MAX_BATCH;
@@ -145,17 +191,21 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
       title="Add Multiple Units"
       width="batch"
       onClose={onClose}
-      dismissible={!saving}
+      busy={saving}
+      onLeave={handOff}
       header={<h2 className="font-display text-[22px] font-medium leading-display text-ink-primary">Add Multiple Units</h2>}
       bodyClassName="px-14 pt-10 pb-24"
       footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
       footer={(leave) => (
-        <FormFooter formId={formId} saving={saving} disabled={rows.length === 0} submitLabel="Save Changes" savingLabel="Saving…" onCancel={leave} />
+        <FormFooter formId={formId} saving={saving} disabled={rows.length === 0} submitLabel="Save Changes" savingLabel="Adding…" alert={errors[''] ?? conflict} onCancel={() => {
+          discard();
+          leave();
+        }} />
       )}
     >
-      <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-32">
-        <FormAlert message={errors['']} />
-
+      <form id={formId} onSubmit={submit} noValidate>
+        {/* Locked while saving: the fieldset disables every control in it. */}
+        <fieldset disabled={saving} className="m-0 flex min-w-0 flex-col gap-32 border-0 p-0">
         <CatalogItemPicker
           assets={assets}
           value={asset}
@@ -239,7 +289,6 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
         />
 
         <FieldGroup heading="UNITS">
-          <FormAlert message={conflict} />
           {errors.units ? <p className="type-meta leading-body text-status-rejected-fg">{errors.units}</p> : null}
           {rows.map((row, i) => (
             <div key={row.key} role="group" aria-label={`Unit ${i + 1}`} className="flex items-start gap-12">
@@ -307,6 +356,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
             + Add another unit
           </button>
         </FieldGroup>
+        </fieldset>
       </form>
     </SidePanel>
   );

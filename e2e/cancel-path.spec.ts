@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/test';
 import { signIn, switchAccount } from './fixtures/session';
 import { expectDavaoStock } from './fixtures/stock';
-import { addDavaoUnits, encodeAsset, openMine, openReview, setHandover, submitRequest } from './fixtures/supply';
+import { addDavaoUnits, encodeAsset, openMine, openReview, reopenReview, setHandover, submitRequest } from './fixtures/supply';
 
 const ASSET = 'E2E Cancel Mouse';
 const UNITS = 10;
@@ -38,11 +38,15 @@ test('Maya and Ethan each cancel with a reason, and an empty reason changes noth
   await switchAccount(page, 'Ethan Cruz');
   await openReview(page, approvedId);
   await page.getByRole('button', { name: 'Approve Request' }).click();
+  await reopenReview(page, approvedId);
   await expect(page.getByRole('dialog').getByText('Approved', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('dialog').getByText('Awaiting an Admin to arrange delivery or pickup')).toBeVisible();
 
   await switchAccount(page, 'Maya Santos');
   await openMine(page, approvedId);
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Cancel Request' })).toHaveCount(0);
+  // The handover step names who it waits on, worded for the requester (spec 008 FR-018a).
+  await expect(page.getByRole('dialog').getByText('Awaiting the Workplace team to arrange delivery or pickup')).toBeVisible();
 
   await switchAccount(page, 'Ethan Cruz');
   await expectDavaoStock(page, ASSET, { available: UNITS - QTY, reserved: QTY, units: UNITS });
@@ -52,6 +56,7 @@ test('Maya and Ethan each cancel with a reason, and an empty reason changes noth
   await expect(page.getByText('Enter a reason for cancelling this request.')).toBeVisible();
   await page.getByRole('textbox', { name: /Reason for cancellation/ }).fill('Cannot be fulfilled');
   await page.getByRole('button', { name: 'Confirm Cancellation' }).click();
+  await reopenReview(page, approvedId);
   await expect(page.getByRole('dialog').getByText('Cancelled', { exact: true }).first()).toBeVisible();
   await expectDavaoStock(page, ASSET, { available: UNITS, reserved: 0, units: UNITS });
 
@@ -60,7 +65,9 @@ test('Maya and Ethan each cancel with a reason, and an empty reason changes noth
   await switchAccount(page, 'Ethan Cruz');
   await openReview(page, pickupId);
   await page.getByRole('button', { name: 'Approve Request' }).click();
+  await reopenReview(page, pickupId);
   await setHandover(page, 'Ready for Pickup', 'Davao Office');
+  await reopenReview(page, pickupId);
   await expect(page.getByRole('dialog').getByText('Ready for Pickup', { exact: true }).first()).toBeVisible();
   await expectDavaoStock(page, ASSET, { available: UNITS - QTY, reserved: QTY, units: UNITS });
 
@@ -68,6 +75,7 @@ test('Maya and Ethan each cancel with a reason, and an empty reason changes noth
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel Request' }).click();
   await page.getByRole('textbox', { name: /Reason for cancellation/ }).fill('Pickup cannot be made');
   await page.getByRole('button', { name: 'Confirm Cancellation' }).click();
+  await reopenReview(page, pickupId);
   await expect(page.getByRole('dialog').getByText('Cancelled', { exact: true }).first()).toBeVisible();
   await expectDavaoStock(page, ASSET, { available: UNITS, reserved: 0, units: UNITS });
 });

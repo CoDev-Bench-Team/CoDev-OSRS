@@ -160,7 +160,22 @@
   animation: osrs-fade-out var(--motion-fast) var(--ease-osrs) both;
 }
 
+/* A table fetching its next page (spec 017): a short segment of brand red
+   travels the card's top edge. Reduced motion stops the travel; the rail then
+   shows as a still line across the full width. */
+@keyframes osrs-rail {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+@utility animate-rail {
+  animation: osrs-rail 1100ms var(--ease-osrs) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .animate-rail {
+    animation: none;
+    width: 100%;
+  }
   .animate-sheet-in,
   .animate-sheet-out,
   .animate-fade-in,

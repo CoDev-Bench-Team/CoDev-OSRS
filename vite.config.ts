@@ -20,8 +20,10 @@ const TYPES: Record<string, string> = {
  *  would diff the port against broken-image icons and report differences that
  *  are not real. `apply: 'serve'` keeps this out of any build. */
 /** A Netlify build is a different site from the API. The browser calls `/auth`
- *  on the Netlify host, and this rule — above the SPA fallback — proxies it to
- *  the configured base so the session cookie stays first-party. */
+ *  and `/api/*` on the Netlify host, and these rules — above the SPA fallback —
+ *  proxy them to the configured base so the session cookie stays first-party.
+ *  Screen data goes under `/api` because `/requests` and `/profile` are SPA
+ *  addresses: a bare `/requests/*` rule would swallow a reload of a deep link. */
 function netlifyAuthProxy(apiBase: string | undefined): Plugin {
   return {
     name: 'netlify-auth-proxy',
@@ -31,9 +33,9 @@ function netlifyAuthProxy(apiBase: string | undefined): Plugin {
       const target = apiBase.replace(/\/$/, '')
       const file = fileURLToPath(new URL('./dist/_redirects', import.meta.url))
       const existing = existsSync(file) ? readFileSync(file, 'utf8') : '/*  /index.html  200\n'
-      const rule = `/auth/*  ${target}/auth/:splat  200`
+      const rules = `/auth/*  ${target}/auth/:splat  200\n/api/*  ${target}/:splat  200`
       if (existing.startsWith('/auth/*')) return
-      writeFileSync(file, `${rule}\n${existing}`)
+      writeFileSync(file, `${rules}\n${existing}`)
     },
   }
 }
@@ -65,7 +67,8 @@ export default defineConfig(({ mode }) => {
       __OSRS_NETLIFY__: JSON.stringify(process.env.NETLIFY === 'true'),
     },
     // Dev only. Vite does not apply `server.proxy` to a production build.
-    // `/auth` alone: `/assets` is already the design-system middleware.
+    // `/auth`, and screen data under `/api` with the prefix stripped: `/assets`
+    // is already the design-system middleware, and `/requests` is an SPA route.
     server: {
       // Google's OAuth client authorizes http://localhost:5173 only. A busy
       // port must fail to start rather than move to a port sign-in cannot use.
@@ -75,6 +78,7 @@ export default defineConfig(({ mode }) => {
         ? {
             proxy: {
               '/auth': { target: apiBase, changeOrigin: true },
+              '/api': { target: apiBase, changeOrigin: true, rewrite: (path) => path.replace(/^\/api/, '') },
             },
           }
         : {}),

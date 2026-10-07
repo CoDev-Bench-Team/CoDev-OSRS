@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router';
+import { Navigate, Route, Routes } from 'react-router';
 import { NotFoundScreen } from '../shared/ui';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { RequireAccess } from '../features/auth/RequireAccess';
@@ -30,7 +30,9 @@ function guarded(id: DestinationId, element: ReactNode) {
  *  (FR-007). Signed out, the outer guard has already sent the visitor to
  *  sign-in, so this only ever runs with a session. */
 function LandingRedirect() {
-  const { session } = useSession();
+  const { status, session } = useSession();
+  // Where to land depends on the role; wait for it.
+  if (status === 'unknown') return null;
   if (!session) return <Navigate to={SIGN_IN_PATH} replace />;
   return <Navigate to={landingPath(session.role)} replace />;
 }
@@ -40,10 +42,8 @@ function LandingRedirect() {
  *  mistyped address stays diagnosable. */
 function NotFoundRoute() {
   const { session } = useSession();
-  const location = useLocation();
   return (
     <NotFoundScreen
-      path={location.pathname}
       action={session ? <NavButton to={landingPath(session.role)}>Go to Your Home Screen</NavButton> : undefined}
     />
   );
@@ -68,9 +68,16 @@ export function AppRoutes() {
       >
         <Route index element={<LandingRedirect />} />
         <Route path={DESTINATIONS.catalog.path} element={guarded('catalog', <CatalogPage />)} />
-        <Route path={DESTINATIONS.requests.path} element={guarded('requests', <MyRequestsPage />)} />
-        <Route path={DESTINATIONS.requestDetail.path} element={guarded('requestDetail', <RequestDeepLink />)} />
-        <Route path={DESTINATIONS.queue.path} element={guarded('queue', <QueuePage />)} />
+        {/* One route for My Requests and a request's panel over it, so opening
+            and closing the panel never remounts the list (spec 007 FR-001).
+            An Admin's `/requests/:id` goes on to `/queue/:id`. */}
+        <Route
+          path={`${DESTINATIONS.requests.path}/:id?`}
+          element={<RequestDeepLink>{guarded('requests', <MyRequestsPage />)}</RequestDeepLink>}
+        />
+        {/* One route for the queue and a request's panel over it, so opening
+            and closing the panel never remounts the queue (spec 008 FR-001b). */}
+        <Route path={`${DESTINATIONS.queue.path}/:id?`} element={guarded('queue', <QueuePage />)} />
         <Route path={DESTINATIONS.assets.path} element={guarded('assets', <AssetsPage />)} />
         <Route path={DESTINATIONS.inventory.path} element={guarded('inventory', <InventoryPage />)} />
         <Route path={DESTINATIONS.history.path} element={guarded('history', <HistoryPage />)} />

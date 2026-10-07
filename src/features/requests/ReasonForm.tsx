@@ -17,6 +17,7 @@ export function ReasonForm({
   confirmLabel,
   requiredMessage,
   submitting,
+  submittingLabel,
   onBack,
   onConfirm,
 }: {
@@ -28,6 +29,9 @@ export function ReasonForm({
   /** Disables both buttons while the caller's request is in flight, so one
    *  click is one request (spec 008 FR-015). */
   submitting: boolean;
+  /** The confirm button's words while submitting ("Rejecting…"); the
+   *  confirm label stays when absent. */
+  submittingLabel?: string;
   onBack: () => void;
   /** Resolves `'reason-required'` if the source refused the reason anyway,
    *  which puts the field back in its invalid state. */
@@ -68,7 +72,7 @@ export function ReasonForm({
           Cancel
         </Button>
         <Button type="submit" disabled={submitting}>
-          {confirmLabel}
+          {submitting && submittingLabel ? submittingLabel : confirmLabel}
         </Button>
       </div>
     </form>

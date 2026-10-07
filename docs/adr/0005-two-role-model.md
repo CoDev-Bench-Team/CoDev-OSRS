@@ -21,7 +21,10 @@ navigation chrome:
   History**, account cluster reading *Ethan Cruz — Admin*.
 - `02 - Requests Queue`, subtitled **"Review, approve, and fulfill supply
   requests"**, with summary cards for *Pending approval*, *In Processing* and
-  *Low stock alerts* side by side.
+  *Low stock alerts* side by side. *(Corrected 2026-10-03: the queue frame draws
+  the first two; only the `02.2` review frames add the third, and the SPA no
+  longer draws it — [drift-2026-10-03](../design-system/drift-2026-10-03.md).
+  The role decision is unaffected.)*
 - `02.2 - Requests Queue - Review`, a **single** panel whose actions are
   **Reject Request** / **Approve Request**, and which after approval offers
   **Update Status** and then **Complete**.

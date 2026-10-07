@@ -1,6 +1,6 @@
 import type { RequestStatus } from '../../../shared/ui';
 import type { Office } from '../../auth/types';
-import type { QueueRequest, QueueSnapshot, QueueSource } from './queue-types';
+import type { QueueCounts, QueueQuery, QueueRequest, QueueSnapshot, QueueTable } from './queue-types';
 
 /** The Admin's view of one request in the review panel. This is a feature-local
  *  read model, not a backend response shape. When the contract publishes, a new
@@ -31,6 +31,27 @@ export interface ReviewLine {
    *  FR-004). `null` when the source has no figure. The panel then shows a
    *  marker, never `0 in stock`. */
   available: number | null;
+}
+
+/** The statuses in which a request still holds its units as `Reserved`:
+ *  submit reserved them, and only reject, cancel and `Received` move them
+ *  out (constitution III). */
+const HOLDS_RESERVATION: ReadonlySet<RequestStatus> = new Set([
+  'Pending Approval',
+  'Approved',
+  'For Delivery',
+  'Ready for Pickup',
+]);
+
+/** CURRENT INVENTORY for a line: the units at the office open to THIS
+ *  request. While it holds its reservation, its own `qty` units are Reserved,
+ *  not Available, so the Available figure alone would read `0 in stock` for a
+ *  request holding the last unit. They are counted back in. Once the request
+ *  is received, rejected or cancelled it holds nothing, and Available is the
+ *  figure. `null` stays `null` (spec 008 FR-004, amended 2026-10-03). */
+export function stockForRequest(line: Pick<ReviewLine, 'available' | 'qty'>, status: RequestStatus): number | null {
+  if (line.available === null) return null;
+  return HOLDS_RESERVATION.has(status) ? line.available + line.qty : line.available;
 }
 
 /** Where a `Ready for Pickup` request is collected (spec 008 FR-009). */
@@ -78,11 +99,33 @@ export interface ReviewSnapshot extends QueueSnapshot {
 
 /** The one store behind the queue AND the panel, so a transition and the
  *  reload that follows see the same data (plan D3, D4). */
-export interface AdminRequestSource extends QueueSource {
+/** One page of the queue as the API answers it: the rows the table draws
+ *  and how many match, and the requests behind its rows for the panel (spec
+ *  017 plan D1). The counts are a separate read: the table never waits on
+ *  them, nor they on it. */
+export interface QueuePageResult {
+  queue: QueueTable;
+  requests: readonly ReviewRequest[];
+}
+
+export interface AdminRequestSource {
+  /** One page of the queue, asked of the API (spec 017 plan D1). */
+  page(query: QueueQuery): Promise<QueuePageResult>;
+  /** The summary cards and chip counts for the query's search. The page
+   *  asks it alongside `page`, and draws each when it arrives. `fresh` asks
+   *  for counts read now, never reused: **Refresh** passes it (spec 017
+   *  FR-054). */
+  counts(query: QueueQuery, options?: { fresh?: boolean }): Promise<QueueCounts>;
+  /** One request in full, for the panel and for a deep link a page does not
+   *  hold. */
+  get(id: string): Promise<ReviewRequest>;
+  /** `false` withholds Complete: the Employee's signature completes the
+   *  request, so there is no Admin complete (constitution 10.0.0 IV,
+   *  ADR-0013). Absent means `false` (spec 017 FR-023). */
+  readonly canComplete?: boolean;
   /** The pickup points offered for `Ready for Pickup`. They come from the
    *  source, never a literal in the panel (plan D7; contracts conflict 2). */
   readonly pickupOffices: readonly Office[];
-  load(): Promise<ReviewSnapshot>;
   /** `notes` is the optional **Other Notes**, sent trimmed, and left out when
    *  blank (FR-007a). */
   approve(id: string, notes?: string): Promise<TransitionResult>;

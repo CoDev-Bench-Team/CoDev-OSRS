@@ -3,6 +3,7 @@ import { SidePanel, StatusPill, StatusTimeline } from '../../../shared/ui';
 import { SECTION_HEADING } from '../detail/detail-typography';
 import { requestTimeline } from '../request-timeline';
 import { Card, ItemsRequested, RequesterBlock, StoppedReason } from '../review-parts';
+import { requestLabel } from '../detail/request-detail-types';
 import type { ResolvedRequest } from './history-model';
 
 /** The Admin's read-only view of a resolved request, a side panel over
@@ -16,11 +17,11 @@ export function HistoryPanel({ request, onClose }: { request: ResolvedRequest; o
   const statusHeadingId = useId();
   return (
     <SidePanel
-      title={`Request ${request.id}`}
+      title={`Request ${requestLabel(request)}`}
       onClose={onClose}
       header={
         <>
-          <h2 className="type-section-title truncate text-ink-heading">{request.id}</h2>
+          <h2 className="type-section-title truncate text-ink-heading">{requestLabel(request)}</h2>
           <StatusPill status={request.status} />
         </>
       }
@@ -39,7 +40,7 @@ export function HistoryPanel({ request, onClose }: { request: ResolvedRequest; o
         <h3 id={statusHeadingId} className={SECTION_HEADING}>
           Status
         </h3>
-        <StatusTimeline nodes={requestTimeline(request)} />
+        <StatusTimeline nodes={requestTimeline(request, 'admin')} />
       </section>
 
       <StoppedReason request={request} />

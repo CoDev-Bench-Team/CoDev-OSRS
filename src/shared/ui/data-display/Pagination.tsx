@@ -64,6 +64,7 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
   label = 'Pagination',
+  hidden = false,
 }: {
   /** 1-based, and already clamped to the available pages by the caller. */
   page: number;
@@ -74,6 +75,11 @@ export function Pagination({
   onPageSizeChange: (pageSize: number) => void;
   /** Names the landmark; pass one when a screen has more than one table. */
   label?: string;
+  /** The table's rows are loading or being replaced, so the range and pages
+   *  would be wrong or stale. The footer keeps its space, so nothing below it
+   *  moves, but is invisible and inert. It waits 150ms to go, as the table's
+   *  busy state does, so a fast response never flickers it. */
+  hidden?: boolean;
 }) {
   const sizeId = useId();
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -83,7 +89,12 @@ export function Pagination({
   const atEnd = page >= pageCount;
 
   return (
-    <nav aria-label={label} className="flex flex-wrap items-center justify-between gap-16">
+    <nav
+      aria-label={label}
+      aria-hidden={hidden || undefined}
+      inert={hidden || undefined}
+      className={`flex flex-wrap items-center justify-between gap-16 transition-opacity duration-(--motion-base) ease-(--ease-osrs) ${hidden ? 'pointer-events-none opacity-0 delay-150' : 'opacity-100'}`}
+    >
       {/* Not a live region: the screen owning the table already announces its
           result count, and a second region here would speak over it on every
           keystroke of a search. */}
@@ -151,32 +162,35 @@ export function Pagination({
           </button>
         </div>
 
-        <div className="flex items-center gap-8">
-          <label htmlFor={sizeId} className="font-sans text-14 leading-tight text-black">
-            Result per page
-          </label>
-          {/* Native, not the shared `Select`: that trigger is the 46px, r10
-              form control, and the file draws this one at 36px, r4. The
-              platform's own listbox also keeps keyboard and screen-reader
-              behaviour for free. */}
-          <span className="relative inline-flex text-osrs-neutral-800">
-            <select
-              id={sizeId}
-              value={pageSize}
-              onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className={`${ENABLED} appearance-none pr-[36px] pl-12 focus-visible:shadow-[inset_0_0_0_1px_var(--color-osrs-neutral-400)]`}
-            >
-              {pageSizeOptions.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-            <span className="pointer-events-none absolute top-1/2 right-12 -translate-y-1/2">
-              <Chevron direction="down" />
+        {/* Nothing to page through: there is no page size to choose. */}
+        {total > 0 ? (
+          <div className="flex items-center gap-8">
+            <label htmlFor={sizeId} className="font-sans text-14 leading-tight text-black">
+              Result per page
+            </label>
+            {/* Native, not the shared `Select`: that trigger is the 46px, r10
+                form control, and the file draws this one at 36px, r4. The
+                platform's own listbox also keeps keyboard and screen-reader
+                behaviour for free. */}
+            <span className="relative inline-flex text-osrs-neutral-800">
+              <select
+                id={sizeId}
+                value={pageSize}
+                onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                className={`${ENABLED} appearance-none pr-[36px] pl-12 focus-visible:shadow-[inset_0_0_0_1px_var(--color-osrs-neutral-400)]`}
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute top-1/2 right-12 -translate-y-1/2">
+                <Chevron direction="down" />
+              </span>
             </span>
-          </span>
-        </div>
+          </div>
+        ) : null}
       </div>
     </nav>
   );

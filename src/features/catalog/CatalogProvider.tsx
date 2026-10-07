@@ -16,10 +16,14 @@ import type { CatalogOffice } from './types';
 export function CatalogProvider({
   source,
   office,
+  enabled = true,
   children,
 }: {
   source: CatalogSource;
   office: CatalogOffice;
+  /** False holds the read, the catalog staying in `loading`, until it is true
+   *  (the session is still resolving). */
+  enabled?: boolean;
   children: ReactNode;
 }) {
   const [attempt, setAttempt] = useState(0);
@@ -27,6 +31,7 @@ export function CatalogProvider({
   const [state, setState] = useState<CatalogRead>({ status: 'loading' });
 
   useEffect(() => {
+    if (!enabled) return;
     let live = true;
     setState({ status: 'loading' });
     source
@@ -40,7 +45,7 @@ export function CatalogProvider({
     return () => {
       live = false;
     };
-  }, [source, office, attempt]);
+  }, [source, office, attempt, enabled]);
 
   const value = useMemo(() => ({ ...state, reload }), [state, reload]);
   return <CatalogContext value={value}>{children}</CatalogContext>;

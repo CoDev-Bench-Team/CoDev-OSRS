@@ -1,3 +1,4 @@
+import { Skeleton, SkeletonRegion } from '../../shared/ui';
 import { AssignedItemCard } from './AssignedItemCard';
 import { useAssignedEquipment } from './useAssignedEquipment';
 
@@ -7,8 +8,8 @@ import { useAssignedEquipment } from './useAssignedEquipment';
  *  say" must not look like "nothing is assigned" (FR-008). The empty, loading
  *  and error presentations are undesigned and logged as inventions in
  *  docs/design-system/additions.md. */
-export function AssignedSection({ search }: { search: string }) {
-  const state = useAssignedEquipment(search);
+export function AssignedSection({ userId }: { userId: string | null }) {
+  const state = useAssignedEquipment(userId);
   if (state.kind === 'unavailable') return null;
 
   return (
@@ -17,9 +18,20 @@ export function AssignedSection({ search }: { search: string }) {
         Currently Assigned
       </h2>
       {state.kind === 'loading' ? (
-        <p role="status" className="type-body text-ink-secondary">
-          Loading assigned equipment
-        </p>
+        // The cards' own grid and padding: a name with its tag, then the date.
+        <SkeletonRegion label="Loading assigned equipment">
+          <ul aria-hidden="true" className="grid max-w-[1222px] grid-cols-1 gap-x-14 gap-y-20 md:grid-cols-2">
+            {Array.from({ length: 2 }, (_, i) => (
+              <li key={i} className="flex min-w-0 flex-col gap-6 rounded-10 bg-surface-card px-20 py-18 shadow-card">
+                <span className="flex items-center gap-5">
+                  <Skeleton className="h-18 w-[180px]" />
+                  <Skeleton className="h-18 w-[72px]" />
+                </span>
+                <Skeleton className="h-14 w-[140px]" />
+              </li>
+            ))}
+          </ul>
+        </SkeletonRegion>
       ) : state.kind === 'failed' ? (
         <p role="alert" className="type-body text-status-rejected-fg">
           Couldn&rsquo;t load your assigned equipment

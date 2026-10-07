@@ -12,71 +12,29 @@ This repo runs the **SPA**. A REST API **from the backend team** must be reachab
 Create `.env` (never commit secrets):
 
 ```
-VITE_API_BASE_URL=https://codev-osrs-backend.vercel.app
+VITE_API_BASE_URL=https://codev-osrs-be.vercel.app
 VITE_GOOGLE_CLIENT_ID=
 VITE_COMPANY_DOMAIN=codev.com
 ```
 
-`VITE_API_BASE_URL` is the session switch. Leave it unset and the SPA keeps the seeded session below. Set it and login, refresh, and logout use the published API (`credentials: 'include'`).
+`VITE_API_BASE_URL` is required. The SPA has no seeded or demo data (spec 017, Session 2026-10-03 second): every screen reads and writes the published API, with the session cookie (`credentials: 'include'`). Left unset, sign-in says the API is not configured.
 
 `VITE_GOOGLE_CLIENT_ID` is the Web client id from the same Google Cloud project the API verifies (BEN-96). It is not a secret. Put it in `.env` only. `.env.example` names the variable and leaves it empty, and the id is not written into source. API-mode sign-in renders Google's button only when it is set. `VITE_COMPANY_DOMAIN` is an account-picker hint; the API still decides which domains may sign in.
 
 The dev server is pinned to port 5173. That origin is the one authorized on the OAuth client. A busy port fails to start.
 
-In development, Vite proxies `/auth` to `VITE_API_BASE_URL` so the session cookie is first-party on the Vite origin. A Netlify build does the same: the browser calls `/auth` on the Netlify host, and Netlify proxies that path to `VITE_API_BASE_URL`. A deploy preview needs that, because the preview and the API are different sites and the browser blocks a direct call. A production build that is not on Netlify calls `VITE_API_BASE_URL` directly, so those hosts must be on the same site, with the cookie `Secure` and `SameSite=Lax`. A refresh on those real hosts must restore the same person. A session that works on localhost or a deploy preview does not satisfy that check.
+In development, Vite proxies `/auth` to `VITE_API_BASE_URL`, and every other API route under `/api` with the prefix stripped (`/api/requests` → `/requests`), so the session cookie is first-party on the Vite origin. The prefix exists because `/requests` and `/profile` are SPA addresses. A Netlify build does the same: the browser calls `/auth` and `/api/*` on the Netlify host, and Netlify proxies them to `VITE_API_BASE_URL`. A deploy preview needs that, because the preview and the API are different sites and the browser blocks a direct call. A production build that is not on Netlify calls `VITE_API_BASE_URL` directly, so those hosts must be on the same site, with the cookie `Secure` and `SameSite=Lax`. A refresh on those real hosts must restore the same person. A session that works on localhost or a deploy preview does not satisfy that check.
 
-## Demo users
+## Who can sign in
 
-**Non-production placeholders** (constitution IX). There are no credentials here
-— no passwords, no tokens, nothing to leak. The SPA implements no authentication
-of its own (spec 001 Clarifications, Session 2026-09-12): the sign-in screen
-renders the designed Google control and delegates to the **session boundary**,
-`src/features/auth/session-source.ts`.
+Real Google Workspace accounts that the API accepts. There are no demo users, no
+seeded data and no dev stubs in the application. The SPA implements no
+authentication of its own: the sign-in screen renders the designed Google
+control and hands the credential to `src/features/auth/api-session-source.ts`,
+which signs in, restores and signs out through the published API.
 
-When `VITE_API_BASE_URL` is unset, that boundary is satisfied by
-`src/features/auth/seeded-source.ts`, which resolves one of these two seeded
-identities — one per role, so every role's landing screen and every refusal can
-be exercised:
-
-| Name | Role | Lands on |
-|------|------|----------|
-| Maya Santos · mayas@codev.com | `employee` | `/catalog` |
-| Ethan Cruz · ethanc@codev.com | `admin` | `/queue` |
-
-Choose one on the sign-in screen before pressing the Google control — the
-chooser is the seeded source's stand-in for Google's account picker, and it
-is shown only while that source is selected. A third entry, **Refused account**,
-makes sign-in fail, so the refusal path can be demonstrated.
-
-Inventory (spec 015) assigns units to users from a seeded directory,
-`src/features/inventory/seeded-user-directory.ts`. These are non-production
-placeholders too, and only Maya and Ethan can sign in:
-
-| Name | Email | Department |
-|------|-------|------------|
-| Maya Santos | mayas@codev.com | Engineering |
-| Ethan Cruz | ethanc@codev.com | IT Operations |
-| Samantha Reyes | samanthar@codev.com | Design |
-| Paolo Garcia | paolog@codev.com | Engineering |
-| Lea Villanueva | leav@codev.com | Finance |
-| Marco Dizon | marcod@codev.com | Quality Assurance |
-| Nina Bautista | ninab@codev.com | People Operations |
-| Carlo Mendoza | carlom@codev.com | — |
-
-The seeded units' serial numbers, PRs, BitLocker Identifiers and Recovery
-Key/PINs are visibly fake (`DEMO-…`) and reset on reload.
-
-**There is no role switcher inside the application** (spec 003 D5). Changing role
-means signing out and signing back in, which is deliberate: it keeps one role
-per user absolute and makes the demo exercise the real sign-in path.
-
-A seeded session is held as an opaque reference plus a timestamp, never a user
-or a role, and it is re-resolved on every load — so a reload keeps you signed in
-while a stale reference left on a shared machine is discarded rather than
-trusted. The API session does not use that storage. `App.tsx` passes
-`selectSessionSource()`: a set `VITE_API_BASE_URL` uses
-`src/features/auth/api-session-source.ts`, which signs in, restores, and signs
-out through the published API and the session cookie.
+**There is no role switcher inside the application** (spec 003 D5). The role is
+the one the API reports for the signed-in account.
 
 ## Run the SPA
 
@@ -85,8 +43,8 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL. The application opens at `/login`; everything else requires
-a session. The design system's component gallery is **not** part of the
+Open `http://localhost:5173`. The application opens at `/login`; everything
+else requires a session. The design system's component gallery is **not** part of the
 application — it stays at `/__gallery` in development only.
 
 ## QA regression
@@ -97,11 +55,11 @@ npm run build
 npm run e2e
 ```
 
-`npm run e2e` runs the Playwright suite in `e2e/` against the Vite dev server. It does not need the backend API: the walk uses the seeded screens. The documented path is Davao, Maya Santos’s home office.
+`npm run e2e` runs the Playwright suite in `e2e/` against the Vite dev server in API mode. It does not need the backend: `e2e/fixtures/fake-api.ts` answers `/auth` and `/api` inside the browser with test-only data, keeping the published rules (reserve on submit, release on reject and cancel, assign on receive, Employee sees only their own). That data lives in `e2e/` and never ships; `scripts/check-build.mjs` fails a build that carries it. The documented path is Davao, the test Employee's office. The path runs to `Completed`: the Employee's signature completes the request (constitution 10.0.0, ADR-0013).
 
 Playwright covers:
 
-1. Happy path through Ready for Pickup, `Received`, the Employee’s signature, and Admin Complete. Stock moves on submit and on `Received` only.
+1. Happy path through Ready for Pickup, `Received`, and the Employee's signature to `Completed`. Stock moves on submit and on `Received` only.
 2. Reject path with the reservation released and a new request
 3. Cancel paths from both sides, each requiring a reason
 4. Notifications where the product exposes a record; a missing record is reported, not invented
@@ -109,11 +67,10 @@ Playwright covers:
 
 ## Demo script (human)
 
-1. Admin encodes a Mice asset and adds 10 Available units at Davao — Total 10 / Available 10 / Reserved 0
-2. Maya (Davao) adds 3 to the Request List and submits — Total 10 / Available 7 / Reserved 3, status Pending Approval. `Request received` is asserted only where the product shows that record
+1. Admin encodes a Headset asset (with a model) and adds 10 Available units at Davao — Total 10 / Available 10 / Reserved 0
+2. An Employee at Davao adds 3 to the Request List and submits — Total 10 / Available 7 / Reserved 3, status Pending Approval. `Request received` is asserted only where the product shows that record
 3. Admin approves — quantities unchanged. `Request approved` likewise
 4. Admin sets **Ready for Pickup** at the Davao office — quantities unchanged
-5. Complete is not offered yet. Admin or Maya sets **Received** — Total 7 / Available 7 / Reserved 0
-6. Maya signs the Accountability Form — status stays `Received`, quantities unchanged
-7. Admin presses **Complete** — quantities unchanged, status `Completed`
+5. Admin or the Employee sets **Received** — Total 7 / Available 7 / Reserved 0
+6. The Employee opens the request, follows **Sign accountability form**, reads the acknowledgement, ticks the agreement, and presses **I acknowledge and sign** (their name is prefilled). The request is **Completed**; quantities unchanged. There is no Admin **Complete**
 8. A rejection or a cancellation with a reason releases the reservation. An empty reason does not. For Delivery cannot be cancelled

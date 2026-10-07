@@ -250,7 +250,7 @@ the full list surface landed, squashed into one commit.
 
 1. The existing shell and route guard admit only an Admin to `/queue`.
 2. The page loads one snapshot through `QueueSource`.
-3. A pure projection applies the query — search, chip counts, chip filter, sort, page — and derives Pending approval and In Processing over the whole snapshot; Low stock alerts is copied from the source.
+3. A pure projection applies the query — search, chip counts, chip filter, sort, page — and derives Pending approval and In Processing over the whole snapshot. *(Low stock alerts, once copied from the source, was removed 2026-10-03; spec FR-004.)*
 4. Loading, failure, and successful empty states remain distinguishable.
 5. Review is a router link to `/requests/:id`; the queue performs no mutation.
 6. The table uses a contained horizontal overflow region at narrow widths so the application page itself does not overflow.

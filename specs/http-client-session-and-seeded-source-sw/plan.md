@@ -39,7 +39,7 @@ An unrecognised role or an unrecognised office is not added to `Role` or `OFFICE
 
 ## API Contracts
 
-Published contract: [CoDev OSRS API (Swagger UI)](https://codev-osrs-backend.vercel.app/) and the backend [INTEGRATION.md](https://github.com/CoDev-Bench-Team/codev-osrs-backend/blob/main/docs/INTEGRATION.md). Where they disagree, the live API wins and the gap is recorded in `specs/001-office-supplies-mvp/contracts/README.md`. This plan does not author a REST document.
+Published contract: [CoDev OSRS API (Swagger UI)](https://codev-osrs-be.vercel.app/) and the backend [INTEGRATION.md](https://github.com/CoDev-Bench-Team/codev-osrs-backend/blob/main/docs/INTEGRATION.md). Where they disagree, the live API wins and the gap is recorded in `specs/001-office-supplies-mvp/contracts/README.md`. This plan does not author a REST document.
 
 This slice calls only:
 
@@ -64,7 +64,7 @@ Paged lists: `{ data, total, page, limit, totalPages }`. The reader exists in th
 - `401` or `403` on `POST /requests`, `POST /requests/:id/receive`, and `POST /requests/:id/sign` ends the session. The client does not send the write again. This slice does not add those functions; the client recognises the paths when a later slice calls them through it. `scripts/check-api-session.mjs` asserts those three paths. Changing one requires a dated note in the contract README in the same change.
 - `403` on any other call is returned to the caller as the problem, for that screen to show. The role in React state is not consulted.
 
-Status and category label maps (`pending_approval` through `cancelled`, categories including `Wifi`) are added only after this slice compares the integration guide with a live API document and writes the result in the contract README. A fetch of `https://codev-osrs-backend.vercel.app/api-json` on 2026-10-02 returned 404, so this plan does not freeze those maps. If the live document still cannot be read, no mapper module is added and the README says the maps are not final.
+Status and category label maps (`pending_approval` through `cancelled`, categories including `Wifi`) are added only after this slice compares the integration guide with a live API document and writes the result in the contract README. A fetch of `https://codev-osrs-be.vercel.app/api-json` on 2026-10-02 returned 404, so this plan does not freeze those maps. If the live document still cannot be read, no mapper module is added and the README says the maps are not final.
 
 The guide says signing moves a request to `completed`. This slice does not call sign, and it does not encode that transition. Parent BEN-154 already says to record that conflict rather than drop the Admin Complete step.
 

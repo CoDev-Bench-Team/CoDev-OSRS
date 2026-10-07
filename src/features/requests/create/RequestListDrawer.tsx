@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, type FormEvent } from 'react';
-import { Button, focusRequestListMarkerIfIdle, MdiClipboardTextOutline, SidePanel, StatusPill } from '../../../shared/ui';
+import { Button, focusRequestListMarkerIfIdle, MdiClipboardTextOutline, SidePanel, StatusPill, usePanelTask } from '../../../shared/ui';
 import { useSession } from '../../auth/session-context';
 import type { CatalogSource } from '../../catalog/catalog-source';
 import type { CatalogOffice } from '../../catalog/types';
@@ -8,6 +8,7 @@ import { NO_PROBLEMS, placeProblems } from './place-problems';
 import { useRequestList } from './request-draft';
 import { REFUSED_COPY, type RequestSubmitSource, type SubmitResult } from './request-submit-source';
 import { RequestListLineRow } from './RequestListLineRow';
+import { requestLabel, type EmployeeRequest } from '../detail/request-detail-types';
 import { SubmittedView } from './SubmittedView';
 
 /** The Request List drawer — `03 - Request List` and, after a successful
@@ -92,6 +93,9 @@ export function RequestListDrawer({
   }, [refusals]);
 
   const busy = list.submitting;
+  // The submit. Closing the drawer mid-submit hands it to a toast (one
+  // behaviour for every side drawer, 2026-10-03).
+  const task = usePanelTask();
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -104,18 +108,43 @@ export function RequestListDrawer({
 
     const trimmed = note.trim();
     const draft = { lines: sent, ...(trimmed ? { note: trimmed } : {}) };
-    let result: SubmitResult;
-    try {
-      result = await submitSource.submit(session.user, draft);
-    } catch {
-      result = { ok: false, reason: 'unreachable' };
-    }
+    const user = session.user;
+    // Set inside the task; typed whole so TypeScript does not narrow it to
+    // this starting value.
+    let result = { ok: false, reason: 'unreachable' } as SubmitResult;
+    const outcome = await task.run(
+      'submit',
+      {
+        loading: 'Submitting your request…',
+        success: (created: EmployeeRequest) => ({
+          title: `${requestLabel(created)} submitted`,
+          body: "Your request has been sent to your approver. We'll email you whenever its status changes.",
+        }),
+        failure: () => ({
+          title: 'Your request was not submitted',
+          body: 'Your items are still in the Request List. Open it to see why.',
+          action: { label: 'Open Request List', onClick: list.openList },
+        }),
+      },
+      async () => {
+        try {
+          result = await submitSource.submit(user, draft);
+        } catch {
+          result = { ok: false, reason: 'unreachable' };
+        }
+        if (!result.ok) throw new Error('not submitted');
+        return result.request;
+      },
+    );
     // Through the session list, so the outcome lands even if this drawer was
-    // closed by leaving the Catalog while the system was answering (D7).
+    // closed while the system was answering (D7).
     if (result.ok) {
       // The Catalog re-reads on the session's success count (FR-011), not
       // here: this drawer, and the Catalog it opened over, may be gone.
       list.endSubmit(ticket, { created: result.request });
+      // A toast already said it was submitted, with its id; the next open is
+      // the list again, not a confirmation the Employee has already seen.
+      if (outcome.detached) list.dismissSubmitted();
       return;
     }
     const placed =
@@ -145,12 +174,12 @@ export function RequestListDrawer({
     const request = submitted;
     return (
       <SidePanel
-        title={`Request ${request.id}`}
+        title={`Request ${requestLabel(request)}`}
         onClose={close}
         header={
           <>
             <h2 ref={heading} tabIndex={-1} className="type-section-title truncate text-ink-heading outline-none">
-              {request.id}
+              {requestLabel(request)}
             </h2>
             <StatusPill status={request.status} />
           </>
@@ -204,7 +233,8 @@ export function RequestListDrawer({
     <SidePanel
       title="Request List"
       onClose={close}
-      dismissible={!busy}
+      busy={busy}
+      onLeave={() => task.handOff()}
       header={
         <>
           <MdiClipboardTextOutline size={24} className="shrink-0 text-ink-primary" />

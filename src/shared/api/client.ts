@@ -38,10 +38,12 @@ function notifySessionEnded(): void {
 }
 
 /** Same-origin where a proxy keeps the session cookie on this host: the Vite
- *  dev server, and a Netlify build. Any other production build calls the
- *  configured base directly, so that host must be the same site as the API. */
+ *  dev server, and a Netlify build. There, `/auth` is proxied as itself and
+ *  every other route under `/api`, because `/requests` and `/profile` are SPA
+ *  addresses. Any other production build calls the configured base directly,
+ *  so that host must be the same site as the API. */
 export function apiUrl(path: string): string {
-  if (import.meta.env.DEV || __OSRS_NETLIFY__) return path;
+  if (import.meta.env.DEV || __OSRS_NETLIFY__) return path.startsWith('/auth') ? path : `/api${path}`;
   const configured = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
   return `${configured.replace(/\/$/, '')}${path}`;
 }
@@ -50,9 +52,70 @@ export function apiConfigured(): boolean {
   return Boolean(import.meta.env.VITE_API_BASE_URL?.trim());
 }
 
+/** GETs in flight, by path. Two identical reads at once — a panel and its
+ *  StrictMode double in development, or two panels opening together — share
+ *  one request. Nothing is kept once it settles: this is not a cache. A write
+ *  clears it as it starts and as it settles, so a read asked for after a
+ *  write never joins one sent before it and gets the old data. */
+const reading = new Map<string, Promise<unknown>>();
+
 /** One request. Sends the session cookie. Does not read or write browser
  *  storage. A `401` or `403` is sent once. */
-export async function apiRequest<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export function apiRequest<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  if ((init.method ?? 'GET') !== 'GET') {
+    reading.clear();
+    return send<T>(path, init).finally(() => reading.clear());
+  }
+  const pending = reading.get(path);
+  if (pending) return pending as Promise<T>;
+  const request: Promise<T> = send<T>(path, init).finally(() => {
+    if (reading.get(path) === request) reading.delete(path);
+  });
+  reading.set(path, request);
+  return request;
+}
+
+/** Requests sent and not yet answered, and who waits for there to be none. */
+let inFlight = 0;
+const idleWaiters = new Set<() => void>();
+
+function settleIdle(): void {
+  // A turn later, so a read that starts as another ends is still counted.
+  setTimeout(() => {
+    if (inFlight > 0) return;
+    for (const wake of idleWaiters) wake();
+    idleWaiters.clear();
+  }, 0);
+}
+
+/** Resolves once no request is in flight, for work that must not compete
+ *  with what the screen is loading (the background current-user read).
+ *  Resolves after `maxWaitMs` regardless, so a screen that never goes quiet
+ *  does not hold it forever. */
+export function whenIdle(maxWaitMs = 10_000): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer);
+      idleWaiters.delete(done);
+      resolve();
+    };
+    const timer = setTimeout(done, maxWaitMs);
+    idleWaiters.add(done);
+    settleIdle();
+  });
+}
+
+async function send<T>(path: string, init: { method?: string; body?: unknown }): Promise<T> {
+  inFlight += 1;
+  try {
+    return await sendNow<T>(path, init);
+  } finally {
+    inFlight -= 1;
+    if (inFlight === 0) settleIdle();
+  }
+}
+
+async function sendNow<T>(path: string, init: { method?: string; body?: unknown }): Promise<T> {
   const method = init.method ?? 'GET';
   const headers = new Headers();
   if (init.body !== undefined) headers.set('Content-Type', 'application/json');

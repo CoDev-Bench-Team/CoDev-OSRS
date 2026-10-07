@@ -35,9 +35,9 @@ export function readProblem(body: unknown, status: number): ApiProblem {
 }
 
 /** `POST /auth/google` puts the explanation in `title` and the HTTP reason
- *  phrase in `detail` (`Unauthorized`, `Forbidden`). A detail that is only
+ *  phrase in `detail` (`Unauthorized`, `Forbidden`; `Conflict` on a 409). A detail that is only
  *  that phrase is not the refusal sentence. */
-const HTTP_REASON = /^(unauthorized|forbidden)$/i;
+const HTTP_REASON = /^(unauthorized|forbidden|not found|conflict|bad request)$/i;
 
 /** The sentence the sign-in screen shows. A specific `detail` wins. When
  *  `detail` is only the HTTP reason phrase, `title` wins. Otherwise the

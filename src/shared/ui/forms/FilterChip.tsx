@@ -13,10 +13,14 @@ export function FilterChip({
   count,
   selected,
   onSelect,
+  loading = false,
 }: {
   label: string;
   /** Rendered as `(n)` after the label. Omit it for a chip with no count. */
   count?: number;
+  /** The count is not known yet: the chip shows its label alone, so it never
+   *  claims `(0)` before the answer arrives, and `(n)` appears with it. */
+  loading?: boolean;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -32,7 +36,7 @@ export function FilterChip({
       }`}
     >
       <span className={selected ? 'font-bold' : undefined}>{label}</span>
-      {count === undefined ? null : (
+      {count === undefined || loading ? null : (
         <span className={selected ? 'text-brand-on-primary' : 'text-ink-muted'}>({count.toLocaleString('en-US')})</span>
       )}
     </button>

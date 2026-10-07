@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import { Button, Field, FieldGroup, Select, SidePanel, TextArea, TextInput } from '../../shared/ui';
+import { useId, useState, type FormEvent } from 'react';
+import { Button, Field, FieldGroup, Select, SidePanel, TextArea, TextInput, usePanelTask, type TaskCopy } from '../../shared/ui';
+import { draftOneOf, draftString, readDraft, savingDraft, useDraftWriter } from '../../shared/form-draft-cache';
 import { fieldErrors, isValidationProblem } from '../../shared/validation';
 import { CATEGORY_FIELDS, SPEC_LABEL, SPEC_PLACEHOLDER, draftForCategory, missingFields } from './category-fields';
 import { ImageField } from './ImageField';
@@ -45,6 +46,54 @@ function initial(asset?: Asset): FormState {
   };
 }
 
+/** The form from a draft kept under five minutes ago, over `base` (the asset
+ *  being updated, or the empty Add form). */
+function fromSaved(saved: Record<string, unknown> | undefined, base: FormState): FormState {
+  if (!saved) return base;
+  const specs = saved.specs !== null && typeof saved.specs === 'object' ? (saved.specs as Record<string, unknown>) : {};
+  return {
+    name: draftString(saved, 'name', base.name),
+    category: draftOneOf(saved, 'category', CATEGORIES, base.category),
+    model: draftString(saved, 'model', base.model),
+    description: draftString(saved, 'description', base.description),
+    image: storedImage(saved, base.image),
+    specs: Object.fromEntries(SPEC_KEYS.map((k) => [k, typeof specs[k] === 'string' ? specs[k] : base.specs[k]])) as Record<SpecKey, string>,
+    lowStockThreshold: draftString(saved, 'lowStockThreshold', base.lowStockThreshold),
+  };
+}
+
+/** The asset a draft was made over, short enough to store: every field, with
+ *  the image (a data URI, up to megabytes) reduced to its length and a hash. */
+function fingerprint(asset?: Asset): string {
+  const { image = '', ...rest } = initial(asset);
+  let hash = 0;
+  for (let i = 0; i < image.length; i += 1) hash = (hash * 31 + image.charCodeAt(i)) | 0;
+  return JSON.stringify({ ...rest, image: image ? `${image.length}:${hash}` : null });
+}
+
+/** A draft's `image`: `UNCHANGED` is the asset's own (never stored, it can run
+ *  to megabytes), `null` an image the Admin removed, a data URI a new one.
+ *  Absent: a new image too large to keep. */
+const UNCHANGED = 'unchanged';
+
+function draftImage(image: string | undefined, own: string | undefined): string | null {
+  if (image === own) return UNCHANGED;
+  return image ?? null;
+}
+
+function storedImage(saved: Record<string, unknown>, own: string | undefined): string | undefined {
+  if (saved.image === null) return undefined;
+  if (typeof saved.image === 'string' && saved.image !== UNCHANGED) return saved.image;
+  return own;
+}
+
+/** Said under the image when a restored draft could not keep a new image. */
+const IMAGE_NOT_KEPT = 'Your new image was too large to keep in the draft. Choose it again.';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /** Digits only. Blank is not 0, and `Number` would read `0x10` or `1e2` as
  *  whole numbers the Admin never typed; all of them are refused. */
 function parseThreshold(typed: string): number {
@@ -81,21 +130,40 @@ export function AssetFormPanel({
 }) {
   const updating = !!asset;
   const title = updating ? 'Update Asset' : 'Add Asset';
-  const [form, setForm] = useState<FormState>(() => initial(asset));
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
+  // Kept for five minutes (shared/form-draft-cache.ts). Read once, before the
+  // first render, so an expired draft is already gone.
+  const draftName = asset ? `asset.${asset.id}` : 'asset.new';
+  // The asset as it was when the draft was made. A draft over an asset that
+  // has changed since (another Admin saved it) is dropped, never applied over
+  // the newer values.
+  const [base] = useState(() => fingerprint(asset));
+  const [untouched] = useState(() => JSON.stringify({ base, form: { ...initial(asset), image: UNCHANGED } }));
+  const [saved] = useState(() => {
+    const draft = readDraft(draftName);
+    return draft?.base === base && isRecord(draft.form) ? draft.form : undefined;
+  });
+  const [form, setForm] = useState<FormState>(() => fromSaved(saved, initial(asset)));
+  const discard = useDraftWriter(
+    draftName,
+    { base, form: { ...form, image: draftImage(form.image, asset?.image) } },
+    {
+      // Nothing changed from the asset (or the empty Add form): nothing to keep.
+      untouched,
+      restored: saved,
+      // An image too large for storage is dropped from the draft, not the rest.
+      fallback: (value) => ({ ...value, form: { ...(value.form as object), image: undefined } }),
+    },
+  );
+  // A draft written without its image (too large) says so under the image.
+  const [errors, setErrors] = useState<Record<string, string>>((): Record<string, string> =>
+    saved && !('image' in saved) ? { image: IMAGE_NOT_KEPT } : {},
+  );
   const rule = CATEGORY_FIELDS[form.category];
   const formId = useId();
-
-  // A save that settles after the panel has closed must not close, or write
-  // to, whatever panel replaced it.
-  const live = useRef(true);
-  useEffect(() => {
-    live.current = true;
-    return () => {
-      live.current = false;
-    };
-  }, []);
+  // The save. Closing the panel while it runs hands it to a toast, which
+  // reports how it ended; the panel then shows nothing of it.
+  const task = usePanelTask();
+  const saving = task.busy;
 
   /** `errorKey` is the message the edit clears: the field's own, or for a
    *  specification row its `specs.<key>`. */
@@ -111,29 +179,42 @@ export function AssetFormPanel({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (task.inFlight()) return; // a second press, dropped
     const draft = draftForCategory({ ...form, lowStockThreshold: parseThreshold(form.lowStockThreshold) });
     const missing = missingFields(draft);
     if (Object.keys(missing).length) {
       setErrors(missing);
       return;
     }
-    setSaving(true);
-    try {
-      await onSave(draft);
-      if (live.current) onClose();
-    } catch (error) {
-      if (!live.current) return;
-      if (isValidationProblem(error)) {
-        const mapped = fieldErrors(error);
-        const shown = shownFields(draft.category);
-        const unshown = Object.keys(mapped).find((key) => !shown.has(key));
-        setErrors(unshown === undefined ? mapped : { ...mapped, '': `The asset could not be saved: ${mapped[unshown]}` });
-      } else {
-        console.error('[assets] save failed', error);
-        setErrors({ '': 'The asset could not be saved. Try again' });
-      }
-    } finally {
-      if (live.current) setSaving(false);
+    const name = draft.name.trim() || 'The asset';
+    const copy: TaskCopy<unknown> = {
+      loading: updating ? `Saving ${name}…` : `Adding ${name}…`,
+      success: () => ({ title: updating ? `${name} saved` : `${name} added` }),
+      failure: (error) => ({
+        title: updating ? `${name} could not be saved` : `${name} could not be added`,
+        body: isValidationProblem(error)
+          ? `${Object.values(fieldErrors(error))[0] ?? 'A field was refused.'} Open the asset to correct it.`
+          : 'Nothing was changed. Try again.',
+      }),
+    };
+    const result = await task.run('save', copy, () =>
+      // Cleared here, so a save handed to a toast still clears it.
+      savingDraft(draftName, () => onSave(draft), discard),
+    );
+    if (result.detached) return;
+    if (result.ok) {
+      onClose();
+      return;
+    }
+    const { error } = result;
+    if (isValidationProblem(error)) {
+      const mapped = fieldErrors(error);
+      const shown = shownFields(draft.category);
+      const unshown = Object.keys(mapped).find((key) => !shown.has(key));
+      setErrors(unshown === undefined ? mapped : { ...mapped, '': `The asset could not be saved: ${mapped[unshown]}` });
+    } else {
+      console.error('[assets] save failed', error);
+      setErrors({ '': 'The asset could not be saved. Try again' });
     }
   }
 
@@ -144,9 +225,18 @@ export function AssetFormPanel({
       header={<h2 className="font-display text-[22px] font-medium leading-display text-ink-primary">{title}</h2>}
       bodyClassName="px-14 pt-10 pb-24"
       footerClassName="border-t border-osrs-border-warm px-16 pt-9 pb-8"
+      busy={saving}
+      onLeave={() => task.handOff()}
       footer={
         <div className="flex items-center justify-center gap-12">
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              discard();
+              onClose();
+            }}
+            disabled={saving}
+          >
             Cancel
           </Button>
           <Button type="submit" form={formId} disabled={saving}>
@@ -155,106 +245,112 @@ export function AssetFormPanel({
         </div>
       }
     >
-      <form id={formId} onSubmit={(e) => void submit(e)} noValidate className="flex flex-col gap-32">
-        {errors[''] ? (
-          <p role="alert" className="rounded-6 bg-status-rejected-bg px-12 py-10 type-meta leading-body text-status-rejected-fg">
-            {errors['']}
-          </p>
-        ) : null}
+      <form id={formId} onSubmit={(e) => void submit(e)} noValidate>
+        {/* While saving, every control in the form is disabled at once: the
+            fieldset disables its inputs, the textarea, the Category select and
+            the image buttons, and the base `[disabled]` rule dims it and stops
+            pointer input, image drops included. */}
+        <fieldset disabled={saving} aria-busy={saving || undefined} className="m-0 flex min-w-0 flex-col gap-32 border-0 p-0">
+          {errors[''] ? (
+            <p role="alert" className="rounded-6 bg-status-rejected-bg px-12 py-10 type-meta leading-body text-status-rejected-fg">
+              {errors['']}
+            </p>
+          ) : null}
 
-        <FieldGroup heading="BASICS">
-          <ImageField value={form.image} onChange={(v) => set('image', v)} error={errors.image} />
-          <Field label="Item Name" required error={errors.name}>
-            {({ id, required, invalid, describedBy }) => (
-              <TextInput
-                id={id}
-                required={required}
-                invalid={invalid}
-                aria-describedby={describedBy}
-                value={form.name}
-                onChange={(e) => set('name', e.target.value)}
-                placeholder="e.g. Dell Latitude 7440"
-              />
-            )}
-          </Field>
-          <Field label="Category" required error={errors.category}>
-            {({ id, required, invalid, describedBy }) => (
-              <Select
-                id={id}
-                label="Category"
-                size="field"
-                required={required}
-                invalid={invalid}
-                describedBy={describedBy}
-                options={[...CATEGORIES]}
-                value={form.category}
-                onChange={(v) => set('category', v as Category)}
-              />
-            )}
-          </Field>
-          {rule.model !== 'absent' ? (
-            <Field label="Model" required={rule.model === 'required'} error={errors.model}>
+          <FieldGroup heading="BASICS">
+            <ImageField value={form.image} onChange={(v) => set('image', v)} error={errors.image} />
+            <Field label="Item Name" required error={errors.name}>
               {({ id, required, invalid, describedBy }) => (
                 <TextInput
                   id={id}
                   required={required}
                   invalid={invalid}
                   aria-describedby={describedBy}
-                  value={form.model}
-                  onChange={(e) => set('model', e.target.value)}
-                  placeholder={MODEL_PLACEHOLDER}
+                  value={form.name}
+                  onChange={(e) => set('name', e.target.value)}
+                  placeholder="e.g. Dell Latitude 7440"
                 />
               )}
             </Field>
-          ) : null}
-          <Field label="Description" error={errors.description}>
-            {({ id, invalid, describedBy }) => {
-              const shared = {
-                id,
-                invalid,
-                'aria-describedby': describedBy,
-                value: form.description,
-                onChange: (e: { target: { value: string } }) => set('description', e.target.value),
-                placeholder: DESCRIPTION_PLACEHOLDER,
-              };
-              return updating ? <TextArea {...shared} className="h-[99px] py-12!" /> : <TextInput {...shared} />;
-            }}
-          </Field>
-        </FieldGroup>
-
-        {rule.specs.length ? (
-          <FieldGroup heading="SPECIFICATIONS">
-            {rule.specs.map((key) => (
-              <Field key={key} label={SPEC_LABEL[key]} error={errors[`specs.${key}`]}>
-                {({ id, invalid, describedBy }) => (
+            <Field label="Category" required error={errors.category}>
+              {({ id, required, invalid, describedBy }) => (
+                <Select
+                  id={id}
+                  label="Category"
+                  size="field"
+                  required={required}
+                  invalid={invalid}
+                  describedBy={describedBy}
+                  options={[...CATEGORIES]}
+                  value={form.category}
+                  onChange={(v) => set('category', v as Category)}
+                />
+              )}
+            </Field>
+            {rule.model !== 'absent' ? (
+              <Field label="Model" required={rule.model === 'required'} error={errors.model}>
+                {({ id, required, invalid, describedBy }) => (
                   <TextInput
                     id={id}
+                    required={required}
                     invalid={invalid}
                     aria-describedby={describedBy}
-                    placeholder={SPEC_PLACEHOLDER[key]}
-                    value={form.specs[key]}
-                    onChange={(e) => set('specs', { ...form.specs, [key]: e.target.value }, `specs.${key}`)}
+                    value={form.model}
+                    onChange={(e) => set('model', e.target.value)}
+                    placeholder={MODEL_PLACEHOLDER}
                   />
                 )}
               </Field>
-            ))}
+            ) : null}
+            <Field label="Description" error={errors.description}>
+              {({ id, invalid, describedBy }) => {
+                const shared = {
+                  id,
+                  invalid,
+                  'aria-describedby': describedBy,
+                  value: form.description,
+                  onChange: (e: { target: { value: string } }) => set('description', e.target.value),
+                  placeholder: DESCRIPTION_PLACEHOLDER,
+                };
+                return updating ? <TextArea {...shared} className="h-[99px] py-12!" /> : <TextInput {...shared} />;
+              }}
+            </Field>
           </FieldGroup>
-        ) : null}
 
-        <FieldGroup heading="STOCKS">
-          <Field label="Low-stock threshold" error={errors.lowStockThreshold}>
-            {({ id, invalid, describedBy }) => (
-              <TextInput
-                id={id}
-                inputMode="numeric"
-                invalid={invalid}
-                aria-describedby={describedBy}
-                value={form.lowStockThreshold}
-                onChange={(e) => set('lowStockThreshold', e.target.value)}
-              />
-            )}
-          </Field>
-        </FieldGroup>
+          {rule.specs.length ? (
+            <FieldGroup heading="SPECIFICATIONS">
+              {rule.specs.map((key) => (
+                <Field key={key} label={SPEC_LABEL[key]} error={errors[`specs.${key}`]}>
+                  {({ id, invalid, describedBy }) => (
+                    <TextInput
+                      id={id}
+                      invalid={invalid}
+                      aria-describedby={describedBy}
+                      placeholder={SPEC_PLACEHOLDER[key]}
+                      value={form.specs[key]}
+                      onChange={(e) => set('specs', { ...form.specs, [key]: e.target.value }, `specs.${key}`)}
+                    />
+                  )}
+                </Field>
+              ))}
+            </FieldGroup>
+          ) : null}
+
+          <FieldGroup heading="STOCKS">
+            <Field label="Low-stock threshold" error={errors.lowStockThreshold}>
+              {({ id, invalid, describedBy }) => (
+                <TextInput
+                  id={id}
+                  inputMode="numeric"
+                  invalid={invalid}
+                  aria-describedby={describedBy}
+                  value={form.lowStockThreshold}
+                  onChange={(e) => set('lowStockThreshold', e.target.value)}
+                />
+              )}
+            </Field>
+          </FieldGroup>
+        </fieldset>
       </form>
     </SidePanel>
   );

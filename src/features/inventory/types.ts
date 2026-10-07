@@ -6,8 +6,7 @@ import type { Office } from '../auth/types';
  *
  *  SPA terms, not HTTP terms. Draft field names are the published
  *  `/inventory-items` contract's wherever it has one, so a problem's pointer
- *  names a form field with no translation table. `pr` is the SPA's own: the
- *  contract has no Purchase Request number (contracts conflict 11, G5). */
+ *  names a form field with no translation table. */
 
 /** What Add Single Unit offers: the contract creates a unit Available, or
  *  Assigned when a user is given (spec 015 D3). */
@@ -29,7 +28,7 @@ export type UnitRow = {
   model?: string;
   category: Category;
   /** The Purchase Request number (spec 015 D14). */
-  pr?: string;
+  purchaseRequest?: string;
   serialNumber?: string;
   location: Office;
   status: UnitStatus;
@@ -61,7 +60,7 @@ export type UnitDetail = UnitRow & {
  *  `assignedToId`. `assetId` is ignored on update. */
 export type UnitDraft = {
   assetId: string;
-  pr?: string;
+  purchaseRequest?: string;
   price?: number;
   supplier?: string;
   purchasedAt?: string;
@@ -80,7 +79,7 @@ export type UnitBatchEntry = Pick<UnitDraft, 'serialNumber' | 'bitlockerIdentifi
 
 /** What Add Multiple Units submits: one asset, one office, shared purchase
  *  details and 1–100 units, all created Available (FR-010). */
-export type UnitBatchDraft = Pick<UnitDraft, 'assetId' | 'pr' | 'price' | 'supplier' | 'purchasedAt'> & {
+export type UnitBatchDraft = Pick<UnitDraft, 'assetId' | 'purchaseRequest' | 'price' | 'supplier' | 'purchasedAt'> & {
   location: Office;
   units: UnitBatchEntry[];
 };

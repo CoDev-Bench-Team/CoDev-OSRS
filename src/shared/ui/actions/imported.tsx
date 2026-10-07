@@ -87,6 +87,7 @@ export function SignInButton({
   className,
   style,
   onClick,
+  disabled = false,
 }: {
   darkmode?: boolean;
   mobile?: boolean;
@@ -102,13 +103,22 @@ export function SignInButton({
    *  instance whose root is FIXED in the file passes its size here. */
   style?: CSSProperties;
   onClick?: () => void;
+  /** Not ready to sign in yet: dimmed, and a press does nothing. Only the
+   *  mark and the label dim; the pill itself stays opaque, because on the
+   *  sign-in screen it covers Google's own button, and a see-through pill
+   *  shows that button's label through ours while it fades (a ghost). Hence
+   *  `opacity-100`: it overrides the base rule that dims every `[disabled]`
+   *  element to 0.4 (index.css). */
+  disabled?: boolean;
 }) {
+  const dim = disabled ? 'opacity-50' : '';
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       style={style}
-      className={`inline-flex w-fit cursor-pointer items-center border-none transition-osrs ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'} ${mobile ? 'p-0' : 'pr-32'} ${className ?? ''}`}
+      className={`inline-flex w-fit items-center border-none transition-osrs ${disabled ? 'opacity-100' : 'cursor-pointer'} ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'} ${mobile ? 'p-0' : 'pr-32'} ${className ?? ''}`}
     >
       <span
         className={`flex shrink-0 items-center justify-center self-stretch ${iconPlate ? 'bg-white' : ''} ${iconPadding ? '' : 'p-16'}`}
@@ -117,14 +127,16 @@ export function SignInButton({
           ...(iconPadding ? { padding: iconPadding } : undefined),
         }}
       >
-        <GoogleIcon size="32x32" />
+        <span className={`flex transition-osrs ${dim}`}>
+          <GoogleIcon size="32x32" />
+        </span>
       </span>
       <span
         className={`flex shrink-0 items-center ${labelPadding ? '' : 'px-16 py-18'} ${darkmode ? 'bg-osrs-google-blue' : 'bg-white'}`}
         style={labelPadding ? { padding: labelPadding } : undefined}
       >
         <span
-          className={`font-google text-18 font-medium leading-tight whitespace-nowrap transition-osrs ${darkmode ? 'text-white' : 'text-osrs-google-gray group-hover:text-ink-primary'}`}
+          className={`font-google text-18 font-medium leading-tight whitespace-nowrap transition-osrs ${dim} ${darkmode ? 'text-white' : 'text-osrs-google-gray-dark group-hover:text-brand-primary'}`}
           style={{ letterSpacing: '0.005em' }}
         >
           {cta}

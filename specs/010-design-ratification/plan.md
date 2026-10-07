@@ -62,7 +62,7 @@ Logical model only (`specs/001-office-supplies-mvp/data-model.md`). JSON names s
 
 ## API Contracts
 
-Backend-owned. See `specs/001-office-supplies-mvp/contracts/README.md` and the [published Swagger](https://codev-osrs-backend.vercel.app/). This change edits only the README's **conflict statuses**:
+Backend-owned. See `specs/001-office-supplies-mvp/contracts/README.md` and the [published Swagger](https://codev-osrs-be.vercel.app/). This change edits only the README's **conflict statuses**:
 
 - **Conflict 1** → *Decided: per-unit register (ADR-0008).* Still open: a published per-asset count read (available / reserved / assigned) for the Assets table, and whether the contract's unit-removal operation (planned as backend BEN-130) accepts the drawn `Reason for removal`.
 - **Conflict 2** → *Closed* (already recorded 09-25). Adds the follow-on: `src/features/auth/types.ts` `Office` still says `Pasig` (owner: shell/auth, spec FR-014).

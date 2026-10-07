@@ -1,26 +1,29 @@
-import { useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Button,
   PageHeader,
+  SkeletonRegion,
+  SkeletonRows,
   StatusPill,
   TABLE_ROW_PADDING_CLASS,
   TableCard,
   tableColumnStyle,
+  NotPublished,
   tableMinWidth,
   type ColumnWidth,
 } from '../../shared/ui';
+import { useSessionReady } from '../auth/session-context';
 import { DESTINATIONS } from '../../app/destinations';
-import { TablePager, TableState } from '../assets/TableToolbar';
-import { useTableQuery } from '../assets/useTableQuery';
+import { TablePager, TableState, type TableLoadState } from '../assets/TableToolbar';
+import { useRemoteTableQuery, type RemoteTableQuery } from '../assets/useRemoteTableQuery';
+import { ALL_CATEGORIES, type TableQuery } from '../assets/table-query';
 import { NO_VALUE } from '../requests/format';
 import { PAGE_SIZES } from '../requests/queue/queue-types';
 import { AddInventoryMenu, type AddKind } from './AddInventoryMenu';
 import { BulkAddPanel } from './BulkAddPanel';
-import { inventorySource } from './inventory-source';
-import { useInventory } from './inventory-store';
+import { inventorySource, type InventorySource } from './inventory-source';
 import { InventoryToolbar } from './InventoryToolbar';
-import { UNIT_CHIPS, type UnitRow } from './types';
+import { type UnitBatchDraft, type UnitChip, type UnitDetail, type UnitDraft, type UnitRow } from './types';
 import { UnitFormPanel } from './UnitFormPanel';
 
 /** `/inventory` — `03 - Inventory` (spec 015 Story 1, plan P10).
@@ -51,20 +54,100 @@ const TABLE_MIN_WIDTH = tableMinWidth(
 
 type PanelState = { kind: AddKind } | { kind: 'edit'; id: string } | null;
 
+/** Every query is asked of the API (spec 017 Story 8). */
 export function InventoryPage() {
-  const { search } = useLocation();
-  const source = useMemo(() => inventorySource(search), [search]);
-  const { state, reload, get, create, createBatch, update, remove } = useInventory(source);
-  const units = useMemo(() => (state.kind === 'loaded' ? state.units : []), [state]);
-  const query = useTableQuery(
-    units,
-    (u: UnitRow) => ({
-      text: [u.itemName, u.model, u.pr, u.serialNumber].filter(Boolean).join(' '),
-      category: u.category,
-      status: u.status,
-    }),
-    { statuses: UNIT_CHIPS, pageSizes: PAGE_SIZES, pageSize: 50 },
+  const ready = useSessionReady();
+  const source = useMemo(() => inventorySource(), []);
+  const fetchPage = useCallback((q: RemoteTableQuery<UnitChip>) => source.page(q), [source]);
+  const { state, query, reload, fetching } = useRemoteTableQuery(fetchPage, { pageSizes: PAGE_SIZES, table: 'inventory', enabled: ready });
+  const after = useCallback(
+    async <T,>(saving: Promise<T>) => {
+      const saved = await saving;
+      reload();
+      return saved;
+    },
+    [reload],
   );
+  /** Units the API confirmed removed. A list read sent straight after the
+   *  delete can still carry the unit (the API soft-deletes, and its read can
+   *  lag the write), so a removed unit is kept off the table, and out of the
+   *  counts, until a read no longer returns it. */
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
+  const shown = useMemo(() => {
+    const hidden = query.rows.filter((row) => removed.has(row.id));
+    if (!hidden.length) return query;
+    const less = (status: UnitChip) => hidden.filter((row) => row.status === status).length;
+    return {
+      ...query,
+      rows: query.rows.filter((row) => !removed.has(row.id)),
+      total: Math.max(0, query.total - hidden.length),
+      counts: {
+        all: Math.max(0, query.counts.all - hidden.length),
+        of: (status: UnitChip) => Math.max(0, query.counts.of(status) - less(status)),
+      },
+    };
+  }, [query, removed]);
+  /** The register itself is empty, not just this filter: All counts every
+   *  unit for the search and category, so with neither set and that count
+   *  settled at zero there is nothing in the register. Not the page's total,
+   *  which answers the previous query while the next one is in flight. A page
+   *  without counts (contracts conflict 16) falls back to that total, once it
+   *  answers the All chip and nothing is in flight. */
+  const registerEmpty =
+    !query.search &&
+    query.category === ALL_CATEGORIES &&
+    (query.uncounted
+      ? query.status === null && !fetching && shown.total === 0
+      : !query.countsLoading && shown.counts.all === 0);
+  return (
+    <InventoryView
+      source={source}
+      state={state}
+      busy={fetching}
+      query={shown}
+      registerEmpty={registerEmpty}
+      actions={{
+        reload,
+        get: (id) => source.get(id),
+        create: (draft) => after(source.create(draft)),
+        createBatch: (draft) => after(source.createBatch(draft)),
+        update: (id, draft) => after(source.update(id, draft)),
+        remove: async (id, reason) => {
+          await source.remove(id, reason);
+          setRemoved((current) => new Set(current).add(id));
+          reload();
+        },
+      }}
+    />
+  );
+}
+
+type InventoryActions = {
+  reload: () => unknown;
+  get: (id: string) => Promise<UnitDetail>;
+  create: (draft: UnitDraft) => Promise<unknown>;
+  createBatch: (draft: UnitBatchDraft) => Promise<unknown>;
+  update: (id: string, draft: UnitDraft) => Promise<unknown>;
+  remove: (id: string, reason: string) => Promise<unknown>;
+};
+
+function InventoryView({
+  busy,
+  source,
+  state,
+  query,
+  registerEmpty,
+  actions: { reload, get, create, createBatch, update, remove },
+}: {
+  source: InventorySource;
+  /** The next page is in flight. */
+  busy: boolean;
+  state: TableLoadState;
+  query: TableQuery<UnitChip, UnitRow>;
+  /** No unit exists at all, rather than none matching. */
+  registerEmpty: boolean;
+  actions: InventoryActions;
+}) {
   const [panel, setPanel] = useState<PanelState>(null);
   const table = useRef<HTMLDivElement>(null);
 
@@ -87,7 +170,7 @@ export function InventoryPage() {
 
       <InventoryToolbar query={query} />
 
-      <TableCard className="mt-[34px] min-w-0">
+      <TableCard className="mt-[34px] min-w-0" busy={busy}>
         {/* Focusable, as the Assets table is, so a keyboard can scroll the
             columns into view when the table is wider than the window. */}
         <div
@@ -108,9 +191,26 @@ export function InventoryPage() {
 
             <TableState
               state={state}
+              fetching={busy}
               rowCount={query.rows.length}
-              empty={units.length === 0 ? 'No units in the register yet' : 'No unit matches that search'}
-              loadingLabel="Loading inventory"
+              empty={registerEmpty ? 'No units in the register yet' : 'No unit matches that search'}
+              loading={
+                <SkeletonRegion label="Loading inventory">
+                  <SkeletonRows
+                    columns={[
+                      ['200px', 'bold'],
+                      ['150px', 'text'],
+                      ['180px', 'text'],
+                      ['150px', 'text'],
+                      ['167px', 'office'],
+                      ['190px', 'caption'],
+                      ['167px', 'unit-pill'],
+                      [undefined, 'button'],
+                    ]}
+                    rowClassName="h-row-height-inventory border-b border-line-default bg-surface-card"
+                  />
+                </SkeletonRegion>
+              }
               failedTitle="Inventory could not be loaded"
               onRetry={() => void reload()}
             />
@@ -128,7 +228,7 @@ export function InventoryPage() {
                   {unit.category}
                 </span>
                 <span className="truncate pr-16 type-ui text-ink-strong" style={tableColumnStyle('180px')}>
-                  {unit.pr ?? NO_VALUE}
+                  {unit.purchaseRequest ?? NO_VALUE}
                 </span>
                 <span className="truncate pr-16 type-ui text-ink-strong" style={tableColumnStyle('150px')}>
                   {unit.serialNumber ?? NO_VALUE}
@@ -148,6 +248,11 @@ export function InventoryPage() {
                         <span className="truncate font-sans text-11 leading-tight text-ink-secondary">{unit.assignee.department}</span>
                       ) : null}
                     </>
+                  ) : unit.status === 'Assigned' ? (
+                    // An Assigned unit whose read carries no `assignedTo`.
+                    <span className="type-ui text-ink-strong">
+                      <NotPublished />
+                    </span>
                   ) : (
                     <span className="font-sans text-11 leading-tight text-ink-muted">Unassigned</span>
                   )}
@@ -157,7 +262,7 @@ export function InventoryPage() {
                 </span>
                 <span className="flex items-center" style={tableColumnStyle()}>
                   <Button
-                    aria-label={`Review ${unit.itemName} ${unit.serialNumber ?? unit.pr ?? ''}`.trim()}
+                    aria-label={`Review ${unit.itemName} ${unit.serialNumber ?? unit.purchaseRequest ?? ''}`.trim()}
                     onClick={() => setPanel({ kind: 'edit', id: unit.id })}
                   >
                     Review
@@ -169,13 +274,14 @@ export function InventoryPage() {
         </div>
       </TableCard>
 
-      <TablePager query={query} />
+      <TablePager query={query} hidden={state.kind === 'loading' || busy} />
 
       {/* New units lead the list, so with no filter set page 1 shows them.
           Filters are the Admin's and are left as they are. */}
       {panel?.kind === 'single' ? (
         <UnitFormPanel
           mode="add"
+          addStatuses={source.createStatuses}
           onClose={closePanel}
           onCreate={async (draft) => {
             await create(draft);

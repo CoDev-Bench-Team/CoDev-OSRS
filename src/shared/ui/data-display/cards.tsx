@@ -37,10 +37,40 @@ export function SummaryCard({
 
 /** Structural containers get the shadow; data rows inside get borders. Never
  *  a shadow and a ring on the same element. */
-export function TableCard({ children, className }: { children: ReactNode; className?: string }) {
+export function TableCard({
+  children,
+  className,
+  busy = false,
+  busyLabel = 'Updating results',
+}: {
+  children: ReactNode;
+  className?: string;
+  /** The next page is being fetched. The rows on screen stay readable but
+   *  dimmed and inert, and a rail runs along the card's top edge. Both wait
+   *  150ms, so a fast response never flickers (spec 017). */
+  busy?: boolean;
+  busyLabel?: string;
+}) {
   return (
-    <div className={`flex flex-col overflow-hidden rounded-10 bg-surface-card shadow-card ${className ?? ''}`}>
-      {children}
+    <div
+      aria-busy={busy || undefined}
+      className={`relative flex flex-col overflow-hidden rounded-10 bg-surface-card shadow-card ${className ?? ''}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-x-0 top-0 z-10 h-2 overflow-hidden transition-opacity duration-(--motion-base) ease-(--ease-osrs) ${busy ? 'opacity-100 delay-150' : 'opacity-0'}`}
+      >
+        <span className="block h-full w-2/5 bg-brand-primary animate-rail" />
+      </span>
+      <div
+        className={`flex min-w-0 flex-col transition-opacity duration-(--motion-base) ease-(--ease-osrs) ${busy ? 'pointer-events-none opacity-55 delay-150' : 'opacity-100'}`}
+        inert={busy || undefined}
+      >
+        {children}
+      </div>
+      <span role="status" className="sr-only">
+        {busy ? busyLabel : ''}
+      </span>
     </div>
   );
 }

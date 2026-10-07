@@ -1,18 +1,22 @@
+import type { ReactNode } from 'react';
 import { Navigate, useParams } from 'react-router';
 import { useSession } from '../features/auth/session-context';
-import type { DeepLinkState } from '../features/requests/deep-link';
-import { DESTINATIONS } from './destinations';
+import { queueRequestPath } from './destinations';
 
-/** `/requests/:id`: the address a "View request" email links to (spec 003,
- *  Session 2026-09-26). It renders nothing of its own. It forwards to the list
- *  the role works from, carrying the id, and that list opens the panel: the
- *  Admin's Requests Queue, or the Employee's My Requests. Whether the request
- *  exists, or is the Employee's, is decided there, against what that page may
- *  show. */
-export function RequestDeepLink() {
-  const { id = '' } = useParams();
-  const { session } = useSession();
-  const to = session?.role === 'admin' ? DESTINATIONS.queue.path : DESTINATIONS.requests.path;
-  const state: DeepLinkState = { openRequest: id };
-  return <Navigate to={to} replace state={state} />;
+/** `/requests` and `/requests/:id`, the address a "View request" email links
+ *  to (spec 003, Session 2026-09-26). One route for the list and a request's
+ *  panel over it, so opening and closing the panel never remounts My Requests
+ *  (spec 007 FR-001). For an Employee it renders `children`, My Requests,
+ *  which opens the request the address names. Whether it exists, or is theirs,
+ *  is decided there. An Admin on `/requests/:id` is sent to `/queue/:id`, the
+ *  review panel's own address (spec 008 FR-001b). */
+export function RequestDeepLink({ children }: { children: ReactNode }) {
+  const { id } = useParams();
+  const { status, session } = useSession();
+  if (id) {
+    // Which page opens it depends on the role; wait for it.
+    if (status === 'unknown') return null;
+    if (session?.role === 'admin') return <Navigate to={queueRequestPath(id)} replace />;
+  }
+  return <>{children}</>;
 }

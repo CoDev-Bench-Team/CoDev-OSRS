@@ -1,11 +1,16 @@
 import { expect, type Page } from '@playwright/test';
+import { PEOPLE, type Person } from './fake-api';
+import { apiFor } from './test';
 
-export type DemoPerson = 'Maya Santos' | 'Ethan Cruz';
+export type DemoPerson = Person;
 
-/** The first sign-in of a test. One document load; later people use `switchAccount`. */
+/** Sign `who` in. There is no seeded chooser and no Google in the suite: the
+ *  fake API's session is set, and the app restores it from `GET /auth/me`, as
+ *  it does after a real Google sign-in. */
 export async function signIn(page: Page, who: DemoPerson) {
+  apiFor(page).current = PEOPLE[who];
   await page.goto('/login');
-  await chooseAccount(page, who);
+  await expect(page).not.toHaveURL(/\/login/);
 }
 
 /** The review sheet is modal, so the top bar cannot be clicked while it is open. */
@@ -17,16 +22,10 @@ export async function dismissDialog(page: Page) {
   await expect(dialog).toBeHidden();
 }
 
-/** Sign out and sign in as someone else without loading the document again. */
+/** Sign out through the app, then sign in as someone else. */
 export async function switchAccount(page: Page, who: DemoPerson) {
   await dismissDialog(page);
   await page.getByRole('button', { name: 'Sign Out' }).click();
   await expect(page).toHaveURL(/\/login/);
-  await chooseAccount(page, who);
-}
-
-async function chooseAccount(page: Page, who: DemoPerson) {
-  await page.getByRole('radio', { name: new RegExp(who) }).check();
-  await page.getByRole('button', { name: 'Sign in with Google' }).click();
-  await expect(page).not.toHaveURL(/\/login/);
+  await signIn(page, who);
 }

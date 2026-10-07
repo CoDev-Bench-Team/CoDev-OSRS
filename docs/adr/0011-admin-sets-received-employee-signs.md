@@ -8,6 +8,10 @@ decisions 2 and 3. Decisions 1, 4, 5, 6 and 7 stand. **Amends
 `Received` stands, and the Employee's form no longer sets `Received` — the
 Employee's own path is **Mark as Received**. Constitution **7.0.0**.
 
+**Amended by [ADR-0013](0013-signing-completes-the-request.md)** (2026-10-04,
+constitution 10.0.0): decisions 3, 4 and 5 are replaced. Signing now completes
+the request, and there is no Admin complete.
+
 ## Context
 
 ADR-0009 made the Employee's Accountability Form the thing that *sets*

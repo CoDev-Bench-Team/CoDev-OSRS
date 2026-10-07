@@ -20,13 +20,14 @@ const tooLong = (value: string | undefined, max = MAX_TEXT) => (value?.length ??
 
 type Errors = Record<string, string>;
 
-function checkPurchase(draft: Pick<UnitDraft, 'price' | 'purchasedAt' | 'supplier'>, today: string, errors: Errors) {
+function checkPurchase(draft: Pick<UnitDraft, 'purchaseRequest' | 'price' | 'purchasedAt' | 'supplier'>, today: string, errors: Errors) {
   const { price } = draft;
   if (price !== undefined) {
     if (!Number.isFinite(price) || price < 0) errors.price = 'Enter a price of 0 or more';
     else if (Math.abs(Math.round(price * 100) - price * 100) > 1e-6) errors.price = 'Use at most two decimal places';
   }
   if (draft.purchasedAt && draft.purchasedAt > today) errors.purchasedAt = 'The purchase date can’t be in the future';
+  if (tooLong(draft.purchaseRequest)) errors.purchaseRequest = 'Use 255 characters or fewer';
   if (tooLong(draft.supplier)) errors.supplier = 'Use 255 characters or fewer';
 }
 
@@ -55,7 +56,12 @@ export function validateUnit(
   if (stored?.status !== 'Reserved') {
     if (!draft.location) errors.location = 'Choose an office';
     if (!draft.status) errors.status = 'Choose a status';
-    else if (draft.status === 'Assigned' && blank(draft.assignedToId)) errors.assignedToId = 'Choose who this unit is assigned to';
+    // An assignee is chosen when a unit becomes Assigned. One already Assigned
+    // keeps its assignment when the field is left blank: the API does not
+    // publish who it is (contracts G6), and sending it again would reset the
+    // assigned date.
+    else if (draft.status === 'Assigned' && blank(draft.assignedToId) && stored?.status !== 'Assigned')
+      errors.assignedToId = 'Choose who this unit is assigned to';
   }
   if (tooLong(draft.description, MAX_DESCRIPTION)) errors.description = 'Use 2,048 characters or fewer';
   return errors;

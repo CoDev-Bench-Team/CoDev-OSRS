@@ -15,6 +15,8 @@ counts of unit statuses and are unchanged. The same re-export added
 `Received` ([drift-2026-09-26 §3](design-system/drift-2026-09-26.md),
 [ADR-0009](adr/0009-received-and-accountability-form.md)); since 2026-09-29 an Admin or the owning
 Employee sets it, and the Employee signs on it ([ADR-0011](adr/0011-admin-sets-received-employee-signs.md)).
+Since 2026-10-04 that signature completes the request; there is no Admin
+complete ([ADR-0013](adr/0013-signing-completes-the-request.md)).
 
 **Purpose:** Clear path for requesting, approving and handing over office
 supplies, including stock movements and notifications.
@@ -23,8 +25,8 @@ supplies, including stock movements and notifications.
 
 | Actor | Job |
 |-------|-----|
-| **Employee** | Browses the catalog, builds a request list, submits, tracks their own requests, cancels their own request while it is `Pending Approval`, marks their own handed-over request `Received`, and signs the Accountability Form on it |
-| **Admin** | Reviews the queue, approves or rejects, sets `For Delivery` or `Ready for Pickup`, may mark `Received`, completes, cancels what cannot be fulfilled, owns Assets and Inventory |
+| **Employee** | Browses the catalog, builds a request list, submits, tracks their own requests, cancels their own request while it is `Pending Approval`, marks their own handed-over request `Received`, and signs the Accountability Form on it, which completes it |
+| **Admin** | Reviews the queue, approves or rejects, sets `For Delivery` or `Ready for Pickup`, may mark `Received`, cancels what cannot be fulfilled, owns Assets and Inventory |
 | **System** | Moves stock, sends mail, records the notification log |
 
 Two human roles, not three. See [ADR-0005](adr/0005-two-role-model.md).
@@ -50,7 +52,7 @@ Two human roles, not three. See [ADR-0005](adr/0005-two-role-model.md).
 ### 2. Review (Admin)
 
 The `Requests Queue` is one screen for the whole admin half: summary cards for
-*Pending approval*, *In Processing* and *Low stock alerts*; filter chips
+*Pending approval* and *In Processing* ([drift-2026-10-03](design-system/drift-2026-10-03.md)); filter chips
 `All requests · Pending Approval · Approved · For Delivery · Ready for Pickup`;
 search by request ID, employee name, email or item; sort by
 *Newest First / Oldest First / Employee (A-Z)*. **Review** opens the request
@@ -90,20 +92,18 @@ your decision."*
    asks the Employee to review and sign the Accountability Form in the portal.
 8. **Employee signs the Accountability Form** — the owning Employee, on their
    own `Received` request: scrolls the acknowledgement to its end, ticks *I have
-   read and agree to the above*, types their full name, and presses **I
-   acknowledge and sign**. This records the acknowledgement; the status stays
-   `Received` and no quantity changes. It is not a transition, so no email is
-   sent. *(The "Other Notes" the form was once said to take is withdrawn: `04.1`
+   read and agree to the above*, and presses **I acknowledge and sign**. The
+   name is their own full name, prefilled and not editable. This records the
+   acknowledgement and moves the request to **Completed** in the same write.
+   No quantity changes. *(The "Other Notes" the form was once said to take is withdrawn: `04.1`
    draws it as a read-only card from the Admin side, and it waits on a design
    change; [spec 012](../specs/012-accountability-form/spec.md).)*
-9. **Complete** (Admin) → status **Completed**, from `Received` only, and only
-   once the Accountability Form is signed. No quantity changes.
-10. Notification: **Status changed** (to Employee).
+9. Notification: **Status changed** (to Employee), `Received` → `Completed`.
 
-The Admin or the Employee records the handover, the Employee confirms receipt, and the Admin
-closes the request. See [ADR-0011](adr/0011-admin-sets-received-employee-signs.md),
-which amends [ADR-0009](adr/0009-received-and-accountability-form.md) and
-[ADR-0010](adr/0010-admin-marks-received.md).
+The Admin or the Employee records the handover, and the Employee's signature
+confirms receipt and closes the request. There is no separate Admin complete.
+See [ADR-0013](adr/0013-signing-completes-the-request.md), which amends
+[ADR-0011](adr/0011-admin-sets-received-employee-signs.md).
 
 ### 3b. Cancel (Employee or Admin)
 
@@ -146,8 +146,8 @@ cancellation** and a **Close** button.
 | `Approved` | Admin | approve | — | — | — |
 | `For Delivery` | Admin | update status | — | — | — |
 | `Ready for Pickup` | Admin | update status, location recorded | — | — | — |
-| `Received` | Admin or owning Employee | mark received, from `For Delivery` or `Ready for Pickup`; the Employee then signs the Accountability Form on it (no status change) | −qty | — | −qty |
-| `Completed` | Admin | complete, from `Received` only, once the Accountability Form is signed | — | — | — |
+| `Received` | Admin or owning Employee | mark received, from `For Delivery` or `Ready for Pickup` | −qty | — | −qty |
+| `Completed` | owning Employee | signs the Accountability Form on their `Received` request | — | — | — |
 | `Cancelled` | Employee or Admin | cancel, reason required; from `Pending Approval` (Employee) or `Approved` / `Ready for Pickup` (Admin) | — | +qty | −qty |
 
 `For Delivery` and `Ready for Pickup` are alternatives, not stages.
@@ -174,8 +174,8 @@ step, retired by ADR-0007, returns as the Accountability Form
    chooses which units.
 5. **Reject and cancel release**: those units move Reserved → Available, in the
    same transaction as the status change.
-6. **Approve, For Delivery, Ready for Pickup, signing the Accountability Form
-   and Complete change nothing.** The units are already reserved, or already
+6. **Approve, For Delivery, Ready for Pickup, and signing the Accountability
+   Form (which completes) change nothing.** The units are already reserved, or already
    assigned.
 7. **Received assigns**: the reserved units become `Assigned` to the Employee,
    so Total and Reserved both fall, in the same transaction as the status change
@@ -300,8 +300,7 @@ flowchart TD
   mailS1 --> received[Admin or Employee marks Received]
   received --> consume[Total and Reserved fall by qty]
   consume --> mailRc[Email: Status changed]
-  mailRc --> sign[Employee signs the Accountability Form]
-  sign --> complete[Admin completes / Completed]
+  mailRc --> complete[Employee signs the Accountability Form / Completed]
   complete --> mailC[Email: Status changed]
   mailC --> endNode([End])
 

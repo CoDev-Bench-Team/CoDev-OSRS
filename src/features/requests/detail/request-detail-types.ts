@@ -15,7 +15,11 @@ export interface RequestLine {
 }
 
 export interface EmployeeRequest {
+  /** The key every source operation takes: the API's numeric id, as a string
+   *  (spec 017 FR-005). Never shown when `displayId` is set. */
   id: string;
+  /** What the screens print: `REQ-…`. Read it through `requestLabel`. */
+  displayId?: string;
   submittedAt: string;
   lines: readonly RequestLine[];
   noteToApprover?: string;
@@ -84,15 +88,23 @@ export type ReceiveResult =
 export interface EmployeeRequestSource {
   /** The signed-in Employee's own requests, and nobody else's. */
   list(user: User): Promise<readonly EmployeeRequest[]>;
+  /** One request in full: lines, units and recorded times. The API's list
+   *  rows carry no timeline, so the panel reads the request it opens. */
+  get(user: User, id: string): Promise<EmployeeRequest>;
   /** Cancel one of the Employee's own requests (spec 001 FR-009a). The reason
    *  is required whoever cancels (constitution 3.0.0 IV). */
   cancel(user: User, id: string, reason: string): Promise<CancelResult>;
   /** Sign the Accountability Form on one of the Employee's own unsigned
-   *  `Received` requests. On acceptance the request carries `signedAt`; its
-   *  status does not change (constitution 7.0.0 IV, spec 012). */
+   *  `Received` requests. On acceptance the request carries `signedAt` and is
+   *  `Completed` (constitution 10.0.0 IV, ADR-0013). */
   sign(user: User, id: string, signature: Signature): Promise<SignResult>;
   /** Mark one of the Employee's own `For Delivery` / `Ready for Pickup`
    *  requests `Received`: the items are in hand, and the units become
    *  theirs (constitution 7.0.0 IV, spec 012 Story 0). */
   markReceived(user: User, id: string): Promise<ReceiveResult>;
+}
+
+/** The id a person reads: the display id when the source has one. */
+export function requestLabel(request: Pick<EmployeeRequest, 'id' | 'displayId'>): string {
+  return request.displayId ?? request.id;
 }

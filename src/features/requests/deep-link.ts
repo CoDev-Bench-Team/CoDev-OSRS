@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
-/** What a `/requests/:id` deep link hands the list it lands on: the Admin's
- *  Requests Queue or the Employee's My Requests (spec 003, Session 2026-09-26).
- *  The panel has no address of its own, so the link carries the id in
- *  navigation state and the list opens it once its data is in. */
+/** What a deep link hands the list it lands on, in navigation state: only
+ *  History, forwarded from the Requests Queue for a resolved request. My
+ *  Requests reads the routed `/requests/:id` itself, and the Admin's review
+ *  panel has its own address, `/queue/:id` (spec 008 FR-001b); both carry the
+ *  id in the path instead. */
 export type DeepLinkState = { openRequest?: string };
 
 /** The Employee's one sentence for a request that does not exist and for one
@@ -37,18 +38,42 @@ type Outcome =
  *
  *  `forward` may name another page for the request: the link is passed there
  *  with the same state, for that page to open. The Requests Queue forwards a
- *  resolved request to History (spec 013 FR-016). */
+ *  resolved request to History (spec 013 FR-016).
+ *
+ *  `routed` is a link carried in the address instead (`/queue/:id`): `id` from
+ *  the path, `base` the list's own address. A routed link that opens stays on
+ *  its address; one that opens nothing settles on `base` with the notice. A
+ *  new routed id (Back, or another link) is resolved afresh. */
 export function useDeepLinkedRequest(
   ids: readonly string[] | null,
   message: string,
   forward?: (id: string) => string | undefined,
-): { linked: string | null; unavailable: string | null; dismiss: () => void } {
+  routed?: { id: string | undefined; base: string },
+): {
+  linked: string | null;
+  unavailable: string | null;
+  /** The link is still being resolved, or is being forwarded elsewhere: the
+   *  page should not show rows it may be about to leave. */
+  resolving: boolean;
+  dismiss: () => void;
+} {
   const location = useLocation();
   const navigate = useNavigate();
+  const routedId = routed?.id;
   const [outcome, setOutcome] = useState<Outcome>(() => {
-    const id = (location.state as DeepLinkState | null)?.openRequest;
+    const id = routedId ?? (location.state as DeepLinkState | null)?.openRequest;
     return id ? { kind: 'pending', id } : { kind: 'none' };
   });
+
+  // Another routed id arrived (Back, a second link): resolve it afresh. The
+  // address losing its id closes a panel it had opened; a missed link's
+  // notice stays, since settling on `base` is what removed the id.
+  const [lastRouted, setLastRouted] = useState(routedId);
+  if (routedId !== lastRouted) {
+    setLastRouted(routedId);
+    if (routedId) setOutcome({ kind: 'pending', id: routedId });
+    else if (outcome.kind !== 'missed') setOutcome({ kind: 'none' });
+  }
 
   // Decided during render, the moment the data is in, so the panel opens in
   // the same commit as the rows rather than one effect later.
@@ -61,19 +86,25 @@ export function useDeepLinkedRequest(
   // Consuming the link navigates, which is the router's business, not render's.
   const settled = outcome.kind !== 'pending' && outcome.kind !== 'none';
   const hasLinkState = !!(location.state as DeepLinkState | null)?.openRequest;
+  const base = routed?.base;
   useEffect(() => {
-    if (!settled || !hasLinkState) return;
+    if (!settled || (!hasLinkState && !routedId)) return;
     if (outcome.kind === 'forward') {
       const state: DeepLinkState = { openRequest: outcome.id };
       navigate(outcome.path, { replace: true, state });
+    } else if (routedId && base) {
+      // A routed link that opened keeps its address; one that missed settles
+      // on the list's own.
+      if (outcome.kind === 'missed') navigate({ pathname: base, search: location.search }, { replace: true });
     } else {
       navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
     }
-  }, [settled, hasLinkState, outcome, navigate, location.pathname, location.search]);
+  }, [settled, hasLinkState, routedId, base, outcome, navigate, location.pathname, location.search]);
 
   return {
     linked: outcome.kind === 'open' ? outcome.id : null,
     unavailable: outcome.kind === 'missed' ? message : null,
+    resolving: outcome.kind === 'pending' || outcome.kind === 'forward',
     dismiss: () => setOutcome({ kind: 'none' }),
   };
 }

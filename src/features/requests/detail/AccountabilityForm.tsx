@@ -13,7 +13,7 @@ import { useReadToEnd } from './use-read-to-end';
 const SIGN_COPY = {
   agree: 'Tick the box to confirm you agree to the conditions.',
   readFirst: 'Scroll to the end of the acknowledgement and read it before agreeing.',
-  name: 'Type your full name to sign.',
+  name: 'Your account has no full name to sign with. Contact an Admin.',
   lockedHint: 'Scroll the acknowledgement to the end to enable this.',
 } as const;
 
@@ -24,7 +24,9 @@ const SIGN_COPY = {
  *  signature is sent (D12).
  *
  *  This owns what happens before: nothing is sent until the agreement is
- *  ticked and the name is not blank (FR-005, FR-006), and the agreement cannot
+ *  ticked and the name is not blank (FR-005, FR-006). The name is the signed-in
+ *  Employee's own full name, prefilled and not editable (constitution 10.0.0
+ *  IV, ADR-0013), so signing is a tick and a press. The agreement cannot
  *  be ticked until the acknowledgement has been scrolled to its end
  *  (FR-005a). Opening the form again mounts it afresh, so the gate starts over.
  *
@@ -36,9 +38,12 @@ export function AccountabilityForm({
   submitting,
   problems,
   refusal,
+  signerName,
   onSign,
 }: {
   id: string;
+  /** The signed-in Employee's full name, signed as-is. */
+  signerName: string;
   request: EmployeeRequest;
   submitting: boolean;
   /** The system's refusal, placed by field (D13). */
@@ -50,28 +55,23 @@ export function AccountabilityForm({
   const box = useRef<HTMLDivElement>(null);
   const read = useReadToEnd(box);
   const checkbox = useRef<HTMLInputElement>(null);
-  const nameInput = useRef<HTMLInputElement>(null);
 
   const [agreed, setAgreed] = useState(false);
-  const [fullName, setFullName] = useState('');
   const [agreedMessage, setAgreedMessage] = useState<string | null>(null);
-  const [nameInvalid, setNameInvalid] = useState(false);
+  // No name on the account: said from the start, and nothing can be sent.
+  const nameMissing = !signerName.trim();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (submitting) return;
-    const name = fullName.trim();
+    const name = signerName.trim();
     const agreeProblem = agreed ? null : read ? SIGN_COPY.agree : SIGN_COPY.readFirst;
     setAgreedMessage(agreeProblem);
-    setNameInvalid(!name);
     if (agreeProblem) {
       checkbox.current?.focus();
       return;
     }
-    if (!name) {
-      nameInput.current?.focus();
-      return;
-    }
+    if (!name) return;
     onSign({ agreed: true, fullName: name });
   };
 
@@ -80,7 +80,7 @@ export function AccountabilityForm({
   // FR-005a: the read-first message goes the moment the gate opens.
   const ownAgreed = read && agreedMessage === SIGN_COPY.readFirst ? null : agreedMessage;
   const agreedShown = ownAgreed ?? (problems.agreed.length ? problems.agreed.join(' ') : undefined);
-  const nameShown = nameInvalid ? SIGN_COPY.name : problems.fullName.length ? problems.fullName.join(' ') : undefined;
+  const nameShown = nameMissing ? SIGN_COPY.name : problems.fullName.length ? problems.fullName.join(' ') : undefined;
   const topMessages = [...(refusal ? [refusal] : []), ...problems.form];
 
   return (
@@ -138,18 +138,12 @@ export function AccountabilityForm({
       </section>
 
       <InputField
-        ref={nameInput}
-        label="Type full name to sign"
+        label="Full name"
         required
-        autoComplete="name"
-        value={fullName}
+        value={signerName}
         invalid={Boolean(nameShown)}
         message={nameShown}
-        readOnly={submitting}
-        onChange={(e) => {
-          setFullName(e.target.value);
-          if (nameInvalid && e.target.value.trim()) setNameInvalid(false);
-        }}
+        readOnly
       />
     </form>
   );

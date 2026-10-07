@@ -40,7 +40,34 @@ const APPROVED_OR_LATER = new Set<RequestStatus>(['Approved', 'For Delivery', 'R
 const HANDED_OVER = new Set<RequestStatus>(['For Delivery', 'Ready for Pickup', 'Received', 'Completed']);
 const RECEIVED_OR_LATER = new Set<RequestStatus>(['Received', 'Completed']);
 
-export function requestTimeline(request: TimelineFacts): TimelineNode[] {
+/** Who reads the timeline: the requester (spec 007) or an Admin (spec 008,
+ *  013). It changes only how the next step's wait is worded. */
+export type TimelineViewer = 'employee' | 'admin';
+
+/** What the request is waiting on, said on the next step in place of
+ *  "Pending" (spec 008 FR-018a, amended 2026-10-06). Every later step stays
+ *  "Pending". `undefined` for a status with no next step. */
+function awaiting(request: TimelineFacts, viewer: TimelineViewer): string | undefined {
+  const mine = viewer === 'employee';
+  switch (request.status) {
+    case 'Pending Approval':
+      return 'Awaiting review by an Admin';
+    case 'Approved':
+      return mine ? 'Awaiting the Workplace team to arrange delivery or pickup' : 'Awaiting an Admin to arrange delivery or pickup';
+    case 'For Delivery':
+      return mine ? 'Awaiting delivery. Mark it received once it arrives' : 'Awaiting delivery. Mark it received once handed over';
+    case 'Ready for Pickup':
+      return mine ? 'Awaiting your pickup. Mark it received once collected' : 'Awaiting pickup. Mark it received once collected';
+    case 'Received':
+      return mine
+        ? 'Awaiting your signature on the Accountability Form'
+        : "Awaiting the employee's signature on the Accountability Form";
+    default:
+      return undefined;
+  }
+}
+
+export function requestTimeline(request: TimelineFacts, viewer: TimelineViewer): TimelineNode[] {
   const submitted: TimelineNode = {
     label: 'Submitted',
     state: 'reached',
@@ -74,7 +101,7 @@ export function requestTimeline(request: TimelineFacts): TimelineNode[] {
 
   const reached = (yes: boolean): TimelineNodeState => (yes ? 'reached' : 'pending');
 
-  return [
+  const nodes: TimelineNode[] = [
     submitted,
     {
       label: 'Approved',
@@ -101,4 +128,7 @@ export function requestTimeline(request: TimelineFacts): TimelineNode[] {
       when: formatDateTime(request.completedAt),
     },
   ];
+  const next = nodes.findIndex((n) => n.state === 'pending');
+  if (next === -1) return nodes;
+  return nodes.map((n, i) => (i === next ? { ...n, awaiting: awaiting(request, viewer) } : n));
 }

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { FilterChip, LoadingState, Notice, Pagination, Search, Select, type StockStatus } from '../../shared/ui';
+import { EmptyState, FilterChip, Notice, Pagination, Search, Select, type StockStatus } from '../../shared/ui';
 import { CATEGORIES } from './types';
-import { ALL_CATEGORIES, type TableQuery } from './useTableQuery';
+import { ALL_CATEGORIES, type TableQuery } from './table-query';
 
 /** The Assets toolbar: search beside the category select, then the four stock
  *  chips. Inventory's unit table filters by unit status instead (BEN-107), so
@@ -21,6 +21,7 @@ export function TableToolbar({ query, allLabel }: { query: TableQuery<StockStatu
           aria-label="Search by item name or model"
           value={query.search}
           onChange={(e) => query.setSearch(e.target.value)}
+          onClear={() => query.setSearch('')}
           className="min-w-[260px] flex-1"
         />
         {/* `Select` fills its parent, so the drawn 210px lives on a wrapper. */}
@@ -38,6 +39,7 @@ export function TableToolbar({ query, allLabel }: { query: TableQuery<StockStatu
         <FilterChip
           label={allLabel}
           count={query.counts.all}
+          loading={query.countsLoading}
           selected={query.status === null}
           onSelect={() => query.setStatus(null)}
         />
@@ -46,6 +48,7 @@ export function TableToolbar({ query, allLabel }: { query: TableQuery<StockStatu
             key={label}
             label={label}
             count={query.counts.of(status)}
+            loading={query.countsLoading}
             selected={query.status === status}
             onSelect={() => query.setStatus(status)}
           />
@@ -67,25 +70,23 @@ export function TableState({
   empty,
   rowCount,
   onRetry,
-  loadingLabel,
+  loading,
+  fetching = false,
   failedTitle,
 }: {
   state: TableLoadState;
   empty: string;
   rowCount: number;
   onRetry: () => void;
-  loadingLabel: string;
+  /** The table's skeleton rows, shown until the first page arrives. */
+  loading: ReactNode;
+  /** The next page is in flight. If the page on screen is empty it answers
+   *  the previous query, so its empty message would describe the wrong
+   *  filter: the skeleton stands there instead until the answer arrives. */
+  fetching?: boolean;
   failedTitle: string;
 }): ReactNode {
-  if (state.kind === 'loading') {
-    // The shell's LoadingState fills the screen; inside a table it gets the
-    // height of a few rows instead.
-    return (
-      <div className="[&>div]:min-h-[204px]">
-        <LoadingState label={loadingLabel} />
-      </div>
-    );
-  }
+  if (state.kind === 'loading' || (fetching && rowCount === 0)) return loading;
   if (state.kind === 'failed') {
     return (
       <Notice
@@ -122,10 +123,8 @@ export function TableState({
       }
     />
   ) : null;
-  const nothing =
-    rowCount === 0 ? (
-      <p className="flex h-row-height-inventory items-center px-20 type-body text-ink-secondary">{empty}</p>
-    ) : null;
+  // Five of these tables' 68px rows: the skeleton's height.
+  const nothing = rowCount === 0 ? <EmptyState label={empty} className="min-h-[340px]" /> : null;
   return (
     <>
       {stale}
@@ -136,12 +135,18 @@ export function TableState({
 
 export function TablePager({
   query,
+  hidden = false,
 }: {
   query: Pick<TableQuery, 'page' | 'pageSize' | 'pageSizes' | 'total' | 'setPage' | 'setPageSize'>;
+  /** The first page has not arrived, or the next one is in flight. */
+  hidden?: boolean;
 }) {
+  // Directly under the table, 34px below it as the design draws it, not
+  // pinned to the page foot.
   return (
-    <div className="mt-auto pt-32">
+    <div className="mt-[34px]">
       <Pagination
+        hidden={hidden}
         page={query.page}
         pageSize={query.pageSize}
         total={query.total}

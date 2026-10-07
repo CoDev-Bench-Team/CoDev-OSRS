@@ -43,6 +43,7 @@ export function TextField({
   required,
   invalid,
   message,
+  hint,
   tone = 'neutral',
   size = 'md',
   className,
@@ -53,6 +54,9 @@ export function TextField({
   required?: boolean;
   invalid?: boolean;
   message?: string;
+  /** A sub-label under the label: 13px Regular Inter, announced as the
+   *  field's description. */
+  hint?: string;
   tone?: 'neutral' | 'danger';
   /** `sm` is Inventory's `Reason for removal *`: a 13px label over 12px text
    *  in a 56px box (spec 015). */
@@ -60,7 +64,9 @@ export function TextField({
 }) {
   const id = useId();
   const messageId = `${id}-message`;
+  const hintId = `${id}-hint`;
   const showMessage = invalid === true && !!message;
+  const describedBy = [hint ? hintId : '', showMessage ? messageId : ''].filter(Boolean).join(' ') || undefined;
   const look = LOOK[tone === 'danger' ? 'danger' : invalid ? 'invalid' : 'resting'];
   const submitOnEnter = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     onKeyDown?.(e);
@@ -74,12 +80,17 @@ export function TextField({
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </label>
+      {hint ? (
+        <p id={hintId} className={`-mt-8 font-sans text-13 font-normal leading-body ${look.label}`}>
+          {hint}
+        </p>
+      ) : null}
       <textarea
         id={id}
         rows={1}
         required={required}
         aria-invalid={invalid || undefined}
-        aria-describedby={showMessage ? messageId : undefined}
+        aria-describedby={describedBy}
         onKeyDown={submitOnEnter}
         className={`${SIZE[size].box} max-h-[160px] w-full resize-none [field-sizing:content] appearance-none rounded-8 border-none bg-surface-card px-14 py-14 font-sans text-ink-primary outline-none transition-osrs placeholder:text-ink-muted focus:ring-brand ${invalid ? 'ring-brand' : 'ring-default'}`}
         {...rest}

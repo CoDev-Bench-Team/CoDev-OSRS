@@ -1,6 +1,4 @@
-import { apiConfigured } from '../../shared/api';
 import { apiSessionSource } from './api-session-source';
-import { seededSessionSource } from './seeded-source';
 import type { Session } from './types';
 
 /** The session boundary (spec 003 D3, FR-002, FR-003).
@@ -8,9 +6,9 @@ import type { Session } from './types';
  *  Everything the shell knows about authentication is these four methods. There
  *  is no endpoint here, no payload, no error code — the interface is expressed
  *  entirely in the SPA's own vocabulary, which is what keeps FR-004 true while
- *  the backend contract is unpublished. Today `seeded-source.ts` satisfies it;
- *  when the contract publishes, a second implementation is written against it
- *  and no shell code changes.
+ *  the backend contract is unpublished. `api-session-source.ts` satisfies it
+ *  against the published API; there is no seeded implementation (spec 017,
+ *  Session 2026-10-03 second).
  *
  *  `signIn()` REJECTS when authentication is refused — it never resolves to
  *  `null`. A refusal and a signed-out success are different outcomes and must
@@ -35,35 +33,7 @@ export interface SessionSource {
   subscribe(listener: () => void): () => void;
 }
 
-/** A demo affordance, deliberately NOT part of `SessionSource`.
- *
- *  A source that authenticates nobody has to be told whom to sign in as, and a
- *  tester has to be able to reach both roles to exercise SC-001 and
- *  SC-003. A source backed by the real contract authenticates a real person, so
- *  it implements none of this and the chooser disappears from the sign-in
- *  screen on its own — see `hasDemoAccounts()`. */
-export interface DemoAccountSource {
-  accounts(): readonly DemoAccount[];
-  /** The account id `signIn()` will resolve to. */
-  selected(): string;
-  select(id: string): void;
-}
-
-export type DemoAccount = {
-  id: string;
-  label: string;
-  detail: string;
-  /** Selecting this one makes `signIn()` reject, so a refusal (FR-003b) can be
-   *  demonstrated without a backend that can refuse. */
-  refuses?: boolean;
-};
-
-export function hasDemoAccounts(source: SessionSource): source is SessionSource & DemoAccountSource {
-  return typeof (source as Partial<DemoAccountSource>).accounts === 'function';
-}
-
-/** Seeded session when `VITE_API_BASE_URL` is unset or blank. The API source
- *  when it is set, with no fallback if those calls fail. */
+/** The published API session. There is no seeded session (spec 017 FR-001). */
 export function selectSessionSource(): SessionSource {
-  return apiConfigured() ? apiSessionSource : seededSessionSource;
+  return apiSessionSource;
 }

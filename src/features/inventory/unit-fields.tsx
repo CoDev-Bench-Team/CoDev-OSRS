@@ -1,5 +1,7 @@
-import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { Button, Field, FieldGroup, Search, TextField, TextInput, type FieldControl } from '../../shared/ui';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { Button, Field, FieldGroup, Search, Skeleton, TextField, TextInput, type FieldControl } from '../../shared/ui';
+import { onDismissPopovers } from '../../shared/ui/overlay/popover-layer';
 import type { Asset, Category } from '../assets/types';
 import { deviceFieldsFor } from './device-fields';
 import { caretAt, settleAmount, typeAmount } from './format';
@@ -20,7 +22,7 @@ function CloseGlyph() {
   );
 }
 
-/** A refusal that names no field, above the form or the rows it is about. */
+/** A refusal that names no field, shown above the panel's action buttons. */
 export function FormAlert({ message }: { message?: string }) {
   if (!message) return null;
   return (
@@ -35,13 +37,16 @@ export function FormAlert({ message }: { message?: string }) {
 const CATALOG_UNLOADED = 'Catalog items could not be loaded. Close the panel and try again';
 const USERS_UNLOADED = 'Users could not be loaded. Close the panel and try again';
 
-/** **Cancel** and the submit button, centred under the panel. */
+/** **Cancel** and the submit button, centred under the panel. A refusal
+ *  that names no field sits above them, outside the scrolling form, so it is
+ *  seen wherever the form is scrolled to when Save is pressed. */
 export function FormFooter({
   formId,
   saving,
   disabled,
   submitLabel,
   savingLabel,
+  alert,
   onCancel,
 }: {
   formId: string;
@@ -49,32 +54,94 @@ export function FormFooter({
   disabled?: boolean;
   submitLabel: string;
   savingLabel: string;
+  alert?: string;
   onCancel: () => void;
 }) {
   return (
-    <div className="flex items-center justify-center gap-12">
-      <Button variant="ghost" disabled={saving} onClick={onCancel}>
-        Cancel
-      </Button>
-      <Button type="submit" form={formId} disabled={saving || disabled}>
-        {saving ? savingLabel : submitLabel}
-      </Button>
+    <div className="flex flex-col gap-9">
+      <FormAlert message={alert} />
+      <div className="flex items-center justify-center gap-12">
+        <Button variant="ghost" disabled={saving} onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" form={formId} disabled={saving || disabled}>
+          {saving ? savingLabel : submitLabel}
+        </Button>
+      </div>
     </div>
   );
 }
 
 const RESULT_LIMIT = 8;
 
+/** The list's tallest, as its `max-h` says. */
+const LIST_MAX_HEIGHT = 260;
+
+type ListPlace = { left: number; width: number } & ({ top: number } | { bottom: number });
+
 /** An ARIA 1.2 combobox's keyboard and list state over `items`: Arrow keys
  *  move the active option, Enter picks it, Esc closes the list. The list is
- *  undrawn (logged in additions.md) and sits in the flow under the field, so
- *  the panel's scrolling body can never clip it. */
-function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
+ *  undrawn (logged in additions.md).
+ *
+ *  The list overlays what is under the field rather than pushing it down. As
+ *  the shared `Select` does, it is portalled out of the panel's scrolling body,
+ *  which would otherwise clip it: into the open `<dialog>` when there is one
+ *  (everything outside a modal dialog is inert), else `<body>`, and placed
+ *  fixed under the field (`anchor`), or above it when there is no room below.
+ *  It follows the field when the panel scrolls. */
+/** Option-shaped skeletons the list shows while its items load. */
+const LOADING_ROWS = 3;
+
+/** `loading`: the items are still on their way. The list still opens, with
+ *  skeleton options (the caller's `skeleton`, shaped like its own option) in
+ *  place of results, and fills in when they arrive. */
+function useCombobox<T>(items: readonly T[], onPick: (item: T) => void, loading = false) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const shown = items.slice(0, RESULT_LIMIT);
-  const expanded = open && shown.length > 0;
+  const expanded = open && (loading || shown.length > 0);
+  const anchor = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [layer, setLayer] = useState<HTMLElement | null>(null);
+  const [place, setPlace] = useState<ListPlace | null>(null);
+
+  // A modal appearing dismisses any list already open (popover-layer.ts).
+  useEffect(() => onDismissPopovers(() => setOpen(false)), []);
+
+  // Placed before paint, so the list never appears and then jumps.
+  useLayoutEffect(() => {
+    if (!expanded) return;
+    const host = anchor.current?.closest<HTMLElement>('dialog[open]') ?? null;
+    setLayer(host ?? document.body);
+    const measure = () => {
+      const r = anchor.current?.getBoundingClientRect();
+      if (!r) return;
+      // A modal <dialog> is the containing block for `position: fixed`
+      // (SidePanel says why), so coordinates there are from its box.
+      const box = host?.getBoundingClientRect() ?? { top: 0, left: 0, bottom: window.innerHeight };
+      const below = window.innerHeight - r.bottom;
+      const flip = below < LIST_MAX_HEIGHT + 8 && r.top > below;
+      setPlace(
+        flip
+          ? { bottom: box.bottom - r.top + 4, left: r.left - box.left, width: r.width }
+          : { top: r.bottom + 4 - box.top, left: r.left - box.left, width: r.width },
+      );
+    };
+    measure();
+    // The panel body scrolls under the list: follow the field, but not when
+    // the list scrolls itself.
+    const onScroll = (e: Event) => {
+      if (listRef.current?.contains(e.target as Node)) return;
+      measure();
+    };
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }, [expanded]);
 
   const pick = (item: T) => {
     onPick(item);
@@ -89,6 +156,7 @@ function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
         setActive(0);
         return;
       }
+      if (shown.length === 0) return;
       const step = e.key === 'ArrowDown' ? 1 : -1;
       setActive((i) => (i + step + shown.length) % shown.length);
     } else if (e.key === 'Enter' && expanded) {
@@ -107,20 +175,32 @@ function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
     'aria-expanded': expanded,
     'aria-controls': `${id}-list`,
     'aria-autocomplete': 'list' as const,
-    'aria-activedescendant': expanded ? `${id}-opt-${active}` : undefined,
+    'aria-activedescendant': expanded && shown.length > 0 ? `${id}-opt-${active}` : undefined,
     autoComplete: 'off',
     onKeyDown,
     onBlur: () => setOpen(false),
   };
 
-  const list = (label: string, render: (item: T) => ReactNode, key: (item: T) => string) =>
-    expanded ? (
+  const list = (label: string, render: (item: T) => ReactNode, key: (item: T) => string, skeleton?: ReactNode) =>
+    expanded && layer && place ? createPortal(
       <ul
+        ref={listRef}
         id={`${id}-list`}
         role="listbox"
         aria-label={label}
-        className="max-h-[260px] overflow-y-auto rounded-10 bg-surface-card p-4 shadow-card ring-default"
+        aria-busy={loading || undefined}
+        style={{ position: 'fixed', ...place }}
+        className="z-popover max-h-[260px] overflow-y-auto rounded-10 bg-surface-card p-4 shadow-card ring-default"
       >
+        {loading && shown.length === 0
+          ? Array.from({ length: LOADING_ROWS }, (_, i) => (
+              // Not choosable: the first carries what a screen reader hears.
+              <li key={i} role="option" aria-disabled="true" aria-selected={false} className="flex flex-col gap-4 rounded-6 px-12 py-10">
+                {i === 0 ? <span className="sr-only">Loading {label.toLowerCase()}…</span> : null}
+                {skeleton}
+              </li>
+            ))
+          : null}
         {shown.map((item, i) => (
           <li
             key={key(item)}
@@ -138,10 +218,13 @@ function useCombobox<T>(items: readonly T[], onPick: (item: T) => void) {
             {render(item)}
           </li>
         ))}
-      </ul>
+      </ul>,
+      layer,
     ) : null;
 
   return {
+    /** The field the list hangs from. */
+    anchor,
     inputProps,
     list,
     reveal: () => {
@@ -177,32 +260,39 @@ export function CatalogItemPicker({
   const [query, setQuery] = useState('');
   const wrapper = useRef<HTMLDivElement>(null);
   const found = (assets ?? []).filter((a) => matches(query, a.name, a.model));
-  const box = useCombobox(found, (asset) => {
-    onChange(asset);
-    setQuery('');
-  });
+  const loading = assets === null && !failed;
+  const box = useCombobox(
+    found,
+    (asset) => {
+      onChange(asset);
+      setQuery('');
+    },
+    // Open while the catalog loads; the list shows skeletons until it lands.
+    loading,
+  );
 
   return (
     <div ref={wrapper} className="flex flex-col gap-14">
       <Field label="Catalog Item" required error={error ?? (failed ? CATALOG_UNLOADED : undefined)}>
         {({ id, required, invalid, describedBy }) => (
-          <div className="flex flex-col gap-6">
+          <div ref={box.anchor}>
             <Search
               id={id}
               placeholder="Search catalog item name or code"
               aria-required={required}
               aria-invalid={invalid || undefined}
               aria-describedby={describedBy}
-              disabled={assets === null}
+              disabled={failed && assets === null}
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
                 box.reveal();
               }}
-              onFocus={() => {
-                if (query) box.reveal();
-              }}
+              onClear={() => setQuery('')}
               {...box.inputProps}
+              // Focus or a click lists the catalog; typing narrows it.
+              onFocus={box.reveal}
+              onClick={box.reveal}
             />
             {box.list(
               'Catalog items',
@@ -214,6 +304,11 @@ export function CatalogItemPicker({
                 </>
               ),
               (a) => a.id,
+              <>
+                <Skeleton className="h-10 w-[64px]" />
+                <Skeleton className="h-14 w-[168px]" />
+                <Skeleton className="h-12 w-[104px]" />
+              </>,
             )}
           </div>
         )}
@@ -247,6 +342,7 @@ export function CatalogItemPicker({
 export function UserPicker({
   users,
   value,
+  pendingName,
   onChange,
   error,
   disabled,
@@ -254,6 +350,9 @@ export function UserPicker({
   /** `null` while loading, `'failed'` if the directory could not be read. */
   users: readonly DirectoryUser[] | null | 'failed';
   value: string | undefined;
+  /** The chosen user's name from a restored draft, shown while the directory
+   *  loads. */
+  pendingName?: string;
   onChange: (userId: string | undefined) => void;
   error?: string;
   disabled?: boolean;
@@ -262,23 +361,29 @@ export function UserPicker({
   const list = failed ? [] : (users ?? []);
   const chosen = list.find((u) => u.id === value);
   const [query, setQuery] = useState<string | null>(null);
-  const typed = query ?? chosen?.name ?? '';
+  const typed = query ?? chosen?.name ?? (value && users === null ? (pendingName ?? '') : '');
   const found = query === null ? list : list.filter((u) => matches(query, u.name, u.email));
-  const box = useCombobox(found, (user) => {
-    onChange(user.id);
-    setQuery(null);
-  });
+  const loading = users === null;
+  const box = useCombobox(
+    found,
+    (user) => {
+      onChange(user.id);
+      setQuery(null);
+    },
+    // Open while the directory loads; the list shows skeletons until it lands.
+    loading,
+  );
 
   return (
     <Field label="User" error={error ?? (failed ? USERS_UNLOADED : undefined)}>
       {({ id, invalid, describedBy }) => (
-        <div className="flex flex-col gap-6">
+        <div ref={box.anchor}>
           <TextInput
             id={id}
             placeholder="Insert here..."
             invalid={invalid}
             aria-describedby={describedBy}
-            disabled={disabled || users === null}
+            disabled={disabled || failed}
             value={typed}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -307,6 +412,10 @@ export function UserPicker({
               </>
             ),
             (u) => u.id,
+            <>
+              <Skeleton className="h-14 w-[152px]" />
+              <Skeleton className="h-12 w-[200px]" />
+            </>,
           )}
         </div>
       )}
@@ -357,9 +466,9 @@ export function SecretInput({
   );
 }
 
-export type Purchase = { pr: string; price: string; supplier: string; purchasedAt: string };
+export type Purchase = { purchaseRequest: string; price: string; supplier: string; purchasedAt: string };
 
-/** PURCHASE DETAILS: Purchase Request (ours, D14), Price in pesos, Supplier,
+/** PURCHASE DETAILS: Purchase Request (D14), Price in pesos, Supplier,
  *  Purchased Date no later than today (FR-013). */
 export function PurchaseFields({
   value,
@@ -384,15 +493,15 @@ export function PurchaseFields({
   });
   return (
     <FieldGroup heading="PURCHASE DETAILS">
-      <Field label="Purchase Request" error={errors.pr}>
+      <Field label="Purchase Request" error={errors.purchaseRequest}>
         {({ id, invalid, describedBy }) => (
           <TextInput
             id={id}
             invalid={invalid}
             aria-describedby={describedBy}
             placeholder="e.g. 2026-0142"
-            value={value.pr}
-            onChange={(e) => onChange('pr', e.target.value)}
+            value={value.purchaseRequest}
+            onChange={(e) => onChange('purchaseRequest', e.target.value)}
           />
         )}
       </Field>
@@ -555,6 +664,7 @@ export function RemoveUnitSection({
       ) : removing ? (
         <TextField
           label="Reason for removal"
+          hint="This unit will be deleted and cannot be restored. Are you sure you want to continue?"
           tone="danger"
           size="sm"
           required

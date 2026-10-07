@@ -1,5 +1,6 @@
 import type { RequestStatus } from '../../../shared/ui';
 import { QUEUE_SORTS, type QueueRow, type QueueSort } from '../queue/queue-types';
+import { DEFAULT_PAGE_SIZE } from '../../../shared/page-size-preference';
 
 /** The statuses History lists, in the order the file draws their chips:
  *  `All requests · Completed · Cancelled · Rejected` (`04 - History`). The
@@ -31,12 +32,12 @@ export const INITIAL_HISTORY_QUERY: HistoryQuery = {
   search: '',
   sort: 'Newest First',
   page: 1,
-  pageSize: 50,
+  pageSize: DEFAULT_PAGE_SIZE,
 };
 
 /** A row: the identity fields as the queue carries them, the rendered items
  *  and resolved date, and the terminal status. */
-export interface HistoryRow extends Pick<QueueRow, 'id' | 'requestorName' | 'requestorContext' | 'itemSummary'> {
+export interface HistoryRow extends Pick<QueueRow, 'id' | 'displayId' | 'requestorName' | 'requestorContext' | 'itemSummary'> {
   resolvedLabel: string;
   status: TerminalStatus;
 }
@@ -53,3 +54,11 @@ export interface HistoryViewModel {
   page: number;
   rows: readonly HistoryRow[];
 }
+
+/** The table's part of the view model: what one page read answers. */
+export type HistoryTable = Pick<HistoryViewModel, 'matchCount' | 'page' | 'rows'>;
+
+/** The counts' part: the chips, and whether anything is resolved at all.
+ *  Read in parallel beside the rows, so the table never waits on them
+ *  (FR-055). */
+export type HistoryCounts = Omit<HistoryViewModel, keyof HistoryTable>;

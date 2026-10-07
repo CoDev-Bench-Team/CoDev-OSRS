@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { SessionProvider } from '../features/auth/SessionProvider';
+import { ToastProvider } from '../shared/ui';
 import { selectSessionSource } from '../features/auth/session-source';
 import { RequestListProvider } from '../features/requests/create/RequestListProvider';
 import { RequestListCountProvider } from './RequestListCountProvider';
@@ -37,37 +38,40 @@ const CompareHarness = import.meta.env.DEV
 export default function App() {
   return (
     <BrowserRouter>
-      <SessionProvider source={selectSessionSource()}>
-        <RequestListCountProvider>
-          {/* The Employee's Request List lives for the session, above every
-              route, and is the only writer of the count (spec 011 D1, D2). */}
-          <RequestListProvider>
-            {Gallery && CompareHarness ? (
-              <Routes>
-                <Route
-                  path="/__gallery"
-                  element={
-                    <Suspense fallback={null}>
-                      <Gallery />
-                    </Suspense>
-                  }
-                />
-                <Route
-                  path="/__compare"
-                  element={
-                    <Suspense fallback={null}>
-                      <CompareHarness />
-                    </Suspense>
-                  }
-                />
-                <Route path="*" element={<AppRoutes />} />
-              </Routes>
-            ) : (
-              <AppRoutes />
-            )}
-          </RequestListProvider>
-        </RequestListCountProvider>
-      </SessionProvider>
+      {/* Above the routes, so a toast outlives the panel or page that raised it. */}
+      <ToastProvider>
+        <SessionProvider source={selectSessionSource()}>
+          <RequestListCountProvider>
+            {/* The Employee's Request List lives for the session, above every
+                route, and is the only writer of the count (spec 011 D1, D2). */}
+            <RequestListProvider>
+              {Gallery && CompareHarness ? (
+                <Routes>
+                  <Route
+                    path="/__gallery"
+                    element={
+                      <Suspense fallback={null}>
+                        <Gallery />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/__compare"
+                    element={
+                      <Suspense fallback={null}>
+                        <CompareHarness />
+                      </Suspense>
+                    }
+                  />
+                  <Route path="*" element={<AppRoutes />} />
+                </Routes>
+              ) : (
+                <AppRoutes />
+              )}
+            </RequestListProvider>
+          </RequestListCountProvider>
+        </SessionProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

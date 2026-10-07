@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router';
-import { ForbiddenScreen, LoadingState } from '../../shared/ui';
+import { ForbiddenScreen } from '../../shared/ui';
 import { NavButton } from '../../app/NavButton';
 import { landingDestination, landingPath, SIGN_IN_PATH } from '../../app/destinations';
 import { useSession } from './session-context';
@@ -11,9 +11,13 @@ import { ROLE_LABEL, type Role } from './types';
  *
  *  Resolution order is fixed, and the order is the design:
  *
- *  1. `unknown` renders the loading state and NEVER redirects. This is what
+ *  1. `unknown` renders the destination and NEVER redirects. This is what
  *     stops a signed-in user seeing a flash of the sign-in screen while the
- *     session is still resolving (FR-018).
+ *     session is still resolving (FR-018). The screen draws its static parts
+ *     at once and holds its data reads, as skeletons, until the session is
+ *     known, so the page loads in one stage instead of swapping a placeholder
+ *     page for the real one. A load with a kept session is never `unknown`
+ *     (spec 017 FR-058).
  *  2. `signed-out` redirects to sign-in, recording the address that was asked
  *     for so the visitor is returned to it afterwards (FR-013).
  *  3. A role outside `allow` gets the refusal screen and a route back to a
@@ -36,7 +40,7 @@ export function RequireAccess({ allow, children }: { allow?: readonly Role[]; ch
   const { status, session } = useSession();
   const location = useLocation();
 
-  if (status === 'unknown') return <LoadingState label="Checking your session" />;
+  if (status === 'unknown') return <>{children}</>;
 
   if (status === 'signed-out' || !session) {
     return <Navigate to={SIGN_IN_PATH} replace state={{ from: location.pathname + location.search }} />;

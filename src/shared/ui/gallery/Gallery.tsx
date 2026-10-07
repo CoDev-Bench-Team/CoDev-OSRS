@@ -361,7 +361,7 @@ function DataSection({ model, onModelChange }: { model: string; onModelChange: (
       <Row label="Summary cards">
         <SummaryCard value="12" label="Pending approval" />
         <SummaryCard value="108" label="Available units" />
-        <SummaryCard value="2" label="Low stock alerts" />
+        <SummaryCard value="6" label="In Processing" />
       </Row>
       <Row label="Supply card">
         <SupplyCard

@@ -6,6 +6,8 @@
 **Status**: Draft
 **Sources**: `04.1 - My Requests - View Request`, Accountability Form view (2026-09-26 `.fig`, exported 02:49:27Z; [drift-2026-09-26 §3](../../docs/design-system/drift-2026-09-26.md)), constitution 7.0.0 II–VI, [ADR-0011](../../docs/adr/0011-admin-sets-received-employee-signs.md) (amending [ADR-0009](../../docs/adr/0009-received-and-accountability-form.md)), spec 001 US5 / FR-012 / FR-012b / tasks T018b, spec 007 (Employee request panel), `docs/process-flow.md` §3 steps 5–10, `specs/001-office-supplies-mvp/contracts/README.md` conflict 5, [BEN-98](https://linear.app/bench-synergy-project/issue/BEN-98) validation format
 
+> **Amended 2026-10-04** (constitution 10.0.0, [ADR-0013](../../docs/adr/0013-signing-completes-the-request.md)): signing now **completes** the request, and there is no Admin complete. The name field is the signed-in Employee's own full name, labelled **Full name**, **prefilled and not editable**; FR-005 and FR-006 apply to it only as *the account must carry a name*. Wherever this spec says the status stays `Received` after signing, read `Completed`.
+
 ## Overview
 
 *(Rewritten 2026-09-29, constitution 7.0.0.)* Once a request is handed over, the owning Employee can mark it **`Received`** themselves (an Admin can too, from their own panel); that is when the units are assigned. On a `Received` request, the owning Employee then confirms that it reached them by signing the **Accountability Form** from their own request panel. Signing records the acknowledgement; the request stays `Received`. The Admin's **Complete** is refused until the form is signed.
