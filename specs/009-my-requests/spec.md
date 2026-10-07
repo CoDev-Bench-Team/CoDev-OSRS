@@ -43,7 +43,7 @@ An Employee opens **My Requests** and sees `My Requests` over `Track every reque
 - **FR-002**: Rows MUST be ordered newest first by submission time (D2).
 - **FR-003**: `ITEMS` MUST use the shared `summarizeItems` with two names shown.
 - **FR-004**: `STATUS` MUST render `StatusPill` with a `RequestStatus`; no value outside `REQUEST_STATUSES` MUST be expressible (type-level).
-- **FR-005**: **View details** MUST open spec 007's panel without navigating. There is no Employee `/requests/:id` destination (spec 003, amended 2026-09-23).
+- **FR-005**: **View details** MUST open spec 007's panel ~~without navigating. There is no Employee `/requests/:id` destination (spec 003, amended 2026-09-23)~~. *(Amended 2026-10-07, following spec 007 FR-001 as amended 2026-10-06, Session 2026-10-06: opening the panel replaces the address with `/requests/:id`, and closing it replaces it with `/requests` again, so an email can link to a panel and Back still leaves My Requests.)*
 - **FR-006**: Loading, empty and failure MUST be distinct states (spec 007 FR-011, unchanged).
 - **FR-007**: `/requests` MUST stay Employee-only.
 

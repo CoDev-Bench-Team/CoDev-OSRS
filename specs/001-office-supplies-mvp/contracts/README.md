@@ -461,7 +461,7 @@ The Requests Queue and History draw one search box over request id, requester na
 
 #### 14. No filter for the queue's live statuses (raised 2026-10-03)
 
-The queue's *All requests* lists live requests only (`pending_approval`, `approved`, `for_delivery`, `ready_for_pickup`, `received`). `GET /requests` takes one `status` or none, and none also returns resolved requests. Spec 017 merges one list call per live status into full pages (plan D5). **Needed:** a filter that takes several statuses, or a live-only option. *(2026-10-06: the SPA stopped merging. *All requests* is now one `GET /requests` with no status, and the resolved rows it returns are dropped, so a page can come out short and its total includes them. A live-only filter fixes both.)*
+The queue's *All requests* lists live requests only (`pending_approval`, `approved`, `for_delivery`, `ready_for_pickup`, `received`). `GET /requests` takes one `status` or none, and none also returns resolved requests. Spec 017 merges one list call per live status into full pages (plan D5). **Needed:** a filter that takes several statuses, or a live-only option. *(2026-10-06: the SPA stopped merging. *All requests* is now one `GET /requests` with no status, and the resolved rows it returns are dropped, so a page can come out short and its total includes them. A live-only filter fixes both.)* *(2026-10-07: **priority raised.** Under Newest First, recently resolved requests can fill the whole first page, so the Admin opens the queue on an empty page while live requests sit further on; spec 017 plan R3.)*
 
 #### 15. ~~No low-stock count for the queue (raised 2026-10-03)~~ — withdrawn 2026-10-03
 

@@ -23,7 +23,7 @@ Replace the `/requests` placeholder with a minimal My Requests table, and open a
 | D1 | Ship a **minimal seeded My Requests table** with *View details*. It replaces `RequestsPlaceholder` and is marked as a stand-in for BEN-44. | BEN-44 isn't on `dev`, and the panel needs something to open it. |
 | D2 | Remove **`employee` only** from the `requestDetail` destination. The Admin keeps `/requests/:id` until BEN-47. | PR #36 (BEN-46) links queue rows to `/requests/:id`. Removing the route outright would break it. |
 | D3 | No constitution change on this branch. | Constitution 3.0.0 IV (BEN-113, on `dev`) already requires a reason from whoever cancels. *(Was: amend within PR #33's 3.0.0 — superseded 2026-09-24.)* |
-| D4 | The panel's open state lives **in component state**, not the address. | The ticket: "opens from View details and closes without navigating". Consistent with D2. |
+| D4 | ~~The panel's open state lives **in component state**, not the address.~~ **Amended 2026-10-07:** the open panel is part of the address, `/requests/:id` (the display id). *View details* replaces the entry with it, and closing replaces it with `/requests`; one route serves both, so the list never remounts (spec FR-001, amended 2026-10-06; spec 017 T075). | ~~The ticket: "opens from View details and closes without navigating". Consistent with D2.~~ The project owner asked for a linkable panel, for email links (spec Session 2026-10-06). |
 | D5 | Each drawn timeline node maps to states (table below). | The nodes are the state machine, but the third one stands for two peer states. |
 | D6 | The reason is `trim()`med first, so whitespace counts as empty. | Acceptance criterion 3, made safe against whitespace. |
 
@@ -79,7 +79,7 @@ The backend contract is linked from `specs/001-office-supplies-mvp/contracts/REA
 
 1. The shell admits only an Employee to `/requests` as My Requests.
 2. The page loads the Employee's requests through `EmployeeRequestSource.list`.
-3. *View details* sets the open id in component state; the panel renders that request.
+3. *View details* ~~sets the open id in component state~~ replaces the address with `/requests/:id` *(amended 2026-10-07, D4)*; the panel renders that request.
 4. Cancel Request opens the inline form. Confirm trims the reason; if empty, the form goes invalid and nothing is sent.
 5. Otherwise the page calls `source.cancel` with the trimmed reason, then reloads the list whether it succeeded or not, so both the panel and the row show the current status. If that reload fails, the page keeps the list it had — with the cancelled request in it when the cancel worked — so the panel stays open rather than being swapped for the failure notice. A `status-changed` refusal whose reload fails is reported as `unavailable`, because the panel cannot show the current status that refusal's copy promises.
 6. A refusal shows an inline note above the items.
@@ -128,7 +128,7 @@ No unit-test runner exists in this repository, so this feature adds no framework
 
 ## Requirement Coverage
 
-- FR-001, FR-002: `SidePanel` and component state in `MyRequestsPage`.
+- FR-001, FR-002: `SidePanel` and ~~component state~~ the routed `/requests/:id` in `MyRequestsPage` *(amended 2026-10-07, D4)*; `e2e/panel-address.spec.ts`.
 - FR-003, FR-003a, FR-004: `RequestDetailPanel` and `request-timeline.ts`.
 - FR-005 to FR-008: the cancel form in `RequestDetailPanel` and the seeded source's `cancel`.
 - FR-009: no such control exists; checked by `check-request-detail.mjs`.
