@@ -1,5 +1,5 @@
 export { assetImageSrc } from './asset-image';
-export { ApiProblemError, SessionUnreachable, apiConfigured, apiRequest, apiUrl, onSessionEnded } from './client';
+export { ApiProblemError, SessionUnreachable, apiConfigured, apiRequest, apiUrl, onSessionEnded, whenIdle } from './client';
 export {
   API_ASSET_CATEGORIES,
   REQUEST_STATUS_LABEL,
@@ -36,7 +36,7 @@ export type {
   RequestSort,
   UpdateRequestStatusBody,
 } from './requests';
-export { createUnit, createUnits, deleteUnit, getUnit, listUnits, readUnit, updateUnit } from './inventory';
+export { createUnit, createUnits, deleteUnit, getUnit, listUnits, readUnit, readUnitCounts, updateUnit } from './inventory';
 export type { ApiUnit, ApiUnitStatus, CreateUnitBody, CreateUnitsBody, ListUnitsParams, UpdateUnitBody } from './inventory';
 export { listUsers } from './users';
 export { id as readId, isRecord, num as readNum, optNum, optStr, record, str as readStr } from './wire';

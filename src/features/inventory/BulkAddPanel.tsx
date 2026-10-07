@@ -42,9 +42,9 @@ function draftRows(draft: Record<string, unknown> | undefined): Row[] {
 }
 
 /** The draft of a panel nobody has typed in: not worth keeping. */
-const UNTOUCHED = JSON.stringify({ location: 'Cebu', pr: '', price: '', supplier: '', purchasedAt: '', serials: [''] });
+const UNTOUCHED = JSON.stringify({ location: 'Cebu', purchaseRequest: '', price: '', supplier: '', purchasedAt: '', serials: [''] });
 
-const SHOWN_TOP = new Set(['assetId', 'location', 'pr', 'price', 'supplier', 'purchasedAt']);
+const SHOWN_TOP = new Set(['assetId', 'location', 'purchaseRequest', 'price', 'supplier', 'purchasedAt']);
 const shown = (key: string) => SHOWN_TOP.has(key) || /^units\.\d+\.(serialNumber|bitlockerIdentifier|recoveryPin)$/.test(key);
 
 /** The panel's form values, restored from a draft kept under five minutes ago
@@ -57,7 +57,7 @@ function useBulkDraft(assetsState: ReturnType<typeof useAssets>['state']) {
   const [asset, setAsset] = useState<Asset | undefined>(() => resolveAsset(assets, assetFromSnapshot(saved?.asset)));
   const [location, setLocation] = useState<Office>(() => draftOneOf(saved, 'location', OFFICES, 'Cebu'));
   const [purchase, setPurchase] = useState<Purchase>(() => ({
-    pr: draftString(saved, 'pr'),
+    purchaseRequest: draftString(saved, 'purchaseRequest'),
     price: draftString(saved, 'price'),
     supplier: draftString(saved, 'supplier'),
     purchasedAt: draftString(saved, 'purchasedAt'),
@@ -163,7 +163,7 @@ export function BulkAddPanel({ onClose, onCreate }: { onClose: () => void; onCre
     const draft: UnitBatchDraft = {
       assetId: asset?.id ?? '',
       location,
-      pr: purchase.pr,
+      purchaseRequest: purchase.purchaseRequest,
       price: parseAmount(purchase.price),
       supplier: purchase.supplier,
       purchasedAt: purchase.purchasedAt || undefined,

@@ -25,7 +25,7 @@ Every operation the SPA calls (`src/shared/api/`) was read against its controlle
 | `GET /requests/:id` | Adds `units[] { id, assetId, serialNumber, status }`; list rows do not carry `units` | Not read |
 | `POST /requests/:id/sign` | Stores `receivedSignature` / `receivedNotes` and sets `completed` in the same write (conflict 12, closed 2026-10-04 by ADR-0013) | Called with `{ agreed, fullName }`; a `receivedSignature` dates the signature to the `completed` timeline entry |
 | `POST /requests/:id/cancel` | An Admin may still cancel `for_delivery` (conflict 8 unchanged) | Not offered |
-| `/inventory-items` reads | Only the `asset` relation is loaded: neither `assignedTo` nor `assignedToId` is serialised (G6 wider than recorded: the id is missing too). Secrets are returned to any role (G3 unchanged) | Comment corrected; Assigned shows not-published. Editing an Assigned unit does not ask for the assignee again and does not re-send it: re-sending resets `assignedAt` (`inventory-items.service.ts:106-110`) |
+| `/inventory-items` reads | ~~Only the `asset` relation is loaded: neither `assignedTo` nor `assignedToId` is serialised (G6 wider than recorded: the id is missing too).~~ Since 2026-10-06 `assignedTo` (`id`, `email`, `firstName`, `lastName`, or `null`) is serialised; `assignedToId` still is not, and names may carry stray spaces. Secrets are returned to any role (G3 unchanged) | Comment corrected; Assigned shows not-published. Editing an Assigned unit does not ask for the assignee again and does not re-send it: re-sending resets `assignedAt` (`inventory-items.service.ts:106-110`) |
 | `DELETE /inventory-items/:id` | Soft delete; returns the unit with `deletedAt` and `removalReason` | Matches |
 | `GET /users` | A plain array, not a page | Already handled |
 | Every `400` validation problem (`common/problem-details.filter.ts:22-25`) | **Backend defect, raise with the backend team.** A nested field's pointer is mis-escaped: the path's dots become `/`, and then every `/` is escaped as `~1`, so `items[0].quantity` arrives as `#/items~10~1quantity` instead of RFC 6901's `#/items/0/quantity`. Top-level fields are unaffected | The SPA reads it as one unknown key, so the message is not placed under a nested field (Request List lines, Add Multiple Units rows); it still shows in the form's top alert. Not worked around (constitution VII). The e2e fake answers with the documented RFC 6901 form |
@@ -377,8 +377,8 @@ contract does not accept (constitution VII). Evidence: spec 015 §Contract gaps,
 | G2 | **No removal reason** on `DELETE /inventory-items/{id}` | A reason field, or the design drops it (spec 015 D10) |
 | G3 | **Secrets reach Employees.** `GET /inventory-items` and `GET /inventory-items/{id}` allow the `employee` role and return `bitlockerIdentifier` and `recoveryPin` | Omit both for an Employee, or make the reads Admin-only (constitution VIII, IX) |
 | G4 | **`PATCH` accepts any status**, `Reserved` included, and any assignee change on a reserved unit | The API refuses manual moves into or out of `Reserved` (constitution III) |
-| G5 | **No Purchase Request number** (`PR`) on the unit, single or bulk (spec 015 D14). The earlier record under 1 asked for a unit *tag*; that reading is withdrawn | A PR field on create, bulk, update and read |
-| G6 | **No assignee on read.** The unit returns its asset only, not `assignedTo`; users carry no department | The assignee's name and department on the unit read |
+| G5 | ~~**No Purchase Request number** (`PR`) on the unit, single or bulk (spec 015 D14). The earlier record under 1 asked for a unit *tag*; that reading is withdrawn~~ **Closed 2026-10-06**: `purchaseRequest` (string, max 255, optional) is published on create, bulk, update (`null` clears) and both reads, and `search` matches it and the serial. The SPA reads and sends it | A PR field on create, bulk, update and read |
+| G6 | ~~**No assignee on read.** The unit returns its asset only, not `assignedTo`;~~ **Partly closed 2026-10-06:** the unit read carries `assignedTo`, and the SPA names the assignee from it. Users still carry no department | The assignee's department on the unit read |
 | G7 | **Attachment is a URL** (`attachmentUrl`), and no upload operation is published; the design draws a file uploader | An upload operation, or the design changes |
 | G8 | **`In Storage`** drawn, not in the status set (spec 015 D1) | One status set |
 | G9 | **Search, counts and order.** `search` matches asset name, model or category, not PR or serial; there is no office filter and no per-status count for the chips; the list is ordered by id ascending, not newest added first (spec 015 FR-005) | Search by PR and serial; status counts, or the SPA counts per status; a newest-first order |
@@ -455,17 +455,27 @@ Constitution 9.0.0 IV ([ADR-0011](../../../docs/adr/0011-admin-sets-received-emp
 >
 > Until then the SPA does not call `/sign` and offers no Complete in API mode, so requests stop at `received`.
 
-#### 13. No single search across id, requester and item (raised 2026-10-03)
+#### 13. ~~No single search across id, requester and item (raised 2026-10-03)~~ — closed 2026-10-07
 
-The Requests Queue and History draw one search box over request id, requester name, email and item (spec 004 FR-020). `GET /requests`, `/requests/history` and `/requests/counts` take `displayId`, `requester` and `itemName` as separate filters, which the API combines. Spec 017 maps the box to one parameter: `displayId` for text starting with `REQ-`, `requester` otherwise. Item search is unavailable in API mode. **Needed:** one free-text parameter matching any of the four fields.
+The Requests Queue and History draw one search box over request id, requester name, email and item (spec 004 FR-020). `GET /requests`, `/requests/history` and `/requests/counts` take `displayId`, `requester` and `itemName` as separate filters, which the API combines. ~~Spec 017 maps the box to one parameter: `displayId` for text starting with `REQ-`, `requester` otherwise. Item search is unavailable in API mode. **Needed:** one free-text parameter matching any of the four fields.~~ **Live since 2026-10-07** (CoDev-OSRS-BE `6ede2f2`, BEN-154): all three take `search` (max 255), a substring of the display id, the requester's first, last or full name or email, or any line's asset name or model. It combines with the other filters; the per-field filters still work. The SPA sends the box as `search` alone, to the list and to the counts, so item search is back in API mode (spec 017 FR-027).
 
 #### 14. No filter for the queue's live statuses (raised 2026-10-03)
 
-The queue's *All requests* lists live requests only (`pending_approval`, `approved`, `for_delivery`, `ready_for_pickup`, `received`). `GET /requests` takes one `status` or none, and none also returns resolved requests. Spec 017 merges one list call per live status into full pages (plan D5). **Needed:** a filter that takes several statuses, or a live-only option.
+The queue's *All requests* lists live requests only (`pending_approval`, `approved`, `for_delivery`, `ready_for_pickup`, `received`). `GET /requests` takes one `status` or none, and none also returns resolved requests. Spec 017 merges one list call per live status into full pages (plan D5). **Needed:** a filter that takes several statuses, or a live-only option. *(2026-10-06: the SPA stopped merging. *All requests* is now one `GET /requests` with no status, and the resolved rows it returns are dropped, so a page can come out short and its total includes them. A live-only filter fixes both.)*
 
 #### 15. ~~No low-stock count for the queue (raised 2026-10-03)~~ — withdrawn 2026-10-03
 
 ~~The queue's *Low stock alerts* card is not on `GET /requests/counts`. Spec 017 shows a not-published dash (FR-028). **Needed:** a published count, and what it counts (low only, or low and out, and across which offices).~~ **Withdrawn 2026-10-03:** the card is removed, because `02 - Requests Queue` draws only *Pending approval* and *In Processing* ([drift-2026-10-03](../../../docs/design-system/drift-2026-10-03.md)). Nothing is needed from the API.
+
+#### 16. ~~No counts on the unit list (raised 2026-10-06)~~ — closed 2026-10-06
+
+Inventory's chips (*All items · Assigned · Available · Reserved*) each show how many units match the search and category. `GET /inventory-items` returns only the page's `total`, so spec 017 FR-045 reads one `limit=1` list per other chip, and every search costs four calls. **Live since 2026-10-06:** a `counts` block on the list, as `/assets` carries (BEN-115):
+
+```json
+"counts": { "total": 12, "byStatus": { "Available": 5, "Reserved": 1, "Assigned": 4, "Inactive": 2 } }
+```
+
+`total` and `byStatus` follow `search` and `category` and ignore `status`. The SPA reads it (`readUnitCounts`), so one call answers the table and every chip; the per-chip `limit=1` reads are gone. A page without the block shows the chips without counts.
 
 #### API host moved; G2 closed (2026-10-03)
 

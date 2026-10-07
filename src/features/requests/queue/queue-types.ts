@@ -49,6 +49,22 @@ export const QUEUE_CHIPS: readonly QueueChip[] = ['All requests', ...CHIP_STATUS
 export const QUEUE_SORTS = ['Newest First', 'Oldest First', 'Employee (A-Z)'] as const;
 export type QueueSort = (typeof QUEUE_SORTS)[number];
 
+/** Each order as the address writes it (`?sort=`). The default, Newest
+ *  First, is left out of the address. */
+export const SORT_PARAM: Record<QueueSort, string> = {
+  'Newest First': '',
+  'Oldest First': 'oldest',
+  'Employee (A-Z)': 'employee',
+};
+
+/** The order an address's `sort` names; anything else is the default. */
+export function sortFromParam(value: string): QueueSort {
+  return QUEUE_SORTS.find((sort) => SORT_PARAM[sort] === value) ?? 'Newest First';
+}
+
+/** The fields a request table keeps in its address (`?search=&sort=`). */
+export const ADDRESS_FIELDS = ['search', 'sort'] as const;
+
 /** The sizes offered. The default is 10, and the visitor's choice is
  *  remembered (`shared/page-size-preference.ts`). */
 export const PAGE_SIZES = [10, 25, 50, 100] as const;
@@ -95,3 +111,11 @@ export interface QueueViewModel {
   page: number;
   rows: readonly QueueRow[];
 }
+
+/** The table's part of the view model: what one page read answers. */
+export type QueueTable = Pick<QueueViewModel, 'matchCount' | 'page' | 'rows'>;
+
+/** The counts' part: the summary cards, the chips, and whether anything is
+ *  live at all. Read in parallel beside the rows, so the table never waits
+ *  on them (FR-055). */
+export type QueueCounts = Omit<QueueViewModel, keyof QueueTable>;

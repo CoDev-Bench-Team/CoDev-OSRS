@@ -27,7 +27,7 @@ export function apiFor(page: object): FakeApi {
 
 /** Holds requests to `url` (only `method`'s, when given) until the returned
  *  function is called, so an in-flight state stays on screen to be checked. */
-export async function hold(page: Page, url: string, method?: string): Promise<() => void> {
+export async function hold(page: Page, url: string | RegExp, method?: string): Promise<() => void> {
   let release!: () => void;
   const held = new Promise<void>((resolve) => (release = resolve));
   await page.route(url, async (route) => {

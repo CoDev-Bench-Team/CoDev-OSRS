@@ -18,7 +18,7 @@ import type { Asset, AssetDraft } from './types';
 export interface AssetSource {
   list(): Promise<Asset[]>;
   /** One page of the table, asked of the API (spec 017 plan D1). */
-  page(query: RemoteTableQuery<StockStatus>, withCounts: boolean): Promise<RemoteTablePage<Asset, StockStatus>>;
+  page(query: RemoteTableQuery<StockStatus>): Promise<RemoteTablePage<Asset, StockStatus>>;
   create(draft: AssetDraft): Promise<Asset>;
   update(id: string, draft: AssetDraft): Promise<Asset>;
 }

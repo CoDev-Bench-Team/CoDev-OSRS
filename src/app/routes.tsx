@@ -68,8 +68,13 @@ export function AppRoutes() {
       >
         <Route index element={<LandingRedirect />} />
         <Route path={DESTINATIONS.catalog.path} element={guarded('catalog', <CatalogPage />)} />
-        <Route path={DESTINATIONS.requests.path} element={guarded('requests', <MyRequestsPage />)} />
-        <Route path={DESTINATIONS.requestDetail.path} element={guarded('requestDetail', <RequestDeepLink />)} />
+        {/* One route for My Requests and a request's panel over it, so opening
+            and closing the panel never remounts the list (spec 007 FR-001).
+            An Admin's `/requests/:id` goes on to `/queue/:id`. */}
+        <Route
+          path={`${DESTINATIONS.requests.path}/:id?`}
+          element={<RequestDeepLink>{guarded('requests', <MyRequestsPage />)}</RequestDeepLink>}
+        />
         {/* One route for the queue and a request's panel over it, so opening
             and closing the panel never remounts the queue (spec 008 FR-001b). */}
         <Route path={`${DESTINATIONS.queue.path}/:id?`} element={guarded('queue', <QueuePage />)} />

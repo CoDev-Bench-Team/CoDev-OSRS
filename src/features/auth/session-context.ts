@@ -32,9 +32,11 @@ export function useSession(): SessionContextValue {
   return value;
 }
 
-/** Whether a screen may read its data: the session is signed in. While it is
- *  still resolving, a screen draws its static parts and holds its reads, so
- *  it loads in one stage rather than after a placeholder page (FR-018). */
+/** Whether a screen may read its data: the session is signed in, from the
+ *  kept session at once (spec 017 FR-058) or once the current-user read
+ *  answers. While it is still resolving, a screen draws its static parts and
+ *  holds its reads, so it loads in one stage rather than after a placeholder
+ *  page (FR-018). */
 export function useSessionReady(): boolean {
   return useSession().status === 'signed-in';
 }

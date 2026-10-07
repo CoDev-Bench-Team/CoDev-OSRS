@@ -11,6 +11,10 @@ import { withQuery } from './query';
 export type RequestSort = 'newest' | 'oldest' | 'employee_name_asc';
 
 type RequestFilters = {
+  /** The one search box: a substring of the display id, the requester's
+   *  first, last or full name or email, or any line's asset name or model
+   *  (published 2026-10-07, contracts conflict 13). */
+  search?: string;
   displayId?: string;
   /** First name, last name or email. */
   requester?: string;

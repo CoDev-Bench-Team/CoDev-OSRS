@@ -171,3 +171,8 @@ export function pageSubtitle(destination: Destination): string {
 export function queueRequestPath(id: string): string {
   return `${DESTINATIONS.queue.path}/${encodeURIComponent(id)}`;
 }
+
+/** `/requests/:id` for a request id: the Employee's panel over My Requests. */
+export function requestPath(id: string): string {
+  return `${DESTINATIONS.requests.path}/${encodeURIComponent(id)}`;
+}

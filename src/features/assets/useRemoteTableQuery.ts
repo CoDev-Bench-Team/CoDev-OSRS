@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
 import { ALL_CATEGORIES } from './table-query';
 import { readPageSize, savePageSize, type PagedTable } from '../../shared/page-size-preference';
+import { fieldsFrom, useAddressFields } from '../../shared/address-fields';
+
+/** The field these tables keep in their address. They draw no sort. */
+const SEARCH_FIELD = ['search'] as const;
 
 /** What a paged source is asked for one page of a table (spec 017 plan D1). */
 export type RemoteTableQuery<S extends string> = {
@@ -17,20 +22,16 @@ export type RemoteTableQuery<S extends string> = {
  *  each chip says how many rows pressing it would show. */
 export type RemoteTableCounts<S extends string> = { all: number; of: Partial<Record<S, number>> };
 
-/** One page and its total across pages, with the chip counts when they were
- *  asked for. */
+/** One page and its total across pages, with the chip counts when the
+ *  response carries them. */
 export type RemoteTablePage<T, S extends string> = {
   rows: T[];
   total: number;
   counts?: RemoteTableCounts<S>;
 };
 
-/** A paged source. `withCounts` is false when the counts on screen already
- *  answer this search and category, so only the page is read. */
-export type FetchRemotePage<T, S extends string> = (
-  query: RemoteTableQuery<S>,
-  withCounts: boolean,
-) => Promise<RemoteTablePage<T, S>>;
+/** A paged source. Each page's response carries the chip counts with it. */
+export type FetchRemotePage<T, S extends string> = (query: RemoteTableQuery<S>) => Promise<RemoteTablePage<T, S>>;
 
 export type RemoteTableState = { kind: 'loading' } | { kind: 'failed' } | { kind: 'loaded'; stale?: boolean };
 
@@ -39,9 +40,8 @@ const SEARCH_DEBOUNCE_MS = 300;
 /** A table over a source that pages itself: every change
  *  asks the source again, search after typing settles, and the page on
  *  screen stays until the next one arrives. A failed reload keeps it and
- *  marks it stale, as the seeded tables do. The chip counts are read again
- *  only when the search, the category or a reload changes them; paging and
- *  pressing a chip read the page alone. */
+ *  marks it stale, as the seeded tables do. The chip counts come with every
+ *  page; a page without them leaves the chips without counts. */
 export function useRemoteTableQuery<T, S extends string>(
   fetchPage: FetchRemotePage<T, S>,
   {
@@ -56,8 +56,12 @@ export function useRemoteTableQuery<T, S extends string>(
     enabled?: boolean;
   },
 ) {
-  const [search, setSearchState] = useState('');
-  const [settledSearch, setSettledSearch] = useState('');
+  // The search opens on the address's `?search=` and is kept there (FR-056).
+  const { search: address } = useLocation();
+  const [opening] = useState(() => fieldsFrom(address, SEARCH_FIELD).search);
+  const [search, setSearchState] = useState(opening);
+  const [settledSearch, setSettledSearch] = useState(opening);
+  useAddressFields(SEARCH_FIELD, { search }, (fields) => setSearchState(fields.search));
   const [category, setCategoryState] = useState<string>(ALL_CATEGORIES);
   const [status, setStatusState] = useState<S | null>(null);
   const [page, setPage] = useState(1);
@@ -68,13 +72,11 @@ export function useRemoteTableQuery<T, S extends string>(
     total: 0,
     counts: { all: 0, of: {} },
   });
-  /** The search, category and attempt the counts on screen answer. A ref, so
-   *  counts landing do not ask again; read when a fetch starts, so a fetch
-   *  that superseded one still carrying counts asks for them itself. */
-  const counted = useRef<string | null>(null);
   /** The key whose counts were last settled, read or failed. While it is not
    *  the current one, the chips show that their counts are loading. */
   const [settled, setSettled] = useState<string | null>(null);
+  /** The key whose page answered without counts: its chips show none. */
+  const [uncounted, setUncounted] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -87,7 +89,7 @@ export function useRemoteTableQuery<T, S extends string>(
   }, [search, settledSearch]);
 
   const ask = useCallback(
-    (withCounts: boolean) => fetchPage({ search: settledSearch, category, status, page, pageSize }, withCounts),
+    () => fetchPage({ search: settledSearch, category, status, page, pageSize }),
     [fetchPage, settledSearch, category, status, page, pageSize],
   );
 
@@ -100,12 +102,13 @@ export function useRemoteTableQuery<T, S extends string>(
   useEffect(() => {
     if (!enabled) return;
     let current = true;
-    const withCounts = counted.current !== countsKey;
-    ask(withCounts).then(
+    ask().then(
       (next) => {
         if (!current) return;
-        if (next.counts) counted.current = countsKey;
+        // A page without counts leaves the chips without them, rather than a
+        // stale or empty count shown as if it were real.
         setSettled(countsKey);
+        setUncounted(next.counts ? null : countsKey);
         setData((was) => ({ rows: next.rows, total: next.total, counts: next.counts ?? was.counts }));
         setState({ kind: 'loaded' });
         setAnswered({ ask, attempt });
@@ -147,8 +150,11 @@ export function useRemoteTableQuery<T, S extends string>(
       status,
       setStatus: reset(setStatusState),
       counts: { all: data.counts.all, of: (s: S) => data.counts.of[s] ?? 0 },
-      /** The chip counts are being read and the ones on screen may be wrong. */
-      countsLoading: settled !== countsKey,
+      /** The chips show no counts: they are being read and the ones on
+       *  screen may be wrong, or the page answered without them. */
+      countsLoading: settled !== countsKey || uncounted === countsKey,
+      /** The current search and category answered without counts. */
+      uncounted: settled === countsKey && uncounted === countsKey,
       rows: data.rows,
       total: data.total,
       page: Math.min(page, pageCount),

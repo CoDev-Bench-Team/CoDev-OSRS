@@ -245,7 +245,7 @@ G4 adds no new file. Every change lands in a file that already exists.
 
 | FR | Where |
 |----|-------|
-| FR-001, FR-002 | `QueuePage` openId + `SidePanel`; focus return |
+| FR-001, FR-002 | `QueuePage` routes Review to `/queue/:id` (amended 2026-10-06) + `SidePanel`; focus return |
 | FR-003, FR-004 | `ReviewPanel` body; `ReviewLine.available` from the source |
 | FR-005 | `review-actions.ts` + `ReviewPanel` |
 | FR-006, FR-007 | `approve`, `reject` + `ReasonForm` |

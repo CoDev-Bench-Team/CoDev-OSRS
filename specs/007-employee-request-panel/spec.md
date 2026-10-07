@@ -29,7 +29,7 @@ An Employee opens one of their requests from My Requests and sees what they aske
 **Acceptance Criteria**:
 
 1. **Given** an Employee on `/requests`, **When** they activate *View details* on a row, **Then** a side panel opens over the page showing the request id, its status pill, the Items Requested table, the Note to Approver when one exists, and the status timeline.
-2. **Given** the panel is open, **When** the Employee activates ✕, presses Esc, or clicks the scrim, **Then** the panel closes, focus returns to that row's *View details*, and the address is still `/requests`.
+2. **Given** the panel is open, **When** the Employee activates ✕, presses Esc, or clicks the scrim, **Then** the panel closes, focus returns to that row's *View details*, and the address is `/requests` again. *(Amended 2026-10-06, FR-001.)*
 3. **Given** a `Cancelled` or `Rejected` request, **When** the panel renders, **Then** it reads back the stored reason under *Reason for cancellation* or *Reason for rejection*. No other state shows a reason.
 4. **Given** a request in any of the seven states, **When** the panel renders its timeline, **Then** the nodes follow the mapping in `plan.md` (D5): the forward states fill Submitted → Approved → handover → Complete in order, and ~~`Cancelled` or `Rejected` collapses the timeline to Submitted and that ending~~ `Cancelled` or `Rejected` shows every node the request reached, dated, then that ending, so one cancelled while `Pending Approval` still reads Submitted → Cancelled. *(Amended 2026-09-29 by [spec 013](../013-admin-history/spec.md) FR-009a.)*
 
@@ -70,7 +70,7 @@ An Employee stops their own request before anyone has decided on it, and says wh
 
 ## Functional Requirements
 
-- **FR-001**: The panel MUST open from *View details* on a My Requests row and MUST close without changing the address.
+- **FR-001**: The panel MUST open from *View details* on a My Requests row. *(Amended 2026-10-06 at the project owner's request: the open panel is part of the address, so it can be linked to.)* Opening MUST put the request's id in the address, `/requests/:id` (the display id, `REQ-…`), and closing MUST return it to `/requests`, each replacing the current history entry rather than adding one. `/requests/:id` MUST open that request's panel for its owner, a reload included; an id that is not theirs or does not exist MUST open nothing, show spec 003 FR-012a's notice and settle on `/requests`. My Requests MUST NOT reload or remount between `/requests` and `/requests/:id`.
 - **FR-002**: The panel MUST close on ✕, Esc and a scrim click. It MUST hold focus while open and return focus to the control that opened it.
 - **FR-003**: The panel MUST show the request id, status pill, Items Requested (description and quantity per line), Note to Approver when present, and the status timeline.
 - **FR-003a**: A `Cancelled` request MUST read back its reason under *Reason for cancellation*, and a `Rejected` request under *Reason for rejection*.
@@ -101,7 +101,7 @@ An Employee stops their own request before anyone has decided on it, and says wh
 
 ## Success Criteria
 
-- **SC-001**: An Employee can open any of their requests from My Requests and close it again without the address changing.
+- **SC-001**: An Employee can open any of their requests from My Requests, see its id in the address, reopen it from that address, and close it again back to `/requests`. *(Amended 2026-10-06.)*
 - **SC-002**: Cancel Request is offered on exactly the `Pending Approval` rows of the seeded data set.
 - **SC-003**: An empty or whitespace-only reason never changes a request's status.
 - **SC-004**: A valid cancel shows `Cancelled` in the panel pill, the timeline and the row pill, and reads the reason back.
@@ -116,6 +116,10 @@ An Employee stops their own request before anyone has decided on it, and says wh
 Raised by [spec 012](../012-accountability-form/spec.md). Spec 012 puts the Accountability Form in this panel, and this spec's Story 3 said no control may mention receipt.
 
 - Q: Does Story 3 still forbid every receipt control? → A: **No.** It forbids any control that sets `Completed`. The Employee's receipt controls are spec 012's: **Mark as Received** on their own `For Delivery` / `Ready for Pickup` request, and **Sign accountability form** on their own unsigned `Received` request, which records the acknowledgement and changes no status (amended 2026-09-29, constitution 7.0.0 IV). `check-request-detail`'s no-receipt pattern is narrowed to completion and to receipt controls outside those states. Story 3, FR-009 and SC-005 are reworded in place.
+
+### Session 2026-10-06 — the panel's address
+
+- Q: The project owner asked that an open panel have its own address, for email links. → A: **`/requests/:id`.** *View details* puts the request's id in the address and closing returns it to `/requests`, replacing the history entry so Back still leaves My Requests. This reverses Session 2026-09-23's "component state" answer. (FR-001)
 
 ### Session 2026-09-26 — Amendment (constitution 5.0.0)
 

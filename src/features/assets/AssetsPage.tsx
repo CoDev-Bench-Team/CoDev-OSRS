@@ -52,7 +52,7 @@ type PanelState = { kind: 'add' } | { kind: 'view'; id: string } | { kind: 'upda
 /** Every query is asked of the API (spec 017 Story 7). */
 export function AssetsPage() {
   const ready = useSessionReady();
-  const fetchPage = useCallback((q: RemoteTableQuery<StockStatus>, withCounts: boolean) => assetSource.page(q, withCounts), []);
+  const fetchPage = useCallback((q: RemoteTableQuery<StockStatus>) => assetSource.page(q), []);
   const { state, query, reload, fetching } = useRemoteTableQuery(fetchPage, { pageSizes: PAGE_SIZES, table: 'assets', enabled: ready });
   const saved = useCallback(
     async (saving: Promise<Asset>) => {

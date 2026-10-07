@@ -57,7 +57,7 @@ An Admin sees the queue with live counts, filters, searches and sorts it, opens 
 
 **Acceptance Criteria**:
 
-1. **Given** API mode, **When** the queue opens, **Then** rows, paging, the status chips, search and sort (Newest First, Oldest First, Employee A–Z) come from the API. The one search box searches the display id when the text starts with `REQ-`, and the requester's name or email otherwise. Item search is not available in API mode, because the API cannot match the three fields at once (contracts C13). *(Amended 2026-10-03, plan A3.)*
+1. **Given** API mode, **When** the queue opens, **Then** rows, paging, the status chips, search and sort (Newest First, Oldest First, Employee A–Z) come from the API. ~~The one search box searches the display id when the text starts with `REQ-`, and the requester's name or email otherwise. Item search is not available in API mode, because the API cannot match the three fields at once (contracts C13).~~ *(Amended 2026-10-03, plan A3.)* The one search box searches the display id, the requester's name or email, and the requested items' names and models together. *(Amended 2026-10-07: contracts C13 closed; the API publishes `search`.)*
 1a. **Given** the *All requests* chip, **When** rows are read, **Then** only live requests (`Pending Approval`, `Approved`, `For Delivery`, `Ready for Pickup`, `Received`) are listed, with full pages, although the API's unfiltered list also returns resolved ones (contracts C14). *(Added 2026-10-03, plan A4.)*
 2. **Given** the summary cards, **When** they render, **Then** *Pending approval* and *In Processing* come from the request counts. *(Amended 2026-10-03: the Low stock alerts card is removed, spec 004 FR-004; [drift-2026-10-03](../../docs/design-system/drift-2026-10-03.md).)*
 3. **Given** a `Pending Approval` request, **When** the Admin approves it, or rejects it with a reason, **Then** the change is sent as an Admin status change and the panel shows the result.
@@ -140,7 +140,7 @@ An Admin lists, reviews, adds (single or bulk), edits, assigns, unassigns and re
 5. **Given** Remove Unit, **When** the Admin confirms in the existing confirmation, **Then** the unit is removed and the removal reason is sent with it. *(Amended 2026-10-03: the API now requires the reason and stores it with the soft-deleted unit, closing contracts G2.)* **Given** the API refuses removing a `Reserved` or `Assigned` unit, **Then** its message is shown.
 6. **Given** the assignee picker, **When** it opens, **Then** it is filled from the user list. That list stays in memory for the action and is not written to browser storage. No user is created, updated or deleted.
 7. **Given** BitLocker identifier and recovery PIN, **When** they are read, **Then** they render only on the Admin's unit panel and are never logged.
-8. **Given** a field the screen collects that the contract does not accept (Purchase Request number, an attachment file, the removal reason), **When** a write is sent in API mode, **Then** that field is not sent.
+8. **Given** a field the screen collects that the contract does not accept (~~Purchase Request number,~~ an attachment file~~, the removal reason~~), **When** a write is sent in API mode, **Then** that field is not sent. *(Amended 2026-10-07: the Purchase Request number is sent on create, bulk create and update, and a cleared one is sent as `null` (contracts G5, closed 2026-10-06: `purchaseRequest` is published on create, bulk create, update (`null` clears it) and both reads, and `search` matches it; `specs/001-office-supplies-mvp/contracts/README.md`). The removal reason is sent since 2026-10-03, AC5.)*
 
 ### Edge Cases
 
@@ -204,7 +204,7 @@ An Admin lists, reviews, adds (single or bulk), edits, assigns, unassigns and re
 
 ### Requests Queue (BEN-159)
 
-- **FR-027**: The queue MUST read rows, chip filters, search, sort (newest, oldest, employee A–Z) and paging from the API. Search MUST map to one published parameter: the display id for text starting with `REQ-`, the requester otherwise (C13). *All requests* MUST list live statuses only, in full pages (C14). History's search follows the same rule. *(Amended 2026-10-03, plan A3, A4.)*
+- **FR-027**: The queue MUST read rows, chip filters, search, sort (newest, oldest, employee A–Z) and paging from the API. ~~Search MUST map to one published parameter: the display id for text starting with `REQ-`, the requester otherwise (C13).~~ *All requests* MUST list live statuses only, in full pages (C14). History's search follows the same rule. *(Amended 2026-10-03, plan A3, A4.)* *(Amended 2026-10-07: search MUST be sent as the published `search` parameter alone, to the list and to the counts, and to History's read. `displayId`, `requester` and `itemName` MUST NOT be sent for it (contracts C13, closed 2026-10-07).)*
 - **FR-028**: *Pending approval* and *In Processing* MUST come from the request counts. The summary cards draw no loading placeholder; they appear once the counts are known. *(Amended 2026-10-03: the Low stock alerts card and its not-published dash are removed, spec 004 FR-004; [drift-2026-10-03](../../docs/design-system/drift-2026-10-03.md).)*
 - **FR-029**: Approve, reject (with reason), For Delivery, and Ready for Pickup (with location) MUST be sent as the Admin status change. The location MUST be sent only with Ready for Pickup.
 - **FR-030**: The Admin's Received MUST reuse the receive operation from FR-021.
@@ -234,14 +234,18 @@ An Admin lists, reviews, adds (single or bulk), edits, assigns, unassigns and re
 
 ### Inventory (BEN-162)
 
-- **FR-045**: Inventory MUST reuse the unit list and single read from FR-003, with search, category, status and paging applied by the API. Chip counts MUST come from the total of each status's list. No office query MUST be sent.
+- **FR-045**: Inventory MUST reuse the unit list and single read from FR-003, with search, category, status and paging applied by the API. Chip counts MUST come from the total of each status's list. No office query MUST be sent. *(Amended 2026-10-06: the unit list now carries a `counts` block (contracts conflict 16). Chip counts MUST come from it, and a search, category, chip or page change MUST send one list call. The per-status lists are withdrawn.)*
 - **FR-046**: Add Single Unit, Add Multiple Units (1–100, unique serials), edit, assign, unassign and remove MUST use the published unit operations. An unassign MUST send a cleared assignee. An untouched assignee MUST NOT be sent.
 - **FR-047**: Remove MUST happen only after the existing confirmation, and an API refusal MUST be shown.
 - **FR-048**: The assignee picker MUST be filled from the user list. The list MUST stay in memory for that action and MUST NOT be written to browser storage. No user create, update or delete MUST be sent.
-- **FR-049**: The Purchase Request number and an attachment file MUST NOT be sent while the contract does not accept them (conflict 11 G5, G7). The removal reason MUST be sent: the API requires it since 2026-10-03 (G2 closed).
+- **FR-049**: ~~The Purchase Request number and an attachment file MUST NOT be sent while the contract does not accept them (conflict 11 G5, G7).~~ An attachment file MUST NOT be sent while the contract does not accept it (conflict 11 G7). The removal reason MUST be sent: the API requires it since 2026-10-03 (G2 closed). *(Amended 2026-10-07: the Purchase Request number MUST be read from the unit and sent on create, bulk create and update; a cleared one MUST be sent as `null` on update (contracts G5, closed 2026-10-06: `purchaseRequest` is published on create, bulk create, update (`null` clears it) and both reads, and `search` matches it; `specs/001-office-supplies-mvp/contracts/README.md`).)*
 - **FR-050**: BitLocker identifier and recovery PIN MUST render only on the Admin's unit panel and MUST NOT be logged.
 - **FR-052** *(added 2026-10-04)*: Add Single Unit, Add Multiple Units, Add Asset and Update Asset MUST keep what was typed in `localStorage` for at most five minutes after the last change, so closing the panel by a click outside or Escape does not lose it. A draft older than five minutes MUST be removed before the panel first renders. Reopening without a change MUST NOT renew it. Cancel and a successful save MUST remove it, and signing out MUST remove every draft. BitLocker identifiers and recovery keys/PINs MUST NOT be stored (FR-050, constitution VIII). An Update Asset draft MUST be dropped when the asset changed since the draft was made.
 - ~~**FR-053**~~ *(added 2026-10-04, temporary; **removed 2026-10-06** before merge to `dev`, as required)*: ~~In development builds only, the sign-in screen MAY offer a role select that replaces the role the shell routes and renders by after a real Google sign-in. It MUST NOT exist in production builds, MUST NOT change what the API authorizes, and MUST be removed before this branch merges to `dev`.~~
+- **FR-054** *(added 2026-10-06)*: The Requests Queue MUST offer a **Refresh** button beside Sort that re-reads the page on screen (same chip, search, sort and page) at once. While it runs the button MUST read **Refreshing…** and be disabled, and the table MUST keep its rows, marked as updating. A failed refresh MUST keep the rows and MUST say so in an error toast. Refresh is not offered until the first page has loaded.
+- **FR-055** *(added 2026-10-06)*: A table MUST be drawn as soon as its own list read answers. Its counts (the queue's summary cards, every chip count, Inventory's chip totals) MUST be read beside the list, in parallel with it, and MUST NOT hold the rows back; until they arrive the chips show that they are loading and the cards are not drawn. Reads that do not need another read's answer MUST be sent in parallel; a list read across pages reads the first page, then the rest in parallel, a few pages at a time. The Requests Queue's *All requests* MUST be one `GET /requests` with no status (plan D5, amended; contracts C14). *(The role kept for early reads is superseded by FR-058.)*
+- **FR-056** *(added 2026-10-06)*: The Requests Queue and History MUST keep their search and sort in the address (`?search=…&sort=oldest|employee`), and Assets and Inventory their search (`?search=…`). A default (empty search, Newest First) is left out. Opening such an address MUST open the table on that search and sort. A change MUST replace the history entry rather than add one. The chip and the page are not kept.
+- **FR-058** *(added 2026-10-06)*: The signed-in user (id, role, name, email, initials, office) MUST be kept in `localStorage` after sign-in and after every current-user read that answers with a session. A load with a kept user MUST render signed in from it at once and MUST NOT wait for `GET /auth/me`; every screen reads its data straight away. `GET /auth/me` MUST then be read in the background once no other request is in flight, and its answer MUST replace the kept user (role, name or office changed since) without reloading a screen when nothing changed. The kept user MUST be removed on sign-out, on any `401`, and when the background read answers with no session; an API that cannot be reached MUST NOT remove it. No token, cookie or Google credential MUST be kept. This supersedes, for a load with a kept user, spec 003's rule that the stored session is revalidated before a screen renders; the API still authorizes every read.
 
 ## Out of Scope
 
@@ -250,7 +254,7 @@ An Admin lists, reviews, adds (single or bulk), edits, assigns, unassigns and re
 - An Admin delete control on History or the queue.
 - Changing the request state machine to match the published sign. Story 4 withholds the action instead.
 - Client-side counting of per-asset Reserved and Assigned units, or of low-stock alerts.
-- Inventing the office filter on the unit list, a Purchase Request field, an upload operation, an Admin notes field, or a signed flag.
+- Inventing the office filter on the unit list, ~~a Purchase Request field,~~ an upload operation, an Admin notes field, or a signed flag. *(Amended 2026-10-07: the Purchase Request field is published, contracts G5 closed 2026-10-06; sending it invents nothing.)*
 - Any change to the session, the shared client's error and paging reading, or the status and category maps BEN-157 delivered, beyond adding the operations listed in FR-003 and the ones each story names.
 
 ## Success Criteria
@@ -260,7 +264,7 @@ An Admin lists, reviews, adds (single or bulk), edits, assigns, unassigns and re
 - **SC-003**: With the API base address configured, no sign write and no Complete action can be produced from the UI. A `Received` request shows the "not yet available" note to its owner.
 - **SC-004**: With the API base address configured, a tester cancels as the Employee while `Pending Approval` and as the Admin while `Approved`. Both require a reason. Cancel is never offered on `For Delivery`.
 - **SC-005**: Each of the eight screens shows API data in API mode, and no screen shows a seeded value. *(Amended 2026-10-03: the Low stock alerts card is removed, and the Reserved and Assigned asset columns show the published counts.)*
-- **SC-006**: In a network trace of API mode, every call goes through the shared client, each operation appears in exactly one client function, and no request carries an office on submit, an Admin note, a Purchase Request number or a display id in a single-request path. A unit removal carries its reason.
+- **SC-006**: In a network trace of API mode, every call goes through the shared client, each operation appears in exactly one client function, and no request carries an office on submit, an Admin note~~, a Purchase Request number~~ or a display id in a single-request path. A unit removal carries its reason. *(Amended 2026-10-07: unit create, bulk create and update carry the Purchase Request number, contracts G5 closed 2026-10-06.)*
 - **SC-007**: Browser storage holds no user list, no token and no Google credential after any Inventory or Profile action. No BitLocker identifier or recovery PIN appears in the console or on Profile.
 - **SC-008**: `specs/001-office-supplies-mvp/contracts/README.md` records conflict 12 (sign completes, no Admin complete, sign emails the requester, no signed flag), the undocumented request read, the missing per-asset Reserved and Assigned counts (closed 2026-10-03), the missing low-stock count (withdrawn 2026-10-03 with the card), and every other gap found during this slice.
 
@@ -306,3 +310,17 @@ Asked by the frontend owner.
 
 - Q: An accidental click outside Add Single Unit, Add Multiple Units, Add Asset or Update Asset loses everything typed. Keep it? → A: **Yes, in `localStorage`, for at most five minutes from the last change, with no timer.** An expired draft is removed before the panel renders. Cancel and a successful save clear it. (FR-052)
 - Q: The only company account available for development is an Admin. How does the owner see the Employee screens? → A: **A development-build-only role select on sign-in**, temporary, reverted before merge to `dev`. Google sign-in stays real; the API still authorizes by its own role. (FR-053)
+
+### Session 2026-10-06 — queue refresh
+
+Asked by the frontend owner.
+
+- Q: Another Admin's decision or a new submission goes unseen until the queue is reloaded. Keep it current? → A: **A Refresh button on the Requests Queue** that re-reads the page on screen now. It shows that it is working, and a failure is reported. (FR-054)
+
+### Session 2026-10-06 (second) — table load time and addressable search
+
+Asked by the frontend owner.
+
+- Q: A table takes about five seconds to show: `/auth/me`, then `/requests/counts`, then the list, one after another. What should come first? → A: **The rows.** Counts are read beside them and never hold them back, every independent read goes in parallel, and the admin tables may start their read beside `/auth/me` from the last role signed in here. *All requests* is one `GET /requests`. (FR-055)
+- Q: A search or sort is lost on reload and cannot be shared. Keep it? → A: **In the address**, search and sort on the Requests Queue and History, search on Assets and Inventory. (FR-056)
+- Q: Every load still waits about 1.8 s for `GET /auth/me` before Catalog, My Requests, Profile and the top bar can draw. Keep that? → A: **No. Keep the signed-in user after sign-in and render from it; read `/auth/me` in the background after everything else to refresh it, and remove it on sign-out.** A `401` and a background read with no session remove it too. (FR-058)

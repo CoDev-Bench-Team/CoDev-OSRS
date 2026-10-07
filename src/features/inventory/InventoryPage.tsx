@@ -58,7 +58,7 @@ type PanelState = { kind: AddKind } | { kind: 'edit'; id: string } | null;
 export function InventoryPage() {
   const ready = useSessionReady();
   const source = useMemo(() => inventorySource(), []);
-  const fetchPage = useCallback((q: RemoteTableQuery<UnitChip>, withCounts: boolean) => source.page(q, withCounts), [source]);
+  const fetchPage = useCallback((q: RemoteTableQuery<UnitChip>) => source.page(q), [source]);
   const { state, query, reload, fetching } = useRemoteTableQuery(fetchPage, { pageSizes: PAGE_SIZES, table: 'inventory', enabled: ready });
   const after = useCallback(
     async <T,>(saving: Promise<T>) => {
@@ -90,9 +90,15 @@ export function InventoryPage() {
   /** The register itself is empty, not just this filter: All counts every
    *  unit for the search and category, so with neither set and that count
    *  settled at zero there is nothing in the register. Not the page's total,
-   *  which answers the previous query while the next one is in flight. */
+   *  which answers the previous query while the next one is in flight. A page
+   *  without counts (contracts conflict 16) falls back to that total, once it
+   *  answers the All chip and nothing is in flight. */
   const registerEmpty =
-    !query.search && query.category === ALL_CATEGORIES && !query.countsLoading && shown.counts.all === 0;
+    !query.search &&
+    query.category === ALL_CATEGORIES &&
+    (query.uncounted
+      ? query.status === null && !fetching && shown.total === 0
+      : !query.countsLoading && shown.counts.all === 0);
   return (
     <InventoryView
       source={source}
@@ -222,7 +228,7 @@ function InventoryView({
                   {unit.category}
                 </span>
                 <span className="truncate pr-16 type-ui text-ink-strong" style={tableColumnStyle('180px')}>
-                  {unit.pr ?? NO_VALUE}
+                  {unit.purchaseRequest ?? NO_VALUE}
                 </span>
                 <span className="truncate pr-16 type-ui text-ink-strong" style={tableColumnStyle('150px')}>
                   {unit.serialNumber ?? NO_VALUE}
@@ -243,7 +249,7 @@ function InventoryView({
                       ) : null}
                     </>
                   ) : unit.status === 'Assigned' ? (
-                    // The API's unit read carries no assignee (contracts G6).
+                    // An Assigned unit whose read carries no `assignedTo`.
                     <span className="type-ui text-ink-strong">
                       <NotPublished />
                     </span>
@@ -256,7 +262,7 @@ function InventoryView({
                 </span>
                 <span className="flex items-center" style={tableColumnStyle()}>
                   <Button
-                    aria-label={`Review ${unit.itemName} ${unit.serialNumber ?? unit.pr ?? ''}`.trim()}
+                    aria-label={`Review ${unit.itemName} ${unit.serialNumber ?? unit.purchaseRequest ?? ''}`.trim()}
                     onClick={() => setPanel({ kind: 'edit', id: unit.id })}
                   >
                     Review

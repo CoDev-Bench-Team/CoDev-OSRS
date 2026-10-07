@@ -37,7 +37,7 @@ type FormState = Purchase &
   };
 
 const EMPTY: FormState = {
-  pr: '',
+  purchaseRequest: '',
   price: '',
   supplier: '',
   purchasedAt: '',
@@ -50,7 +50,7 @@ const EMPTY: FormState = {
 
 function fromUnit(unit: UnitDetail): FormState {
   return {
-    pr: unit.pr ?? '',
+    purchaseRequest: unit.purchaseRequest ?? '',
     price: unit.price === undefined ? '' : formatAmount(unit.price),
     supplier: unit.supplier ?? '',
     purchasedAt: unit.purchasedAt ?? '',
@@ -60,6 +60,8 @@ function fromUnit(unit: UnitDetail): FormState {
     location: unit.location,
     status: unit.status === 'Reserved' ? undefined : unit.status,
     assignedToId: unit.assignee?.id,
+    // Named from the unit read until the user directory loads.
+    assigneeName: unit.assignee?.name || undefined,
     description: unit.description ?? '',
     attachmentUrl: unit.attachmentUrl,
   };
@@ -74,7 +76,7 @@ function fromSaved(saved: Record<string, unknown> | undefined, assets: readonly 
   return {
     ...EMPTY,
     asset: resolveAsset(assets, assetFromSnapshot(saved.asset)),
-    pr: draftString(saved, 'pr'),
+    purchaseRequest: draftString(saved, 'purchaseRequest'),
     price: draftString(saved, 'price'),
     supplier: draftString(saved, 'supplier'),
     purchasedAt: draftString(saved, 'purchasedAt'),
@@ -104,7 +106,7 @@ const UNTOUCHED = JSON.stringify(toSaved(EMPTY, null));
 function toDraft(form: FormState, assetId: string, category: Category | undefined, reserved: boolean): UnitDraft {
   const draft: UnitDraft = {
     assetId,
-    pr: form.pr,
+    purchaseRequest: form.purchaseRequest,
     price: parseAmount(form.price),
     supplier: form.supplier,
     purchasedAt: form.purchasedAt || undefined,
@@ -125,7 +127,7 @@ function toDraft(form: FormState, assetId: string, category: Category | undefine
 /** Every key a message can land under in this panel. */
 const SHOWN = new Set([
   'assetId',
-  'pr',
+  'purchaseRequest',
   'price',
   'supplier',
   'purchasedAt',
@@ -411,7 +413,6 @@ function useUnitFormPanel(props: Props) {
   // Only Add draws the Catalog Item picker; Review/Edit's asset is fixed.
   const { state: assetsState } = useAssets({ enabled: props.mode === 'add' });
   const assets = assetsState.kind === 'loaded' ? assetsState.assets : null;
-  const users = useUsers();
   // Add mode only: read once, before the first render, so an expired draft
   // is already gone (shared/form-draft-cache.ts).
   const [saved] = useState(() => (props.mode === 'add' ? readDraft('unit.single') : undefined));
@@ -423,6 +424,14 @@ function useUnitFormPanel(props: Props) {
     setRestoring(false);
     if (assets) setForm((f) => ({ ...f, asset: resolveAsset(assets, f.asset) }));
   }
+  const [errors, setErrors] = useState<Errors>({});
+  const [removing, setRemoving] = useState(false);
+  const [reason, setReason] = useState('');
+  const editing = props.mode === 'edit' ? props : null;
+  const { loaded, retry, gone } = useUnitLoad(editing?.unitId ?? null, editing?.load ?? null, (unit) => setForm(fromUnit(unit)));
+  // After the unit read, so Review/Edit asks for the unit first; the
+  // assignee picker shows its skeleton until the users arrive.
+  const users = useUsers();
   const discard = useDraftWriter('unit.single', toSaved(form, users), {
     enabled: props.mode === 'add',
     untouched: UNTOUCHED,
@@ -430,11 +439,6 @@ function useUnitFormPanel(props: Props) {
     // An attachment too large for storage is dropped from the draft, not the rest.
     fallback: (value) => ({ ...value, attachmentUrl: undefined }),
   });
-  const [errors, setErrors] = useState<Errors>({});
-  const [removing, setRemoving] = useState(false);
-  const [reason, setReason] = useState('');
-  const editing = props.mode === 'edit' ? props : null;
-  const { loaded, retry, gone } = useUnitLoad(editing?.unitId ?? null, editing?.load ?? null, (unit) => setForm(fromUnit(unit)));
 
   const { saving, attempt, handOff } = useAttempt(props.onClose, (error, what) => {
     const result = refusal(error, what, (key) => SHOWN.has(key));

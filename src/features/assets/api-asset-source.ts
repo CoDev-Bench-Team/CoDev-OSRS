@@ -101,8 +101,7 @@ export const apiAssetSource: AssetSource = {
   },
 
   /** One read: the page's rows and, from the same body, every chip's count
-   *  (`counts` follows the search and category but not the chip). The counts
-   *  ride along on every page, so `withCounts` costs nothing either way. */
+   *  (`counts` follows the search and category but not the chip). */
   async page(query: RemoteTableQuery<StockStatus>): Promise<RemoteTablePage<Asset, StockStatus>> {
     const body = await listAssets({
       search: query.search.trim() || undefined,

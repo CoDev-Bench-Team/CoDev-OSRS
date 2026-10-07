@@ -75,7 +75,47 @@ export function apiRequest<T>(path: string, init: { method?: string; body?: unkn
   return request;
 }
 
+/** Requests sent and not yet answered, and who waits for there to be none. */
+let inFlight = 0;
+const idleWaiters = new Set<() => void>();
+
+function settleIdle(): void {
+  // A turn later, so a read that starts as another ends is still counted.
+  setTimeout(() => {
+    if (inFlight > 0) return;
+    for (const wake of idleWaiters) wake();
+    idleWaiters.clear();
+  }, 0);
+}
+
+/** Resolves once no request is in flight, for work that must not compete
+ *  with what the screen is loading (the background current-user read).
+ *  Resolves after `maxWaitMs` regardless, so a screen that never goes quiet
+ *  does not hold it forever. */
+export function whenIdle(maxWaitMs = 10_000): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer);
+      idleWaiters.delete(done);
+      resolve();
+    };
+    const timer = setTimeout(done, maxWaitMs);
+    idleWaiters.add(done);
+    settleIdle();
+  });
+}
+
 async function send<T>(path: string, init: { method?: string; body?: unknown }): Promise<T> {
+  inFlight += 1;
+  try {
+    return await sendNow<T>(path, init);
+  } finally {
+    inFlight -= 1;
+    if (inFlight === 0) settleIdle();
+  }
+}
+
+async function sendNow<T>(path: string, init: { method?: string; body?: unknown }): Promise<T> {
   const method = init.method ?? 'GET';
   const headers = new Headers();
   if (init.body !== undefined) headers.set('Content-Type', 'application/json');

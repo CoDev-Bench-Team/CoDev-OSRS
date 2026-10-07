@@ -2,7 +2,7 @@ import type { ApiOffice } from './assets';
 import { apiRequest } from './client';
 import { API_ASSET_CATEGORIES, type ApiAssetCategory } from './maps';
 import { withQuery } from './query';
-import { id, isRecord, optNum, optStr, record, str } from './wire';
+import { id, isRecord, num, optNum, optStr, record, str } from './wire';
 
 /** `/inventory-items`, as published on 2026-10-03. Each operation is defined
  *  once here (spec 017 FR-003). The list takes no office: none is sent
@@ -22,11 +22,11 @@ export type ListUnitsParams = {
   assignedToId?: string;
 };
 
-type PurchaseFields = { price?: number; supplier?: string; purchasedAt?: string };
+type PurchaseFields = { purchaseRequest?: string; price?: number; supplier?: string; purchasedAt?: string };
 type SecretFields = { serialNumber?: string; bitlockerIdentifier?: string; recoveryPin?: string };
 
 /** One unit. With `assignedToId` it starts `Assigned`, else `Available`. No
- *  Purchase Request number and no attachment file (contracts G5, G7). */
+ *  attachment file (contracts G7). */
 export type CreateUnitBody = PurchaseFields &
   SecretFields & {
     assetId: number;
@@ -47,6 +47,7 @@ export type UpdateUnitBody = {
   assetId?: number;
   location?: ApiOffice;
   status?: ApiUnitStatus;
+  purchaseRequest?: string | null;
   price?: number | null;
   supplier?: string | null;
   purchasedAt?: string | null;
@@ -92,9 +93,10 @@ export function deleteUnit(id: string, reason: string): Promise<unknown> {
 }
 
 /** One published unit, as `/inventory-items` rows and the single read carry it
- *  (CoDev-OSRS-BE `src/inventory-items`, read 2026-10-03). Only the `asset`
- *  relation is loaded, so neither `assignedTo` nor `assignedToId` is in the
- *  body (G6); both are read only if a later response carries them. */
+ *  (CoDev-OSRS-BE `src/inventory-items`, read 2026-10-03). Since 2026-10-06
+ *  the body carries `assignedTo` (`id`, `email`, `firstName`, `lastName`, or
+ *  `null`) but still no `assignedToId`; the assignee's id is read from it
+ *  (contracts G6). */
 export type ApiUnit = {
   id: string;
   asset: { id: string; name: string; model?: string; category: ApiAssetCategory };
@@ -104,6 +106,7 @@ export type ApiUnit = {
   assignedToId?: string;
   assignee?: { id: string; name: string };
   assignedAt?: string;
+  purchaseRequest?: string;
   price?: number;
   supplier?: string;
   purchasedAt?: string;
@@ -119,9 +122,12 @@ export type ApiUnit = {
 const UNIT_STATUSES: readonly ApiUnitStatus[] = ['Available', 'Reserved', 'Assigned', 'Inactive'];
 const OFFICES: readonly ApiOffice[] = ['Cebu', 'Bacolod', 'Makati', 'Ortigas', 'Davao'];
 
+/** `assignedTo`: a user, or `null`. The name is first and last name, each
+ *  trimmed (the API keeps stray spaces), else the email. */
 function person(value: unknown): { id: string; name: string } | undefined {
   if (!isRecord(value)) return undefined;
-  const name = [optStr(value, 'firstName'), optStr(value, 'lastName')].filter(Boolean).join(' ') || optStr(value, 'name');
+  const part = (key: string) => optStr(value, key)?.trim();
+  const name = [part('firstName'), part('lastName')].filter(Boolean).join(' ') || part('name') || part('email');
   const key = value.id;
   return name && (typeof key === 'number' || typeof key === 'string') ? { id: String(key), name } : undefined;
 }
@@ -137,6 +143,7 @@ export function readUnit(value: unknown): ApiUnit {
   const location = str(body, 'location', what);
   if (!(OFFICES as readonly string[]).includes(location)) throw new Error(`${what}: unpublished office ${location}`);
   const assignedToId = body.assignedToId;
+  const assignee = person(body.assignedTo);
   return {
     id: id(body, 'id', what),
     asset: {
@@ -148,9 +155,11 @@ export function readUnit(value: unknown): ApiUnit {
     serialNumber: optStr(body, 'serialNumber'),
     status: status as ApiUnitStatus,
     location: location as ApiOffice,
-    assignedToId: typeof assignedToId === 'number' || typeof assignedToId === 'string' ? String(assignedToId) : undefined,
-    assignee: person(body.assignedTo),
+    assignedToId:
+      typeof assignedToId === 'number' || typeof assignedToId === 'string' ? String(assignedToId) : assignee?.id,
+    assignee,
     assignedAt: optStr(body, 'assignedAt'),
+    purchaseRequest: optStr(body, 'purchaseRequest'),
     price: optNum(body, 'price'),
     supplier: optStr(body, 'supplier'),
     purchasedAt: optStr(body, 'purchasedAt'),
@@ -160,4 +169,31 @@ export function readUnit(value: unknown): ApiUnit {
     bitlockerIdentifier: optStr(body, 'bitlockerIdentifier'),
     recoveryPin: optStr(body, 'recoveryPin'),
   };
+}
+
+/** `counts` on a `GET /inventory-items` page: how many units match the
+ *  search and category in total and in each status, ignoring `status`, so
+ *  one read answers every chip, as `/assets`' own counts do (contracts
+ *  conflict 16, live since 2026-10-06). `null` when a page does not carry
+ *  it. */
+export type UnitCounts = { total: number; byStatus: Record<ApiUnitStatus, number> };
+
+export function readUnitCounts(page: unknown): UnitCounts | null {
+  if (!isRecord(page) || page.counts === undefined) return null;
+  try {
+    const what = 'inventory-items.counts';
+    const counts = record(page.counts, what);
+    const byStatus = record(counts.byStatus, `${what}.byStatus`);
+    return {
+      total: num(counts, 'total', what),
+      // A status left out counts no units.
+      byStatus: Object.fromEntries(UNIT_STATUSES.map((status) => [status, optNum(byStatus, status) ?? 0])) as Record<
+        ApiUnitStatus,
+        number
+      >,
+    };
+  } catch {
+    // Not the published shape: the chips show no counts.
+    return null;
+  }
 }

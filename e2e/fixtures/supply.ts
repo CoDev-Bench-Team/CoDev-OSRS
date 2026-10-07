@@ -1,13 +1,13 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 const CATEGORIES = ['Laptop', 'Headset', 'Monitor', 'Phone', 'UPS', 'Mice', 'Wifi', 'Type C Hub', 'Other Devices'] as const;
-const OFFICES = ['Cebu', 'Bacolod', 'Makati', 'Ortigas', 'Davao'] as const;
+export const OFFICES = ['Cebu', 'Bacolod', 'Makati', 'Ortigas', 'Davao'] as const;
 const PICKUP = ['Cebu Office', 'Bacolod Office', 'Makati Office', 'Ortigas Office', 'Davao Office', 'Other…'] as const;
 
 /** The overlay listbox repositions while it opens, so a click on an option
  *  detaches. ArrowDown opens it. The pointer is moved away first: the list
  *  highlights whichever option it opens under, and Enter would commit that. */
-async function choose(page: Page, combobox: Locator, option: string, options: readonly string[]) {
+export async function choose(page: Page, combobox: Locator, option: string, options: readonly string[]) {
   if (!options.includes(option)) throw new Error(`no option ${option}`);
   await page.mouse.move(0, 0);
   await combobox.focus();
@@ -90,6 +90,7 @@ export async function openReview(page: Page, id: string) {
   await page.getByRole('searchbox', { name: 'Search requests' }).fill(id);
   await page.getByRole('button', { name: `Review request ${id}` }).click();
   await expect(page.getByRole('dialog', { name: `Review request ${id}` })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/queue/${id}(\\?|$)`));
 }
 
 /** An Admin's review action runs with the panel open, which names it while
@@ -120,6 +121,7 @@ export async function openMine(page: Page, id: string) {
   await page.getByRole('link', { name: 'My Requests' }).click();
   await page.getByRole('button', { name: `View details of ${id}` }).click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: id, exact: true }).first()).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/requests/${id}(\\?|$)`));
 }
 
 /** Update Status, then the confirmation. `pickup` is the location label, such as "Davao Office".

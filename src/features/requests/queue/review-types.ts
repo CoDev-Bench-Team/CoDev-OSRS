@@ -1,6 +1,6 @@
 import type { RequestStatus } from '../../../shared/ui';
 import type { Office } from '../../auth/types';
-import type { QueueQuery, QueueRequest, QueueSnapshot, QueueViewModel } from './queue-types';
+import type { QueueCounts, QueueQuery, QueueRequest, QueueSnapshot, QueueTable } from './queue-types';
 
 /** The Admin's view of one request in the review panel. This is a feature-local
  *  read model, not a backend response shape. When the contract publishes, a new
@@ -99,16 +99,23 @@ export interface ReviewSnapshot extends QueueSnapshot {
 
 /** The one store behind the queue AND the panel, so a transition and the
  *  reload that follows see the same data (plan D3, D4). */
-/** One page of the queue as the API answers it: the projection the table
- *  draws, and the requests behind its rows for the panel (spec 017 plan D1). */
+/** One page of the queue as the API answers it: the rows the table draws
+ *  and how many match, and the requests behind its rows for the panel (spec
+ *  017 plan D1). The counts are a separate read: the table never waits on
+ *  them, nor they on it. */
 export interface QueuePageResult {
-  queue: QueueViewModel;
+  queue: QueueTable;
   requests: readonly ReviewRequest[];
 }
 
 export interface AdminRequestSource {
   /** One page of the queue, asked of the API (spec 017 plan D1). */
   page(query: QueueQuery): Promise<QueuePageResult>;
+  /** The summary cards and chip counts for the query's search. The page
+   *  asks it alongside `page`, and draws each when it arrives. `fresh` asks
+   *  for counts read now, never reused: **Refresh** passes it (spec 017
+   *  FR-054). */
+  counts(query: QueueQuery, options?: { fresh?: boolean }): Promise<QueueCounts>;
   /** One request in full, for the panel and for a deep link a page does not
    *  hold. */
   get(id: string): Promise<ReviewRequest>;

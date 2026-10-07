@@ -21,7 +21,7 @@ export interface InventorySource {
   /** Every unit, newest added first (FR-005). */
   list(): Promise<UnitRow[]>;
   /** One page of the table, asked of the API (spec 017 plan D1). */
-  page(query: RemoteTableQuery<UnitChip>, withCounts: boolean): Promise<RemoteTablePage<UnitRow, UnitChip>>;
+  page(query: RemoteTableQuery<UnitChip>): Promise<RemoteTablePage<UnitRow, UnitChip>>;
   /** What Add Single Unit offers. Absent: every add status (spec 015 D3). */
   readonly createStatuses?: readonly AddStatus[];
   get(id: string): Promise<UnitDetail>;

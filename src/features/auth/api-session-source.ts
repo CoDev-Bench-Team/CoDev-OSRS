@@ -1,6 +1,7 @@
 import { ApiProblemError, SessionUnreachable, apiConfigured, apiRequest, onSessionEnded, problemMessage } from '../../shared/api';
 import type { GoogleButtonSource } from './google-button-source';
 import { awaitGoogleCredential, mountGoogleButton } from './google-identity';
+import { cacheSession } from './session-cache';
 import type { SessionSource } from './session-source';
 import { SIGN_IN_REFUSAL, SessionRefusal } from './session-errors';
 import { OFFICES, type Office, type Role, type Session, type User } from './types';
@@ -78,6 +79,14 @@ function wake(): void {
   channel.close();
 }
 
+/** `rethrow` for reading the current session. A 5xx there is the API (or
+ *  the proxy in front of it) failing, not a refusal: it must not end a
+ *  session (spec 017 FR-058). Sign-in keeps the problem's own words. */
+function rethrowKeeping(error: unknown): never {
+  if (error instanceof ApiProblemError && error.status >= 500) throw new SessionUnreachable();
+  rethrow(error);
+}
+
 let signingIn: Promise<Session> | null = null;
 
 /** Set when this document must not treat a still-valid cookie as signed in.
@@ -111,8 +120,9 @@ async function performSignIn(credential?: string): Promise<Session> {
   }
 }
 
-/** The published session. It does not write browser storage. Google's button is mounted only when a
- *  client id is configured. */
+/** The published session. Of browser storage it only removes the kept user
+ *  (session-cache.ts) as a session ends; the provider keeps it. Google's
+ *  button is mounted only when a client id is configured. */
 export const apiSessionSource: SessionSource & Partial<GoogleButtonSource> = {
   ...(publishedGoogleClientId()
     ? {
@@ -129,7 +139,7 @@ export const apiSessionSource: SessionSource & Partial<GoogleButtonSource> = {
       return sessionFromCurrentUser(body);
     } catch (error) {
       if (error instanceof ApiProblemError && error.status === 401) return null;
-      rethrow(error);
+      rethrowKeeping(error);
     }
   },
 
@@ -142,6 +152,9 @@ export const apiSessionSource: SessionSource & Partial<GoogleButtonSource> = {
   },
 
   async signOut() {
+    // Forgotten before the API is asked, so a reload mid-way does not
+    // restore the person.
+    cacheSession(null);
     await apiRequest('/auth/logout', { method: 'POST' });
     signedOutLocally = true;
     wake();
@@ -164,6 +177,7 @@ export const apiSessionSource: SessionSource & Partial<GoogleButtonSource> = {
       // signOut() wakes other tabs only after logout succeeds. If logout fails,
       // the flag above still holds, so this tab does not come back.
       signedOutLocally = true;
+      cacheSession(null);
       void apiSessionSource.signOut().catch((error: unknown) => {
         // The cookie may still be valid. This document stays signed out.
         if (import.meta.env.DEV) console.warn('[osrs-auth] logout did not clear the session:', error);

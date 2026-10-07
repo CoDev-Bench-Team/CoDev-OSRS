@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import {
+  ArrowCounterClockwise,
   Button,
   EmptyState,
   usePanelTask,
@@ -20,8 +21,9 @@ import {
   tableColumnStyle,
   tableMinWidth,
   type ColumnWidth,
+  useToast,
 } from '../../../shared/ui';
-import { DESTINATIONS } from '../../../app/destinations';
+import { DESTINATIONS, queueRequestPath } from '../../../app/destinations';
 import { useSessionReady } from '../../auth/session-context';
 import { NO_VALUE } from './queue-model';
 import { updateQuery } from '../list-query';
@@ -32,7 +34,8 @@ import {
   QUEUE_SORTS,
   type QueueQuery,
   type QueueSort,
-  type QueueViewModel,
+  type QueueCounts,
+  type QueueTable,
 } from './queue-types';
 import { adminRequestSource } from './admin-request-source';
 import { RefusalAlert } from '../detail/RefusalAlert';
@@ -50,6 +53,8 @@ import {
 } from './review-types';
 import { requestLabel } from '../detail/request-detail-types';
 import { useLinkedRequest, useOpenRequest, useSettledQuery } from '../paged-source';
+import { isNothingAtAll, startCounts, usePageCounts, type CountsRead } from '../page-counts';
+import { addressedQuery, useRequestAddress } from '../request-address';
 import { readPageSize, savePageSize } from '../../../shared/page-size-preference';
 
 /** `queue` is the API's answer to the current query; `requests` are the rows
@@ -57,7 +62,7 @@ import { readPageSize, savePageSize } from '../../../shared/page-size-preference
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'failed' }
-  | { kind: 'loaded'; queue: QueueViewModel; requests: readonly ReviewRequest[] };
+  | { kind: 'loaded'; queue: QueueTable; requests: readonly ReviewRequest[] };
 
 async function loadQueue(source: AdminRequestSource, query: QueueQuery): Promise<Extract<LoadState, { kind: 'loaded' }>> {
   const result: QueuePageResult = await source.page(query);
@@ -94,17 +99,27 @@ const isQueueSort = (value: string): value is QueueSort => (QUEUE_SORTS as reado
  *  whole point, so the settled announcement carries it rather than saying only
  *  that something changed. Annotated `: string` with no `default`, so adding a
  *  state without an announcement is a type error. */
-function announce(state: LoadState, queue: QueueViewModel | null): string {
+function announce(
+  state: LoadState,
+  queue: QueueTable | null,
+  counts: QueueCounts | null,
+  /** The live requests the chip and search match, once the counts say. */
+  liveMatches: number | null,
+  nothingLive: boolean,
+): string {
   switch (state.kind) {
     case 'loading':
       return 'Loading requests queue.';
     case 'failed':
       return 'The requests queue could not be loaded.';
     case 'loaded': {
-      if (!queue || queue.liveCount === 0) return 'No requests are in the queue.';
-      const shown = queue.matchCount;
+      if (!queue || nothingLive) return 'No requests are in the queue.';
+      // *All requests* lists resolved requests in the list's total too (plan
+      // D5, contracts C14): the live count is said once the counts know it.
+      const shown = liveMatches ?? queue.matchCount;
       if (shown === 0) return 'No requests match the current filters.';
-      return `${shown} request${shown === 1 ? '' : 's'} match. ${queue.pendingApprovalCount} awaiting approval.`;
+      const matched = `${shown} request${shown === 1 ? '' : 's'} match.`;
+      return counts ? `${matched} ${counts.pendingApprovalCount} awaiting approval.` : matched;
     }
   }
 }
@@ -193,6 +208,15 @@ function useQueueSnapshot(source: AdminRequestSource, asked: QueueQuery, ready: 
    *  the newest started is applied, so an older read never puts back rows
    *  from before an action. */
   const loads = useRef(0);
+  /** The newest counts read. Each load starts one beside its rows read and
+   *  publishes it at once, so the cards and chips are drawn when the counts
+   *  arrive, not when the rows do. */
+  const [countsRead, setCountsRead] = useState<CountsRead<QueueCounts> | null>(null);
+  const readCounts = useCallback(
+    (query: QueueQuery, fresh = false) =>
+      setCountsRead(startCounts(() => source.counts(query, { fresh }), query.search)),
+    [source],
+  );
 
   // Every query is asked of the API; the current page stays on screen while
   // the next one is asked.
@@ -202,7 +226,10 @@ function useQueueSnapshot(source: AdminRequestSource, asked: QueueQuery, ready: 
     const mine = ++loads.current;
 
     void Promise.resolve()
-      .then(() => loadQueue(source, asked))
+      .then(() => {
+        if (active) readCounts(asked);
+        return loadQueue(source, asked);
+      })
       .then((loaded) => {
         if (!active || mine !== loads.current) return;
         setState(loaded);
@@ -215,7 +242,7 @@ function useQueueSnapshot(source: AdminRequestSource, asked: QueueQuery, ready: 
     return () => {
       active = false;
     };
-  }, [attempt, source, asked, ready]);
+  }, [attempt, source, asked, ready, readCounts]);
 
   /** Runs one transition, then reloads from the same source whatever the
    *  outcome, so the panel, rows, chips and cards are one snapshot (spec 008
@@ -230,6 +257,7 @@ function useQueueSnapshot(source: AdminRequestSource, asked: QueueQuery, ready: 
     // changes again while this loads, the page's own load answers it instead.
     const query = latestAsked.current;
     const mine = ++loads.current;
+    readCounts(query);
     let loaded: LoadState;
     try {
       loaded = await loadQueue(source, query);
@@ -278,7 +306,24 @@ function useQueueSnapshot(source: AdminRequestSource, asked: QueueQuery, ready: 
     setAttempt((current) => current + 1);
   };
 
-  return { state, answered, staleId, refresh, transition, retry };
+  /** **Refresh**'s re-read (spec 017 FR-054). It asks for the query on screen
+   *  and swaps the rows in only when they arrive, never passing through
+   *  loading. It starts no load of its own: a page load or an action's reload
+   *  begun meanwhile supersedes it, and while a page load is in flight it does
+   *  not ask at all, since that load answers. A failure throws and leaves the
+   *  table as it is. */
+  const reread = async () => {
+    const query = latestAsked.current;
+    if (state.kind !== 'loaded' || answered !== query) return;
+    const at = loads.current;
+    readCounts(query, true);
+    const loaded = await loadQueue(source, query);
+    if (at !== loads.current || latestAsked.current !== query) return;
+    setState(loaded);
+    setStaleId(null);
+  };
+
+  return { state, answered, countsRead, staleId, refresh, transition, retry, reread };
 }
 
 /** The review actions (spec 008 FR-013, amended 2026-10-03): each runs with
@@ -350,7 +395,7 @@ function useReviewActions(
  *  address asks to open, whether it is still being resolved, and the way back
  *  to plain `/queue` (spec 008 FR-001b). */
 function useQueueDeepLink(source: AdminRequestSource, state: LoadState, ready: boolean) {
-  const { state: navigation } = useLocation();
+  const { state: navigation, search: address } = useLocation();
   const navigate = useNavigate();
   /** `/queue/:id`, the address an email's *View request* reaches for an
    *  Admin (`/requests/:id` redirects here): that request's review panel over
@@ -363,15 +408,23 @@ function useQueueDeepLink(source: AdminRequestSource, state: LoadState, ready: b
   // A paged source holds one page, so a link it does not hold is read by id.
   // Read once the session is known: a read sent while it resolves is refused,
   // and a resolved request would then miss instead of going on to History.
-  const fetched = useLinkedRequest(source, ready ? linkId : undefined);
+  // Review puts the row's id in the address: the page holds it already, so
+  // it opens at once rather than waiting on a read (spec 008 FR-001).
+  const onPage =
+    !!linkId && state.kind === 'loaded' && state.requests.some((r) => r.id === linkId || r.displayId === linkId);
+  const fetched = useLinkedRequest(source, ready && !onPage ? linkId : undefined);
   const known = useMemo(
     (): readonly ReviewRequest[] | null =>
-      state.kind !== 'loaded' || fetched === 'pending'
+      state.kind !== 'loaded'
         ? null
-        : fetched
-          ? [...state.requests, fetched]
-          : state.requests,
-    [state, fetched],
+        : onPage
+          ? state.requests
+          : fetched === 'pending'
+            ? null
+            : fetched
+              ? [...state.requests, fetched]
+              : state.requests,
+    [state, fetched, onPage],
   );
   const allIds = useMemo(
     () => (known ? known.flatMap((request) => (request.displayId ? [request.id, request.displayId] : [request.id])) : null),
@@ -396,9 +449,16 @@ function useQueueDeepLink(source: AdminRequestSource, state: LoadState, ready: b
   /** Leave `/queue/:id` for `/queue`: the address names an open panel only
    *  while that panel is open. */
   const leaveRoutedLink = () => {
-    if (routeId) navigate(DESTINATIONS.queue.path, { replace: true });
+    if (routeId) navigate({ pathname: DESTINATIONS.queue.path, search: address }, { replace: true });
   };
-  return { linked, unavailable, linking, dismiss, findKnown, leaveRoutedLink };
+  /** Open a request's panel by putting its id in the address, `/queue/:id`
+   *  (spec 008 FR-001). Replaced, not pushed: the panel is not a page of its
+   *  own, so Back leaves the queue as it did before. */
+  const openRoutedLink = (id: string) => {
+    const request = findKnown(id);
+    navigate({ pathname: queueRequestPath(request?.displayId ?? id), search: address }, { replace: true });
+  };
+  return { linked, unavailable, linking, dismiss, findKnown, leaveRoutedLink, openRoutedLink };
 }
 
 export function QueuePage({
@@ -411,11 +471,16 @@ export function QueuePage({
 }) {
   const source = useMemo(() => given ?? adminRequestSource(), [given]);
   const ready = useSessionReady();
-  const [query, setQuery] = useState<QueueQuery>(() => ({ ...INITIAL_QUERY, pageSize: readPageSize('queue', PAGE_SIZES) }));
+  const { search: address } = useLocation();
+  const [query, setQuery] = useState<QueueQuery>(() => ({
+    ...INITIAL_QUERY,
+    ...addressedQuery(address),
+    pageSize: readPageSize('queue', PAGE_SIZES),
+  }));
   /** The query a paged source is asked: `query`, with search settled for
    *  SEARCH_DEBOUNCE_MS. A seeded source is never asked, so it never waits. */
   const asked = useSettledQuery(query, true);
-  const { state, answered, staleId, refresh, transition, retry } = useQueueSnapshot(source, asked, ready);
+  const { state, answered, countsRead, staleId, refresh, transition, retry, reread } = useQueueSnapshot(source, asked, ready);
   // The refusal toast's way back works from anywhere, even after the queue
   // has unmounted: the address opens the panel (spec 008 FR-001b).
   const navigateTo = useNavigate();
@@ -423,18 +488,31 @@ export function QueuePage({
   const reopenHere = useRef<((id: string) => void) | null>(null);
   const { act, handOff, inFlight, notice, clearNotice } = useReviewActions(transition, (id) => {
     if (reopenHere.current) reopenHere.current(id);
-    else void navigateTo(`${DESTINATIONS.queue.path}/${encodeURIComponent(id)}`);
+    else void navigateTo(queueRequestPath(id));
   });
-  const { linked, unavailable, linking, dismiss, findKnown, leaveRoutedLink } = useQueueDeepLink(source, state, ready);
-  /** The request open in the review panel. Component state, not an address:
-   *  Review opens the panel over `/queue` and never navigates (spec 008
-   *  FR-001, plan D10). */
-  const [openId, setOpenId] = useState<string | null>(null);
+  const { linked, unavailable, linking, dismiss, findKnown, leaveRoutedLink, openRoutedLink } = useQueueDeepLink(source, state, ready);
 
   /** Set only by Try Again, so a successful FIRST load never steals focus from
    *  wherever the visitor already is. */
   const retrying = useRef(false);
   const recoveredFocus = useRef<HTMLDivElement>(null);
+
+  /** **Refresh** (spec 017 FR-054). The rows stay while it runs, with the
+   *  table marked as updating; a failure keeps them and says so in a toast.
+   *  Not `refresh`: that one follows an action and, when it fails, loads the
+   *  page again, which would swap the rows for the failure notice. */
+  const toaster = useToast();
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshNow = async () => {
+    setRefreshing(true);
+    try {
+      await reread();
+    } catch {
+      toaster.show({ tone: 'error', title: "The queue couldn't be refreshed", body: 'The requests shown are unchanged. Try again.' });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   /** Derived once here rather than inside the table, so the announcement and
    *  what is on screen are the same projection of the same snapshot. Memoised
@@ -444,10 +522,19 @@ export function QueuePage({
     () => (state.kind === 'loaded' ? state.queue : null),
     [state],
   );
+  /** The cards and chip counts, read beside the rows and drawn when they
+   *  arrive; neither waits on the other. The chips describe the search in
+   *  the box, so they show the counts read for it, even while its rows are
+   *  still on their way. */
+  const { counts, search: countedSearch } = usePageCounts(countsRead);
+  // Nothing at all is live: "nothing to do", not "nothing matches".
+  const nothingLive = isNothingAtAll(counts?.liveCount, queue, answered);
   const change = (next: Partial<QueueQuery>) => {
     if (next.pageSize !== undefined) savePageSize('queue', next.pageSize);
     setQuery((current) => updateQuery(current, next));
   };
+  // Search and sort live in the address too (`?search=&sort=`).
+  useRequestAddress(query, change);
 
   /** A successful retry unmounts the failure notice, and with it the button the
    *  keyboard user was standing on — focus would fall to `<body>` and they
@@ -466,15 +553,21 @@ export function QueuePage({
     recoveredFocus.current?.focus();
   }, [state, linking]);
 
+  /** Review opens the panel by its address, `/queue/:id`, so the panel can be
+   *  linked to and reopened from the address bar (spec 008 FR-001, amended
+   *  2026-10-06). The address is the only record of which panel is open.
+   *  A request whose panel is already open stays open: its address would not
+   *  change, so nothing would resolve it again after a dismiss (the toast's
+   *  "Review request" for the request on screen). */
   const review = (id: string) => {
+    const open = linked ? findKnown(linked) : undefined;
+    if (linked === id || open?.id === id || open?.displayId === id) return;
     dismiss();
-    leaveRoutedLink();
-    setOpenId(id);
+    openRoutedLink(id);
   };
 
-  const shownId = openId ?? linked;
-  const listed = shownId ? findKnown(shownId) : undefined;
-  const openRequest = useOpenRequest(source, shownId, listed, state);
+  const listed = linked ? findKnown(linked) : undefined;
+  const openRequest = useOpenRequest(source, linked, listed, state);
 
   // The toast's "Review request": on this page, switch the panel to that
   // request, handing the open one's running action to its toast first.
@@ -495,7 +588,6 @@ export function QueuePage({
     // display id.
     if (openRequest) handOff(openRequest.id);
     clearNotice();
-    setOpenId(null);
     dismiss();
     leaveRoutedLink();
     // The stale-data notice tells the Admin to close the panel to refresh, so
@@ -520,7 +612,13 @@ export function QueuePage({
           place is routinely missed — only a change WITHIN an existing region
           announces reliably, and `loading` is the state the page opens in. */}
       <div role="status" aria-live="polite" className="sr-only">
-        {announce(linking && state.kind === 'loaded' ? { kind: 'loading' } : state, queue)}
+        {announce(
+          linking && state.kind === 'loaded' ? { kind: 'loading' } : state,
+          queue,
+          counts,
+          answered && countedSearch === answered.search && counts ? counts.chipCounts[answered.chip] : null,
+          nothingLive,
+        )}
       </div>
 
       {state.kind === 'failed' ? (
@@ -550,7 +648,12 @@ export function QueuePage({
       {state.kind !== 'failed' ? (
         <LoadedQueue
           queue={linking ? null : queue}
-          busy={state.kind === 'loaded' && answered !== asked}
+          counts={linking ? null : counts}
+          chipCounts={linking || countedSearch !== asked.search ? null : (counts?.chipCounts ?? null)}
+          nothingLive={nothingLive}
+          busy={(state.kind === 'loaded' && answered !== asked) || refreshing}
+          refreshing={refreshing}
+          onRefresh={state.kind === 'loaded' ? () => void refreshNow() : undefined}
           query={query}
           onChange={change}
           focusRef={recoveredFocus}
@@ -594,9 +697,28 @@ const ROW_SKELETON = [
   [COLUMNS.action, 'button'],
 ] as const;
 
+/** What an empty page of the queue says. */
+function emptyQueueLabel(
+  queue: QueueTable,
+  chipCounts: QueueCounts['chipCounts'] | null,
+  query: QueueQuery,
+  nothingLive: boolean,
+): string {
+  if (nothingLive) return 'No requests are in the queue.';
+  // A page of *All requests* whose rows were all resolved (plan D5): later
+  // pages may still hold live ones.
+  if (queue.matchCount > 0 && chipCounts?.[query.chip] !== 0) return 'No live requests on this page.';
+  return 'No requests match the current search and status filter.';
+}
+
 function LoadedQueue({
   queue,
+  counts,
+  chipCounts,
+  nothingLive,
   busy,
+  refreshing,
+  onRefresh,
   query,
   onChange,
   focusRef,
@@ -604,8 +726,18 @@ function LoadedQueue({
 }: {
   /** The next page is in flight. */
   busy: boolean;
+  /** **Refresh** is running. */
+  refreshing: boolean;
+  /** Re-reads the page on screen; absent until the first page has loaded. */
+  onRefresh?: () => void;
   /** `null` until the first answer arrives: the data is drawn as skeletons. */
-  queue: QueueViewModel | null;
+  queue: QueueTable | null;
+  /** `null` until the counts arrive, independent of the rows. */
+  counts: QueueCounts | null;
+  /** The chip counts for the search on screen; `null` while they load. */
+  chipCounts: QueueCounts['chipCounts'] | null;
+  /** Nothing is live at all, so an empty table says so. */
+  nothingLive: boolean;
   query: QueueQuery;
   onChange: (change: Partial<QueueQuery>) => void;
   /** Where focus lands when a retry succeeds; see the effect that uses it. */
@@ -623,15 +755,15 @@ function LoadedQueue({
       <div className="flex flex-wrap items-start justify-between gap-16">
         <PageHeader title={DESTINATIONS.queue.title} subtitle={DESTINATIONS.queue.purpose} />
         {/* No placeholder while the counts load: the cards appear once the
-            counts are known. Two cards, as `02 - Requests Queue` draws them
-            (spec 004 FR-004, amended 2026-10-03). */}
-        {queue ? (
+            counts are known, whether or not the rows are. Two cards, as `02 - Requests
+            Queue` draws them (spec 004 FR-004, amended 2026-10-03). */}
+        {counts ? (
           <section
             className="grid w-full grid-cols-1 gap-16 sm:grid-cols-2 lg:w-auto lg:grid-cols-[repeat(2,262px)]"
             aria-label="Requests workload summary"
           >
-            <SummaryCard value={String(queue.pendingApprovalCount)} label="Pending approval" size="compact" />
-            <SummaryCard value={String(queue.inProcessingCount)} label="In Processing" tone="neutral" size="compact" />
+            <SummaryCard value={String(counts.pendingApprovalCount)} label="Pending approval" size="compact" />
+            <SummaryCard value={String(counts.inProcessingCount)} label="In Processing" tone="neutral" size="compact" />
           </section>
         ) : null}
       </div>
@@ -655,6 +787,10 @@ function LoadedQueue({
             if (isQueueSort(sort)) onChange({ sort });
           }}
         />
+        <Button variant="ghost" className="gap-8" disabled={!onRefresh || refreshing} onClick={onRefresh}>
+          <ArrowCounterClockwise size={18} className={refreshing ? 'animate-spin [animation-direction:reverse]' : undefined} />
+          {refreshing ? 'Refreshing…' : 'Refresh'}
+        </Button>
       </div>
 
       <div
@@ -668,8 +804,8 @@ function LoadedQueue({
           <FilterChip
             key={chip}
             label={chip}
-            count={queue?.chipCounts[chip] ?? 0}
-            loading={!queue}
+            count={chipCounts?.[chip] ?? 0}
+            loading={!chipCounts}
             selected={query.chip === chip}
             onSelect={() => onChange({ chip })}
           />
@@ -710,13 +846,7 @@ function LoadedQueue({
               <SkeletonRows columns={ROW_SKELETON} rowClassName="min-h-row-height-request border-t border-line-default py-18" />
             ) : queue.rows.length === 0 ? (
               <div className="border-t border-line-default">
-                <EmptyState
-                  label={
-                    queue.liveCount === 0
-                      ? 'No requests are in the queue.'
-                      : 'No requests match the current search and status filter.'
-                  }
-                />
+                <EmptyState label={emptyQueueLabel(queue, chipCounts, query, nothingLive)} />
               </div>
             ) : (
               queue.rows.map((request) => (

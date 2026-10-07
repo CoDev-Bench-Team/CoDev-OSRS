@@ -11,13 +11,12 @@ export const API_SORT: Record<QueueSort, RequestSort> = {
   'Employee (A-Z)': 'employee_name_asc',
 };
 
-/** One search box, one published parameter: the display id for text that
- *  starts with `REQ-`, the requester's name or email otherwise. The API has
- *  no single search across both and the item name (contracts conflict 13). */
-export function searchFilter(search: string): Pick<ListRequestsParams, 'displayId' | 'requester'> {
+/** One search box, one published parameter: `search` matches the display
+ *  id, the requester's name or email, and any line's item name or model
+ *  (contracts conflict 13, closed 2026-10-07). */
+export function searchFilter(search: string): Pick<ListRequestsParams, 'search'> {
   const term = search.trim();
-  if (!term) return {};
-  return /^req-/i.test(term) ? { displayId: term } : { requester: term };
+  return term ? { search: term } : {};
 }
 
 /** `/requests/counts`: `byStatus` per published status, and `inProcessing`. */
@@ -38,16 +37,17 @@ export type RequestCounts = ReturnType<typeof readCounts>;
 const UNFILTERED_FRESH_MS = 30_000;
 let unfiltered: { at: number; read: Promise<RequestCounts> } | null = null;
 
-/** `/requests/counts` with no filter, and with the search's filter.
+/** `/requests/counts` with no filter, and with the search's filter. Read
+ *  beside the rows, for the chips and summary cards only: which rows show and
+ *  how many match come from the list itself.
  *
- *  What decides which rows are fetched and how the page is clamped is always
- *  read fresh: a request submitted elsewhere a moment ago must not be skipped.
- *  With no search that is the unfiltered read itself, which also refreshes
- *  the cache. With a search it is the filtered read, and only the summary
- *  cards (`all`) reuse the unfiltered counts for a short while, as they do
- *  not change as the Admin types. A failed read is not kept. */
+ *  The chip counts are always read fresh, so they agree with the rows just
+ *  shown. With no search that is the unfiltered read itself, which also
+ *  refreshes the cache. With a search it is the filtered read, and only the
+ *  summary cards (`all`) reuse the unfiltered counts for a short while, as
+ *  they do not change as the Admin types. A failed read is not kept. */
 export async function countsFor(
-  search: Pick<ListRequestsParams, 'displayId' | 'requester'>,
+  search: Pick<ListRequestsParams, 'search'>,
 ): Promise<{ all: RequestCounts; matched: RequestCounts }> {
   const filtered = Object.keys(search).length > 0;
   if (!filtered || !unfiltered || Date.now() - unfiltered.at > UNFILTERED_FRESH_MS) {
@@ -79,6 +79,20 @@ export function pageOf(body: unknown, what: string) {
 export function clampPage(page: number, matches: number, pageSize: number): number {
   const pageCount = Math.max(1, Math.ceil(matches / pageSize));
   return Math.min(Math.max(1, Math.floor(page)), pageCount);
+}
+
+/** The asked page of a list, or the last one there is when it is past the
+ *  end (an action emptied it, or the matches shrank). `list` reads one page
+ *  and returns it as `pageOf` does; its own `total` says how many match. */
+export async function readClampedPage<T extends { total: number }>(
+  page: number,
+  pageSize: number,
+  list: (page: number) => Promise<T>,
+): Promise<{ body: T; page: number }> {
+  const asked = Math.max(1, Math.floor(page));
+  const body = await list(asked);
+  const last = clampPage(asked, body.total, pageSize);
+  return last === asked ? { body, page: asked } : { body: await list(last), page: last };
 }
 
 /** One request by either of its ids. A link (an email's *View request*,

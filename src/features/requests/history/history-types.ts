@@ -54,3 +54,11 @@ export interface HistoryViewModel {
   page: number;
   rows: readonly HistoryRow[];
 }
+
+/** The table's part of the view model: what one page read answers. */
+export type HistoryTable = Pick<HistoryViewModel, 'matchCount' | 'page' | 'rows'>;
+
+/** The counts' part: the chips, and whether anything is resolved at all.
+ *  Read in parallel beside the rows, so the table never waits on them
+ *  (FR-055). */
+export type HistoryCounts = Omit<HistoryViewModel, keyof HistoryTable>;

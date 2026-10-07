@@ -50,6 +50,7 @@ type Asset = {
 type Unit = {
   id: number;
   assetId: number;
+  purchaseRequest: string | null;
   serialNumber: string | null;
   bitlockerIdentifier: string | null;
   recoveryPin: string | null;
@@ -175,6 +176,7 @@ export class FakeApi {
     const unit: Unit = {
       id: ++this.nextId.unit,
       assetId,
+      purchaseRequest: null,
       serialNumber,
       bitlockerIdentifier: null,
       recoveryPin: null,
@@ -238,12 +240,18 @@ export class FakeApi {
     };
   }
 
-  /** As the backend serialises a unit: only the `asset` relation is loaded,
-   *  so no assignee and no `assignedToId` (contracts G6). */
+  /** As the backend serialises a unit: the `asset` and `assignedTo`
+   *  relations, and no `assignedToId` (contracts G6, 2026-10-06). The API
+   *  keeps stray spaces in names, so the fake does too. */
   private unitJson(unit: Unit) {
     const asset = this.assets.find((a) => a.id === unit.assetId)!;
+    const user = this.users.find((u) => u.id === unit.assignedToId);
     const { requestId: _requestId, assignedToId: _assignedToId, ...rest } = unit;
-    return { ...rest, asset: { id: asset.id, name: asset.name, model: asset.model, category: asset.category } };
+    return {
+      ...rest,
+      asset: { id: asset.id, name: asset.name, model: asset.model, category: asset.category },
+      assignedTo: user ? { id: user.id, email: user.email, firstName: `${user.firstName} `, lastName: user.lastName } : null,
+    };
   }
 
   private requestJson(request: Request) {
@@ -292,8 +300,20 @@ export class FakeApi {
     const p = url.searchParams;
     return rows.filter((r) => {
       const requester = this.users.find((u) => u.id === r.requesterId)!;
-      const items = r.items.map((i) => this.assets.find((a) => a.id === i.assetId)!.name).join(' ');
+      const assets = r.items.map((i) => this.assets.find((a) => a.id === i.assetId)!);
+      const items = assets.map((a) => a.name).join(' ');
+      // `search`, as the backend: any one of the display id, first, last or
+      // full name, email, or a line's asset name or model.
+      const searched = [
+        r.displayId,
+        requester.firstName,
+        requester.lastName,
+        `${requester.firstName} ${requester.lastName}`,
+        requester.email,
+        ...assets.flatMap((a) => [a.name, a.model]),
+      ];
       return (
+        (!p.get('search') || searched.some((field) => contains(field, p.get('search')))) &&
         contains(r.displayId, p.get('displayId')) &&
         // As the backend: each of first name, last name and email on its own
         // (`ILIKE` per column), never the three joined.
@@ -324,7 +344,7 @@ export class FakeApi {
 
   // ---------------------------------------------------------------- writes
 
-  private submit(user: User, body: { items?: { assetId: number; quantity: number }[]; purpose?: string }): Request {
+  submit(user: User, body: { items?: { assetId: number; quantity: number }[]; purpose?: string }): Request {
     const items = body.items ?? [];
     if (!items.length) throw invalid('#/items', 'items must contain at least 1 elements');
     items.forEach((item, i) => {
@@ -482,28 +502,34 @@ export class FakeApi {
         const p = url.searchParams;
         const ghosts = this.lagging.filter((l) => l.reads > 0);
         ghosts.forEach((l) => (l.reads -= 1));
-        const rows = [...this.units, ...ghosts.map((l) => l.unit)]
-          .filter((u) => {
-            const a = this.assets.find((x) => x.id === u.assetId)!;
-            return (
-              contains(`${a.name} ${a.model} ${a.category}`, p.get('search')) &&
-              (!p.get('category') || a.category === p.get('category')) &&
-              (!p.get('status') || u.status === p.get('status')) &&
-              (!p.get('assignedToId') || String(u.assignedToId) === p.get('assignedToId'))
-            );
-          })
-          .map((u) => this.unitJson(u));
-        return { body: paged(rows, url) };
+        const matching = [...this.units, ...ghosts.map((l) => l.unit)].filter((u) => {
+          const a = this.assets.find((x) => x.id === u.assetId)!;
+          return (
+            // As the API searches (G5, closed 2026-10-06): the asset, and the
+            // unit's Purchase Request number and serial number.
+            contains(`${a.name} ${a.model} ${a.category} ${u.purchaseRequest ?? ''} ${u.serialNumber ?? ''}`, p.get('search')) &&
+            (!p.get('category') || a.category === p.get('category')) &&
+            (!p.get('assignedToId') || String(u.assignedToId) === p.get('assignedToId'))
+          );
+        });
+        const rows = matching.filter((u) => !p.get('status') || u.status === p.get('status')).map((u) => this.unitJson(u));
+        // As the backend does (contracts conflict 16): counts follow
+        // search and category and ignore status, so every chip keeps its number.
+        const byStatus = { Available: 0, Reserved: 0, Assigned: 0, Inactive: 0 };
+        for (const u of matching) byStatus[u.status] += 1;
+        return { body: { ...paged(rows, url), counts: { total: matching.length, byStatus } } };
       }
       this.admin();
       if (id === 'bulk' && method === 'POST') {
         const units = (body.units as { serialNumber?: string }[] | undefined) ?? [];
         if (units.length < 1 || units.length > 100) throw invalid('#/units', 'units must contain 1 to 100 elements');
         const created = units.map((u) => this.addUnit(Number(body.assetId), body.location as Office, u.serialNumber ?? null));
+        for (const unit of created) unit.purchaseRequest = (body.purchaseRequest as string | undefined) ?? null;
         return { status: 201, body: created.map((u) => this.unitJson(u)) };
       }
       if (!id && method === 'POST') {
         const unit = this.addUnit(Number(body.assetId), body.location as Office, (body.serialNumber as string) ?? null);
+        unit.purchaseRequest = (body.purchaseRequest as string | undefined) ?? null;
         if (typeof body.assignedToId === 'number') {
           unit.status = 'Assigned';
           unit.assignedToId = body.assignedToId;
@@ -521,6 +547,8 @@ export class FakeApi {
         return { body: this.unitJson(unit) };
       }
       if (method === 'PATCH') {
+        // `null` clears it; left out, it stays (G5, closed 2026-10-06).
+        if ('purchaseRequest' in body) unit.purchaseRequest = body.purchaseRequest as string | null;
         if (body.assignedToId === null) {
           unit.assignedToId = null;
           unit.assignedAt = null;

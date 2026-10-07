@@ -74,8 +74,15 @@ export function AppLayout() {
 
   const pending = status === 'unknown';
   /** The screen the address shows: `/queue` and `/queue/:id` are one screen,
-   *  so moving between them neither remounts it nor clears a failure. */
-  const screenKey = destinationFor(location.pathname)?.id === 'queueRequest' ? DESTINATIONS.queue.path : location.pathname;
+   *  as are `/requests` and `/requests/:id`, so opening or closing a panel
+   *  neither remounts the list nor clears a failure. */
+  const shownDestination = destinationFor(location.pathname)?.id;
+  const screenKey =
+    shownDestination === 'queueRequest'
+      ? DESTINATIONS.queue.path
+      : shownDestination === 'requestDetail'
+        ? DESTINATIONS.requests.path
+        : location.pathname;
   if (!session && !pending) return null; // RequireAccess resolves this; belt and braces.
 
   // The session is still resolving: the chrome stands where it will, with who

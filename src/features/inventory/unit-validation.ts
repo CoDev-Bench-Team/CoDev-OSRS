@@ -20,13 +20,14 @@ const tooLong = (value: string | undefined, max = MAX_TEXT) => (value?.length ??
 
 type Errors = Record<string, string>;
 
-function checkPurchase(draft: Pick<UnitDraft, 'price' | 'purchasedAt' | 'supplier'>, today: string, errors: Errors) {
+function checkPurchase(draft: Pick<UnitDraft, 'purchaseRequest' | 'price' | 'purchasedAt' | 'supplier'>, today: string, errors: Errors) {
   const { price } = draft;
   if (price !== undefined) {
     if (!Number.isFinite(price) || price < 0) errors.price = 'Enter a price of 0 or more';
     else if (Math.abs(Math.round(price * 100) - price * 100) > 1e-6) errors.price = 'Use at most two decimal places';
   }
   if (draft.purchasedAt && draft.purchasedAt > today) errors.purchasedAt = 'The purchase date can’t be in the future';
+  if (tooLong(draft.purchaseRequest)) errors.purchaseRequest = 'Use 255 characters or fewer';
   if (tooLong(draft.supplier)) errors.supplier = 'Use 255 characters or fewer';
 }
 

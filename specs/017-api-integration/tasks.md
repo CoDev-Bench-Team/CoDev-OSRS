@@ -78,7 +78,7 @@ Plan D16 order: T023 → T024 green with unedited checks → then T025 onward.
 - [ ] T025 [US3] [BEN-159] `requestCounts(params)` and `updateRequestStatus(id, { status, rejectionReason?, pickupLocation? })`. The status enum is limited to the four PATCH targets — `src/shared/api/requests.ts` *(Call function done 2026-10-03: the request side is typed from Swagger, and the response stays `unknown` until T002.)*
 - [ ] T026 [US3] [BEN-159] API admin source:
   - `page()` maps search to one parameter (D4).
-  - "All requests" merges the five live statuses into full pages, with totals from `/counts` (D5).
+  - ~~"All requests" merges the five live statuses into full pages, with totals from `/counts` (D5).~~ *(Amended 2026-10-07, after plan D5 was amended 2026-10-06: "All requests" is one `GET /requests` with no status, and `/counts` is read beside it.)*
   - Counts give Pending approval and In Processing; low stock is `null`.
   - Approve, reject and handover go through PATCH. `Received` goes through `receiveRequest`, and cancel through `cancelRequest`.
   - Other Notes is never sent. `canComplete: false`, and `complete` returns `unavailable` without a network call.
@@ -147,10 +147,10 @@ Plan D16 order: T023 → T024 green with unedited checks → then T025 onward.
 - [ ] T046 [US8] [BEN-162] `createUnit`, `createUnits` (1–100), `updateUnit`, `deleteUnit` — `src/shared/api/inventory.ts` *(Call function done 2026-10-03: the request side is typed from Swagger, and the response stays `unknown` until T002.)*
 - [ ] T047 [P] [US8] [BEN-162] `listUsers()` — `src/shared/api/users.ts` *(Call function done 2026-10-03: the request side is typed from Swagger, and the response stays `unknown` until T002.)*
 - [ ] T048 [US8] [BEN-162] API inventory source:
-  - `page()` reads `listUnits`, with chip counts from per-status totals at `limit=1`.
+  - `page()` reads `listUnits`, with chip counts from ~~per-status totals at `limit=1`~~ the same body's `counts` *(amended 2026-10-07, after FR-045 was amended 2026-10-06; contracts conflict 16)*.
   - The row mapper drops secrets; only `get` copies them into `UnitDetail`.
   - `update` sends `assignedToId: null` only when the assignee is cleared.
-  - `remove` sends the reason, which the API requires since 2026-10-03 (G2 closed). Purchase Request and attachment are never sent.
+  - `remove` sends the reason, which the API requires since 2026-10-03 (G2 closed). ~~Purchase Request and~~ The attachment ~~are~~ is never sent. *(Amended 2026-10-07: the Purchase Request number is sent on create, bulk create and update, `null` when cleared; contracts G5, closed 2026-10-06.)*
   - `createStatuses` is Available and Assigned (D13). The assignee is unset (G6).
 
   — `src/features/inventory/api-inventory-source.ts`
@@ -205,3 +205,11 @@ Phase 1, Phase 2, then US1 → US2 → US3 → US4. That is the API demo path to
 
 - [x] T070 [BEN-154] Form drafts for Add Single Unit, Add Multiple Units, Add Asset and Update Asset (FR-052) — `src/shared/form-draft-cache.ts`, `src/features/inventory/`, `src/features/assets/AssetFormPanel.tsx`, `src/features/auth/SessionProvider.tsx`, `e2e/form-draft.spec.ts`
 - [x] T071 [BEN-154] Dev-only role select on sign-in (FR-053). **Reverted 2026-10-06** before merge to `dev` — `src/features/auth/dev-role-override.ts`, `src/features/auth/LoginScreen.tsx`, `src/features/auth/api-session-source.ts`
+
+## Phase 13: Session 2026-10-06 additions
+
+- [x] T072 [BEN-154] **Refresh** button on the Requests Queue (FR-054) — `src/features/requests/queue/QueuePage.tsx`, `e2e/queue-refresh.spec.ts`
+- [x] T073 [BEN-154] Rows first: counts read beside the list, independent reads in parallel, *All requests* as one list call (FR-055; early reads superseded by T076, FR-058) — `src/features/requests/page-counts.ts`, `src/features/requests/queue/`, `src/features/requests/history/`, `src/features/inventory/api-inventory-source.ts`, `src/features/assets/useRemoteTableQuery.ts`, `src/shared/api/page.ts`, `e2e/table-first.spec.ts`
+- [x] T074 [BEN-154] Search and sort in the address (FR-056) — `src/shared/address-fields.ts`, `src/features/requests/request-address.ts`, `src/features/assets/useRemoteTableQuery.ts`, `e2e/table-address.spec.ts`
+- [x] T076 [BEN-154] Keep the signed-in user; render from it and read `/auth/me` in the background once idle (FR-058) — `src/features/auth/session-cache.ts`, `src/features/auth/SessionProvider.tsx`, `src/features/auth/api-session-source.ts`, `src/shared/api/client.ts`, `e2e/session-cache.spec.ts`
+- [x] T075 [BEN-154] Panels have their own address: Review opens `/queue/:id` and View details opens `/requests/:id`; closing returns to the list (spec 008 FR-001, spec 007 FR-001, amended) — `src/features/requests/queue/QueuePage.tsx`, `src/features/requests/history/MyRequestsPage.tsx`, `src/app/RequestDeepLink.tsx`, `src/app/routes.tsx`, `src/app/AppLayout.tsx`, `e2e/panel-address.spec.ts`

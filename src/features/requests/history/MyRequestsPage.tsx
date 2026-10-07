@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import {
   Button,
   EmptyState,
@@ -13,7 +14,7 @@ import {
   tableColumnStyle,
   type ColumnWidth,
 } from '../../../shared/ui';
-import { DESTINATIONS } from '../../../app/destinations';
+import { DESTINATIONS, requestPath } from '../../../app/destinations';
 import { useSession } from '../../auth/session-context';
 import { RequestDetailPanel } from '../detail/RequestDetailPanel';
 import type { User } from '../../auth/types';
@@ -33,8 +34,11 @@ import { newestFirst } from './order';
  *  source need not promise an order (spec 009 D2, D4). No filters, search or
  *  pagination: the frame draws none (D3).
  *
- *  The open request is component state, not an address: the panel "opens from
- *  View details and closes without navigating" (spec 003, 2026-09-23). */
+ *  The open request is part of the address (spec 007 FR-001, amended
+ *  2026-10-06): *View details* replaces the entry with `/requests/:id` and
+ *  closing replaces it with `/requests` again, so an email can link to a
+ *  panel and Back still leaves My Requests. An id that is not the Employee's
+ *  opens nothing, shows the unavailable notice and settles on `/requests`. */
 // The frame's column widths (200 / 180 / fill / 190 / 90 inside the 20px
 // gutter). Header and row cells are both sized through `tableColumnStyle`, so a
 // column cannot drift out from under its heading.
@@ -74,7 +78,6 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   const { session } = useSession();
   const user = session?.user;
   const [load, setLoad] = useState<Load>({ state: 'loading' });
-  const [openId, setOpenId] = useState<string | null>(null);
   /** Requests with an action still running, from a panel open now or one
    *  since closed (its toast reports it). A reopened panel offers nothing
    *  until it lands, so nothing is sent twice (spec 008 FR-015's rule, kept
@@ -179,24 +182,36 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
   const markReceived = (id: string): Promise<ReceiveResult> =>
     runThenReload(id, () => source.markReceived(user!, id));
 
-  // `/requests/:id` lands here for an Employee and opens their own request.
-  // Only their own ids are in the list, so another Employee's request and a
-  // missing one get the same notice (spec 003 FR-012a).
-  // A link may carry the display id (an email) or the source's id.
+  // `/requests/:id` names the open panel: an email's link, or View details,
+  // which puts the request's id in the address (spec 007 FR-001). Only the
+  // Employee's own ids are in the list, so another Employee's request and a
+  // missing one get the same notice and settle on `/requests` (spec 003
+  // FR-012a). A link may carry the display id (an email) or the source's id.
+  const { id: routeId } = useParams();
+  const { search } = useLocation();
+  const navigate = useNavigate();
   const ownIds = useMemo(
     () => (load.state === 'ready' ? load.requests.flatMap((r) => (r.displayId ? [r.id, r.displayId] : [r.id])) : null),
     [load],
   );
-  const { linked, unavailable, dismiss } = useDeepLinkedRequest(ownIds, REQUEST_UNAVAILABLE);
-  const closePanel = () => {
-    setOpenId(null);
+  const { linked, unavailable, dismiss } = useDeepLinkedRequest(ownIds, REQUEST_UNAVAILABLE, undefined, {
+    id: routeId,
+    base: DESTINATIONS.requests.path,
+  });
+  // Replaced, not pushed: the panel is not a page of its own, so Back leaves
+  // My Requests as it did before the address named the panel.
+  const openPanel = (request: EmployeeRequest) => {
     dismiss();
+    void navigate({ pathname: requestPath(request.displayId ?? request.id), search }, { replace: true });
+  };
+  const closePanel = () => {
+    dismiss();
+    if (routeId) void navigate({ pathname: DESTINATIONS.requests.path, search }, { replace: true });
   };
 
   const { title, purpose } = DESTINATIONS.requests;
   const requests = useMemo(() => (load.state === 'ready' ? newestFirst(load.requests) : []), [load]);
-  const shownId = openId ?? linked;
-  const row = requests.find((r) => r.id === shownId || r.displayId === shownId);
+  const row = requests.find((r) => r.id === linked || r.displayId === linked);
   const open = useFullRequest(source, user, row);
 
   return (
@@ -266,10 +281,7 @@ export function MyRequestsPage({ source: given }: { source?: EmployeeRequestSour
                   <span style={tableColumnStyle(WIDTH.action)}>
                     <button
                       type="button"
-                      onClick={() => {
-                        dismiss();
-                        setOpenId(request.id);
-                      }}
+                      onClick={() => openPanel(request)}
                       aria-label={`View details of ${requestLabel(request)}`}
                       className="inline-flex cursor-pointer items-center gap-7 border-none bg-transparent p-0 font-sans text-12 leading-tight font-bold whitespace-nowrap text-brand-primary-alt transition-osrs hover:text-brand-primary"
                     >

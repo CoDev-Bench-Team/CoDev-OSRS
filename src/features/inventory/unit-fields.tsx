@@ -466,9 +466,9 @@ export function SecretInput({
   );
 }
 
-export type Purchase = { pr: string; price: string; supplier: string; purchasedAt: string };
+export type Purchase = { purchaseRequest: string; price: string; supplier: string; purchasedAt: string };
 
-/** PURCHASE DETAILS: Purchase Request (ours, D14), Price in pesos, Supplier,
+/** PURCHASE DETAILS: Purchase Request (D14), Price in pesos, Supplier,
  *  Purchased Date no later than today (FR-013). */
 export function PurchaseFields({
   value,
@@ -493,15 +493,15 @@ export function PurchaseFields({
   });
   return (
     <FieldGroup heading="PURCHASE DETAILS">
-      <Field label="Purchase Request" error={errors.pr}>
+      <Field label="Purchase Request" error={errors.purchaseRequest}>
         {({ id, invalid, describedBy }) => (
           <TextInput
             id={id}
             invalid={invalid}
             aria-describedby={describedBy}
             placeholder="e.g. 2026-0142"
-            value={value.pr}
-            onChange={(e) => onChange('pr', e.target.value)}
+            value={value.purchaseRequest}
+            onChange={(e) => onChange('purchaseRequest', e.target.value)}
           />
         )}
       </Field>

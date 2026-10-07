@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
-/** What a deep link hands the list it lands on, in navigation state: the
- *  Employee's My Requests from `/requests/:id` (spec 003, Session 2026-09-26),
- *  and History from the Requests Queue for a resolved request. The Admin's
- *  review panel has its own address, `/queue/:id` (spec 008 FR-001b), which
- *  carries the id in the path instead. */
+/** What a deep link hands the list it lands on, in navigation state: only
+ *  History, forwarded from the Requests Queue for a resolved request. My
+ *  Requests reads the routed `/requests/:id` itself, and the Admin's review
+ *  panel has its own address, `/queue/:id` (spec 008 FR-001b); both carry the
+ *  id in the path instead. */
 export type DeepLinkState = { openRequest?: string };
 
 /** The Employee's one sentence for a request that does not exist and for one
@@ -95,7 +95,7 @@ export function useDeepLinkedRequest(
     } else if (routedId && base) {
       // A routed link that opened keeps its address; one that missed settles
       // on the list's own.
-      if (outcome.kind === 'missed') navigate(base, { replace: true });
+      if (outcome.kind === 'missed') navigate({ pathname: base, search: location.search }, { replace: true });
     } else {
       navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
     }

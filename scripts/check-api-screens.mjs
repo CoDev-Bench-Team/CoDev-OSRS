@@ -80,7 +80,8 @@ check(!/\bnotes\b|otherNotes/.test(requestsApi.replace(/\/\*[\s\S]*?\*\//g, ''))
 check(!/location|office/i.test(requestsApi.match(/CreateRequestBody = \{[\s\S]*?\};/)?.[0] ?? 'x'), 'submit carries no office');
 const inventoryApi = read(join(root, 'src/shared/api/inventory.ts'));
 check(!/location/.test(inventoryApi.match(/ListUnitsParams = \{[\s\S]*?\};/)?.[0] ?? 'location'), 'the unit list takes no office');
-check(!/purchaseRequest|\bpr\b|attachmentFile/.test(inventoryApi.replace(/\/\*[\s\S]*?\*\//g, '')), 'no PR or attachment file is sent');
+// The Purchase Request number is published (G5, closed 2026-10-06); the file is not (G7).
+check(!/attachmentFile/.test(inventoryApi.replace(/\/\*[\s\S]*?\*\//g, '')), 'no attachment file is sent');
 check(/deleteUnit\(id: string, reason: string\)[\s\S]*?body: \{ reason \}/.test(inventoryApi), 'unit removal sends the required reason (G2 closed 2026-10-03)');
 
 console.log('\nSecrets and storage (FR-039, FR-048, FR-050)');

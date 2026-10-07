@@ -9,6 +9,7 @@ import {
   readAllPages,
   readPage,
   readUnit,
+  readUnitCounts,
   updateUnit,
   type ApiUnit,
   type UpdateUnitBody,
@@ -22,11 +23,13 @@ import { UNIT_CHIPS, type UnitChip, type UnitDetail, type UnitDraft, type UnitRo
 
 /** The unit register over `/inventory-items` (spec 017 Story 8).
  *
- *  - Search reaches the asset's name, model and category only; PR and serial
- *    are not searchable (G9). No office filter is sent (G9).
- *  - The unit read carries no assignee name (G6); the row shows it when the
- *    response does, and the not-published dash for an `Assigned` unit when not.
- *  - No Purchase Request number and no attachment file are sent (G5, G7).
+ *  - Search reaches the asset's name, model and category, and the unit's
+ *    serial and Purchase Request number. No office filter is sent (G9).
+ *  - The row shows the assignee the unit read carries in `assignedTo` (G6,
+ *    published 2026-10-06), and the not-published dash for an `Assigned`
+ *    unit whose read has none.
+ *  - The Purchase Request number is read and sent on every operation; no
+ *    attachment file is sent (G7).
  *  - The row mapper drops BitLocker identifier and recovery PIN; only `get`
  *    keeps them, for the Admin's panel (plan D14). Nothing is logged. */
 
@@ -37,6 +40,7 @@ function toRow(unit: ApiUnit): UnitRow {
     itemName: unit.asset.name,
     model: unit.asset.model,
     category: unit.asset.category as Category,
+    purchaseRequest: unit.purchaseRequest,
     serialNumber: unit.serialNumber,
     location: unit.location,
     status: unit.status,
@@ -48,9 +52,8 @@ function toRow(unit: ApiUnit): UnitRow {
 function toDetail(unit: ApiUnit): UnitDetail {
   return {
     ...toRow(unit),
-    // The form keeps the assignment by id; the user list names it. The unit
-    // read publishes neither the assignee nor its id today (G6), so this
-    // stays empty until it does.
+    // The form keeps the assignment by id; the user list names it. A read
+    // with an id and no name still keeps the assignment.
     ...(unit.assignedToId && !unit.assignee ? { assignee: { id: unit.assignedToId, name: '' } } : {}),
     price: unit.price,
     supplier: unit.supplier,
@@ -100,6 +103,7 @@ const remember = (unit: ApiUnit) => {
 function updateBody(id: string, draft: UnitDraft): UpdateUnitBody {
   const before = seen.get(id);
   const body: UpdateUnitBody = {
+    purchaseRequest: draft.purchaseRequest || null,
     price: draft.price ?? null,
     supplier: draft.supplier ?? null,
     purchasedAt: draft.purchasedAt ?? null,
@@ -129,38 +133,25 @@ export const apiInventorySource: InventorySource = {
     return rows.map((row) => toRow(remember(readUnit(row))));
   },
 
-  async page(query: RemoteTableQuery<UnitChip>, withCounts: boolean): Promise<RemoteTablePage<UnitRow, UnitChip>> {
-    const filters = {
+  async page(query: RemoteTableQuery<UnitChip>): Promise<RemoteTablePage<UnitRow, UnitChip>> {
+    const body = await listUnits({
       search: query.search.trim() || undefined,
       category: query.category === ALL_CATEGORIES ? undefined : (query.category as Category),
-    };
-    const rows = listUnits({ ...filters, status: query.status ?? undefined, page: query.page, limit: query.pageSize }).then(
-      (body) => {
-        const read = readPage<unknown>(body);
-        if (!read) throw new Error('units: not a page');
-        return read;
-      },
-    );
-    const toRows = (data: unknown[]) => data.map((row) => toRow(remember(readUnit(row))));
-    if (!withCounts) {
-      const read = await rows;
-      return { rows: toRows(read.data), total: read.total };
-    }
-    const total = async (status?: UnitChip) => {
-      const read = readPage<unknown>(await listUnits({ ...filters, status, page: 1, limit: 1 }));
-      if (!read) throw new Error('units: not a page');
-      return read.total;
-    };
-    // The page counts its own chip (All when none is pressed). The chips do
-    // not add up to All, which holds Inactive units too, so the rest are read.
-    const others: (UnitChip | undefined)[] = [undefined, ...UNIT_CHIPS].filter((chip) => chip !== (query.status ?? undefined));
-    const [read, ...totals] = await Promise.all([rows, ...others.map((chip) => total(chip))]);
-    const counted = new Map<UnitChip | undefined, number>(others.map((chip, i) => [chip, totals[i]]));
-    counted.set(query.status ?? undefined, read.total);
+      status: query.status ?? undefined,
+      page: query.page,
+      limit: query.pageSize,
+    });
+    const read = readPage<unknown>(body);
+    if (!read) throw new Error('units: not a page');
+    // The list's own counts answer every chip in this one read (contracts
+    // conflict 16); without them the chips show none.
+    const counts = readUnitCounts(body);
     return {
-      rows: toRows(read.data),
+      rows: read.data.map((row) => toRow(remember(readUnit(row)))),
       total: read.total,
-      counts: { all: counted.get(undefined) ?? 0, of: Object.fromEntries(UNIT_CHIPS.map((chip) => [chip, counted.get(chip) ?? 0])) },
+      ...(counts
+        ? { counts: { all: counts.total, of: Object.fromEntries(UNIT_CHIPS.map((chip) => [chip, counts.byStatus[chip]])) } }
+        : {}),
     };
   },
 
@@ -181,6 +172,7 @@ export const apiInventorySource: InventorySource = {
             await createUnit({
               assetId: Number(draft.assetId),
               location: draft.location,
+              purchaseRequest: draft.purchaseRequest || undefined,
               price: draft.price,
               supplier: draft.supplier,
               purchasedAt: draft.purchasedAt,
@@ -204,6 +196,7 @@ export const apiInventorySource: InventorySource = {
       const body = await createUnits({
         assetId: Number(draft.assetId),
         location: draft.location,
+        purchaseRequest: draft.purchaseRequest || undefined,
         price: draft.price,
         supplier: draft.supplier,
         purchasedAt: draft.purchasedAt,

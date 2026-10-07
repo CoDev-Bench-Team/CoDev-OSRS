@@ -25,6 +25,8 @@ import { RefusalAlert } from '../detail/RefusalAlert';
 import { REQUEST_NOT_FOUND, useDeepLinkedRequest, type DeepLinkState } from '../deep-link';
 import { requestLabel } from '../detail/request-detail-types';
 import { useLinkedRequest, useOpenRequest, useSettledQuery } from '../paged-source';
+import { isNothingAtAll, startCounts, usePageCounts, type CountsRead } from '../page-counts';
+import { addressedQuery, useRequestAddress } from '../request-address';
 import { NO_VALUE } from '../format';
 import { updateQuery } from '../list-query';
 import { PAGE_SIZES } from '../queue/queue-types';
@@ -37,7 +39,8 @@ import {
   INITIAL_HISTORY_QUERY,
   type HistoryQuery,
   type HistorySort,
-  type HistoryViewModel,
+  type HistoryCounts,
+  type HistoryTable,
 } from './history-types';
 import { HistoryPanel } from './HistoryPanel';
 import { readPageSize, savePageSize } from '../../../shared/page-size-preference';
@@ -52,7 +55,7 @@ import { readPageSize, savePageSize } from '../../../shared/page-size-preference
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'failed' }
-  | { kind: 'loaded'; history: HistoryViewModel; requests: readonly ReviewRequest[] };
+  | { kind: 'loaded'; history: HistoryTable; requests: readonly ReviewRequest[] };
 
 async function loadHistory(source: HistorySource, query: HistoryQuery): Promise<Extract<LoadState, { kind: 'loaded' }>> {
   const { history, requests } = await source.page(query);
@@ -78,10 +81,10 @@ const isHistorySort = (value: string): value is HistorySort => (HISTORY_SORTS as
 /** What a screen reader is told as History settles. The skeleton table
  *  announces itself; the failure `Notice` does not, so it is said here, as on
  *  the queue. */
-function announce(state: LoadState, history: HistoryViewModel | null): string {
+function announce(state: LoadState, history: HistoryTable | null, nothingResolved: boolean): string {
   if (state.kind === 'failed') return 'History could not be loaded.';
   if (!history) return '';
-  if (history.resolvedCount === 0) return 'No requests have been resolved yet.';
+  if (nothingResolved) return 'No requests have been resolved yet.';
   const shown = history.matchCount;
   if (shown === 0) return 'No resolved requests match the current filters.';
   return `${shown} resolved request${shown === 1 ? ' matches' : 's match'}.`;
@@ -93,16 +96,23 @@ export function HistoryPage({
 }: {
   source?: HistorySource;
 }) {
-  const { state: navigation } = useLocation();
+  const { state: navigation, search: address } = useLocation();
   const source = useMemo(() => given ?? historySource(), [given]);
   const ready = useSessionReady();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
-  const [query, setQuery] = useState<HistoryQuery>(() => ({ ...INITIAL_HISTORY_QUERY, pageSize: readPageSize('history', PAGE_SIZES) }));
+  const [query, setQuery] = useState<HistoryQuery>(() => ({
+    ...INITIAL_HISTORY_QUERY,
+    ...addressedQuery(address),
+    pageSize: readPageSize('history', PAGE_SIZES),
+  }));
   const asked = useSettledQuery(query, true);
   /** The query the table on screen answers. While it differs from the one
    *  asked, the next page is in flight and the table says so (spec 017). */
   const [answered, setAnswered] = useState<HistoryQuery | null>(null);
+  /** The newest counts read, started beside each rows read and published at
+   *  once, so the chips are drawn when the counts arrive, not the rows. */
+  const [countsRead, setCountsRead] = useState<CountsRead<HistoryCounts> | null>(null);
   /** The request open in the panel. Component state, not an address (spec 013
    *  Clarifications). */
   const [openId, setOpenId] = useState<string | null>(null);
@@ -114,7 +124,10 @@ export function HistoryPage({
     if (!ready) return;
     let active = true;
     void Promise.resolve()
-      .then(() => loadHistory(source, asked))
+      .then(() => {
+        if (active) setCountsRead(startCounts(() => source.counts(asked), asked.search));
+        return loadHistory(source, asked);
+      })
       .then((loaded) => {
         if (!active) return;
         setState(loaded);
@@ -140,10 +153,17 @@ export function HistoryPage({
     () => (state.kind === 'loaded' ? state.history : null),
     [state],
   );
+  /** The chip counts, read beside the rows and drawn when they arrive;
+   *  neither waits on the other. */
+  const { counts, search: countedSearch } = usePageCounts(countsRead);
+  // Nothing at all is resolved: "nothing yet", not "nothing matches".
+  const nothingResolved = isNothingAtAll(counts?.resolvedCount, history, answered);
   const change = (next: Partial<HistoryQuery>) => {
     if (next.pageSize !== undefined) savePageSize('history', next.pageSize);
     setQuery((current) => updateQuery(current, next));
   };
+  // Search and sort live in the address too (`?search=&sort=`).
+  useRequestAddress(query, change);
 
   /** `/requests/:id` for a resolved request lands here, forwarded by the queue
    *  (spec 013 FR-016, plan D14). Only resolved requests can open. */
@@ -190,7 +210,7 @@ export function HistoryPage({
   return (
     <div className="flex w-full min-w-0 flex-col gap-32 py-32">
       <div role="status" aria-live="polite" className="sr-only">
-        {announce(state, history)}
+        {announce(state, history, nothingResolved)}
       </div>
 
       {state.kind === 'failed' ? (
@@ -220,6 +240,8 @@ export function HistoryPage({
       {state.kind !== 'failed' ? (
         <LoadedHistory
           history={history}
+          chipCounts={countedSearch === asked.search ? (counts?.chipCounts ?? null) : null}
+          nothingResolved={nothingResolved}
           busy={state.kind === 'loaded' && answered !== asked}
           query={query}
           onChange={change}
@@ -245,6 +267,8 @@ const ROW_SKELETON = [
 
 function LoadedHistory({
   history,
+  chipCounts,
+  nothingResolved,
   busy,
   query,
   onChange,
@@ -254,7 +278,11 @@ function LoadedHistory({
   /** The next page is in flight. */
   busy: boolean;
   /** `null` until the first answer arrives: the data is drawn as skeletons. */
-  history: HistoryViewModel | null;
+  history: HistoryTable | null;
+  /** The chip counts for the search on screen; `null` while they load. */
+  chipCounts: HistoryCounts['chipCounts'] | null;
+  /** Nothing is resolved at all, so an empty table says so. */
+  nothingResolved: boolean;
   query: HistoryQuery;
   onChange: (change: Partial<HistoryQuery>) => void;
   focusRef: RefObject<HTMLDivElement | null>;
@@ -293,8 +321,8 @@ function LoadedHistory({
           <FilterChip
             key={chip}
             label={chip}
-            count={history?.chipCounts[chip] ?? 0}
-            loading={!history}
+            count={chipCounts?.[chip] ?? 0}
+            loading={!chipCounts}
             selected={query.chip === chip}
             onSelect={() => onChange({ chip })}
           />
@@ -332,7 +360,7 @@ function LoadedHistory({
               <div className="border-t border-line-default">
                 <EmptyState
                   label={
-                    history.resolvedCount === 0
+                    nothingResolved
                       ? 'No requests have been resolved yet.'
                       : 'No resolved requests match the current search and status filter.'
                   }
