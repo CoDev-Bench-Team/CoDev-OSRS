@@ -36,6 +36,15 @@ test("View details puts the Employee's request id in the address, and the addres
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page).toHaveURL(/\/requests$/);
 
+  // Opened from View details this time: closing hands focus back to it
+  // (spec 007 scenario 2), though the panel opened through the address.
+  const viewDetails = page.getByRole('button', { name: 'View details of REQ-2026-1847' });
+  await viewDetails.click();
+  await expect(heading).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(viewDetails).toBeFocused();
+
   // An id that is not one of hers opens nothing, says so, and settles on the list.
   await page.goto('/requests/REQ-2026-9999');
   await expect(page.getByText('That request is not available. It may not exist, or it may not be yours to view.')).toBeVisible();

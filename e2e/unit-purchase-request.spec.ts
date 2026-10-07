@@ -16,7 +16,8 @@ test('Add Single Unit sends the Purchase Request number, and the row shows it', 
   await search.fill('Business Laptop');
   await page.getByRole('option', { name: /Business Laptop/ }).click();
   await expect(dialog.getByRole('button', { name: /^Clear catalog item/ })).toBeVisible();
-  await dialog.getByRole('textbox', { name: 'Purchase Request' }).fill('2026-0142');
+  // Stray spaces are trimmed before it is sent.
+  await dialog.getByRole('textbox', { name: 'Purchase Request' }).fill('  2026-0142 ');
   await dialog.getByRole('textbox', { name: /^Serial Number/ }).fill('PR-SINGLE-1');
   // Status sits at the foot of the panel, and a scroll closes an open list:
   // bring it into view before opening it. The

@@ -103,7 +103,7 @@ const remember = (unit: ApiUnit) => {
 function updateBody(id: string, draft: UnitDraft): UpdateUnitBody {
   const before = seen.get(id);
   const body: UpdateUnitBody = {
-    purchaseRequest: draft.purchaseRequest || null,
+    purchaseRequest: draft.purchaseRequest?.trim() || null,
     price: draft.price ?? null,
     supplier: draft.supplier ?? null,
     purchasedAt: draft.purchasedAt ?? null,
@@ -172,7 +172,7 @@ export const apiInventorySource: InventorySource = {
             await createUnit({
               assetId: Number(draft.assetId),
               location: draft.location,
-              purchaseRequest: draft.purchaseRequest || undefined,
+              purchaseRequest: draft.purchaseRequest?.trim() || undefined,
               price: draft.price,
               supplier: draft.supplier,
               purchasedAt: draft.purchasedAt,
@@ -196,7 +196,7 @@ export const apiInventorySource: InventorySource = {
       const body = await createUnits({
         assetId: Number(draft.assetId),
         location: draft.location,
-        purchaseRequest: draft.purchaseRequest || undefined,
+        purchaseRequest: draft.purchaseRequest?.trim() || undefined,
         price: draft.price,
         supplier: draft.supplier,
         purchasedAt: draft.purchasedAt,
